@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  color: #1d1a16;
+  background: #f4f0e8;
+  font-family:
+    "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #f4f0e8;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(214, 70, 47, 0.08), transparent 34rem),
+    radial-gradient(circle at 85% 10%, rgba(55, 126, 91, 0.14), transparent 26rem), #f4f0e8;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: contain;
+  }
+}
