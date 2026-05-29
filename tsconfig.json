@@ -18,5 +18,11 @@
     "target": "ES2023",
     "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+  "include": [
+    ".sandcastle/**/*.ts",
+    "src",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
 }
