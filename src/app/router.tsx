@@ -1,7 +1,6 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { DashboardRoute } from "./dashboard-route";
+import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
-import { WorkoutRoute } from "./workout-route";
 
 const rootRoute = createRootRoute({
   component: RootLayout,

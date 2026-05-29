@@ -1,10 +1,10 @@
-import type { DashboardSnapshot } from "../domain/training";
-import { createBackup, restoreBackup, validateBackup } from "../persistence/backup";
+import { createBackup, restoreBackup, validateBackup } from "./backup";
+import type { DashboardSnapshot } from "./training-model";
 import {
   createStarterTrainingPlan,
   getDashboardSnapshot,
   recordCompletedStarterWorkout,
-} from "../persistence/trainingRepository";
+} from "./training-repository";
 
 export const trainingService = {
   async createBackupFile() {

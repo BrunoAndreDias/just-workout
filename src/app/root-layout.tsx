@@ -1,7 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Activity, Dumbbell, Home } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { cn } from "../lib/cn";
+import { Button } from "../design-system/button";
+import { cn } from "../design-system/cn";
 
 export function RootLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });

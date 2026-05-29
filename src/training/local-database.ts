@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { Exercise, TrainingPlan, WorkoutSession } from "../domain/training";
+import type { Exercise, TrainingPlan, WorkoutSession } from "./training-model";
 
 export class JustWorkoutDatabase extends Dexie {
   exercises!: Table<Exercise, string>;

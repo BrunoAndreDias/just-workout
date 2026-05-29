@@ -1,6 +1,6 @@
-import type { DashboardSnapshot, WorkoutSession } from "../domain/training";
-import { db } from "./localDatabase";
-import { createStarterExercises, createStarterPlan } from "./starterData";
+import { db } from "./local-database";
+import { createStarterExercises, createStarterPlan } from "./starter-data";
+import type { DashboardSnapshot, WorkoutSession } from "./training-model";
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   const [plans, exercises, sessions] = await Promise.all([

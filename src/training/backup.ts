@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { db } from "./localDatabase";
+import { db } from "./local-database";
 
 const syncMetadataSchema = z.object({
   createdAt: z.string(),

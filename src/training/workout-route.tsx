@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2 } from "lucide-react";
-import { trainingService } from "../application/trainingService";
-import { Button } from "../components/ui/button";
-import { Card, CardHeader, CardTitle } from "../components/ui/card";
-import { recommendProgression } from "../domain/progression";
+import { Button } from "../design-system/button";
+import { Card, CardHeader, CardTitle } from "../design-system/card";
+import { recommendProgression } from "./progression";
+import { trainingService } from "./training-service";
 
 export function WorkoutRoute() {
   const queryClient = useQueryClient();

@@ -1,4 +1,4 @@
-import type { Exercise, TrainingPlan } from "../domain/training";
+import type { Exercise, TrainingPlan } from "./training-model";
 
 function now() {
   return new Date().toISOString();

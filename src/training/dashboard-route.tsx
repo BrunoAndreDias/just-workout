@@ -5,11 +5,11 @@ import { Download, Plus, Upload } from "lucide-react";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { trainingService } from "../application/trainingService";
-import { Button } from "../components/ui/button";
-import { Card, CardHeader, CardTitle } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Button } from "../design-system/button";
+import { Card, CardHeader, CardTitle } from "../design-system/card";
+import { Input } from "../design-system/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../design-system/tabs";
+import { trainingService } from "./training-service";
 
 const planFormSchema = z.object({
   planName: z.string().min(2, "Use at least 2 characters.").max(80, "Keep it under 80 characters."),
