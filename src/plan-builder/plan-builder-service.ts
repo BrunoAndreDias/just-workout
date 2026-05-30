@@ -1,4 +1,8 @@
-import { createDefaultPlanBlueprint } from "./plan-blueprint";
+import {
+  createDefaultPlanBlueprint,
+  selectTrainingFrequency,
+  type TrainingFrequencyDaysPerWeek,
+} from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 
 async function getOrCreatePlanBlueprint() {
@@ -16,6 +20,27 @@ async function getOrCreatePlanBlueprint() {
   return savePlanBlueprint(blueprint);
 }
 
+type UpdateTrainingFrequencyOptions = {
+  timestamp?: string;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+async function updateTrainingFrequency({
+  timestamp = new Date().toISOString(),
+  trainingFrequencyDaysPerWeek,
+}: UpdateTrainingFrequencyOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    selectTrainingFrequency({
+      blueprint,
+      timestamp,
+      trainingFrequencyDaysPerWeek,
+    }),
+  );
+}
+
 export const planBuilderService = {
   getOrCreatePlanBlueprint,
+  updateTrainingFrequency,
 };

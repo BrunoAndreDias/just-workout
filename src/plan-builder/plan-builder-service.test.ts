@@ -26,4 +26,21 @@ describe("planBuilderService", () => {
 
     expect(await db.trainingPlans.toArray()).toEqual([activePlan]);
   });
+
+  it("persists a changed training frequency for the next resume", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T10:15:00.000Z",
+      trainingFrequencyDaysPerWeek: 5,
+    });
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(updatedBlueprint).toEqual({
+      ...initialBlueprint,
+      trainingFrequencyDaysPerWeek: 5,
+      updatedAt: "2026-05-30T10:15:00.000Z",
+    });
+    expect(resumedBlueprint).toEqual(updatedBlueprint);
+  });
 });

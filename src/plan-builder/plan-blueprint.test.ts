@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createDefaultPlanBlueprint } from "./plan-blueprint";
+import {
+  createDefaultPlanBlueprint,
+  getTrainingFrequencyRecommendation,
+  isTrainingFrequencyDaysPerWeek,
+  selectTrainingFrequency,
+  trainingFrequencyOptions,
+} from "./plan-blueprint";
 
 describe("createDefaultPlanBlueprint", () => {
   it("creates a default blueprint with the issue-2 assumptions", () => {
@@ -18,6 +24,40 @@ describe("createDefaultPlanBlueprint", () => {
       repRanges: null,
       volumePreset: null,
       equipment: null,
+    });
+  });
+
+  it("limits training frequency choices to the v1 supported values", () => {
+    expect(trainingFrequencyOptions.map((option) => option.daysPerWeek)).toEqual([2, 3, 4, 5]);
+    expect(isTrainingFrequencyDaysPerWeek(2)).toBe(true);
+    expect(isTrainingFrequencyDaysPerWeek(5)).toBe(true);
+    expect(isTrainingFrequencyDaysPerWeek(6)).toBe(false);
+  });
+
+  it("updates the selected training frequency without filling future builder choices", () => {
+    const blueprint = createDefaultPlanBlueprint({
+      id: "blueprint-1",
+      timestamp: "2026-05-30T10:00:00.000Z",
+    });
+
+    expect(
+      selectTrainingFrequency({
+        blueprint,
+        timestamp: "2026-05-30T10:05:00.000Z",
+        trainingFrequencyDaysPerWeek: 5,
+      }),
+    ).toEqual({
+      ...blueprint,
+      trainingFrequencyDaysPerWeek: 5,
+      updatedAt: "2026-05-30T10:05:00.000Z",
+    });
+  });
+
+  it("describes the default 3-day recommendation", () => {
+    expect(getTrainingFrequencyRecommendation(3)).toEqual({
+      description:
+        "Flexible split options, steady recovery, and enough training frequency to build momentum.",
+      title: "Practical starting point",
     });
   });
 });

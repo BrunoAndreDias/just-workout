@@ -1,5 +1,13 @@
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
+export type TrainingFrequencyOption = {
+  daysPerWeek: TrainingFrequencyDaysPerWeek;
+  helperText: string;
+};
+export type TrainingFrequencyRecommendation = {
+  description: string;
+  title: string;
+};
 
 export type PlanBlueprint = {
   id: string;
@@ -28,6 +36,12 @@ type CreateDefaultPlanBlueprintOptions = {
   timestamp: string;
 };
 
+type SelectTrainingFrequencyOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
 const defaultPlanBlueprintValues = {
   trainingGoal: "build-muscle",
   trainingFrequencyDaysPerWeek: 3,
@@ -41,11 +55,53 @@ const trainingGoalLabels = {
   "build-muscle": "Build Muscle",
 } satisfies Record<TrainingGoal, string>;
 
+export const trainingFrequencyOptions = [
+  {
+    daysPerWeek: 2,
+    helperText: "Focused full-body week",
+  },
+  {
+    daysPerWeek: 3,
+    helperText: "Flexible split options",
+  },
+  {
+    daysPerWeek: 4,
+    helperText: "More split variety",
+  },
+  {
+    daysPerWeek: 5,
+    helperText: "Higher weekly frequency",
+  },
+] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
+
 const planBlueprintSummaryFallbacks = {
   unselectedBuilderChoice: "Not chosen yet",
   unconfiguredEquipment: "Not configured yet",
   pendingGenerationStatus: "Not ready yet",
 } as const;
+
+const trainingFrequencyRecommendations = {
+  2: {
+    description:
+      "Two focused sessions keep the plan realistic when your week is tight and you still want time to recover well.",
+    title: "Keep the week realistic",
+  },
+  3: {
+    description:
+      "Flexible split options, steady recovery, and enough training frequency to build momentum.",
+    title: "Practical starting point",
+  },
+  4: {
+    description:
+      "Four days/week opens up more split variety while still leaving room for steady progress and recovery.",
+    title: "Expand your split options",
+  },
+  5: {
+    description:
+      "Five days/week supports higher weekly frequency and shorter sessions when you can stay consistent with recovery.",
+    title: "Use more frequent sessions",
+  },
+} satisfies Record<TrainingFrequencyDaysPerWeek, TrainingFrequencyRecommendation>;
 
 export function createDefaultPlanBlueprint({
   id,
@@ -56,6 +112,30 @@ export function createDefaultPlanBlueprint({
     createdAt: timestamp,
     updatedAt: timestamp,
     ...defaultPlanBlueprintValues,
+  };
+}
+
+export function getTrainingFrequencyRecommendation(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): TrainingFrequencyRecommendation {
+  return trainingFrequencyRecommendations[trainingFrequencyDaysPerWeek];
+}
+
+export function isTrainingFrequencyDaysPerWeek(
+  value: number,
+): value is TrainingFrequencyDaysPerWeek {
+  return trainingFrequencyOptions.some((option) => option.daysPerWeek === value);
+}
+
+export function selectTrainingFrequency({
+  blueprint,
+  timestamp,
+  trainingFrequencyDaysPerWeek,
+}: SelectTrainingFrequencyOptions): PlanBlueprint {
+  return {
+    ...blueprint,
+    trainingFrequencyDaysPerWeek,
+    updatedAt: timestamp,
   };
 }
 
