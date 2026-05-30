@@ -1,3 +1,9 @@
+import {
+  getTrainingSplitLabel,
+  isTrainingSplitCompatible,
+  type TrainingSplitId,
+} from "./training-split";
+
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
 export type TrainingFrequencyOption = {
@@ -15,7 +21,7 @@ export type PlanBlueprint = {
   updatedAt: string;
   trainingGoal: TrainingGoal;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-  split: string | null;
+  split: TrainingSplitId | null;
   repRanges: string | null;
   volumePreset: string | null;
   equipment: string | null;
@@ -40,6 +46,12 @@ type SelectTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+type SelectTrainingSplitOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  trainingSplitId: TrainingSplitId;
 };
 
 const defaultPlanBlueprintValues = {
@@ -146,9 +158,42 @@ export function selectTrainingFrequency({
   timestamp,
   trainingFrequencyDaysPerWeek,
 }: SelectTrainingFrequencyOptions): PlanBlueprint {
+  const split =
+    blueprint.split &&
+    isTrainingSplitCompatible({
+      trainingFrequencyDaysPerWeek,
+      trainingSplitId: blueprint.split,
+    })
+      ? blueprint.split
+      : null;
+
   return {
     ...blueprint,
+    split,
     trainingFrequencyDaysPerWeek,
+    updatedAt: timestamp,
+  };
+}
+
+export function selectTrainingSplit({
+  blueprint,
+  timestamp,
+  trainingSplitId,
+}: SelectTrainingSplitOptions): PlanBlueprint {
+  if (
+    !isTrainingSplitCompatible({
+      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+      trainingSplitId,
+    })
+  ) {
+    throw new Error(
+      `Training split ${trainingSplitId} is not compatible with ${blueprint.trainingFrequencyDaysPerWeek} days/week.`,
+    );
+  }
+
+  return {
+    ...blueprint,
+    split: trainingSplitId,
     updatedAt: timestamp,
   };
 }
@@ -157,7 +202,9 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   return {
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
-    split: blueprint.split ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
+    split: blueprint.split
+      ? getTrainingSplitLabel(blueprint.split)
+      : planBlueprintSummaryFallbacks.unselectedBuilderChoice,
     repRanges: blueprint.repRanges ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
     volumePreset: blueprint.volumePreset ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
     equipment: blueprint.equipment ?? planBlueprintSummaryFallbacks.unconfiguredEquipment,

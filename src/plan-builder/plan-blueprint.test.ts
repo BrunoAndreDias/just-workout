@@ -5,6 +5,8 @@ import {
   isFrequencyStepComplete,
   isTrainingFrequencyDaysPerWeek,
   selectTrainingFrequency,
+  selectTrainingSplit,
+  summarizePlanBlueprint,
   trainingFrequencyOptions,
 } from "./plan-blueprint";
 
@@ -75,6 +77,52 @@ describe("createDefaultPlanBlueprint", () => {
       description:
         "Flexible split options, steady recovery, and enough training frequency to build momentum.",
       title: "Practical starting point",
+    });
+  });
+
+  it("stores a typed split id and summarizes it with the user-facing label", () => {
+    const blueprint = createDefaultPlanBlueprint({
+      id: "blueprint-1",
+      timestamp: "2026-05-30T10:00:00.000Z",
+    });
+
+    const updatedBlueprint = selectTrainingSplit({
+      blueprint,
+      timestamp: "2026-05-30T10:05:00.000Z",
+      trainingSplitId: "upper-lower-full-body",
+    });
+
+    expect(updatedBlueprint).toEqual({
+      ...blueprint,
+      split: "upper-lower-full-body",
+      updatedAt: "2026-05-30T10:05:00.000Z",
+    });
+    expect(summarizePlanBlueprint(updatedBlueprint).split).toBe("Upper / Lower / Full Body");
+  });
+
+  it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      equipment: "full-gym",
+      repRanges: "moderate",
+      split: "upper-lower-full-body" as const,
+      volumePreset: "standard",
+    };
+
+    expect(
+      selectTrainingFrequency({
+        blueprint,
+        timestamp: "2026-05-30T10:10:00.000Z",
+        trainingFrequencyDaysPerWeek: 5,
+      }),
+    ).toEqual({
+      ...blueprint,
+      trainingFrequencyDaysPerWeek: 5,
+      split: null,
+      updatedAt: "2026-05-30T10:10:00.000Z",
     });
   });
 });

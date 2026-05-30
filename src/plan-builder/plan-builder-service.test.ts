@@ -43,4 +43,55 @@ describe("planBuilderService", () => {
     });
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
+
+  it("persists a selected training split for the next resume", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    const updatedBlueprint = await planBuilderService.updateTrainingSplit({
+      timestamp: "2026-05-30T10:20:00.000Z",
+      trainingSplitId: "upper-lower-full-body",
+    });
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(updatedBlueprint).toEqual({
+      ...initialBlueprint,
+      split: "upper-lower-full-body",
+      updatedAt: "2026-05-30T10:20:00.000Z",
+    });
+    expect(resumedBlueprint).toEqual(updatedBlueprint);
+  });
+
+  it("clears an incompatible selected training split when the training frequency changes", async () => {
+    await planBuilderService.updateTrainingSplit({
+      timestamp: "2026-05-30T10:20:00.000Z",
+      trainingSplitId: "upper-lower-full-body",
+    });
+
+    const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T10:25:00.000Z",
+      trainingFrequencyDaysPerWeek: 5,
+    });
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(updatedBlueprint).toMatchObject({
+      split: null,
+      trainingFrequencyDaysPerWeek: 5,
+      trainingGoal: "build-muscle",
+      updatedAt: "2026-05-30T10:25:00.000Z",
+    });
+    expect(resumedBlueprint).toEqual(updatedBlueprint);
+  });
+
+  it("does not mutate the active training plan while selecting a training split", async () => {
+    const activePlan = createStarterPlan("Current Active Plan");
+
+    await db.trainingPlans.add(activePlan);
+
+    await planBuilderService.updateTrainingSplit({
+      timestamp: "2026-05-30T10:20:00.000Z",
+      trainingSplitId: "upper-lower-full-body",
+    });
+
+    expect(await db.trainingPlans.toArray()).toEqual([activePlan]);
+  });
 });
