@@ -33,8 +33,12 @@ The outcome the user wants the **Training Plan** to optimize for. The current **
 _Avoid_: Objective, routine type
 
 **Rep Range Style**:
-The intensity bias a user chooses in a **Plan Blueprint** before volume, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad repetition targets for main compound lifts, secondary compound lifts, and accessory work.
+The intensity bias a user chooses in a **Plan Blueprint** before **Training Volume**, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad repetition targets for main compound lifts, secondary compound lifts, and accessory work, and it later informs how **Training Volume** is translated into set and rep targets.
 _Avoid_: Intensity setting, rep scheme, programming controls
+
+**Training Volume**:
+The planned amount of training work per muscle group across workouts and weeks. **Training Volume** works with **Rep Range Style** when a later **Training Plan** translates that work into set and rep targets.
+_Avoid_: Workload, weekly set target
 
 ## Example Dialogue
 
