@@ -1,5 +1,7 @@
 import {
   createDefaultPlanBlueprint,
+  type RepRangeStyleId,
+  selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
   type TrainingFrequencyDaysPerWeek,
@@ -39,6 +41,11 @@ type UpdateTrainingSplitOptions =
       trainingSplitId: TrainingSplitId;
     };
 
+type UpdateRepRangeStyleOptions = {
+  repRangeStyle: RepRangeStyleId;
+  timestamp?: string;
+};
+
 async function updateTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
@@ -66,8 +73,24 @@ async function updateTrainingSplit(options: UpdateTrainingSplitOptions) {
   );
 }
 
+async function updateRepRangeStyle({
+  repRangeStyle,
+  timestamp = new Date().toISOString(),
+}: UpdateRepRangeStyleOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    selectRepRangeStyle({
+      blueprint,
+      repRangeStyle,
+      timestamp,
+    }),
+  );
+}
+
 export const planBuilderService = {
   getOrCreatePlanBlueprint,
+  updateRepRangeStyle,
   updateTrainingSplit,
   updateTrainingFrequency,
 };

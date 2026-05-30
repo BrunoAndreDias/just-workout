@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   createDefaultPlanBlueprint,
+  defaultRepRangeStyleId,
+  getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   isFrequencyStepComplete,
+  isRepRangeStyleId,
   isTrainingFrequencyDaysPerWeek,
   type PlanBlueprint,
+  selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
   summarizePlanBlueprint,
@@ -77,6 +81,56 @@ describe("createDefaultPlanBlueprint", () => {
     expect(summarizePlanBlueprint(updatedBlueprint).split).toBe("Upper / Lower / Full Body");
   });
 
+  it("keeps Rep Range Style unset on a new blueprint while exposing Balanced hypertrophy as the step-entry default", () => {
+    const blueprint = createDefaultPlanBlueprint({
+      id: "blueprint-1",
+      timestamp: "2026-05-30T10:00:00.000Z",
+    });
+
+    expect(defaultRepRangeStyleId).toBe("balanced_hypertrophy");
+    expect(blueprint.repRanges).toBeNull();
+    expect(summarizePlanBlueprint(blueprint)).toMatchObject({
+      nextStep: "Choose a Training Split",
+      repRanges: "Choose Rep ranges",
+    });
+  });
+
+  it("supports the approved Rep Range Styles, stores the selection, and summarizes the selected label", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      split: "upper-lower-4-day" as const,
+      trainingFrequencyDaysPerWeek: 4 as const,
+    };
+
+    const updatedBlueprint = selectRepRangeStyle({
+      blueprint,
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:05:00.000Z",
+    });
+
+    expect(isRepRangeStyleId("strength_leaning")).toBe(true);
+    expect(isRepRangeStyleId("balanced_hypertrophy")).toBe(true);
+    expect(isRepRangeStyleId("controlled_higher_reps")).toBe(true);
+    expect(isRepRangeStyleId("powerbuilding")).toBe(false);
+    expect(getRepRangeStyle("balanced_hypertrophy")).toMatchObject({
+      id: "balanced_hypertrophy",
+      isRecommended: true,
+      title: "Balanced hypertrophy",
+    });
+    expect(updatedBlueprint).toEqual({
+      ...blueprint,
+      repRanges: "balanced_hypertrophy",
+      updatedAt: "2026-05-30T10:05:00.000Z",
+    });
+    expect(summarizePlanBlueprint(updatedBlueprint)).toMatchObject({
+      nextStep: "Volume",
+      repRanges: "Balanced hypertrophy",
+    });
+  });
+
   it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
     const blueprint: PlanBlueprint = {
       ...createDefaultPlanBlueprint({
@@ -101,6 +155,51 @@ describe("createDefaultPlanBlueprint", () => {
       split: null,
       updatedAt: "2026-05-30T10:10:00.000Z",
     });
+  });
+
+  it("preserves a saved Rep Range Style when Training Split and Training Frequency change", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      repRanges: "strength_leaning" as const,
+      split: "upper-lower-4-day" as const,
+      trainingFrequencyDaysPerWeek: 4 as const,
+    };
+
+    const blueprintWithNewSplit = selectTrainingSplit({
+      blueprint,
+      split: "rotating-push-pull-legs",
+      timestamp: "2026-05-30T10:05:00.000Z",
+    });
+    const blueprintWithNewFrequency = selectTrainingFrequency({
+      blueprint: blueprintWithNewSplit,
+      timestamp: "2026-05-30T10:10:00.000Z",
+      trainingFrequencyDaysPerWeek: 3,
+    });
+
+    expect(blueprintWithNewSplit.repRanges).toBe("strength_leaning");
+    expect(blueprintWithNewFrequency).toMatchObject({
+      repRanges: "strength_leaning",
+      split: null,
+      trainingFrequencyDaysPerWeek: 3,
+    });
+  });
+
+  it("rejects invalid Rep Range Style ids", () => {
+    const blueprint = createDefaultPlanBlueprint({
+      id: "blueprint-1",
+      timestamp: "2026-05-30T10:00:00.000Z",
+    });
+
+    expect(() =>
+      selectRepRangeStyle({
+        blueprint,
+        repRangeStyle: "powerbuilding" as never,
+        timestamp: "2026-05-30T10:05:00.000Z",
+      }),
+    ).toThrow('Unknown Rep Range Style "powerbuilding".');
   });
 
   it("treats the frequency step as complete only when a supported frequency is available", () => {
