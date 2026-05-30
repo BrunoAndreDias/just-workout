@@ -32,6 +32,10 @@ _Avoid_: Split string, routine type
 The outcome the user wants the **Training Plan** to optimize for. The current **Plan Builder** assumes the goal is Build Muscle rather than asking the user to choose one.
 _Avoid_: Objective, routine type
 
+**Rep Range Style**:
+The intensity bias a user chooses in a **Plan Blueprint** before volume, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad repetition targets for main compound lifts, secondary compound lifts, and accessory work.
+_Avoid_: Intensity setting, rep scheme, programming controls
+
 ## Example Dialogue
 
 Developer: "When the user finishes the Plan Builder, do we save the Plan Blueprint?"
