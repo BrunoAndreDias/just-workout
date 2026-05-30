@@ -234,6 +234,8 @@ type PlanBuilderCurrentStepCardProps = {
 
 type PlanBuilderStepStatusCardProps = {
   body: string;
+  className?: string;
+  showTitle?: boolean;
   title: string;
 };
 
@@ -672,6 +674,7 @@ function TrainingFrequencyStep({
 
       <PlanBuilderStepStatusCard
         body="6-day plans are not available in this first version."
+        className="mt-4"
         title="Unavailable"
       />
 
@@ -836,6 +839,7 @@ function RepRangeStyleStep({
           <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
           <PlanBuilderStepStatusCard
             body="Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps."
+            showTitle
             title="Boundary for this step"
           />
         </div>
@@ -1296,14 +1300,31 @@ function TrainingFrequencyRecommendationCard({
   );
 }
 
-function PlanBuilderStepStatusCard({ body, title }: PlanBuilderStepStatusCardProps) {
+function PlanBuilderStepStatusCard({
+  body,
+  className,
+  showTitle = false,
+  title,
+}: PlanBuilderStepStatusCardProps) {
   return (
-    <div className="plan-builder-step-status mt-4 flex items-center gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]">
+    <div
+      className={cn(
+        "plan-builder-step-status flex gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]",
+        showTitle ? "items-start" : "items-center",
+        className,
+      )}
+    >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[#db7a1d]">
         <Info aria-hidden="true" size={24} strokeWidth={1.7} />
       </span>
-      <p className="sr-only">{title}</p>
-      <p className="text-base font-medium leading-7">{body}</p>
+      <div className="min-w-0">
+        {showTitle ? (
+          <h4 className="text-sm font-bold uppercase tracking-wide text-[#9a612c]">{title}</h4>
+        ) : (
+          <p className="sr-only">{title}</p>
+        )}
+        <p className={cn("text-base font-medium leading-7", showTitle ? "mt-1" : null)}>{body}</p>
+      </div>
     </div>
   );
 }

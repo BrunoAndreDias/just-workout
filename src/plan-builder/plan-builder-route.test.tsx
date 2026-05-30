@@ -606,6 +606,7 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(effectsPanel).getByRole("heading", { name: /how this affects your plan/i }),
     ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Boundary for this step" })).toBeVisible();
     expectRepRangeStyleEffects(effectsPanel, repRangeStyleEffectCopy.balancedHypertrophy);
     expect(screen.getByText(repRangeStyleBoundaryCopy)).toBeVisible();
     expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
