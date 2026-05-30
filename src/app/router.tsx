@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { PlanBuilderRoute } from "../plan-builder";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -18,12 +19,25 @@ const workoutRoute = createRoute({
   path: "/workout",
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, workoutRoute]);
-
-export const router = createRouter({
-  defaultPreload: "intent",
-  routeTree,
+const planBuilderRoute = createRoute({
+  component: PlanBuilderRoute,
+  getParentRoute: () => rootRoute,
+  path: "/plan-builder",
 });
+
+const routeTree = rootRoute.addChildren([indexRoute, workoutRoute, planBuilderRoute]);
+
+type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];
+
+export function createAppRouter(history?: AppRouterHistory) {
+  return createRouter({
+    defaultPreload: "intent",
+    history,
+    routeTree,
+  });
+}
+
+export const router = createAppRouter();
 
 declare module "@tanstack/react-router" {
   interface Register {

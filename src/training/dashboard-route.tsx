@@ -74,9 +74,14 @@ export function DashboardRoute() {
                 {snapshot?.activePlan?.templates[0]?.name ?? "No active plan"}
               </h1>
             </div>
-            <Button asChild variant="secondary">
-              <Link to="/workout">Open workout</Link>
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button asChild variant="outline">
+                <Link to="/plan-builder">Plan Builder</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link to="/workout">Open workout</Link>
+              </Button>
+            </div>
           </div>
         </div>
 
