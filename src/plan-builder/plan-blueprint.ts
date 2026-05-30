@@ -122,12 +122,18 @@ export function getTrainingFrequencyRecommendation(
 }
 
 export function isTrainingFrequencyDaysPerWeek(
-  value: number,
+  value: unknown,
 ): value is TrainingFrequencyDaysPerWeek {
   return trainingFrequencyOptions.some((option) => option.daysPerWeek === value);
 }
 
-export function isFrequencyStepComplete(blueprint: PlanBlueprint | null | undefined): boolean {
+type FrequencyStepCompletionCandidate = {
+  trainingFrequencyDaysPerWeek: unknown;
+};
+
+export function isFrequencyStepComplete(
+  blueprint: FrequencyStepCompletionCandidate | null | undefined,
+): boolean {
   if (!blueprint) {
     return false;
   }

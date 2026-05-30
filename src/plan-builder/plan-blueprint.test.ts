@@ -54,13 +54,19 @@ describe("createDefaultPlanBlueprint", () => {
     });
   });
 
-  it("treats the frequency step as complete only when a blueprint is available", () => {
+  it("treats the frequency step as complete only when a supported frequency is available", () => {
     const blueprint = createDefaultPlanBlueprint({
       id: "blueprint-1",
       timestamp: "2026-05-30T10:00:00.000Z",
     });
 
+    const blueprintWithUnsupportedFrequency = {
+      ...blueprint,
+      trainingFrequencyDaysPerWeek: 6,
+    };
+
     expect(isFrequencyStepComplete(null)).toBe(false);
+    expect(isFrequencyStepComplete(blueprintWithUnsupportedFrequency)).toBe(false);
     expect(isFrequencyStepComplete(blueprint)).toBe(true);
   });
 
