@@ -193,17 +193,26 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     }),
   );
 
+  const issueOutcomes = settled.map((outcome, index) => {
+    const issue = issues[index];
+
+    if (!issue) {
+      throw new Error(`Missing issue metadata for settled outcome ${index}.`);
+    }
+
+    return { issue, outcome };
+  });
+
   // Log any agents that threw (network error, sandbox crash, etc.).
-  for (const [i, outcome] of settled.entries()) {
+  for (const { issue, outcome } of issueOutcomes) {
     if (outcome.status === "rejected") {
-      console.error(`  ✗ ${issues[i]!.id} (${issues[i]!.branch}) failed: ${outcome.reason}`);
+      console.error(`  ✗ ${issue.id} (${issue.branch}) failed: ${outcome.reason}`);
     }
   }
 
   // Only pass branches that actually produced commits to the merge phase.
   // An agent that ran successfully but made no commits has nothing to merge.
-  const completedIssues = settled
-    .map((outcome, i) => ({ outcome, issue: issues[i]! }))
+  const completedIssues = issueOutcomes
     .filter(
       (entry) => entry.outcome.status === "fulfilled" && entry.outcome.value.commits.length > 0,
     )

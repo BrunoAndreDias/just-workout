@@ -42,6 +42,13 @@ export type TrainingSplitDefinition = {
   weeklyRhythm: string;
 };
 
+export type TrainingSplitSummary = {
+  muscleFrequency: string;
+  recovery: string;
+  split: string;
+  weeklyRhythm: string;
+};
+
 const trainingSplitDefinitions = [
   {
     cardDescription: "Two focused full-body sessions keep lower-frequency weeks effective.",
@@ -202,11 +209,9 @@ export function getRecommendedTrainingSplitId(
 
 export function getCompatibleTrainingSplits(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
-): Array<TrainingSplitDefinition> {
+): ReadonlyArray<TrainingSplitDefinition> {
   return trainingSplitDefinitions.filter((split) =>
-    (split.supportedTrainingFrequencies as ReadonlyArray<TrainingFrequencyDaysPerWeek>).includes(
-      trainingFrequencyDaysPerWeek,
-    ),
+    supportsTrainingFrequency(split, trainingFrequencyDaysPerWeek),
   );
 }
 
@@ -237,7 +242,7 @@ export function isTrainingSplitCompatible(
   );
 }
 
-export function summarizeTrainingSplit(splitId: TrainingSplitId) {
+export function summarizeTrainingSplit(splitId: TrainingSplitId): TrainingSplitSummary {
   const split = getTrainingSplit(splitId);
 
   return {
@@ -248,7 +253,16 @@ export function summarizeTrainingSplit(splitId: TrainingSplitId) {
   };
 }
 
-export const nonRecommendedTrainingSplitCategories = [
+function supportsTrainingFrequency(
+  split: TrainingSplitDefinition,
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): boolean {
+  return split.supportedTrainingFrequencies.some(
+    (supportedFrequency) => supportedFrequency === trainingFrequencyDaysPerWeek,
+  );
+}
+
+export const unsupportedTrainingSplitCategories = [
   {
     description:
       "Body-part split weeks usually drop muscle frequency too low for the 2-5 days/week builder options, so Just Workout keeps them out of this step.",

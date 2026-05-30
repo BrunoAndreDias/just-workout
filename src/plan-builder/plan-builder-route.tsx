@@ -23,9 +23,10 @@ import {
   getRecommendedTrainingSplitId,
   getTrainingSplit,
   isTrainingSplitCompatible,
-  nonRecommendedTrainingSplitCategories,
   type TrainingSplitDefinition,
   type TrainingSplitId,
+  type TrainingSplitSchedule,
+  unsupportedTrainingSplitCategories,
 } from "./training-split";
 
 const planBlueprintSummaryRows = [
@@ -77,17 +78,18 @@ type UpdateTrainingFrequencyVariables = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
-type UpdateTrainingFrequencyContext = {
+type PlanBlueprintMutationContext = {
   previousBlueprint?: PlanBlueprint;
+};
+
+type PlanBlueprintMutationConfig<TVariables> = {
+  mutationFn: (variables: TVariables) => Promise<PlanBlueprint>;
+  optimisticUpdate: (blueprint: PlanBlueprint, variables: TVariables) => PlanBlueprint;
 };
 
 type UpdateTrainingSplitVariables = {
   split: TrainingSplitId;
   timestamp: string;
-};
-
-type UpdateTrainingSplitContext = {
-  previousBlueprint?: PlanBlueprint;
 };
 
 type PlanBuilderPageProps = {
@@ -128,14 +130,30 @@ type TrainingSplitDetailsPanelProps = {
   split: TrainingSplitDefinition;
 };
 
+type TrainingSplitSelectionStatus = {
+  body: string;
+  title: string;
+};
+
+type PlanBuilderFutureStepPlaceholderProps = {
+  backPath: string;
+  backText: string;
+  description: string;
+  title: string;
+};
+
+type TrainingSplitSchedulePanelProps = {
+  schedule: TrainingSplitSchedule;
+};
+
 export function PlanBuilderRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
-  const updateTrainingFrequencyMutation = useUpdateTrainingFrequencyMutation();
+  const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
 
   function handleTrainingFrequencyChange(
     trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
   ) {
-    updateTrainingFrequencyMutation.mutate({
+    updateTrainingFrequency({
       timestamp: new Date().toISOString(),
       trainingFrequencyDaysPerWeek,
     });
@@ -168,23 +186,23 @@ export function PlanBuilderRoute() {
 
 export function PlanBuilderSplitRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
-  const updateTrainingSplitMutation = useUpdateTrainingSplitMutation();
-  const selectedSplitId = blueprint ? getSelectedTrainingSplitId(blueprint) : null;
+  const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
+  const selectedSplitId = blueprint ? getVisibleTrainingSplitId(blueprint) : null;
   const selectedSplit = selectedSplitId ? getTrainingSplit(selectedSplitId) : null;
 
   useEffect(() => {
-    if (!blueprint || isCurrentTrainingSplitCompatible(blueprint)) {
+    if (!blueprint || hasCompatibleSelectedTrainingSplit(blueprint)) {
       return;
     }
 
-    updateTrainingSplitMutation.mutate({
+    updateTrainingSplit({
       split: getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek),
       timestamp: new Date().toISOString(),
     });
-  }, [blueprint, updateTrainingSplitMutation]);
+  }, [blueprint, updateTrainingSplit]);
 
   function handleTrainingSplitChange(split: TrainingSplitId) {
-    updateTrainingSplitMutation.mutate({
+    updateTrainingSplit({
       split,
       timestamp: new Date().toISOString(),
     });
@@ -256,70 +274,51 @@ function usePlanBuilderBlueprint() {
 }
 
 function useUpdateTrainingFrequencyMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    PlanBlueprint,
-    Error,
-    UpdateTrainingFrequencyVariables,
-    UpdateTrainingFrequencyContext
-  >({
+  return usePlanBlueprintMutation<UpdateTrainingFrequencyVariables>({
     mutationFn: ({ timestamp, trainingFrequencyDaysPerWeek }) =>
       planBuilderService.updateTrainingFrequency({
         timestamp,
         trainingFrequencyDaysPerWeek,
       }),
-    onError: (_error, _variables, context) => {
-      if (context?.previousBlueprint) {
-        queryClient.setQueryData(planBuilderBlueprintQueryKey, context.previousBlueprint);
-      }
-    },
-    onMutate: async ({ timestamp, trainingFrequencyDaysPerWeek }) => {
-      await queryClient.cancelQueries({ queryKey: planBuilderBlueprintQueryKey });
-
-      const previousBlueprint = queryClient.getQueryData<PlanBlueprint>(
-        planBuilderBlueprintQueryKey,
-      );
-
-      if (previousBlueprint) {
-        queryClient.setQueryData(
-          planBuilderBlueprintQueryKey,
-          selectTrainingFrequency({
-            blueprint: previousBlueprint,
-            timestamp,
-            trainingFrequencyDaysPerWeek,
-          }),
-        );
-      }
-
-      return { previousBlueprint };
-    },
-    onSuccess: (updatedBlueprint) => {
-      queryClient.setQueryData(planBuilderBlueprintQueryKey, updatedBlueprint);
-    },
+    optimisticUpdate: (blueprint, { timestamp, trainingFrequencyDaysPerWeek }) =>
+      selectTrainingFrequency({
+        blueprint,
+        timestamp,
+        trainingFrequencyDaysPerWeek,
+      }),
   });
 }
 
 function useUpdateTrainingSplitMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    PlanBlueprint,
-    Error,
-    UpdateTrainingSplitVariables,
-    UpdateTrainingSplitContext
-  >({
+  return usePlanBlueprintMutation<UpdateTrainingSplitVariables>({
     mutationFn: ({ split, timestamp }) =>
       planBuilderService.updateTrainingSplit({
         split,
         timestamp,
       }),
+    optimisticUpdate: (blueprint, { split, timestamp }) =>
+      selectTrainingSplit({
+        blueprint,
+        split,
+        timestamp,
+      }),
+  });
+}
+
+function usePlanBlueprintMutation<TVariables>({
+  mutationFn,
+  optimisticUpdate,
+}: PlanBlueprintMutationConfig<TVariables>) {
+  const queryClient = useQueryClient();
+
+  return useMutation<PlanBlueprint, Error, TVariables, PlanBlueprintMutationContext>({
+    mutationFn,
     onError: (_error, _variables, context) => {
       if (context?.previousBlueprint) {
         queryClient.setQueryData(planBuilderBlueprintQueryKey, context.previousBlueprint);
       }
     },
-    onMutate: async ({ split, timestamp }) => {
+    onMutate: async (variables) => {
       await queryClient.cancelQueries({ queryKey: planBuilderBlueprintQueryKey });
 
       const previousBlueprint = queryClient.getQueryData<PlanBlueprint>(
@@ -329,11 +328,7 @@ function useUpdateTrainingSplitMutation() {
       if (previousBlueprint) {
         queryClient.setQueryData(
           planBuilderBlueprintQueryKey,
-          selectTrainingSplit({
-            blueprint: previousBlueprint,
-            split,
-            timestamp,
-          }),
+          optimisticUpdate(previousBlueprint, variables),
         );
       }
 
@@ -345,15 +340,17 @@ function useUpdateTrainingSplitMutation() {
   });
 }
 
-function getSelectedTrainingSplitId(blueprint: PlanBlueprint): TrainingSplitId {
-  if (isCurrentTrainingSplitCompatible(blueprint)) {
+function getVisibleTrainingSplitId(blueprint: PlanBlueprint): TrainingSplitId {
+  if (hasCompatibleSelectedTrainingSplit(blueprint)) {
     return blueprint.split;
   }
 
   return getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek);
 }
 
-function isCurrentTrainingSplitCompatible(blueprint: PlanBlueprint): blueprint is PlanBlueprint & {
+function hasCompatibleSelectedTrainingSplit(
+  blueprint: PlanBlueprint,
+): blueprint is PlanBlueprint & {
   split: TrainingSplitId;
 } {
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
@@ -560,12 +557,11 @@ function TrainingSplitStep({
   const compatibleSplits = getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek);
   const recommendedSplitId = getRecommendedTrainingSplitId(trainingFrequencyDaysPerWeek);
   const trainingFrequencyLabel = `${trainingFrequencyDaysPerWeek} days/week`;
-  const selectionStatus =
-    selectedSplit.id === recommendedSplitId ? "Recommended fit" : "Compatible alternative";
-  const selectionStatusBody =
-    selectedSplit.id === recommendedSplitId
-      ? `Just Workout recommends ${selectedSplit.label} for ${trainingFrequencyLabel} as the clearest starting point.`
-      : `${selectedSplit.label} still fits ${trainingFrequencyLabel}, but it trades the default recommendation for a different weekly rhythm.`;
+  const selectionStatus = getTrainingSplitSelectionStatus({
+    recommendedSplitId,
+    selectedSplit,
+    trainingFrequencyLabel,
+  });
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
@@ -612,7 +608,7 @@ function TrainingSplitStep({
           </div>
 
           <div className="grid gap-3">
-            {nonRecommendedTrainingSplitCategories.map((category) => (
+            {unsupportedTrainingSplitCategories.map((category) => (
               <PlanBuilderStepStatusCard
                 body={category.description}
                 key={category.title}
@@ -637,10 +633,32 @@ function TrainingSplitStep({
           body="No Training Plan has been generated yet. Review is still the point where the full Training Plan is created."
           title="Plan status"
         />
-        <PlanBuilderStepStatusCard body={selectionStatusBody} title={selectionStatus} />
+        <PlanBuilderStepStatusCard body={selectionStatus.body} title={selectionStatus.title} />
       </div>
     </div>
   );
+}
+
+function getTrainingSplitSelectionStatus({
+  recommendedSplitId,
+  selectedSplit,
+  trainingFrequencyLabel,
+}: {
+  recommendedSplitId: TrainingSplitId;
+  selectedSplit: TrainingSplitDefinition;
+  trainingFrequencyLabel: string;
+}): TrainingSplitSelectionStatus {
+  if (selectedSplit.id === recommendedSplitId) {
+    return {
+      body: `Just Workout recommends ${selectedSplit.label} for ${trainingFrequencyLabel} as the clearest starting point.`,
+      title: "Recommended fit",
+    };
+  }
+
+  return {
+    body: `${selectedSplit.label} still fits ${trainingFrequencyLabel}, but it trades the default recommendation for a different weekly rhythm.`,
+    title: "Compatible alternative",
+  };
 }
 
 function PlanBuilderFutureStepPlaceholder({
@@ -648,12 +666,7 @@ function PlanBuilderFutureStepPlaceholder({
   backText,
   description,
   title,
-}: {
-  backPath: string;
-  backText: string;
-  description: string;
-  title: string;
-}) {
+}: PlanBuilderFutureStepPlaceholderProps) {
   return (
     <div className="space-y-4">
       <section aria-labelledby="future-step-placeholder-title" className="space-y-3">
@@ -785,51 +798,71 @@ function TrainingSplitDetailsPanel({ split }: TrainingSplitDetailsPanelProps) {
         <SummaryRow label="Recovery" value={split.recovery} />
       </dl>
 
-      <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
-        <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-          {split.schedule.kind === "fixed-week"
-            ? "Suggested weekly layout"
-            : "Rotating-cycle preview"}
-        </h4>
-        <p className="mt-2 text-sm text-stone-600">{split.schedule.description}</p>
+      <TrainingSplitSchedulePanel schedule={split.schedule} />
+    </section>
+  );
+}
 
-        {split.schedule.kind === "fixed-week" ? (
-          <ol className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {split.schedule.week.map((day) => (
+function TrainingSplitSchedulePanel({ schedule }: TrainingSplitSchedulePanelProps) {
+  return (
+    <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
+      <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+        {getTrainingSplitScheduleHeading(schedule)}
+      </h4>
+      <p className="mt-2 text-sm text-stone-600">{schedule.description}</p>
+
+      <TrainingSplitScheduleContent schedule={schedule} />
+    </div>
+  );
+}
+
+function TrainingSplitScheduleContent({ schedule }: TrainingSplitSchedulePanelProps) {
+  switch (schedule.kind) {
+    case "fixed-week":
+      return (
+        <ol className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {schedule.week.map((day) => (
+            <li
+              className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
+              key={`${day.dayLabel}-${day.sessionLabel}`}
+            >
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                {day.dayLabel}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-stone-900">{day.sessionLabel}</p>
+            </li>
+          ))}
+        </ol>
+      );
+    case "rotating-cycle":
+      return (
+        <div className="mt-4 space-y-3">
+          <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {schedule.cycle.map((session, index) => (
               <li
                 className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
-                key={`${day.dayLabel}-${day.sessionLabel}`}
+                key={session.id}
               >
                 <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                  {day.dayLabel}
+                  Cycle step {index + 1}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-stone-900">{day.sessionLabel}</p>
+                <p className="mt-1 text-sm font-semibold text-stone-900">{session.sessionLabel}</p>
               </li>
             ))}
           </ol>
-        ) : (
-          <div className="mt-4 space-y-3">
-            <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              {split.schedule.cycle.map((session, index) => (
-                <li
-                  className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
-                  key={session.id}
-                >
-                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                    Cycle step {index + 1}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-stone-900">
-                    {session.sessionLabel}
-                  </p>
-                </li>
-              ))}
-            </ol>
-            <p className="text-sm font-semibold text-stone-700">{split.schedule.cadence}</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
+          <p className="text-sm font-semibold text-stone-700">{schedule.cadence}</p>
+        </div>
+      );
+  }
+}
+
+function getTrainingSplitScheduleHeading(schedule: TrainingSplitSchedule): string {
+  switch (schedule.kind) {
+    case "fixed-week":
+      return "Suggested weekly layout";
+    case "rotating-cycle":
+      return "Rotating-cycle preview";
+  }
 }
 
 type TrainingFrequencyRecommendationCardProps = {

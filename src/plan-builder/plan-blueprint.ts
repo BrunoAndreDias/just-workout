@@ -1,4 +1,4 @@
-import type { TrainingSplitId } from "./training-split";
+import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import { isTrainingSplitCompatible, summarizeTrainingSplit } from "./training-split";
 
 export type TrainingGoal = "build-muscle";
@@ -186,25 +186,27 @@ export function selectTrainingSplit({
 }
 
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
-  const splitSummary = isTrainingSplitCompatible(
-    blueprint.split,
-    blueprint.trainingFrequencyDaysPerWeek,
-  )
-    ? summarizeTrainingSplit(blueprint.split)
-    : null;
+  const splitSummary = getPlanBlueprintSplitSummary(blueprint);
+  const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
 
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
-    muscleFrequency:
-      splitSummary?.muscleFrequency ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
+    muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: splitSummary ? "Rep ranges" : planBlueprintSummaryFallbacks.nextStep,
-    recovery: splitSummary?.recovery ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
+    recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
-    weeklyRhythm:
-      splitSummary?.weeklyRhythm ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
+    weeklyRhythm: splitSummary?.weeklyRhythm ?? pendingSplitDetail,
   };
+}
+
+function getPlanBlueprintSplitSummary(blueprint: PlanBlueprint): TrainingSplitSummary | null {
+  if (!isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
+    return null;
+  }
+
+  return summarizeTrainingSplit(blueprint.split);
 }
 
 function formatTrainingGoal(trainingGoal: TrainingGoal): string {
