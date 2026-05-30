@@ -125,6 +125,55 @@ const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
 
 type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
 
+type SelectableOptionState = "selected" | "unselected";
+
+const selectableOptionCardBaseClassName =
+  "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950";
+
+const selectableOptionCardStyles = {
+  selected: "border-stone-950 bg-stone-950 text-stone-50 shadow-sm",
+  unselected: "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
+} as const satisfies Record<SelectableOptionState, string>;
+
+const selectableOptionMutedTextStyles = {
+  selected: "text-stone-300",
+  unselected: "text-stone-600",
+} as const satisfies Record<SelectableOptionState, string>;
+
+const selectableOptionBadgeStyles = {
+  selected: "bg-white/12 text-[#f4b860]",
+  unselected: "bg-[#fff3ea] text-[#b93725]",
+} as const satisfies Record<SelectableOptionState, string>;
+
+const repRangeStyleDetailStyles = {
+  selected: {
+    noteBodyClassName: "text-stone-200",
+    noteLabelClassName: "text-[#f4b860]",
+    notePanelClassName: "border-white/12 bg-white/8",
+    targetCardClassName: "border-white/12 bg-white/8",
+    targetLabelClassName: "text-stone-300",
+    targetValueClassName: "text-stone-50",
+  },
+  unselected: {
+    noteBodyClassName: "text-stone-600",
+    noteLabelClassName: "text-stone-500",
+    notePanelClassName: "border-stone-900/10 bg-[#f9f6ef]",
+    targetCardClassName: "border-stone-900/10 bg-[#f4f0e8]",
+    targetLabelClassName: "text-stone-500",
+    targetValueClassName: "text-stone-900",
+  },
+} as const satisfies Record<
+  SelectableOptionState,
+  {
+    noteBodyClassName: string;
+    noteLabelClassName: string;
+    notePanelClassName: string;
+    targetCardClassName: string;
+    targetLabelClassName: string;
+    targetValueClassName: string;
+  }
+>;
+
 type UpdateTrainingFrequencyVariables = {
   timestamp: string;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
@@ -206,6 +255,16 @@ type RepRangeStyleOptionRadioProps = {
   isSelected: boolean;
   onSelect: (repRangeStyle: RepRangeStyleId) => void;
   option: RepRangeStyle;
+};
+
+type SelectionBadgeProps = {
+  children: ReactNode;
+  isSelected: boolean;
+};
+
+type RepRangeStyleTargetsProps = {
+  isSelected?: boolean;
+  targets: RepRangeStyle["targets"];
 };
 
 export function PlanBuilderRoute() {
@@ -753,19 +812,7 @@ function RepRangeStyleStep({
               Current guidance
             </h4>
             <p className="mt-2 text-sm text-stone-600">{selectedRepRangeStyle.note}</p>
-            <dl className="mt-4 grid gap-2 sm:grid-cols-3">
-              {selectedRepRangeStyle.targets.map((target) => (
-                <div
-                  className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
-                  key={target.label}
-                >
-                  <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                    {target.label}
-                  </dt>
-                  <dd className="mt-1 text-sm font-semibold text-stone-900">{target.reps}</dd>
-                </div>
-              ))}
-            </dl>
+            <RepRangeStyleTargets targets={selectedRepRangeStyle.targets} />
           </div>
         </section>
 
@@ -796,22 +843,39 @@ type TrainingFrequencyOptionRadioProps = {
   option: TrainingFrequencyOption;
 };
 
+function getSelectableOptionState(isSelected: boolean): SelectableOptionState {
+  return isSelected ? "selected" : "unselected";
+}
+
+function getSelectableOptionCardClassName(state: SelectableOptionState): string {
+  return cn(selectableOptionCardBaseClassName, selectableOptionCardStyles[state]);
+}
+
+function SelectionBadge({ children, isSelected }: SelectionBadgeProps) {
+  const optionState = getSelectableOptionState(isSelected);
+
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+        selectableOptionBadgeStyles[optionState],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 function TrainingFrequencyOptionRadio({
   isSelected,
   onSelect,
   option,
 }: TrainingFrequencyOptionRadioProps) {
   const optionLabel = `${option.daysPerWeek} days/week`;
+  const optionState = getSelectableOptionState(isSelected);
 
   return (
-    <label
-      className={cn(
-        "relative flex min-h-60 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border bg-white/80 p-5 text-center transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#007780]",
-        isSelected
-          ? "border-[#0b8490] text-[#00636a] shadow-[0_14px_30px_rgba(0,119,128,0.08)]"
-          : "border-stone-950/10 text-stone-950 hover:bg-white",
-      )}
-    >
+    <label className={getSelectableOptionCardClassName(optionState)}>
       <input
         checked={isSelected}
         className="sr-only"
@@ -820,28 +884,11 @@ function TrainingFrequencyOptionRadio({
         type="radio"
         value={option.daysPerWeek}
       />
-      {isSelected ? (
-        <CheckCircle2
-          aria-hidden="true"
-          className="absolute right-4 top-4 text-[#006f78]"
-          size={22}
-          strokeWidth={2}
-        />
-      ) : null}
-      <span className="flex h-16 w-16 items-center justify-center text-stone-950">
-        <span className="relative flex h-16 w-16 items-center justify-center">
-          <Calendar aria-hidden="true" size={58} strokeWidth={1.4} />
-          <span className="absolute top-[1.58rem] text-[1.35rem] font-medium leading-none">
-            {option.daysPerWeek}
-          </span>
-        </span>
-      </span>
-      <span className="mt-6 block text-[1.35rem] font-medium leading-7 text-stone-950">
-        {optionLabel}
-      </span>
-      <span className="mt-4 block min-h-12 text-base font-medium leading-6 text-[#526873]">
+      <p className="text-sm font-bold uppercase tracking-wide text-inherit/80">Days per week</p>
+      <p className="mt-2 text-lg font-black">{optionLabel}</p>
+      <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
         {option.helperText}
-      </span>
+      </p>
     </label>
   );
 }
@@ -853,16 +900,10 @@ function TrainingSplitOptionRadio({
   option,
 }: TrainingSplitOptionRadioProps) {
   const badgeLabel = isRecommended ? "Recommended" : "Also works";
+  const optionState = getSelectableOptionState(isSelected);
 
   return (
-    <label
-      className={cn(
-        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
-        isSelected
-          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
-          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
-      )}
-    >
+    <label className={getSelectableOptionCardClassName(optionState)}>
       <input
         checked={isSelected}
         className="sr-only"
@@ -874,33 +915,22 @@ function TrainingSplitOptionRadio({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-lg font-black">{option.label}</p>
-          <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+          <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
             {option.cardDescription}
           </p>
         </div>
-        <span
-          className={cn(
-            "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
-            isSelected ? "bg-white/12 text-[#f4b860]" : "bg-[#fff3ea] text-[#b93725]",
-          )}
-        >
-          {badgeLabel}
-        </span>
+        <SelectionBadge isSelected={isSelected}>{badgeLabel}</SelectionBadge>
       </div>
     </label>
   );
 }
 
 function RepRangeStyleOptionRadio({ isSelected, onSelect, option }: RepRangeStyleOptionRadioProps) {
+  const optionState = getSelectableOptionState(isSelected);
+  const detailStyles = repRangeStyleDetailStyles[optionState];
+
   return (
-    <label
-      className={cn(
-        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
-        isSelected
-          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
-          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
-      )}
-    >
+    <label className={getSelectableOptionCardClassName(optionState)}>
       <input
         checked={isSelected}
         className="sr-only"
@@ -913,71 +943,55 @@ function RepRangeStyleOptionRadio({ isSelected, onSelect, option }: RepRangeStyl
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-lg font-black">{option.title}</p>
-          <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+          <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
             {option.description}
           </p>
         </div>
 
         {option.isRecommended ? (
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
-              isSelected ? "bg-white/12 text-[#f4b860]" : "bg-[#fff3ea] text-[#b93725]",
-            )}
-          >
-            Recommended
-          </span>
+          <SelectionBadge isSelected={isSelected}>Recommended</SelectionBadge>
         ) : null}
       </div>
 
-      <div
-        className={cn(
-          "mt-4 rounded-lg border p-3",
-          isSelected ? "border-white/12 bg-white/8" : "border-stone-900/10 bg-[#f9f6ef]",
-        )}
-      >
+      <div className={cn("mt-4 rounded-lg border p-3", detailStyles.notePanelClassName)}>
         <p
           className={cn(
             "text-xs font-bold uppercase tracking-wide",
-            isSelected ? "text-[#f4b860]" : "text-stone-500",
+            detailStyles.noteLabelClassName,
           )}
         >
           Contextual note
         </p>
-        <p className={cn("mt-2 text-sm", isSelected ? "text-stone-200" : "text-stone-600")}>
-          {option.note}
-        </p>
+        <p className={cn("mt-2 text-sm", detailStyles.noteBodyClassName)}>{option.note}</p>
       </div>
 
-      <dl className="mt-4 grid gap-2 sm:grid-cols-3">
-        {option.targets.map((target) => (
-          <div
-            className={cn(
-              "rounded-md border px-3 py-3",
-              isSelected ? "border-white/12 bg-white/8" : "border-stone-900/10 bg-[#f4f0e8]",
-            )}
-            key={target.label}
-          >
-            <dt
-              className={cn(
-                "text-xs font-bold uppercase tracking-wide",
-                isSelected ? "text-stone-300" : "text-stone-500",
-              )}
-            >
-              {target.label}
-            </dt>
-            <dd
-              className={cn(
-                "mt-1 text-sm font-semibold",
-                isSelected ? "text-stone-50" : "text-stone-900",
-              )}
-            >
-              {target.reps}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <RepRangeStyleTargets isSelected={isSelected} targets={option.targets} />
     </label>
+  );
+}
+
+function RepRangeStyleTargets({ isSelected = false, targets }: RepRangeStyleTargetsProps) {
+  const optionState = getSelectableOptionState(isSelected);
+  const styles = repRangeStyleDetailStyles[optionState];
+
+  return (
+    <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+      {targets.map((target) => (
+        <div
+          className={cn("rounded-md border px-3 py-3", styles.targetCardClassName)}
+          key={target.label}
+        >
+          <dt
+            className={cn("text-xs font-bold uppercase tracking-wide", styles.targetLabelClassName)}
+          >
+            {target.label}
+          </dt>
+          <dd className={cn("mt-1 text-sm font-semibold", styles.targetValueClassName)}>
+            {target.reps}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
