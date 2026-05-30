@@ -4,6 +4,7 @@ import {
   getTrainingFrequencyRecommendation,
   isFrequencyStepComplete,
   isTrainingFrequencyDaysPerWeek,
+  type PlanBlueprint,
   selectTrainingFrequency,
   selectTrainingSplit,
   summarizePlanBlueprint,
@@ -77,13 +78,13 @@ describe("createDefaultPlanBlueprint", () => {
   });
 
   it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
-    const blueprint = {
+    const blueprint: PlanBlueprint = {
       ...createDefaultPlanBlueprint({
         id: "blueprint-1",
         timestamp: "2026-05-30T10:00:00.000Z",
       }),
       equipment: "full-gym",
-      repRanges: "moderate",
+      repRanges: "balanced_hypertrophy",
       split: "upper-lower-full-body" as const,
       volumePreset: "standard",
     };

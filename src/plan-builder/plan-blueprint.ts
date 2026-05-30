@@ -15,6 +15,21 @@ export type TrainingFrequencyRecommendation = {
   description: string;
   title: string;
 };
+export type RepRangeStyleId =
+  | "strength_leaning"
+  | "balanced_hypertrophy"
+  | "controlled_higher_reps";
+export type RepRangeStyle = {
+  description: string;
+  id: RepRangeStyleId;
+  isRecommended: boolean;
+  note: string | null;
+  targets: ReadonlyArray<{
+    label: string;
+    reps: string;
+  }>;
+  title: string;
+};
 
 export type PlanBlueprint = {
   id: string;
@@ -23,7 +38,7 @@ export type PlanBlueprint = {
   trainingGoal: TrainingGoal;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
   split: TrainingSplitId | null;
-  repRanges: string | null;
+  repRanges: RepRangeStyleId | null;
   volumePreset: string | null;
   equipment: string | null;
 };
@@ -32,6 +47,7 @@ export type PlanBlueprintSummary = {
   generationStatus: string;
   muscleFrequency: string;
   nextStep: string;
+  repRanges: string;
   recovery: string;
   split: string;
   splitStatus: "Recommended" | "Also works" | null;
@@ -71,6 +87,12 @@ type SelectTrainingSplitOptions =
       trainingSplitId: TrainingSplitId;
     };
 
+type SelectRepRangeStyleOptions = {
+  blueprint: PlanBlueprint;
+  repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
 const defaultPlanBlueprintValues = {
   trainingGoal: "build-muscle",
   trainingFrequencyDaysPerWeek: 3,
@@ -83,6 +105,53 @@ const defaultPlanBlueprintValues = {
 const trainingGoalLabels = {
   "build-muscle": "Build Muscle",
 } satisfies Record<TrainingGoal, string>;
+
+const repRangeStyleLabels = {
+  balanced_hypertrophy: "Balanced hypertrophy",
+  controlled_higher_reps: "Controlled higher reps",
+  strength_leaning: "Strength-leaning",
+} satisfies Record<RepRangeStyleId, string>;
+
+export const defaultRepRangeStyleId = "balanced_hypertrophy" satisfies RepRangeStyleId;
+
+export const repRangeStyles = [
+  {
+    description: "Heavier main lifts with slightly lower reps.",
+    id: "strength_leaning",
+    isRecommended: false,
+    note: null,
+    targets: [
+      { label: "Main compounds", reps: "4-6 reps" },
+      { label: "Secondary compounds", reps: "6-8 reps" },
+      { label: "Accessories", reps: "8-12 reps" },
+    ],
+    title: repRangeStyleLabels.strength_leaning,
+  },
+  {
+    description: "A strong default for building muscle while still progressing on main lifts.",
+    id: "balanced_hypertrophy",
+    isRecommended: true,
+    note: "Best fit for 4 days/week, Upper/Lower, and a muscle-building goal.",
+    targets: [
+      { label: "Main compounds", reps: "6-8 reps" },
+      { label: "Secondary compounds", reps: "8-10 reps" },
+      { label: "Accessories", reps: "10-15 reps" },
+    ],
+    title: repRangeStyleLabels.balanced_hypertrophy,
+  },
+  {
+    description: "Higher reps with slightly lighter loads and more controlled work.",
+    id: "controlled_higher_reps",
+    isRecommended: false,
+    note: null,
+    targets: [
+      { label: "Main compounds", reps: "8-10 reps" },
+      { label: "Secondary compounds", reps: "10-12 reps" },
+      { label: "Accessories", reps: "12-20 reps" },
+    ],
+    title: repRangeStyleLabels.controlled_higher_reps,
+  },
+] as const satisfies ReadonlyArray<RepRangeStyle>;
 
 export const trainingFrequencyOptions = [
   {
@@ -107,6 +176,7 @@ const planBlueprintSummaryFallbacks = {
   generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
   nextStep: "Choose a Training Split",
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
+  repRanges: "Choose Rep ranges",
   split: "Choose a Training Split",
 } as const;
 
@@ -155,6 +225,20 @@ export function isTrainingFrequencyDaysPerWeek(
   value: unknown,
 ): value is TrainingFrequencyDaysPerWeek {
   return trainingFrequencyOptions.some((option) => option.daysPerWeek === value);
+}
+
+export function isRepRangeStyleId(value: unknown): value is RepRangeStyleId {
+  return repRangeStyles.some((style) => style.id === value);
+}
+
+export function getRepRangeStyle(repRangeStyleId: RepRangeStyleId): RepRangeStyle {
+  const style = repRangeStyles.find(({ id }) => id === repRangeStyleId);
+
+  if (!style) {
+    throw new Error(`Unknown Rep Range Style "${repRangeStyleId}".`);
+  }
+
+  return style;
 }
 
 type FrequencyStepCompletionCandidate = {
@@ -208,14 +292,35 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
   };
 }
 
+export function selectRepRangeStyle({
+  blueprint,
+  repRangeStyle,
+  timestamp,
+}: SelectRepRangeStyleOptions): PlanBlueprint {
+  if (!isRepRangeStyleId(repRangeStyle)) {
+    throw new Error(`Unknown Rep Range Style "${repRangeStyle}".`);
+  }
+
+  return {
+    ...blueprint,
+    repRanges: repRangeStyle,
+    updatedAt: timestamp,
+  };
+}
+
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
+  const selectedRepRangeStyleId = blueprint.repRanges;
+  const hasRepRangeStyle = selectedRepRangeStyleId !== null;
 
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
-    nextStep: splitSummary ? "Rep ranges" : planBlueprintSummaryFallbacks.nextStep,
+    nextStep: getPlanBlueprintNextStep({ hasRepRangeStyle, splitSummary }),
+    repRanges: hasRepRangeStyle
+      ? formatRepRangeStyle(selectedRepRangeStyleId)
+      : planBlueprintSummaryFallbacks.repRanges,
     recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
     splitStatus,
@@ -224,6 +329,20 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     trainingFrequencyStatus: "Completed",
     weeklyRhythm: splitSummary?.weeklyRhythm ?? pendingSplitDetail,
   };
+}
+
+function getPlanBlueprintNextStep({
+  hasRepRangeStyle,
+  splitSummary,
+}: {
+  hasRepRangeStyle: boolean;
+  splitSummary: TrainingSplitSummary | null;
+}): string {
+  if (!splitSummary) {
+    return planBlueprintSummaryFallbacks.nextStep;
+  }
+
+  return hasRepRangeStyle ? "Volume" : "Rep ranges";
 }
 
 function getPlanBlueprintSplitSummaryDetails(
@@ -248,6 +367,10 @@ function getPlanBlueprintSplitSummaryDetails(
 
 function formatTrainingGoal(trainingGoal: TrainingGoal): string {
   return trainingGoalLabels[trainingGoal];
+}
+
+function formatRepRangeStyle(repRangeStyleId: RepRangeStyleId): string {
+  return repRangeStyleLabels[repRangeStyleId];
 }
 
 function formatTrainingFrequency(
