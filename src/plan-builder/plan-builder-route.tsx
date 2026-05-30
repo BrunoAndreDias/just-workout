@@ -585,7 +585,7 @@ function getPlanBuilderNextStepBody(currentStep: PlanBuilderStep) {
     case "frequency":
       return "Next, you'll choose the best Training Split for your weekly schedule.";
     case "split":
-      return "Next, you'll choose Rep ranges that fit your Training Plan.";
+      return "Next, you'll choose a Rep Range Style for your Plan Blueprint.";
     case "rep-ranges":
       return "Next, you will set weekly volume targets for each muscle group.";
     case "volume":

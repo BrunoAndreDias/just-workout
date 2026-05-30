@@ -321,6 +321,19 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).queryByText("4-Day Upper/Lower")).not.toBeInTheDocument();
   });
 
+  it("uses Plan Blueprint next-step copy on Split instead of introducing generated-plan wording", async () => {
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
+    expect(
+      screen.getByText("Next, you'll choose a Rep Range Style for your Plan Blueprint."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Next, you'll choose Rep ranges that fit your Training Plan."),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {
     const user = userEvent.setup();
 
