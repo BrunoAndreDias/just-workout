@@ -127,6 +127,7 @@ type TrainingSplitOptionRadioProps = {
 };
 
 type TrainingSplitDetailsPanelProps = {
+  selectionStatus: TrainingSplitSelectionStatus;
   split: TrainingSplitDefinition;
 };
 
@@ -591,32 +592,11 @@ function TrainingSplitStep({
           </fieldset>
         </section>
 
-        <TrainingSplitDetailsPanel key={selectedSplit.id} split={selectedSplit} />
-
-        <section aria-labelledby="not-recommended-split-title" className="space-y-3">
-          <div>
-            <h3
-              className="text-lg font-black text-stone-950 sm:text-xl"
-              id="not-recommended-split-title"
-            >
-              Not included in this step
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-stone-600">
-              Common split categories that do not fit this first Plan Builder version stay
-              explanatory only.
-            </p>
-          </div>
-
-          <div className="grid gap-3">
-            {unsupportedTrainingSplitCategories.map((category) => (
-              <PlanBuilderStepStatusCard
-                body={category.description}
-                key={category.title}
-                title={category.title}
-              />
-            ))}
-          </div>
-        </section>
+        <TrainingSplitDetailsPanel
+          key={selectedSplit.id}
+          selectionStatus={selectionStatus}
+          split={selectedSplit}
+        />
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button asChild variant="outline">
@@ -633,7 +613,6 @@ function TrainingSplitStep({
           body="No Training Plan has been generated yet. Review is still the point where the full Training Plan is created."
           title="Plan status"
         />
-        <PlanBuilderStepStatusCard body={selectionStatus.body} title={selectionStatus.title} />
       </div>
     </div>
   );
@@ -779,10 +758,11 @@ function TrainingSplitOptionRadio({
   );
 }
 
-function TrainingSplitDetailsPanel({ split }: TrainingSplitDetailsPanelProps) {
+function TrainingSplitDetailsPanel({ selectionStatus, split }: TrainingSplitDetailsPanelProps) {
   return (
     <section
       aria-labelledby="training-split-details-title"
+      aria-atomic="true"
       aria-live="polite"
       className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
     >
@@ -798,7 +778,40 @@ function TrainingSplitDetailsPanel({ split }: TrainingSplitDetailsPanelProps) {
         <SummaryRow label="Recovery" value={split.recovery} />
       </dl>
 
+      <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
+        <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+          Why this split fits
+        </h4>
+        <p className="mt-2 text-sm font-semibold text-stone-900">{selectionStatus.title}</p>
+        <p className="mt-2 text-sm text-stone-600">{selectionStatus.body}</p>
+      </div>
+
       <TrainingSplitSchedulePanel schedule={split.schedule} />
+
+      <section aria-labelledby="not-recommended-split-title" className="mt-4 space-y-3">
+        <div>
+          <h4
+            className="text-lg font-black text-stone-950 sm:text-xl"
+            id="not-recommended-split-title"
+          >
+            Not included in this step
+          </h4>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+            Common split categories that do not fit this first Plan Builder version stay explanatory
+            only.
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          {unsupportedTrainingSplitCategories.map((category) => (
+            <PlanBuilderStepStatusCard
+              body={category.description}
+              key={category.title}
+              title={category.title}
+            />
+          ))}
+        </div>
+      </section>
     </section>
   );
 }

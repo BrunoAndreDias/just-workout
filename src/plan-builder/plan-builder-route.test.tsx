@@ -190,6 +190,63 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:10:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await waitFor(() => {
+      expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
+    });
+
+    const fixedWeekDetails = screen.getByRole("region", { name: /4-day upper\/lower/i });
+
+    expect(within(fixedWeekDetails).getByText(/why this split fits/i)).toBeVisible();
+    expect(
+      within(fixedWeekDetails).getByText(
+        /just workout recommends 4-day upper\/lower for 4 days\/week as the clearest starting point/i,
+      ),
+    ).toBeVisible();
+    expect(within(fixedWeekDetails).getByText(/suggested weekly layout/i)).toBeVisible();
+    expect(within(fixedWeekDetails).getByText("Day 1")).toBeVisible();
+    expect(within(fixedWeekDetails).getAllByText("Upper")).toHaveLength(2);
+    expect(within(fixedWeekDetails).getByText(/not included in this step/i)).toBeVisible();
+    expect(
+      within(fixedWeekDetails).getByText(
+        /body-part split weeks usually drop muscle frequency too low for the 2-5 days\/week builder options/i,
+      ),
+    ).toBeVisible();
+
+    await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
+
+    const rotatingDetails = await screen.findByRole("region", {
+      name: /rotating push\/pull\/legs/i,
+    });
+
+    expect(within(rotatingDetails).getByText(/why this split fits/i)).toBeVisible();
+    expect(
+      within(rotatingDetails).getByText(
+        /rotating push\/pull\/legs still fits 4 days\/week, but it trades the default recommendation for a different weekly rhythm/i,
+      ),
+    ).toBeVisible();
+    expect(within(rotatingDetails).getByText(/rotating-cycle preview/i)).toBeVisible();
+    expect(
+      within(rotatingDetails).getByText(
+        /schedule-flexible: the cycle rotates across available weekdays and can land as 4-5 sessions in a calendar week/i,
+      ),
+    ).toBeVisible();
+    expect(within(rotatingDetails).getByText(/cycle step 1/i)).toBeVisible();
+    expect(within(rotatingDetails).getAllByText("Push")).toHaveLength(2);
+    expect(within(rotatingDetails).queryByText(/suggested weekly layout/i)).not.toBeInTheDocument();
+  });
+
   it.each(
     selectableTrainingSplitCases,
   )("shows only the approved selectable Training Splits for $daysPerWeek days/week", async ({
