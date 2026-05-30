@@ -1,7 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle } from "../design-system/card";
+import type { PlanBlueprintSummary } from "./plan-blueprint";
 import { summarizePlanBlueprint } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
+
+const planBlueprintSummaryRows = [
+  { key: "trainingGoal", label: "Training Goal" },
+  { key: "trainingFrequency", label: "Training Frequency" },
+  { key: "split", label: "Split" },
+  { key: "repRanges", label: "Rep ranges" },
+  { key: "volumePreset", label: "Volume preset" },
+  { key: "equipment", label: "Equipment" },
+  { key: "generationStatus", label: "Generation status" },
+] as const satisfies ReadonlyArray<{ key: keyof PlanBlueprintSummary; label: string }>;
 
 export function PlanBuilderRoute() {
   const blueprintQuery = useQuery({
@@ -57,13 +68,9 @@ export function PlanBuilderRoute() {
 
         {summary ? (
           <dl className="space-y-3">
-            <SummaryRow label="Training Goal" value={summary.trainingGoal} />
-            <SummaryRow label="Training Frequency" value={summary.trainingFrequency} />
-            <SummaryRow label="Split" value={summary.split} />
-            <SummaryRow label="Rep ranges" value={summary.repRanges} />
-            <SummaryRow label="Volume preset" value={summary.volumePreset} />
-            <SummaryRow label="Equipment" value={summary.equipment} />
-            <SummaryRow label="Generation status" value={summary.generationStatus} />
+            {planBlueprintSummaryRows.map(({ key, label }) => (
+              <SummaryRow key={key} label={label} value={summary[key]} />
+            ))}
           </dl>
         ) : (
           <p className="text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>

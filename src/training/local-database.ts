@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
+import type { PlanBlueprint } from "../plan-builder";
 import type { Exercise, TrainingPlan, WorkoutSession } from "./training-model";
 
 export class JustWorkoutDatabase extends Dexie {

@@ -28,6 +28,25 @@ type CreateDefaultPlanBlueprintOptions = {
   timestamp: string;
 };
 
+const defaultPlanBlueprintValues = {
+  trainingGoal: "build-muscle",
+  trainingFrequencyDaysPerWeek: 3,
+  split: null,
+  repRanges: null,
+  volumePreset: null,
+  equipment: null,
+} satisfies Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt">;
+
+const trainingGoalLabels = {
+  "build-muscle": "Build Muscle",
+} satisfies Record<TrainingGoal, string>;
+
+const planBlueprintSummaryFallbacks = {
+  unselectedBuilderChoice: "Not chosen yet",
+  unconfiguredEquipment: "Not configured yet",
+  pendingGenerationStatus: "Not ready yet",
+} as const;
+
 export function createDefaultPlanBlueprint({
   id,
   timestamp,
@@ -36,12 +55,7 @@ export function createDefaultPlanBlueprint({
     id,
     createdAt: timestamp,
     updatedAt: timestamp,
-    trainingGoal: "build-muscle",
-    trainingFrequencyDaysPerWeek: 3,
-    split: null,
-    repRanges: null,
-    volumePreset: null,
-    equipment: null,
+    ...defaultPlanBlueprintValues,
   };
 }
 
@@ -49,21 +63,20 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   return {
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
-    split: blueprint.split ?? "Not chosen yet",
-    repRanges: blueprint.repRanges ?? "Not chosen yet",
-    volumePreset: blueprint.volumePreset ?? "Not chosen yet",
-    equipment: blueprint.equipment ?? "Not configured yet",
-    generationStatus: "Not ready yet",
+    split: blueprint.split ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
+    repRanges: blueprint.repRanges ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
+    volumePreset: blueprint.volumePreset ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
+    equipment: blueprint.equipment ?? planBlueprintSummaryFallbacks.unconfiguredEquipment,
+    generationStatus: planBlueprintSummaryFallbacks.pendingGenerationStatus,
   };
 }
 
-function formatTrainingGoal(trainingGoal: TrainingGoal) {
-  switch (trainingGoal) {
-    case "build-muscle":
-      return "Build Muscle";
-  }
+function formatTrainingGoal(trainingGoal: TrainingGoal): string {
+  return trainingGoalLabels[trainingGoal];
 }
 
-function formatTrainingFrequency(trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) {
+function formatTrainingFrequency(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): string {
   return `${trainingFrequencyDaysPerWeek} days/week`;
 }

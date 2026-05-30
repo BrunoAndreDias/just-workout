@@ -12,11 +12,11 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("renders the resumable plan builder summary inside the app shell", async () => {
-    const router = createAppRouter(
-      createMemoryHistory({
+    const router = createAppRouter({
+      history: createMemoryHistory({
         initialEntries: ["/plan-builder"],
       }),
-    );
+    });
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {

@@ -29,7 +29,11 @@ const routeTree = rootRoute.addChildren([indexRoute, workoutRoute, planBuilderRo
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];
 
-export function createAppRouter(history?: AppRouterHistory) {
+type CreateAppRouterOptions = {
+  history?: AppRouterHistory;
+};
+
+export function createAppRouter({ history }: CreateAppRouterOptions = {}) {
   return createRouter({
     defaultPreload: "intent",
     history,
