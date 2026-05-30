@@ -30,7 +30,7 @@ const planBuilderEntryRoute = createRoute({
   path: planBuilderPaths.entry,
 });
 
-const planBuilderRoute = createRoute({
+const planBuilderFrequencyRoute = createRoute({
   component: PlanBuilderRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.frequency,
@@ -46,7 +46,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   workoutRoute,
   planBuilderEntryRoute,
-  planBuilderRoute,
+  planBuilderFrequencyRoute,
   planBuilderSplitRoute,
 ]);
 

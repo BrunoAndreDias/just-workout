@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAppRouter } from "../app/router";
 import { db } from "../training/local-database";
+import { trainingService } from "../training/training-service";
 import { planBuilderPaths } from "./plan-builder-paths";
 
 describe("PlanBuilderRoute", () => {
@@ -131,7 +132,11 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
     expect(router.state.location.pathname).toBe(planBuilderPaths.split);
-    expect(await db.trainingPlans.toArray()).toEqual([]);
+    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
+      activePlan: null,
+      exercises: [],
+      recentSessions: [],
+    });
   });
 });
 
