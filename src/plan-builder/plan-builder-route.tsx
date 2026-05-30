@@ -27,17 +27,37 @@ const planBlueprintSummaryRows = [
 ] as const satisfies ReadonlyArray<{ key: keyof PlanBlueprintSummary; label: string }>;
 
 const planBuilderSteps = [
-  "Frequency",
-  "Split",
-  "Rep ranges",
-  "Volume",
-  "Exercises",
-  "Review",
+  { id: "frequency", label: "Frequency" },
+  { id: "split", label: "Split" },
+  { id: "rep-ranges", label: "Rep ranges" },
+  { id: "volume", label: "Volume" },
+  { id: "exercises", label: "Exercises" },
+  { id: "review", label: "Review" },
 ] as const;
 
 const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
 
-type PlanBuilderStep = "frequency" | "split" | "rep-ranges" | "volume" | "exercises" | "review";
+type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
+
+type PlanBuilderStepProgressStatus = "completed" | "current" | "upcoming";
+
+const planBuilderStepProgressStyles = {
+  completed: {
+    cardClassName: "border-[#d6462f]/30 bg-[#fff3ea] text-stone-950",
+    labelClassName: "text-stone-500",
+  },
+  current: {
+    cardClassName: "border-stone-950 bg-stone-950 text-stone-50",
+    labelClassName: "text-[#f4b860]",
+  },
+  upcoming: {
+    cardClassName: "border-stone-900/10 bg-white/80 text-stone-950",
+    labelClassName: "text-stone-500",
+  },
+} as const satisfies Record<
+  PlanBuilderStepProgressStatus,
+  { cardClassName: string; labelClassName: string }
+>;
 
 type UpdateTrainingFrequencyVariables = {
   timestamp: string;
@@ -64,15 +84,6 @@ type PlanBuilderStepStatusCardProps = {
   body: string;
   title: string;
 };
-
-const planBuilderStepOrder = [
-  "frequency",
-  "split",
-  "rep-ranges",
-  "volume",
-  "exercises",
-  "review",
-] as const satisfies ReadonlyArray<PlanBuilderStep>;
 
 export function PlanBuilderRoute() {
   const queryClient = useQueryClient();
@@ -215,40 +226,30 @@ function PlanBuilderPage({
 }
 
 function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) {
-  const currentStepIndex = planBuilderStepOrder.indexOf(currentStep);
+  const currentStepIndex = planBuilderSteps.findIndex((step) => step.id === currentStep);
 
   return (
     <nav aria-label="Plan Builder progress">
       <ol aria-label="Plan Builder steps" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-        {planBuilderSteps.map((label, index) => {
-          const isCurrent = index === currentStepIndex;
-          const isCompleted = index < currentStepIndex;
+        {planBuilderSteps.map((step, index) => {
+          const status = getPlanBuilderStepProgressStatus(index, currentStepIndex);
+          const styles = planBuilderStepProgressStyles[status];
 
           return (
-            <li
-              className={cn(
-                "rounded-md border px-3 py-3",
-                isCurrent
-                  ? "border-stone-950 bg-stone-950 text-stone-50"
-                  : isCompleted
-                    ? "border-[#d6462f]/30 bg-[#fff3ea] text-stone-950"
-                    : "border-stone-900/10 bg-white/80 text-stone-950",
-              )}
-              key={label}
-            >
+            <li className={cn("rounded-md border px-3 py-3", styles.cardClassName)} key={step.id}>
               <p
                 className={cn(
                   "text-[11px] font-bold uppercase tracking-wide",
-                  isCurrent ? "text-[#f4b860]" : "text-stone-500",
+                  styles.labelClassName,
                 )}
               >
                 Step {index + 1}
               </p>
               <p
-                aria-current={isCurrent ? "step" : undefined}
+                aria-current={status === "current" ? "step" : undefined}
                 className="mt-1 text-sm font-black leading-5"
               >
-                {label}
+                {step.label}
               </p>
             </li>
           );
@@ -256,6 +257,21 @@ function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) 
       </ol>
     </nav>
   );
+}
+
+function getPlanBuilderStepProgressStatus(
+  stepIndex: number,
+  currentStepIndex: number,
+): PlanBuilderStepProgressStatus {
+  if (stepIndex < currentStepIndex) {
+    return "completed";
+  }
+
+  if (stepIndex === currentStepIndex) {
+    return "current";
+  }
+
+  return "upcoming";
 }
 
 type TrainingFrequencyStepProps = {
