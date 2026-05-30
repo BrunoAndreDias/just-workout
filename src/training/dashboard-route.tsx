@@ -9,6 +9,7 @@ import { Button } from "../design-system/button";
 import { Card, CardHeader, CardTitle } from "../design-system/card";
 import { Input } from "../design-system/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../design-system/tabs";
+import { planBuilderPaths } from "../plan-builder";
 import { trainingService } from "./training-service";
 
 const planFormSchema = z.object({
@@ -76,7 +77,7 @@ export function DashboardRoute() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button asChild variant="outline">
-                <Link to="/plan-builder">Plan Builder</Link>
+                <Link to={planBuilderPaths.entry}>Plan Builder</Link>
               </Button>
               <Button asChild variant="secondary">
                 <Link to="/workout">Open workout</Link>

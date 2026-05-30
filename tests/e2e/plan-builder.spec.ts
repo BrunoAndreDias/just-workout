@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { planBuilderPaths } from "../../src/plan-builder";
 
 type PlanBuilderLocators = {
   frequencyGroup: Locator;
@@ -41,7 +42,7 @@ test.describe("mobile plan builder layout", () => {
 });
 
 async function openPlanBuilder(page: Page) {
-  await page.goto("/plan-builder");
+  await page.goto(planBuilderPaths.entry);
 
   const locators = getPlanBuilderLocators(page);
 
@@ -61,6 +62,7 @@ function getPlanBuilderLocators(page: Page): PlanBuilderLocators {
 async function expectPlanBuilderShell(page: Page, locators: PlanBuilderLocators) {
   await expect(locators.workspace).toBeVisible();
   await expect(locators.summary).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
   await expect(page.getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
   await expect(page.locator("body")).not.toContainText(/strongplan/i);
   await expectNoHorizontalOverflow(page);
@@ -115,6 +117,7 @@ async function continueToSplit(page: Page) {
   await page.getByRole("link", { name: /continue to split/i }).click();
 
   await expect(page.getByRole("heading", { name: /split placeholder/i })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
 }
 
 async function expectNoHorizontalOverflow(page: Page) {

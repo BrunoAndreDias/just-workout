@@ -1,5 +1,5 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { PlanBuilderRoute, PlanBuilderSplitRoute } from "../plan-builder";
+import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
+import { PlanBuilderRoute, PlanBuilderSplitRoute, planBuilderPaths } from "../plan-builder";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -19,21 +19,33 @@ const workoutRoute = createRoute({
   path: "/workout",
 });
 
+const planBuilderEntryRoute = createRoute({
+  beforeLoad: () => {
+    throw redirect({
+      replace: true,
+      to: planBuilderPaths.frequency,
+    });
+  },
+  getParentRoute: () => rootRoute,
+  path: planBuilderPaths.entry,
+});
+
 const planBuilderRoute = createRoute({
   component: PlanBuilderRoute,
   getParentRoute: () => rootRoute,
-  path: "/plan-builder",
+  path: planBuilderPaths.frequency,
 });
 
 const planBuilderSplitRoute = createRoute({
   component: PlanBuilderSplitRoute,
   getParentRoute: () => rootRoute,
-  path: "/plan-builder/split",
+  path: planBuilderPaths.split,
 });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   workoutRoute,
+  planBuilderEntryRoute,
   planBuilderRoute,
   planBuilderSplitRoute,
 ]);

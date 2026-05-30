@@ -15,6 +15,7 @@ import {
   type TrainingFrequencyRecommendation,
   trainingFrequencyOptions,
 } from "./plan-blueprint";
+import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
 
 const planBlueprintSummaryRows = [
@@ -376,7 +377,7 @@ function TrainingFrequencyStep({
           </Button>
           {canContinueToSplit ? (
             <Button asChild>
-              <Link to="/plan-builder/split">Continue to Split</Link>
+              <Link to={planBuilderPaths.split}>Continue to Split</Link>
             </Button>
           ) : (
             <Button disabled type="button">
@@ -423,7 +424,7 @@ function SplitPlaceholderStep() {
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button asChild variant="outline">
-          <Link to="/plan-builder">Back to Frequency</Link>
+          <Link to={planBuilderPaths.frequency}>Back to Frequency</Link>
         </Button>
       </div>
     </div>

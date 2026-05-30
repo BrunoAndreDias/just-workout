@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAppRouter } from "../app/router";
 import { db } from "../training/local-database";
+import { planBuilderPaths } from "./plan-builder-paths";
 
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
@@ -12,8 +13,21 @@ describe("PlanBuilderRoute", () => {
     await db.open();
   });
 
+  it("routes the plan builder entry point into the canonical frequency URL", async () => {
+    const { router } = renderPlanBuilder();
+
+    expect(await screen.findByRole("heading", { name: /plan builder/i })).toBeVisible();
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+    });
+
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
+  });
+
   it("renders the resumable plan builder summary inside the app shell", async () => {
-    renderPlanBuilder();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     expect(await screen.findByRole("heading", { name: /plan builder/i })).toBeVisible();
     expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
@@ -27,7 +41,7 @@ describe("PlanBuilderRoute", () => {
 
   it("lets the user select a training frequency, updates the summary, and restores it on return", async () => {
     const user = userEvent.setup();
-    const firstView = renderPlanBuilder();
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     const frequencyGroup = await screen.findByRole("group", {
       name: /training frequency/i,
@@ -60,7 +74,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
 
     firstView.unmount();
-    renderPlanBuilder();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     const resumedFrequencyGroup = await screen.findByRole("group", {
       name: /training frequency/i,
@@ -78,10 +92,10 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it("shows the builder steps, disables Back on Frequency, and continues to the Split placeholder", async () => {
+  it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency and Split URLs", async () => {
     const user = userEvent.setup();
 
-    renderPlanBuilder();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     const stepList = await screen.findByRole("list", { name: /plan builder steps/i });
 
@@ -96,17 +110,39 @@ describe("PlanBuilderRoute", () => {
     await user.click(await screen.findByRole("link", { name: /continue to split/i }));
 
     expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
     expect(screen.getByText(/split selection is not built yet/i)).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
     ).toHaveAttribute("aria-current", "step");
+
+    await user.click(screen.getByRole("link", { name: /back to frequency/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+    });
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+  });
+
+  it("renders the split URL directly without generating a training plan", async () => {
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
+    expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    expect(await db.trainingPlans.toArray()).toEqual([]);
   });
 });
 
-function renderPlanBuilder() {
+function renderPlanBuilder({
+  initialEntries = [planBuilderPaths.entry],
+}: {
+  initialEntries?: Array<string>;
+} = {}) {
   const router = createAppRouter({
     history: createMemoryHistory({
-      initialEntries: ["/plan-builder"],
+      initialEntries,
     }),
   });
   const queryClient = new QueryClient({
@@ -120,9 +156,14 @@ function renderPlanBuilder() {
     },
   });
 
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+
+  return {
+    ...view,
+    router,
+  };
 }
