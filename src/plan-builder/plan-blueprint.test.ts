@@ -15,17 +15,27 @@ import {
   trainingFrequencyOptions,
 } from "./plan-blueprint";
 
-describe("createDefaultPlanBlueprint", () => {
+const testBlueprintOptions = {
+  id: "blueprint-1",
+  timestamp: "2026-05-30T10:00:00.000Z",
+} as const;
+
+const firstUpdateTimestamp = "2026-05-30T10:05:00.000Z";
+const secondUpdateTimestamp = "2026-05-30T10:10:00.000Z";
+
+function createTestPlanBlueprint(overrides: Partial<PlanBlueprint> = {}): PlanBlueprint {
+  return {
+    ...createDefaultPlanBlueprint(testBlueprintOptions),
+    ...overrides,
+  };
+}
+
+describe("plan blueprint", () => {
   it("creates a default blueprint with the issue-2 assumptions", () => {
-    expect(
-      createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
-      }),
-    ).toEqual({
-      id: "blueprint-1",
-      createdAt: "2026-05-30T10:00:00.000Z",
-      updatedAt: "2026-05-30T10:00:00.000Z",
+    expect(createDefaultPlanBlueprint(testBlueprintOptions)).toEqual({
+      id: testBlueprintOptions.id,
+      createdAt: testBlueprintOptions.timestamp,
+      updatedAt: testBlueprintOptions.timestamp,
       trainingGoal: "build-muscle",
       trainingFrequencyDaysPerWeek: 3,
       split: null,
@@ -43,49 +53,40 @@ describe("createDefaultPlanBlueprint", () => {
   });
 
   it("updates the selected training frequency without filling future builder choices", () => {
-    const blueprint = createDefaultPlanBlueprint({
-      id: "blueprint-1",
-      timestamp: "2026-05-30T10:00:00.000Z",
-    });
+    const blueprint = createTestPlanBlueprint();
 
     expect(
       selectTrainingFrequency({
         blueprint,
-        timestamp: "2026-05-30T10:05:00.000Z",
+        timestamp: firstUpdateTimestamp,
         trainingFrequencyDaysPerWeek: 5,
       }),
     ).toEqual({
       ...blueprint,
       trainingFrequencyDaysPerWeek: 5,
-      updatedAt: "2026-05-30T10:05:00.000Z",
+      updatedAt: firstUpdateTimestamp,
     });
   });
 
   it("stores a typed split id and derives the user-facing summary from it", () => {
-    const blueprint = createDefaultPlanBlueprint({
-      id: "blueprint-1",
-      timestamp: "2026-05-30T10:00:00.000Z",
-    });
+    const blueprint = createTestPlanBlueprint();
 
     const updatedBlueprint = selectTrainingSplit({
       blueprint,
-      timestamp: "2026-05-30T10:05:00.000Z",
+      timestamp: firstUpdateTimestamp,
       trainingSplitId: "upper-lower-full-body",
     });
 
     expect(updatedBlueprint).toEqual({
       ...blueprint,
       split: "upper-lower-full-body",
-      updatedAt: "2026-05-30T10:05:00.000Z",
+      updatedAt: firstUpdateTimestamp,
     });
     expect(summarizePlanBlueprint(updatedBlueprint).split).toBe("Upper / Lower / Full Body");
   });
 
   it("keeps Rep Range Style unset on a new blueprint while exposing Balanced hypertrophy as the step-entry default", () => {
-    const blueprint = createDefaultPlanBlueprint({
-      id: "blueprint-1",
-      timestamp: "2026-05-30T10:00:00.000Z",
-    });
+    const blueprint = createTestPlanBlueprint();
 
     expect(defaultRepRangeStyleId).toBe("balanced_hypertrophy");
     expect(blueprint.repRanges).toBeNull();
@@ -95,35 +96,37 @@ describe("createDefaultPlanBlueprint", () => {
     });
   });
 
-  it("supports the approved Rep Range Styles, stores the selection, and summarizes the selected label", () => {
-    const blueprint = {
-      ...createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
-      }),
-      split: "upper-lower-4-day" as const,
-      trainingFrequencyDaysPerWeek: 4 as const,
-    };
-
-    const updatedBlueprint = selectRepRangeStyle({
-      blueprint,
-      repRangeStyle: "balanced_hypertrophy",
-      timestamp: "2026-05-30T10:05:00.000Z",
-    });
-
+  it("recognizes only approved Rep Range Style ids", () => {
     expect(isRepRangeStyleId("strength_leaning")).toBe(true);
     expect(isRepRangeStyleId("balanced_hypertrophy")).toBe(true);
     expect(isRepRangeStyleId("controlled_higher_reps")).toBe(true);
     expect(isRepRangeStyleId("powerbuilding")).toBe(false);
+  });
+
+  it("exposes the Balanced hypertrophy Rep Range Style metadata", () => {
     expect(getRepRangeStyle("balanced_hypertrophy")).toMatchObject({
       id: "balanced_hypertrophy",
       isRecommended: true,
       title: "Balanced hypertrophy",
     });
+  });
+
+  it("stores a selected Rep Range Style and summarizes the selected label", () => {
+    const blueprint = createTestPlanBlueprint({
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const updatedBlueprint = selectRepRangeStyle({
+      blueprint,
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: firstUpdateTimestamp,
+    });
+
     expect(updatedBlueprint).toEqual({
       ...blueprint,
       repRanges: "balanced_hypertrophy",
-      updatedAt: "2026-05-30T10:05:00.000Z",
+      updatedAt: firstUpdateTimestamp,
     });
     expect(summarizePlanBlueprint(updatedBlueprint)).toMatchObject({
       nextStep: "Volume",
@@ -131,51 +134,55 @@ describe("createDefaultPlanBlueprint", () => {
     });
   });
 
-  it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
-    const blueprint: PlanBlueprint = {
-      ...createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
+  it("rejects invalid Rep Range Style ids", () => {
+    const blueprint = createTestPlanBlueprint();
+
+    expect(() =>
+      selectRepRangeStyle({
+        blueprint,
+        repRangeStyle: "powerbuilding" as never,
+        timestamp: firstUpdateTimestamp,
       }),
+    ).toThrow('Unknown Rep Range Style "powerbuilding".');
+  });
+
+  it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
+    const blueprint: PlanBlueprint = createTestPlanBlueprint({
       equipment: "full-gym",
       repRanges: "balanced_hypertrophy",
-      split: "upper-lower-full-body" as const,
+      split: "upper-lower-full-body",
       volumePreset: "standard",
-    };
+    });
 
     expect(
       selectTrainingFrequency({
         blueprint,
-        timestamp: "2026-05-30T10:10:00.000Z",
+        timestamp: secondUpdateTimestamp,
         trainingFrequencyDaysPerWeek: 5,
       }),
     ).toEqual({
       ...blueprint,
       trainingFrequencyDaysPerWeek: 5,
       split: null,
-      updatedAt: "2026-05-30T10:10:00.000Z",
+      updatedAt: secondUpdateTimestamp,
     });
   });
 
   it("preserves a saved Rep Range Style when Training Split and Training Frequency change", () => {
-    const blueprint = {
-      ...createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
-      }),
-      repRanges: "strength_leaning" as const,
-      split: "upper-lower-4-day" as const,
-      trainingFrequencyDaysPerWeek: 4 as const,
-    };
+    const blueprint = createTestPlanBlueprint({
+      repRanges: "strength_leaning",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
 
     const blueprintWithNewSplit = selectTrainingSplit({
       blueprint,
       split: "rotating-push-pull-legs",
-      timestamp: "2026-05-30T10:05:00.000Z",
+      timestamp: firstUpdateTimestamp,
     });
     const blueprintWithNewFrequency = selectTrainingFrequency({
       blueprint: blueprintWithNewSplit,
-      timestamp: "2026-05-30T10:10:00.000Z",
+      timestamp: secondUpdateTimestamp,
       trainingFrequencyDaysPerWeek: 3,
     });
 
@@ -187,26 +194,8 @@ describe("createDefaultPlanBlueprint", () => {
     });
   });
 
-  it("rejects invalid Rep Range Style ids", () => {
-    const blueprint = createDefaultPlanBlueprint({
-      id: "blueprint-1",
-      timestamp: "2026-05-30T10:00:00.000Z",
-    });
-
-    expect(() =>
-      selectRepRangeStyle({
-        blueprint,
-        repRangeStyle: "powerbuilding" as never,
-        timestamp: "2026-05-30T10:05:00.000Z",
-      }),
-    ).toThrow('Unknown Rep Range Style "powerbuilding".');
-  });
-
   it("treats the frequency step as complete only when a supported frequency is available", () => {
-    const blueprint = createDefaultPlanBlueprint({
-      id: "blueprint-1",
-      timestamp: "2026-05-30T10:00:00.000Z",
-    });
+    const blueprint = createTestPlanBlueprint();
 
     const blueprintWithUnsupportedFrequency = {
       ...blueprint,
@@ -227,14 +216,10 @@ describe("createDefaultPlanBlueprint", () => {
   });
 
   it("derives split summary details from the selected Training Split", () => {
-    const blueprint = {
-      ...createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
-      }),
-      split: "upper-lower-4-day" as const,
-      trainingFrequencyDaysPerWeek: 4 as const,
-    };
+    const blueprint = createTestPlanBlueprint({
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
       generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
@@ -252,14 +237,10 @@ describe("createDefaultPlanBlueprint", () => {
   });
 
   it("marks a compatible alternative split without losing the derived blueprint details", () => {
-    const blueprint = {
-      ...createDefaultPlanBlueprint({
-        id: "blueprint-1",
-        timestamp: "2026-05-30T10:00:00.000Z",
-      }),
-      split: "rotating-push-pull-legs" as const,
-      trainingFrequencyDaysPerWeek: 4 as const,
-    };
+    const blueprint = createTestPlanBlueprint({
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+    });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
       muscleFrequency:
