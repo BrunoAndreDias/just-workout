@@ -207,20 +207,47 @@ function PlanBuilderPage({
   stepLabel,
   summary,
 }: PlanBuilderPageProps) {
-  return (
-    <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <Card className="bg-[#f2ecdf]">
-        <CardHeader className="flex-col items-start gap-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-[#b93725]">{stepLabel}</p>
-          <CardTitle className="text-3xl font-black sm:text-4xl">Plan Builder</CardTitle>
-        </CardHeader>
+  const currentStepIndex = planBuilderSteps.findIndex((step) => step.id === currentStep);
+  const currentStepNumber = currentStepIndex + 1;
+  const currentStepTitle = planBuilderSteps[currentStepIndex]?.label ?? "Current step";
 
-        <div className="space-y-4">
-          {intro}
-          <PlanBuilderStepProgress currentStep={currentStep} />
-          {children}
-        </div>
-      </Card>
+  return (
+    <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
+      <section aria-label="Plan Builder workspace" className="min-w-0 space-y-4">
+        <Card className="overflow-hidden bg-[#f2ecdf]">
+          <CardHeader className="mb-0 flex-col items-start gap-4 xl:flex-row xl:justify-between">
+            <div className="min-w-0 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#b93725]">
+                {stepLabel}
+              </p>
+              <CardTitle className="text-3xl font-black sm:text-4xl">Plan Builder</CardTitle>
+              {intro}
+            </div>
+
+            <div className="w-full rounded-lg border border-stone-900/10 bg-white/72 p-4 xl:max-w-[18rem]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                  Current step
+                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#b93725]">
+                  Step {currentStepNumber} of {planBuilderSteps.length}
+                </p>
+              </div>
+              <p className="mt-2 text-lg font-black text-stone-950">{currentStepTitle}</p>
+              <p className="mt-2 text-sm text-stone-600">
+                Just Workout keeps this in-progress Plan Blueprint visible while you move through
+                each builder step.
+              </p>
+            </div>
+          </CardHeader>
+
+          <div className="mt-4">
+            <PlanBuilderStepProgress currentStep={currentStep} />
+          </div>
+        </Card>
+
+        <Card className="bg-white/82">{children}</Card>
+      </section>
 
       <PlanBlueprintSummaryCard summary={summary} />
     </section>
@@ -232,13 +259,16 @@ function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) 
 
   return (
     <nav aria-label="Plan Builder progress">
-      <ol aria-label="Plan Builder steps" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+      <ol aria-label="Plan Builder steps" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {planBuilderSteps.map((step, index) => {
           const status = getPlanBuilderStepProgressStatus(index, currentStepIndex);
           const styles = planBuilderStepProgressStyles[status];
 
           return (
-            <li className={cn("rounded-md border px-3 py-3", styles.cardClassName)} key={step.id}>
+            <li
+              className={cn("min-w-0 rounded-lg border px-3 py-3", styles.cardClassName)}
+              key={step.id}
+            >
               <p
                 className={cn(
                   "text-[11px] font-bold uppercase tracking-wide",
@@ -290,59 +320,61 @@ function TrainingFrequencyStep({
   const recommendation = getTrainingFrequencyRecommendation(selectedTrainingFrequencyDaysPerWeek);
 
   return (
-    <div className="space-y-4">
-      <section aria-labelledby="training-frequency-title" className="space-y-3">
-        <div>
-          <h3
-            className="text-xl font-black text-stone-950 sm:text-2xl"
-            id="training-frequency-title"
-          >
-            Select Training Frequency
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Later builder steps will adapt split choices to this frequency without forcing a single
-            split style.
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section aria-labelledby="training-frequency-title" className="space-y-3">
+          <div>
+            <h3
+              className="text-xl font-black text-stone-950 sm:text-2xl"
+              id="training-frequency-title"
+            >
+              Select Training Frequency
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-stone-600">
+              Later builder steps will adapt split choices to this frequency without forcing a
+              single split style.
+            </p>
+          </div>
+
+          <fieldset className="grid gap-3 sm:grid-cols-2">
+            <legend className="sr-only">Training Frequency</legend>
+            {trainingFrequencyOptions.map((option) => (
+              <TrainingFrequencyOptionRadio
+                isSelected={option.daysPerWeek === selectedTrainingFrequencyDaysPerWeek}
+                key={option.daysPerWeek}
+                onSelect={onTrainingFrequencyChange}
+                option={option}
+              />
+            ))}
+          </fieldset>
+
+          <p className="text-sm font-semibold text-stone-600">
+            6-day plans are not available in this first version.
           </p>
+        </section>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button disabled type="button" variant="outline">
+            Back
+          </Button>
+          {canContinueToSplit ? (
+            <Button asChild>
+              <Link to="/plan-builder/split">Continue to Split</Link>
+            </Button>
+          ) : (
+            <Button disabled type="button">
+              Continue to Split
+            </Button>
+          )}
         </div>
+      </div>
 
-        <fieldset className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <legend className="sr-only">Training Frequency</legend>
-          {trainingFrequencyOptions.map((option) => (
-            <TrainingFrequencyOptionRadio
-              isSelected={option.daysPerWeek === selectedTrainingFrequencyDaysPerWeek}
-              key={option.daysPerWeek}
-              onSelect={onTrainingFrequencyChange}
-              option={option}
-            />
-          ))}
-        </fieldset>
-
-        <p className="text-sm font-semibold text-stone-600">
-          6-day plans are not available in this first version.
-        </p>
-      </section>
-
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <PlanBuilderStepStatusCard
           body="This entry point establishes the resumable blueprint before later builder choices exist."
           title="Current step"
         />
         <TrainingFrequencyRecommendationCard recommendation={recommendation} />
-      </div>
-
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button disabled type="button" variant="outline">
-          Back
-        </Button>
-        {canContinueToSplit ? (
-          <Button asChild>
-            <Link to="/plan-builder/split">Continue to Split</Link>
-          </Button>
-        ) : (
-          <Button disabled type="button">
-            Continue to Split
-          </Button>
-        )}
       </div>
     </div>
   );
@@ -397,7 +429,7 @@ function TrainingFrequencyOptionRadio({
   return (
     <label
       className={cn(
-        "rounded-md border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
+        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
         isSelected
           ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
           : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
@@ -460,14 +492,19 @@ type PlanBlueprintSummaryCardProps = {
 
 function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
   return (
-    <aside aria-labelledby="plan-blueprint-summary-title">
-      <Card>
+    <aside aria-labelledby="plan-blueprint-summary-title" className="self-start lg:sticky lg:top-4">
+      <Card className="bg-white/78">
         <CardHeader>
-          <CardTitle id="plan-blueprint-summary-title">Plan Blueprint Summary</CardTitle>
+          <div>
+            <CardTitle id="plan-blueprint-summary-title">Plan Blueprint Summary</CardTitle>
+            <p className="mt-2 text-sm text-stone-600">
+              Review the saved Just Workout blueprint while you move through the builder.
+            </p>
+          </div>
         </CardHeader>
 
         {summary ? (
-          <dl className="space-y-3">
+          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             {planBlueprintSummaryRows.map(({ key, label }) => (
               <SummaryRow key={key} label={label} value={summary[key]} />
             ))}
@@ -487,9 +524,9 @@ type SummaryRowProps = {
 
 function SummaryRow({ label, value }: SummaryRowProps) {
   return (
-    <div className="rounded-md border border-stone-900/10 bg-[#f9f6ef] px-3 py-3">
+    <div className="min-w-0 rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-3 py-3">
       <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">{label}</dt>
-      <dd className="mt-1 text-sm font-semibold text-stone-900">{value}</dd>
+      <dd className="mt-1 break-words text-sm font-semibold text-stone-900">{value}</dd>
     </div>
   );
 }

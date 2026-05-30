@@ -16,6 +16,7 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder();
 
     expect(await screen.findByRole("heading", { name: /plan builder/i })).toBeVisible();
+    expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
     expect(await screen.findByText("Build Muscle")).toBeVisible();
     expect(await screen.findAllByText("3 days/week")).toHaveLength(2);
