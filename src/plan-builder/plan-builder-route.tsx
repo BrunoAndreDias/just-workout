@@ -7,6 +7,8 @@ import {
   selectTrainingFrequency,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
+  type TrainingFrequencyOption,
+  type TrainingFrequencyRecommendation,
   trainingFrequencyOptions,
 } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
@@ -22,11 +24,11 @@ const planBlueprintSummaryRows = [
 ] as const satisfies ReadonlyArray<{ key: keyof PlanBlueprintSummary; label: string }>;
 
 const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
-type UpdateTrainingFrequencyMutation = {
+type UpdateTrainingFrequencyVariables = {
   timestamp: string;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
-type UpdateTrainingFrequencyMutationContext = {
+type UpdateTrainingFrequencyContext = {
   previousBlueprint?: PlanBlueprint;
 };
 
@@ -37,16 +39,14 @@ export function PlanBuilderRoute() {
     queryFn: planBuilderService.getOrCreatePlanBlueprint,
   });
 
-  const summary = blueprintQuery.data ? summarizePlanBlueprint(blueprintQuery.data) : null;
-  const recommendation = blueprintQuery.data
-    ? getTrainingFrequencyRecommendation(blueprintQuery.data.trainingFrequencyDaysPerWeek)
-    : null;
+  const blueprint = blueprintQuery.data;
+  const summary = blueprint ? summarizePlanBlueprint(blueprint) : null;
 
   const updateTrainingFrequencyMutation = useMutation<
     PlanBlueprint,
     Error,
-    UpdateTrainingFrequencyMutation,
-    UpdateTrainingFrequencyMutationContext
+    UpdateTrainingFrequencyVariables,
+    UpdateTrainingFrequencyContext
   >({
     mutationFn: ({ timestamp, trainingFrequencyDaysPerWeek }) =>
       planBuilderService.updateTrainingFrequency({
@@ -107,121 +107,168 @@ export function PlanBuilderRoute() {
             days/week.
           </p>
 
-          {blueprintQuery.data && recommendation ? (
-            <div className="space-y-4">
-              <section aria-labelledby="training-frequency-title" className="space-y-3">
-                <div>
-                  <h3
-                    className="text-xl font-black text-stone-950 sm:text-2xl"
-                    id="training-frequency-title"
-                  >
-                    Select Training Frequency
-                  </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-stone-600">
-                    Later builder steps will adapt split choices to this frequency without forcing a
-                    single split style.
-                  </p>
-                </div>
-
-                <fieldset className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <legend className="sr-only">Training Frequency</legend>
-                  {trainingFrequencyOptions.map((option) => {
-                    const isSelected =
-                      option.daysPerWeek === blueprintQuery.data.trainingFrequencyDaysPerWeek;
-
-                    return (
-                      <label
-                        className={cn(
-                          "rounded-md border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
-                          isSelected
-                            ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
-                            : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
-                        )}
-                        key={option.daysPerWeek}
-                      >
-                        <input
-                          checked={isSelected}
-                          className="sr-only"
-                          name="training-frequency-days-per-week"
-                          onChange={() => handleTrainingFrequencyChange(option.daysPerWeek)}
-                          type="radio"
-                          value={option.daysPerWeek}
-                        />
-                        <p className="text-sm font-bold uppercase tracking-wide text-inherit/80">
-                          Days per week
-                        </p>
-                        <p className="mt-2 text-lg font-black">{option.daysPerWeek} days/week</p>
-                        <p
-                          className={cn(
-                            "mt-2 text-sm",
-                            isSelected ? "text-stone-300" : "text-stone-600",
-                          )}
-                        >
-                          {option.helperText}
-                        </p>
-                      </label>
-                    );
-                  })}
-                </fieldset>
-
-                <p className="text-sm font-semibold text-stone-600">
-                  6-day plans are not available in this first version.
-                </p>
-              </section>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-stone-900/10 bg-white/80 p-4">
-                  <p className="text-sm font-bold text-stone-700">Current step</p>
-                  <p className="mt-1 text-xl font-black text-stone-950">Training Frequency</p>
-                  <p className="mt-2 text-sm text-stone-600">
-                    This entry point establishes the resumable blueprint before later builder
-                    choices exist.
-                  </p>
-                </div>
-
-                <section
-                  aria-labelledby="training-frequency-recommendation-title"
-                  className="rounded-md border border-stone-900/10 bg-stone-950 p-4 text-stone-50"
-                >
-                  <p className="text-sm font-bold text-[#f4b860]">Recommendation</p>
-                  <h3
-                    className="mt-1 text-xl font-black"
-                    id="training-frequency-recommendation-title"
-                  >
-                    {recommendation.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-stone-300">{recommendation.description}</p>
-                  <p className="mt-3 text-sm font-semibold text-stone-200">
-                    Future steps will narrow the split options for this frequency without locking
-                    you into a single template.
-                  </p>
-                </section>
-              </div>
-            </div>
+          {blueprint ? (
+            <TrainingFrequencyStep
+              onTrainingFrequencyChange={handleTrainingFrequencyChange}
+              selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+            />
           ) : (
             <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
           )}
         </div>
       </Card>
 
-      <aside aria-labelledby="plan-blueprint-summary-title">
-        <Card>
-          <CardHeader>
-            <CardTitle id="plan-blueprint-summary-title">Plan Blueprint Summary</CardTitle>
-          </CardHeader>
-
-          {summary ? (
-            <dl className="space-y-3">
-              {planBlueprintSummaryRows.map(({ key, label }) => (
-                <SummaryRow key={key} label={label} value={summary[key]} />
-              ))}
-            </dl>
-          ) : (
-            <p className="text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>
-          )}
-        </Card>
-      </aside>
+      <PlanBlueprintSummaryCard summary={summary} />
     </section>
+  );
+}
+
+type TrainingFrequencyStepProps = {
+  onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
+  selectedTrainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+function TrainingFrequencyStep({
+  onTrainingFrequencyChange,
+  selectedTrainingFrequencyDaysPerWeek,
+}: TrainingFrequencyStepProps) {
+  const recommendation = getTrainingFrequencyRecommendation(selectedTrainingFrequencyDaysPerWeek);
+
+  return (
+    <div className="space-y-4">
+      <section aria-labelledby="training-frequency-title" className="space-y-3">
+        <div>
+          <h3
+            className="text-xl font-black text-stone-950 sm:text-2xl"
+            id="training-frequency-title"
+          >
+            Select Training Frequency
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+            Later builder steps will adapt split choices to this frequency without forcing a single
+            split style.
+          </p>
+        </div>
+
+        <fieldset className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <legend className="sr-only">Training Frequency</legend>
+          {trainingFrequencyOptions.map((option) => (
+            <TrainingFrequencyOptionRadio
+              isSelected={option.daysPerWeek === selectedTrainingFrequencyDaysPerWeek}
+              key={option.daysPerWeek}
+              onSelect={onTrainingFrequencyChange}
+              option={option}
+            />
+          ))}
+        </fieldset>
+
+        <p className="text-sm font-semibold text-stone-600">
+          6-day plans are not available in this first version.
+        </p>
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-md border border-stone-900/10 bg-white/80 p-4">
+          <p className="text-sm font-bold text-stone-700">Current step</p>
+          <p className="mt-1 text-xl font-black text-stone-950">Training Frequency</p>
+          <p className="mt-2 text-sm text-stone-600">
+            This entry point establishes the resumable blueprint before later builder choices exist.
+          </p>
+        </div>
+
+        <TrainingFrequencyRecommendationCard recommendation={recommendation} />
+      </div>
+    </div>
+  );
+}
+
+type TrainingFrequencyOptionRadioProps = {
+  isSelected: boolean;
+  onSelect: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
+  option: TrainingFrequencyOption;
+};
+
+function TrainingFrequencyOptionRadio({
+  isSelected,
+  onSelect,
+  option,
+}: TrainingFrequencyOptionRadioProps) {
+  const optionLabel = `${option.daysPerWeek} days/week`;
+
+  return (
+    <label
+      className={cn(
+        "rounded-md border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
+        isSelected
+          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
+          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
+      )}
+    >
+      <input
+        checked={isSelected}
+        className="sr-only"
+        name="training-frequency-days-per-week"
+        onChange={() => onSelect(option.daysPerWeek)}
+        type="radio"
+        value={option.daysPerWeek}
+      />
+      <p className="text-sm font-bold uppercase tracking-wide text-inherit/80">Days per week</p>
+      <p className="mt-2 text-lg font-black">{optionLabel}</p>
+      <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+        {option.helperText}
+      </p>
+    </label>
+  );
+}
+
+type TrainingFrequencyRecommendationCardProps = {
+  recommendation: TrainingFrequencyRecommendation;
+};
+
+function TrainingFrequencyRecommendationCard({
+  recommendation,
+}: TrainingFrequencyRecommendationCardProps) {
+  return (
+    <section
+      aria-labelledby="training-frequency-recommendation-title"
+      className="rounded-md border border-stone-900/10 bg-stone-950 p-4 text-stone-50"
+    >
+      <p className="text-sm font-bold text-[#f4b860]">Recommendation</p>
+      <h3 className="mt-1 text-xl font-black" id="training-frequency-recommendation-title">
+        {recommendation.title}
+      </h3>
+      <p className="mt-2 text-sm text-stone-300">{recommendation.description}</p>
+      <p className="mt-3 text-sm font-semibold text-stone-200">
+        Future steps will narrow the split options for this frequency without locking you into a
+        single template.
+      </p>
+    </section>
+  );
+}
+
+type PlanBlueprintSummaryCardProps = {
+  summary: PlanBlueprintSummary | null;
+};
+
+function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
+  return (
+    <aside aria-labelledby="plan-blueprint-summary-title">
+      <Card>
+        <CardHeader>
+          <CardTitle id="plan-blueprint-summary-title">Plan Blueprint Summary</CardTitle>
+        </CardHeader>
+
+        {summary ? (
+          <dl className="space-y-3">
+            {planBlueprintSummaryRows.map(({ key, label }) => (
+              <SummaryRow key={key} label={label} value={summary[key]} />
+            ))}
+          </dl>
+        ) : (
+          <p className="text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>
+        )}
+      </Card>
+    </aside>
   );
 }
 
