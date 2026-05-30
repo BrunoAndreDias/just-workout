@@ -565,7 +565,7 @@ function getPlanBuilderNextStepBody(currentStep: PlanBuilderStep) {
     case "split":
       return "Next, you'll choose Rep ranges that fit your Training Plan.";
     case "rep-ranges":
-      return "Next, you'll tune the volume preset before choosing exercises.";
+      return "Next, you will set weekly volume targets for each muscle group.";
     case "volume":
       return "Next, you'll choose the exercise pool for the generated Training Plan.";
     case "exercises":
@@ -803,17 +803,17 @@ function RepRangeStyleStep({
           <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
             How this affects your plan
           </h3>
-          <p className="mt-2 max-w-3xl text-sm text-stone-600">
-            {selectedRepRangeStyle.description}
-          </p>
-
-          <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
-            <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-              Current guidance
-            </h4>
-            <p className="mt-2 text-sm text-stone-600">{selectedRepRangeStyle.note}</p>
-            <RepRangeStyleTargets targets={selectedRepRangeStyle.targets} />
-          </div>
+          <p className="mt-2 text-sm font-semibold text-stone-900">{selectedRepRangeStyle.title}</p>
+          <ul className="mt-4 grid gap-3">
+            {selectedRepRangeStyle.planEffects.map((effect) => (
+              <li
+                className="rounded-lg border border-stone-900/10 bg-white/80 px-4 py-3 text-sm text-stone-700"
+                key={effect}
+              >
+                {effect}
+              </li>
+            ))}
+          </ul>
         </section>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -825,12 +825,8 @@ function RepRangeStyleStep({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <PlanBuilderStepStatusCard
-          body="Volume targets are set next. Just Workout will use this rep range style later when translating volume into sets and reps."
+          body="Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps."
           title="Boundary for this step"
-        />
-        <PlanBuilderStepStatusCard
-          body="Next, you will set weekly volume targets for each muscle group."
-          title="What happens next"
         />
       </div>
     </div>

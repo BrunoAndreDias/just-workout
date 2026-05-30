@@ -24,6 +24,7 @@ export type RepRangeStyle = {
   id: RepRangeStyleId;
   isRecommended: boolean;
   note: string;
+  planEffects: readonly [string, string, string];
   targets: ReadonlyArray<{
     label: string;
     reps: string;
@@ -120,6 +121,11 @@ export const repRangeStyles = [
     id: "strength_leaning",
     isRecommended: false,
     note: "Biases the week toward lower-rep top work on the main lifts before accessories climb.",
+    planEffects: [
+      "Main compounds stay in the 4-6 rep range for heavier top work.",
+      "Secondary compounds sit in the 6-8 rep range to bridge heavy lifts and accessories.",
+      "Accessories stay in the 8-12 rep range so support work does not drift too high.",
+    ],
     targets: [
       { label: "Main compounds", reps: "4-6 reps" },
       { label: "Secondary compounds", reps: "6-8 reps" },
@@ -132,6 +138,11 @@ export const repRangeStyles = [
     id: "balanced_hypertrophy",
     isRecommended: true,
     note: "Best fit for 4 days/week, Upper/Lower, and a muscle-building goal.",
+    planEffects: [
+      "Main compounds stay in the 6-8 rep range for steady progression.",
+      "Secondary compounds move to 8-10 reps for productive muscle-building work.",
+      "Accessories stay in the 10-15 rep range to keep isolation work controlled and repeatable.",
+    ],
     targets: [
       { label: "Main compounds", reps: "6-8 reps" },
       { label: "Secondary compounds", reps: "8-10 reps" },
@@ -144,6 +155,11 @@ export const repRangeStyles = [
     id: "controlled_higher_reps",
     isRecommended: false,
     note: "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
+    planEffects: [
+      "Main compounds move up to 8-10 reps for slightly lighter loading.",
+      "Secondary compounds sit in the 10-12 rep range for more controlled work.",
+      "Accessories extend to 12-20 reps so lighter lifts stay clearly higher-rep.",
+    ],
     targets: [
       { label: "Main compounds", reps: "8-10 reps" },
       { label: "Secondary compounds", reps: "10-12 reps" },

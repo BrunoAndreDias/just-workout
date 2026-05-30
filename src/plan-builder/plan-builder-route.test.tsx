@@ -437,6 +437,72 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByText(/advanced programming controls/i)).not.toBeInTheDocument();
   });
 
+  it("updates Rep Range Style explanation bullets and uses the approved boundary and next-step copy", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:47:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:48:00.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    expect(screen.getByRole("heading", { name: /how this affects your plan/i })).toBeVisible();
+    expect(
+      screen.getByText("Main compounds stay in the 6-8 rep range for steady progression."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Secondary compounds move to 8-10 reps for productive muscle-building work.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Accessories stay in the 10-15 rep range to keep isolation work controlled and repeatable.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
+    expect(
+      screen.getByText("Next, you will set weekly volume targets for each muscle group."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Next, you'll tune the volume preset before choosing exercises."),
+    ).not.toBeInTheDocument();
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Main compounds move up to 8-10 reps for slightly lighter loading."),
+      ).toBeVisible();
+    });
+    expect(
+      screen.queryByText("Main compounds stay in the 6-8 rep range for steady progression."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Secondary compounds sit in the 10-12 rep range for more controlled work."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Accessories extend to 12-20 reps so lighter lifts stay clearly higher-rep.",
+      ),
+    ).toBeVisible();
+  });
+
   it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
     const user = userEvent.setup();
 
