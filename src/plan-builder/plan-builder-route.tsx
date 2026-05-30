@@ -126,14 +126,18 @@ type TrainingSplitOptionRadioProps = {
   option: TrainingSplitDefinition;
 };
 
+type TrainingSplitFitStatus = {
+  body: string;
+  title: string;
+};
+
 type TrainingSplitDetailsPanelProps = {
-  selectionStatus: TrainingSplitSelectionStatus;
+  fitStatus: TrainingSplitFitStatus;
   split: TrainingSplitDefinition;
 };
 
-type TrainingSplitSelectionStatus = {
-  body: string;
-  title: string;
+type TrainingSplitFitPanelProps = {
+  fitStatus: TrainingSplitFitStatus;
 };
 
 type PlanBuilderFutureStepPlaceholderProps = {
@@ -558,7 +562,7 @@ function TrainingSplitStep({
   const compatibleSplits = getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek);
   const recommendedSplitId = getRecommendedTrainingSplitId(trainingFrequencyDaysPerWeek);
   const trainingFrequencyLabel = `${trainingFrequencyDaysPerWeek} days/week`;
-  const selectionStatus = getTrainingSplitSelectionStatus({
+  const fitStatus = getTrainingSplitFitStatus({
     recommendedSplitId,
     selectedSplit,
     trainingFrequencyLabel,
@@ -593,8 +597,8 @@ function TrainingSplitStep({
         </section>
 
         <TrainingSplitDetailsPanel
+          fitStatus={fitStatus}
           key={selectedSplit.id}
-          selectionStatus={selectionStatus}
           split={selectedSplit}
         />
 
@@ -618,7 +622,7 @@ function TrainingSplitStep({
   );
 }
 
-function getTrainingSplitSelectionStatus({
+function getTrainingSplitFitStatus({
   recommendedSplitId,
   selectedSplit,
   trainingFrequencyLabel,
@@ -626,7 +630,7 @@ function getTrainingSplitSelectionStatus({
   recommendedSplitId: TrainingSplitId;
   selectedSplit: TrainingSplitDefinition;
   trainingFrequencyLabel: string;
-}): TrainingSplitSelectionStatus {
+}): TrainingSplitFitStatus {
   if (selectedSplit.id === recommendedSplitId) {
     return {
       body: `Just Workout recommends ${selectedSplit.label} for ${trainingFrequencyLabel} as the clearest starting point.`,
@@ -758,7 +762,7 @@ function TrainingSplitOptionRadio({
   );
 }
 
-function TrainingSplitDetailsPanel({ selectionStatus, split }: TrainingSplitDetailsPanelProps) {
+function TrainingSplitDetailsPanel({ fitStatus, split }: TrainingSplitDetailsPanelProps) {
   return (
     <section
       aria-labelledby="training-split-details-title"
@@ -778,40 +782,50 @@ function TrainingSplitDetailsPanel({ selectionStatus, split }: TrainingSplitDeta
         <SummaryRow label="Recovery" value={split.recovery} />
       </dl>
 
-      <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
-        <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-          Why this split fits
+      <TrainingSplitFitPanel fitStatus={fitStatus} />
+      <TrainingSplitSchedulePanel schedule={split.schedule} />
+      <UnsupportedTrainingSplitsPanel />
+    </section>
+  );
+}
+
+function TrainingSplitFitPanel({ fitStatus }: TrainingSplitFitPanelProps) {
+  return (
+    <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
+      <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+        Why this split fits
+      </h4>
+      <p className="mt-2 text-sm font-semibold text-stone-900">{fitStatus.title}</p>
+      <p className="mt-2 text-sm text-stone-600">{fitStatus.body}</p>
+    </div>
+  );
+}
+
+function UnsupportedTrainingSplitsPanel() {
+  return (
+    <section aria-labelledby="not-recommended-split-title" className="mt-4 space-y-3">
+      <div>
+        <h4
+          className="text-lg font-black text-stone-950 sm:text-xl"
+          id="not-recommended-split-title"
+        >
+          Not included in this step
         </h4>
-        <p className="mt-2 text-sm font-semibold text-stone-900">{selectionStatus.title}</p>
-        <p className="mt-2 text-sm text-stone-600">{selectionStatus.body}</p>
+        <p className="mt-1 max-w-2xl text-sm text-stone-600">
+          Common split categories that do not fit this first Plan Builder version stay explanatory
+          only.
+        </p>
       </div>
 
-      <TrainingSplitSchedulePanel schedule={split.schedule} />
-
-      <section aria-labelledby="not-recommended-split-title" className="mt-4 space-y-3">
-        <div>
-          <h4
-            className="text-lg font-black text-stone-950 sm:text-xl"
-            id="not-recommended-split-title"
-          >
-            Not included in this step
-          </h4>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Common split categories that do not fit this first Plan Builder version stay explanatory
-            only.
-          </p>
-        </div>
-
-        <div className="grid gap-3">
-          {unsupportedTrainingSplitCategories.map((category) => (
-            <PlanBuilderStepStatusCard
-              body={category.description}
-              key={category.title}
-              title={category.title}
-            />
-          ))}
-        </div>
-      </section>
+      <div className="grid gap-3">
+        {unsupportedTrainingSplitCategories.map((category) => (
+          <PlanBuilderStepStatusCard
+            body={category.description}
+            key={category.title}
+            title={category.title}
+          />
+        ))}
+      </div>
     </section>
   );
 }

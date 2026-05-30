@@ -203,48 +203,33 @@ describe("PlanBuilderRoute", () => {
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
 
     await waitFor(() => {
-      expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
+      expect(
+        within(splitGroup).getByRole("radio", {
+          name: getLabelMatcher(trainingSplitLabels.upperLower4Day),
+        }),
+      ).toBeChecked();
     });
 
-    const fixedWeekDetails = screen.getByRole("region", { name: /4-day upper\/lower/i });
+    const fixedWeekDetails = getSelectedTrainingSplitDetails(trainingSplitLabels.upperLower4Day);
 
-    expect(within(fixedWeekDetails).getByText(/why this split fits/i)).toBeVisible();
-    expect(
-      within(fixedWeekDetails).getByText(
-        /just workout recommends 4-day upper\/lower for 4 days\/week as the clearest starting point/i,
-      ),
-    ).toBeVisible();
-    expect(within(fixedWeekDetails).getByText(/suggested weekly layout/i)).toBeVisible();
-    expect(within(fixedWeekDetails).getByText("Day 1")).toBeVisible();
-    expect(within(fixedWeekDetails).getAllByText("Upper")).toHaveLength(2);
-    expect(within(fixedWeekDetails).getByText(/not included in this step/i)).toBeVisible();
-    expect(
-      within(fixedWeekDetails).getByText(
-        /body-part split weeks usually drop muscle frequency too low for the 2-5 days\/week builder options/i,
-      ),
-    ).toBeVisible();
+    expectTrainingSplitFitExplanation(
+      fixedWeekDetails,
+      /just workout recommends 4-day upper\/lower for 4 days\/week as the clearest starting point/i,
+    );
+    expectFixedWeekScheduleDetails(fixedWeekDetails);
+    expectUnsupportedTrainingSplitGuidance(fixedWeekDetails);
 
-    await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
+    await user.click(within(splitGroup).getByText(trainingSplitLabels.rotatingPushPullLegs));
 
-    const rotatingDetails = await screen.findByRole("region", {
-      name: /rotating push\/pull\/legs/i,
-    });
+    const rotatingDetails = await findSelectedTrainingSplitDetails(
+      trainingSplitLabels.rotatingPushPullLegs,
+    );
 
-    expect(within(rotatingDetails).getByText(/why this split fits/i)).toBeVisible();
-    expect(
-      within(rotatingDetails).getByText(
-        /rotating push\/pull\/legs still fits 4 days\/week, but it trades the default recommendation for a different weekly rhythm/i,
-      ),
-    ).toBeVisible();
-    expect(within(rotatingDetails).getByText(/rotating-cycle preview/i)).toBeVisible();
-    expect(
-      within(rotatingDetails).getByText(
-        /schedule-flexible: the cycle rotates across available weekdays and can land as 4-5 sessions in a calendar week/i,
-      ),
-    ).toBeVisible();
-    expect(within(rotatingDetails).getByText(/cycle step 1/i)).toBeVisible();
-    expect(within(rotatingDetails).getAllByText("Push")).toHaveLength(2);
-    expect(within(rotatingDetails).queryByText(/suggested weekly layout/i)).not.toBeInTheDocument();
+    expectTrainingSplitFitExplanation(
+      rotatingDetails,
+      /rotating push\/pull\/legs still fits 4 days\/week, but it trades the default recommendation for a different weekly rhythm/i,
+    );
+    expectRotatingCycleScheduleDetails(rotatingDetails);
   });
 
   it.each(
@@ -419,6 +404,54 @@ function renderPlanBuilder({
     ...view,
     router,
   };
+}
+
+function getSelectedTrainingSplitDetails(label: string) {
+  return screen.getByRole("region", { name: getLabelMatcher(label) });
+}
+
+function findSelectedTrainingSplitDetails(label: string) {
+  return screen.findByRole("region", { name: getLabelMatcher(label) });
+}
+
+function expectTrainingSplitFitExplanation(detailsPanel: HTMLElement, body: RegExp) {
+  const details = within(detailsPanel);
+
+  expect(details.getByText(/why this split fits/i)).toBeVisible();
+  expect(details.getByText(body)).toBeVisible();
+}
+
+function expectFixedWeekScheduleDetails(detailsPanel: HTMLElement) {
+  const details = within(detailsPanel);
+
+  expect(details.getByText(/suggested weekly layout/i)).toBeVisible();
+  expect(details.getByText("Day 1")).toBeVisible();
+  expect(details.getAllByText("Upper")).toHaveLength(2);
+}
+
+function expectRotatingCycleScheduleDetails(detailsPanel: HTMLElement) {
+  const details = within(detailsPanel);
+
+  expect(details.getByText(/rotating-cycle preview/i)).toBeVisible();
+  expect(
+    details.getByText(
+      /schedule-flexible: the cycle rotates across available weekdays and can land as 4-5 sessions in a calendar week/i,
+    ),
+  ).toBeVisible();
+  expect(details.getByText(/cycle step 1/i)).toBeVisible();
+  expect(details.getAllByText("Push")).toHaveLength(2);
+  expect(details.queryByText(/suggested weekly layout/i)).not.toBeInTheDocument();
+}
+
+function expectUnsupportedTrainingSplitGuidance(detailsPanel: HTMLElement) {
+  const details = within(detailsPanel);
+
+  expect(details.getByText(/not included in this step/i)).toBeVisible();
+  expect(
+    details.getByText(
+      /body-part split weeks usually drop muscle frequency too low for the 2-5 days\/week builder options/i,
+    ),
+  ).toBeVisible();
 }
 
 function getLabelMatcher(label: string) {
