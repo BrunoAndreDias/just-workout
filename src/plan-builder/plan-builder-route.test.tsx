@@ -500,15 +500,18 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
+    const selectedControlledHigherRepsOption = getRepRangeStyleOptionCard(
+      repRangeGroup,
+      repRangeStyleLabels.controlledHigherReps,
+    );
+    const unselectedBalancedHypertrophyOption = getRepRangeStyleOptionCard(
+      repRangeGroup,
+      repRangeStyleLabels.balancedHypertrophy,
+    );
+
+    expect(within(selectedControlledHigherRepsOption).getByText("Selected")).toBeVisible();
     expect(
-      within(
-        getRepRangeStyleOptionCard(repRangeGroup, repRangeStyleLabels.controlledHigherReps),
-      ).getByText("Selected"),
-    ).toBeVisible();
-    expect(
-      within(
-        getRepRangeStyleOptionCard(repRangeGroup, repRangeStyleLabels.balancedHypertrophy),
-      ).queryByText("Selected"),
+      within(unselectedBalancedHypertrophyOption).queryByText("Selected"),
     ).not.toBeInTheDocument();
   });
 
@@ -1079,8 +1082,6 @@ function getRepRangeStyleOptionCard(repRangeGroup: HTMLElement, label: string) {
     name: getLabelMatcher(label),
   });
   const optionCard = radio.closest("label");
-
-  expect(optionCard, `Rep Range Style option card for "${label}" should exist`).not.toBeNull();
 
   if (!optionCard) {
     throw new Error(`Rep Range Style option card for "${label}" was not found.`);

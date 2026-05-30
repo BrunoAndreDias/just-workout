@@ -130,6 +130,7 @@ const planBuilderNextStepBodyByStep = {
 } as const satisfies Record<PlanBuilderStep, string>;
 
 type SelectableOptionState = "selected" | "unselected";
+type RepRangeStyleStatusBadgeTone = "recommended" | "selected";
 
 const selectableOptionCardBaseClassName =
   "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950";
@@ -154,6 +155,11 @@ const repRangeStyleOptionCardStyles = {
     "border-[#0b8490] bg-[#f4fbfb] text-stone-950 shadow-[0_14px_30px_rgba(0,119,128,0.08)]",
   unselected:
     "border-stone-900/10 bg-white/90 text-stone-950 hover:border-stone-900/18 hover:bg-white",
+} as const satisfies Record<SelectableOptionState, string>;
+
+const repRangeStyleDescriptionStyles = {
+  selected: "text-[#31505d]",
+  unselected: selectableOptionMutedTextStyles.unselected,
 } as const satisfies Record<SelectableOptionState, string>;
 
 const repRangeStyleStatusBadgeStyles = {
@@ -279,11 +285,14 @@ type RepRangeStyleOptionRadioProps = {
   option: RepRangeStyle;
 };
 
-type RepRangeStyleStatusBadgeTone = "recommended" | "selected";
-
 type SelectionBadgeProps = {
   children: ReactNode;
   isSelected: boolean;
+};
+
+type RepRangeStyleStatusBadgeProps = {
+  children: ReactNode;
+  tone: RepRangeStyleStatusBadgeTone;
 };
 
 type RepRangeStyleTargetsProps = {
@@ -922,6 +931,10 @@ function getSelectableOptionCardClassName(state: SelectableOptionState): string 
   return cn(selectableOptionCardBaseClassName, selectableOptionCardStyles[state]);
 }
 
+function getRepRangeStyleOptionCardClassName(state: SelectableOptionState): string {
+  return cn(selectableOptionCardBaseClassName, repRangeStyleOptionCardStyles[state]);
+}
+
 function SelectionBadge({ children, isSelected }: SelectionBadgeProps) {
   const optionState = getSelectableOptionState(isSelected);
 
@@ -937,13 +950,7 @@ function SelectionBadge({ children, isSelected }: SelectionBadgeProps) {
   );
 }
 
-function RepRangeStyleStatusBadge({
-  children,
-  tone,
-}: {
-  children: ReactNode;
-  tone: RepRangeStyleStatusBadgeTone;
-}) {
+function RepRangeStyleStatusBadge({ children, tone }: RepRangeStyleStatusBadgeProps) {
   return (
     <span
       className={cn(
@@ -1057,9 +1064,7 @@ function RepRangeStyleOptionRadio({
   }
 
   return (
-    <label
-      className={cn(selectableOptionCardBaseClassName, repRangeStyleOptionCardStyles[optionState])}
-    >
+    <label className={getRepRangeStyleOptionCardClassName(optionState)}>
       <input
         checked={isSelected}
         className="sr-only"
@@ -1073,12 +1078,7 @@ function RepRangeStyleOptionRadio({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-lg font-black">{option.title}</p>
-          <p
-            className={cn(
-              "mt-2 text-sm",
-              isSelected ? "text-[#31505d]" : selectableOptionMutedTextStyles[optionState],
-            )}
-          >
+          <p className={cn("mt-2 text-sm", repRangeStyleDescriptionStyles[optionState])}>
             {option.description}
           </p>
         </div>
