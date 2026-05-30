@@ -370,6 +370,91 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
+  it("redirects direct access to Rep ranges back to Split when no compatible Training Split is saved", async () => {
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:35:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
+    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "4 days/week",
+      ),
+    ).toBeVisible();
+  });
+
+  it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:37:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:38:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: /continue to volume/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    expect(await screen.findByRole("heading", { name: /training volume/i })).toBeVisible();
+    expect(
+      screen.getByText(/weekly muscle-group targets will be added in a later issue/i),
+    ).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Volume"),
+    ).toHaveAttribute("aria-current", "step");
+    expect(
+      screen.queryByRole("heading", { name: /select rep range style/i }),
+    ).not.toBeInTheDocument();
+    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
+      activePlan: null,
+      exercises: [],
+      recentSessions: [],
+    });
+  });
+
+  it("navigates back from Rep ranges to Split", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:39:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:40:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: /back to split/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
+    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
+    ).toHaveAttribute("aria-current", "step");
+  });
+
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
     await planBuilderService.updateTrainingFrequency({
       timestamp: "2026-05-30T11:40:00.000Z",

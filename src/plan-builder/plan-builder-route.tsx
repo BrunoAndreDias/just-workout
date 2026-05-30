@@ -395,6 +395,26 @@ export function PlanBuilderRepRangesRoute() {
   );
 }
 
+export function PlanBuilderVolumeRoute() {
+  const { summary } = usePlanBuilderBlueprint();
+
+  return (
+    <PlanBuilderPage
+      currentStep="volume"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          Training Volume will set weekly muscle-group targets. This placeholder keeps the route
+          live while the full step stays out of scope for now.
+        </p>
+      }
+      stepLabel="Volume step"
+      summary={summary}
+    >
+      <VolumePlaceholderStep />
+    </PlanBuilderPage>
+  );
+}
+
 function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
     queryKey: planBuilderBlueprintQueryKey,
@@ -571,7 +591,7 @@ function getPlanBuilderNextStepBody(currentStep: PlanBuilderStep) {
     case "rep-ranges":
       return "Next, you will set weekly volume targets for each muscle group.";
     case "volume":
-      return "Next, you'll choose the exercise pool for the generated Training Plan.";
+      return "Later builder steps stay pending until weekly volume targets are implemented.";
     case "exercises":
       return "Next, you'll review the blueprint before generating the Training Plan.";
     case "review":
@@ -803,6 +823,9 @@ function RepRangeStyleStep({
           <Button asChild variant="outline">
             <Link to={planBuilderPaths.split}>Back to Split</Link>
           </Button>
+          <Button asChild>
+            <Link to={planBuilderPaths.volume}>Continue to Volume</Link>
+          </Button>
         </div>
       </div>
 
@@ -810,6 +833,43 @@ function RepRangeStyleStep({
         <PlanBuilderStepStatusCard
           body="Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps."
           title="Boundary for this step"
+        />
+      </div>
+    </div>
+  );
+}
+
+function VolumePlaceholderStep() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section
+          aria-labelledby="training-volume-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="training-volume-title">
+            Training Volume
+          </h3>
+          <p className="mt-3 max-w-2xl text-sm text-stone-600">
+            Weekly muscle-group targets will be added in a later issue.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-stone-600">
+            This route exists so the Plan Builder can move forward cleanly from Rep ranges without
+            expanding the scope of this step.
+          </p>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button asChild variant="outline">
+              <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <PlanBuilderStepStatusCard
+          body="Volume targets are not configurable on this route yet."
+          title="Placeholder status"
         />
       </div>
     </div>
@@ -828,7 +888,7 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
       <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
         How this affects your plan
       </h3>
-      <p className="mt-2 text-sm font-semibold text-stone-900">{repRangeStyle.title}</p>
+      <p className="mt-2 max-w-3xl text-sm text-stone-600">{repRangeStyle.title}</p>
       <ul className="mt-4 grid gap-3">
         {repRangeStyle.planEffects.map((effect) => (
           <li

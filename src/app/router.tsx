@@ -3,8 +3,11 @@ import {
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,
+  PlanBuilderVolumeRoute,
   planBuilderPaths,
+  planBuilderService,
 } from "../plan-builder";
+import { isTrainingSplitCompatible } from "../plan-builder/training-split";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -48,9 +51,27 @@ const planBuilderSplitRoute = createRoute({
 });
 
 const planBuilderRepRangesRoute = createRoute({
+  beforeLoad: async () => {
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    if (isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
+      return;
+    }
+
+    throw redirect({
+      replace: true,
+      to: planBuilderPaths.split,
+    });
+  },
   component: PlanBuilderRepRangesRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.repRanges,
+});
+
+const planBuilderVolumeRoute = createRoute({
+  component: PlanBuilderVolumeRoute,
+  getParentRoute: () => rootRoute,
+  path: planBuilderPaths.volume,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -60,6 +81,7 @@ const routeTree = rootRoute.addChildren([
   planBuilderFrequencyRoute,
   planBuilderSplitRoute,
   planBuilderRepRangesRoute,
+  planBuilderVolumeRoute,
 ]);
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];

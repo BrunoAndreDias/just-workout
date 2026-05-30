@@ -4,5 +4,6 @@ export {
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,
+  PlanBuilderVolumeRoute,
 } from "./plan-builder-route";
 export { planBuilderService } from "./plan-builder-service";
