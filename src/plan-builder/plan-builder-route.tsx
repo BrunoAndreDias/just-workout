@@ -7,6 +7,7 @@ import { cn } from "../design-system/cn";
 import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
   getTrainingFrequencyRecommendation,
+  isFrequencyStepComplete,
   selectTrainingFrequency,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
@@ -153,6 +154,7 @@ export function PlanBuilderRoute() {
     >
       {blueprint ? (
         <TrainingFrequencyStep
+          canContinueToSplit={isFrequencyStepComplete(blueprint)}
           onTrainingFrequencyChange={handleTrainingFrequencyChange}
           selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
         />
@@ -275,11 +277,13 @@ function getPlanBuilderStepProgressStatus(
 }
 
 type TrainingFrequencyStepProps = {
+  canContinueToSplit: boolean;
   onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
   selectedTrainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
 function TrainingFrequencyStep({
+  canContinueToSplit,
   onTrainingFrequencyChange,
   selectedTrainingFrequencyDaysPerWeek,
 }: TrainingFrequencyStepProps) {
@@ -330,9 +334,15 @@ function TrainingFrequencyStep({
         <Button disabled type="button" variant="outline">
           Back
         </Button>
-        <Button asChild>
-          <Link to="/plan-builder/split">Continue to Split</Link>
-        </Button>
+        {canContinueToSplit ? (
+          <Button asChild>
+            <Link to="/plan-builder/split">Continue to Split</Link>
+          </Button>
+        ) : (
+          <Button disabled type="button">
+            Continue to Split
+          </Button>
+        )}
       </div>
     </div>
   );

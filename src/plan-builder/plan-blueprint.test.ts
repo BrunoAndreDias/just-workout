@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createDefaultPlanBlueprint,
   getTrainingFrequencyRecommendation,
+  isFrequencyStepComplete,
   isTrainingFrequencyDaysPerWeek,
   selectTrainingFrequency,
   trainingFrequencyOptions,
@@ -51,6 +52,16 @@ describe("createDefaultPlanBlueprint", () => {
       trainingFrequencyDaysPerWeek: 5,
       updatedAt: "2026-05-30T10:05:00.000Z",
     });
+  });
+
+  it("treats the frequency step as complete only when a blueprint is available", () => {
+    const blueprint = createDefaultPlanBlueprint({
+      id: "blueprint-1",
+      timestamp: "2026-05-30T10:00:00.000Z",
+    });
+
+    expect(isFrequencyStepComplete(null)).toBe(false);
+    expect(isFrequencyStepComplete(blueprint)).toBe(true);
   });
 
   it("describes the default 3-day recommendation", () => {

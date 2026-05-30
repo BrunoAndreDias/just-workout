@@ -127,6 +127,14 @@ export function isTrainingFrequencyDaysPerWeek(
   return trainingFrequencyOptions.some((option) => option.daysPerWeek === value);
 }
 
+export function isFrequencyStepComplete(blueprint: PlanBlueprint | null | undefined): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return isTrainingFrequencyDaysPerWeek(blueprint.trainingFrequencyDaysPerWeek);
+}
+
 export function selectTrainingFrequency({
   blueprint,
   timestamp,
