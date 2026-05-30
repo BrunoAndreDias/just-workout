@@ -15,7 +15,6 @@ import {
   SlidersHorizontal,
   Star,
   Target,
-  UserRound,
 } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { Button } from "../design-system/button";
@@ -66,16 +65,13 @@ type PlanBlueprintSummaryRow = {
   label: string;
 };
 
+const pendingPlanBuilderStepStatus = "Pending";
+
 const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   {
     getValue: (summary) => summary.trainingGoal,
     icon: Target,
     label: "Goal",
-  },
-  {
-    getValue: () => "Intermediate",
-    icon: UserRound,
-    label: "Experience",
   },
   {
     getValue: (summary) => summary.trainingFrequency,
@@ -95,18 +91,20 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     label: "Rep ranges",
   },
   {
-    getValue: () => "Not chosen yet",
+    getStatus: () => pendingPlanBuilderStepStatus,
+    getValue: () => pendingPlanBuilderStepStatus,
     icon: List,
     label: "Volume preset",
   },
   {
-    getValue: () => "Not configured yet",
+    getStatus: () => pendingPlanBuilderStepStatus,
+    getValue: () => pendingPlanBuilderStepStatus,
     icon: Dumbbell,
-    label: "Equipment",
+    label: "Exercises",
   },
   {
-    getStatus: () => "Not ready yet",
-    getValue: () => "Not ready yet",
+    getStatus: () => pendingPlanBuilderStepStatus,
+    getValue: () => pendingPlanBuilderStepStatus,
     icon: Clock3,
     label: "Generation status",
   },
@@ -249,6 +247,7 @@ type TrainingSplitSchedulePanelProps = {
 type RepRangeStyleStepProps = {
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   selectedRepRangeStyle: RepRangeStyle;
+  savedRepRangeStyleId: RepRangeStyleId | null;
 };
 
 type RepRangeStyleEffectsPanelProps = {
@@ -257,6 +256,7 @@ type RepRangeStyleEffectsPanelProps = {
 
 type RepRangeStyleOptionRadioProps = {
   isSelected: boolean;
+  isSaved: boolean;
   onSelect: (repRangeStyle: RepRangeStyleId) => void;
   option: RepRangeStyle;
 };
@@ -386,6 +386,7 @@ export function PlanBuilderRepRangesRoute() {
       {blueprint && selectedRepRangeStyle ? (
         <RepRangeStyleStep
           onRepRangeStyleChange={handleRepRangeStyleChange}
+          savedRepRangeStyleId={blueprint.repRanges}
           selectedRepRangeStyle={selectedRepRangeStyle}
         />
       ) : (
@@ -785,6 +786,7 @@ function getTrainingSplitFitStatus({
 
 function RepRangeStyleStep({
   onRepRangeStyleChange,
+  savedRepRangeStyleId,
   selectedRepRangeStyle,
 }: RepRangeStyleStepProps) {
   return (
@@ -808,6 +810,7 @@ function RepRangeStyleStep({
             <legend className="sr-only">Rep Range Style</legend>
             {repRangeStyles.map((option) => (
               <RepRangeStyleOptionRadio
+                isSaved={option.id === savedRepRangeStyleId}
                 isSelected={option.id === selectedRepRangeStyle.id}
                 key={option.id}
                 onSelect={onRepRangeStyleChange}
@@ -1014,7 +1017,12 @@ function TrainingSplitOptionRadio({
   );
 }
 
-function RepRangeStyleOptionRadio({ isSelected, onSelect, option }: RepRangeStyleOptionRadioProps) {
+function RepRangeStyleOptionRadio({
+  isSaved,
+  isSelected,
+  onSelect,
+  option,
+}: RepRangeStyleOptionRadioProps) {
   const optionState = getSelectableOptionState(isSelected);
   const detailStyles = repRangeStyleDetailStyles[optionState];
 
@@ -1024,6 +1032,11 @@ function RepRangeStyleOptionRadio({ isSelected, onSelect, option }: RepRangeStyl
         checked={isSelected}
         className="sr-only"
         name="rep-range-style"
+        onClick={() => {
+          if (isSelected && !isSaved) {
+            onSelect(option.id);
+          }
+        }}
         onChange={() => onSelect(option.id)}
         type="radio"
         value={option.id}

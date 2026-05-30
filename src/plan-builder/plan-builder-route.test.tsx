@@ -124,14 +124,12 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByText("Build Muscle")).toBeVisible();
     expect(await screen.findAllByText("3 days/week")).toHaveLength(2);
     expect(within(summary).getByText("Goal")).toBeVisible();
-    expect(within(summary).getByText("Experience")).toBeVisible();
-    expect(within(summary).getByText("Intermediate")).toBeVisible();
     expect(within(summary).getByText("Split")).toBeVisible();
     expect(within(summary).getByText("Rep ranges")).toBeVisible();
     expect(within(summary).getByText("Volume preset")).toBeVisible();
-    expect(within(summary).getAllByText("Not chosen yet")).toHaveLength(3);
-    expect(within(summary).getByText("Not configured yet")).toBeVisible();
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
+    expect(within(summary).getByText("Exercises")).toBeVisible();
+    expect(within(summary).getAllByText("Not chosen yet")).toHaveLength(2);
+    expect(within(summary).getAllByText("Pending")).toHaveLength(3);
   });
 
   it("renders the Training Frequency step in the blueprint builder layout", async () => {
@@ -168,12 +166,10 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByRole("heading", { name: "Plan blueprint" })).toBeVisible();
     expect(within(summary).getByText("Goal")).toBeVisible();
     expect(within(summary).getByText("Build Muscle")).toBeVisible();
-    expect(within(summary).getByText("Experience")).toBeVisible();
-    expect(within(summary).getByText("Intermediate")).toBeVisible();
     expect(within(summary).getByText("Frequency")).toBeVisible();
     expect(within(summary).getByText("3 days/week")).toBeVisible();
     expect(within(summary).getByText("Generation status")).toBeVisible();
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
+    expect(within(summary).getAllByText("Pending")).toHaveLength(3);
 
     expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
     expect(
@@ -308,7 +304,7 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
+    expect(within(summary).getAllByText("Pending")).toHaveLength(3);
     expect(within(summary).getByText("Rep ranges")).toBeVisible();
 
     await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
@@ -429,6 +425,39 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
     ).toHaveAttribute("aria-current", "step");
+
+  it("updates the Plan Blueprint rail when the default Balanced hypertrophy selection is explicitly saved", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:32:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:33:00.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expect(within(summary).queryByText("Experience")).not.toBeInTheDocument();
+    expect(within(summary).getByText("Exercises")).toBeVisible();
+    expect(within(summary).getByText("Generation status")).toBeVisible();
+    expect(
+      within(summary).queryByText(repRangeStyleLabels.balancedHypertrophy),
+    ).not.toBeInTheDocument();
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy));
+
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).repRanges).toBe(
+        "balanced_hypertrophy",
+      );
+    });
+    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
   });
 
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
@@ -804,10 +833,10 @@ describe("PlanBuilderRoute", () => {
     });
     expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
     expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "Not ready yet",
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getAllByText(
+        "Pending",
       ),
-    ).toBeVisible();
+    ).toHaveLength(3);
     expect(await trainingService.getDashboardSnapshot()).toEqual(initialDashboardSnapshot);
   });
 
