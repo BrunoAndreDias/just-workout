@@ -144,8 +144,32 @@ describe("createDefaultPlanBlueprint", () => {
       recovery:
         "Upper and lower sessions alternate so each region gets recovery before the next hard effort.",
       split: "4-Day Upper/Lower",
+      splitStatus: "Recommended",
       trainingFrequency: "4 days/week",
+      trainingFrequencyStatus: "Completed",
       weeklyRhythm: "Two upper sessions and two lower sessions in a stable weekly layout.",
+    });
+  });
+
+  it("marks a compatible alternative split without losing the derived blueprint details", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      split: "rotating-push-pull-legs" as const,
+      trainingFrequencyDaysPerWeek: 4 as const,
+    };
+
+    expect(summarizePlanBlueprint(blueprint)).toMatchObject({
+      muscleFrequency:
+        "Most muscle groups are trained every 4-6 days as the push, pull, and legs cycle keeps rotating.",
+      recovery:
+        "The cycle separates related stress across different session types, but calendar-week recovery can flex with your schedule.",
+      split: "Rotating Push/Pull/Legs",
+      splitStatus: "Also works",
+      weeklyRhythm:
+        "A rotating Push/Pull/Legs cycle that flexes across available weekdays instead of locking to one fixed week.",
     });
   });
 });

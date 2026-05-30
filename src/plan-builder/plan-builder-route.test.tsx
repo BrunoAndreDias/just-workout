@@ -190,6 +190,79 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("shows split-derived summary statuses and updates them when the selected split changes", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    const frequencyGroup = await screen.findByRole("group", {
+      name: /training frequency/i,
+    });
+
+    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await waitFor(() => {
+      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
+    });
+
+    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+
+    const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await waitFor(() => {
+      expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
+    });
+
+    expect(within(summary).getByText("Completed")).toBeVisible();
+    expect(within(summary).getByText("Recommended")).toBeVisible();
+    expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "Two upper sessions and two lower sessions in a stable weekly layout.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "Each major muscle group is trained about twice per week with focused volume.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "Upper and lower sessions alternate so each region gets recovery before the next hard effort.",
+      ),
+    ).toBeVisible();
+    expect(within(summary).getByText("Rep ranges")).toBeVisible();
+
+    await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
+
+    await waitFor(() => {
+      expect(
+        within(splitGroup).getByRole("radio", { name: /rotating push\/pull\/legs/i }),
+      ).toBeChecked();
+    });
+
+    await waitFor(() => {
+      expect(within(summary).getByText("Also works")).toBeVisible();
+    });
+    expect(within(summary).queryByText("Recommended")).not.toBeInTheDocument();
+    expect(within(summary).getByText("Rotating Push/Pull/Legs")).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "A rotating Push/Pull/Legs cycle that flexes across available weekdays instead of locking to one fixed week.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "Most muscle groups are trained every 4-6 days as the push, pull, and legs cycle keeps rotating.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(summary).getByText(
+        "The cycle separates related stress across different session types, but calendar-week recovery can flex with your schedule.",
+      ),
+    ).toBeVisible();
+  });
+
   it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
     const user = userEvent.setup();
 

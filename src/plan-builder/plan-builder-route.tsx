@@ -29,16 +29,34 @@ import {
   unsupportedTrainingSplitCategories,
 } from "./training-split";
 
+type PlanBlueprintSummaryValueKey = Exclude<
+  keyof PlanBlueprintSummary,
+  "splitStatus" | "trainingFrequencyStatus"
+>;
+
+type PlanBlueprintSummaryStatus = Exclude<
+  PlanBlueprintSummary["splitStatus"] | PlanBlueprintSummary["trainingFrequencyStatus"],
+  null
+>;
+
 const planBlueprintSummaryRows = [
-  { key: "trainingGoal", label: "Training Goal" },
-  { key: "trainingFrequency", label: "Training Frequency" },
-  { key: "split", label: "Training Split" },
-  { key: "weeklyRhythm", label: "Weekly rhythm" },
-  { key: "muscleFrequency", label: "Muscle frequency" },
-  { key: "recovery", label: "Recovery" },
-  { key: "nextStep", label: "Next step" },
-  { key: "generationStatus", label: "Training Plan" },
-] as const satisfies ReadonlyArray<{ key: keyof PlanBlueprintSummary; label: string }>;
+  { key: "trainingGoal", label: "Training Goal", statusKey: null },
+  {
+    key: "trainingFrequency",
+    label: "Training Frequency",
+    statusKey: "trainingFrequencyStatus",
+  },
+  { key: "split", label: "Training Split", statusKey: "splitStatus" },
+  { key: "weeklyRhythm", label: "Weekly rhythm", statusKey: null },
+  { key: "muscleFrequency", label: "Muscle frequency", statusKey: null },
+  { key: "recovery", label: "Recovery", statusKey: null },
+  { key: "nextStep", label: "Next step", statusKey: null },
+  { key: "generationStatus", label: "Training Plan", statusKey: null },
+] as const satisfies ReadonlyArray<{
+  key: PlanBlueprintSummaryValueKey;
+  label: string;
+  statusKey: "splitStatus" | "trainingFrequencyStatus" | null;
+}>;
 
 const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
@@ -945,8 +963,13 @@ function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
 
         {summary ? (
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {planBlueprintSummaryRows.map(({ key, label }) => (
-              <SummaryRow key={key} label={label} value={summary[key]} />
+            {planBlueprintSummaryRows.map(({ key, label, statusKey }) => (
+              <SummaryRow
+                key={key}
+                label={label}
+                status={statusKey ? summary[statusKey] : null}
+                value={summary[key]}
+              />
             ))}
           </dl>
         ) : (
@@ -959,13 +982,32 @@ function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
 
 type SummaryRowProps = {
   label: string;
+  status?: PlanBlueprintSummaryStatus | null;
   value: string;
 };
 
-function SummaryRow({ label, value }: SummaryRowProps) {
+const planBlueprintSummaryStatusStyles = {
+  "Also works": "bg-stone-900/10 text-stone-700",
+  Completed: "bg-stone-950 text-stone-50",
+  Recommended: "bg-[#fff3ea] text-[#b93725]",
+} as const satisfies Record<PlanBlueprintSummaryStatus, string>;
+
+function SummaryRow({ label, status, value }: SummaryRowProps) {
   return (
     <div className="min-w-0 rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-3 py-3">
-      <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">{label}</dt>
+      <div className="flex items-start justify-between gap-3">
+        <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">{label}</dt>
+        {status ? (
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
+              planBlueprintSummaryStatusStyles[status],
+            )}
+          >
+            {status}
+          </span>
+        ) : null}
+      </div>
       <dd className="mt-1 break-words text-sm font-semibold text-stone-900">{value}</dd>
     </div>
   );

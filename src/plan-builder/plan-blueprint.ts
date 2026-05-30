@@ -1,5 +1,9 @@
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
-import { isTrainingSplitCompatible, summarizeTrainingSplit } from "./training-split";
+import {
+  getRecommendedTrainingSplitId,
+  isTrainingSplitCompatible,
+  summarizeTrainingSplit,
+} from "./training-split";
 
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
@@ -30,7 +34,9 @@ export type PlanBlueprintSummary = {
   nextStep: string;
   recovery: string;
   split: string;
+  splitStatus: "Recommended" | "Also works" | null;
   trainingFrequency: string;
+  trainingFrequencyStatus: "Completed";
   trainingGoal: string;
   weeklyRhythm: string;
 };
@@ -97,6 +103,7 @@ const planBlueprintSummaryFallbacks = {
   nextStep: "Choose a Training Split",
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
   split: "Choose a Training Split",
+  trainingFrequencyStatus: "Completed",
 } as const;
 
 const trainingFrequencyRecommendations = {
@@ -207,8 +214,10 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     nextStep: splitSummary ? "Rep ranges" : planBlueprintSummaryFallbacks.nextStep,
     recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
+    splitStatus: getPlanBlueprintSplitStatus(blueprint),
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
+    trainingFrequencyStatus: planBlueprintSummaryFallbacks.trainingFrequencyStatus,
     weeklyRhythm: splitSummary?.weeklyRhythm ?? pendingSplitDetail,
   };
 }
@@ -219,6 +228,18 @@ function getPlanBlueprintSplitSummary(blueprint: PlanBlueprint): TrainingSplitSu
   }
 
   return summarizeTrainingSplit(blueprint.split);
+}
+
+function getPlanBlueprintSplitStatus(
+  blueprint: PlanBlueprint,
+): PlanBlueprintSummary["splitStatus"] {
+  if (!isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
+    return null;
+  }
+
+  return blueprint.split === getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek)
+    ? "Recommended"
+    : "Also works";
 }
 
 function formatTrainingGoal(trainingGoal: TrainingGoal): string {
