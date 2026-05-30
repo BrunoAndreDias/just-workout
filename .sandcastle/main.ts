@@ -21,9 +21,9 @@
 // Or add to package.json:
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.ts" }
 
+import { execFileSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-import { execFileSync } from "node:child_process";
 import { z } from "zod";
 
 // The planner emits its plan as JSON inside <plan> tags; Output.object extracts
@@ -64,20 +64,27 @@ const ensureDockerImage = () => {
 
     execFileSync(
       "pnpm",
-      [
-        "exec",
-        "sandcastle",
-        "docker",
-        "build-image",
-        "--image-name",
-        SANDBOX_IMAGE_NAME,
-      ],
+      ["exec", "sandcastle", "docker", "build-image", "--image-name", SANDBOX_IMAGE_NAME],
       { stdio: "inherit" },
     );
   }
 };
 
-const sandboxProvider = docker({ imageName: SANDBOX_IMAGE_NAME });
+const sandboxProvider = docker({
+  imageName: SANDBOX_IMAGE_NAME,
+  mounts: [
+    {
+      hostPath: "~/.codex/auth.json",
+      sandboxPath: "/home/agent/.codex/auth.json",
+      readonly: true,
+    },
+    {
+      hostPath: "~/.codex/config.toml",
+      sandboxPath: "/home/agent/.codex/config.toml",
+      readonly: true,
+    },
+  ],
+});
 
 // ---------------------------------------------------------------------------
 // Main loop
