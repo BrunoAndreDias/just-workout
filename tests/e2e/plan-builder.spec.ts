@@ -7,6 +7,11 @@ type PlanBuilderLocators = {
   workspace: Locator;
 };
 
+const trainingSplitLabels = {
+  rotatingPushPullLegs: "Rotating Push/Pull/Legs",
+  upperLower4Day: "4-Day Upper/Lower",
+} as const;
+
 test.describe("desktop plan builder layout", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "Desktop-only layout assertions");
 
@@ -17,7 +22,7 @@ test.describe("desktop plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 5);
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
 
-    await continueToSplit(page, "Rotating Push/Pull/Legs");
+    await continueToSplit(page, trainingSplitLabels.rotatingPushPullLegs);
 
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -34,7 +39,7 @@ test.describe("mobile plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 4);
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
 
-    await continueToSplit(page, "4-Day Upper/Lower");
+    await continueToSplit(page, trainingSplitLabels.upperLower4Day);
 
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -110,15 +115,15 @@ async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: num
   const label = `${daysPerWeek} days/week`;
 
   await frequencyGroup.getByText(label).click();
-  await expect(frequencyGroup.getByRole("radio", { name: new RegExp(label, "i") })).toBeChecked();
+  await expect(frequencyGroup.getByRole("radio", { name: getLabelMatcher(label) })).toBeChecked();
 }
 
-async function continueToSplit(page: Page, expectedSplitLabel = "3-Day Full Body") {
+async function continueToSplit(page: Page, expectedSplitLabel: string) {
   await page.getByRole("link", { name: /continue to split/i }).click();
 
   await expect(page.getByRole("heading", { name: /select training split/i })).toBeVisible();
   await expect(
-    page.getByRole("radio", { name: new RegExp(expectedSplitLabel, "i") }),
+    page.getByRole("radio", { name: getLabelMatcher(expectedSplitLabel) }),
   ).toBeChecked();
   await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
 }
@@ -131,4 +136,12 @@ async function expectNoHorizontalOverflow(page: Page) {
   });
 
   expect(hasHorizontalOverflow).toBe(false);
+}
+
+function getLabelMatcher(label: string) {
+  return new RegExp(escapeRegExp(label), "i");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

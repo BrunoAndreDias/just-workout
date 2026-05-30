@@ -6,8 +6,49 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createAppRouter } from "../app/router";
 import { db } from "../training/local-database";
 import { trainingService } from "../training/training-service";
+import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
+
+const trainingSplitLabels = {
+  alternatingFullBodyAB: "Alternating Full Body A/B",
+  fullBody2Day: "2-Day Full Body",
+  fullBody3Day: "3-Day Full Body",
+  rotatingPushPullLegs: "Rotating Push/Pull/Legs",
+  upperLower4Day: "4-Day Upper/Lower",
+  upperLowerFullBody: "Upper / Lower / Full Body",
+} as const;
+
+const selectableTrainingSplitCases = [
+  {
+    daysPerWeek: 2,
+    expectedLabels: [trainingSplitLabels.fullBody2Day],
+    recommendedLabel: trainingSplitLabels.fullBody2Day,
+  },
+  {
+    daysPerWeek: 3,
+    expectedLabels: [
+      trainingSplitLabels.fullBody3Day,
+      trainingSplitLabels.upperLowerFullBody,
+      trainingSplitLabels.alternatingFullBodyAB,
+    ],
+    recommendedLabel: trainingSplitLabels.fullBody3Day,
+  },
+  {
+    daysPerWeek: 4,
+    expectedLabels: [trainingSplitLabels.upperLower4Day, trainingSplitLabels.rotatingPushPullLegs],
+    recommendedLabel: trainingSplitLabels.upperLower4Day,
+  },
+  {
+    daysPerWeek: 5,
+    expectedLabels: [trainingSplitLabels.rotatingPushPullLegs],
+    recommendedLabel: trainingSplitLabels.rotatingPushPullLegs,
+  },
+] satisfies ReadonlyArray<{
+  daysPerWeek: TrainingFrequencyDaysPerWeek;
+  expectedLabels: ReadonlyArray<string>;
+  recommendedLabel: string;
+}>;
 
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
@@ -149,28 +190,9 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it.each([
-    {
-      daysPerWeek: 2 as const,
-      expectedLabels: ["2-Day Full Body"],
-      recommendedLabel: "2-Day Full Body",
-    },
-    {
-      daysPerWeek: 3 as const,
-      expectedLabels: ["3-Day Full Body", "Upper / Lower / Full Body", "Alternating Full Body A/B"],
-      recommendedLabel: "3-Day Full Body",
-    },
-    {
-      daysPerWeek: 4 as const,
-      expectedLabels: ["4-Day Upper/Lower", "Rotating Push/Pull/Legs"],
-      recommendedLabel: "4-Day Upper/Lower",
-    },
-    {
-      daysPerWeek: 5 as const,
-      expectedLabels: ["Rotating Push/Pull/Legs"],
-      recommendedLabel: "Rotating Push/Pull/Legs",
-    },
-  ])("shows only the approved selectable Training Splits for $daysPerWeek days/week", async ({
+  it.each(
+    selectableTrainingSplitCases,
+  )("shows only the approved selectable Training Splits for $daysPerWeek days/week", async ({
     daysPerWeek,
     expectedLabels,
     recommendedLabel,
@@ -183,20 +205,18 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
-    const radios = within(splitGroup).getAllByRole("radio");
+    const splitOptions = within(splitGroup);
 
-    expect(radios).toHaveLength(expectedLabels.length);
+    expect(splitOptions.getAllByRole("radio")).toHaveLength(expectedLabels.length);
     expect(
-      within(splitGroup).getByRole("radio", { name: getAccessibleLabelMatcher(recommendedLabel) }),
+      splitOptions.getByRole("radio", { name: getLabelMatcher(recommendedLabel) }),
     ).toBeChecked();
-    expect(within(splitGroup).getAllByText("Recommended")).toHaveLength(1);
-    expect(within(splitGroup).queryAllByText("Also works")).toHaveLength(expectedLabels.length - 1);
+    expect(splitOptions.getAllByText("Recommended")).toHaveLength(1);
+    expect(splitOptions.queryAllByText("Also works")).toHaveLength(expectedLabels.length - 1);
 
     for (const label of expectedLabels) {
-      expect(within(splitGroup).getByText(label)).toBeVisible();
-      expect(
-        within(splitGroup).getByRole("radio", { name: getAccessibleLabelMatcher(label) }),
-      ).toBeVisible();
+      expect(splitOptions.getByText(label)).toBeVisible();
+      expect(splitOptions.getByRole("radio", { name: getLabelMatcher(label) })).toBeVisible();
     }
   });
 
@@ -209,11 +229,12 @@ describe("PlanBuilderRoute", () => {
     const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const splitOptions = within(splitGroup);
 
     await waitFor(() => {
       expect(
-        within(splitGroup).getByRole("radio", {
-          name: getAccessibleLabelMatcher("Rotating Push/Pull/Legs"),
+        splitOptions.getByRole("radio", {
+          name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
         }),
       ).toBeChecked();
     });
@@ -227,15 +248,16 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
+    const resumedSplitOptions = within(resumedSplitGroup);
 
     expect(
-      within(resumedSplitGroup).getByRole("radio", {
-        name: getAccessibleLabelMatcher("Rotating Push/Pull/Legs"),
+      resumedSplitOptions.getByRole("radio", {
+        name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
       }),
     ).toBeChecked();
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "Rotating Push/Pull/Legs",
+        trainingSplitLabels.rotatingPushPullLegs,
       ),
     ).toBeVisible();
   });
@@ -342,6 +364,10 @@ function renderPlanBuilder({
   };
 }
 
-function getAccessibleLabelMatcher(label: string) {
-  return new RegExp(label.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+function getLabelMatcher(label: string) {
+  return new RegExp(escapeRegExp(label), "i");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
