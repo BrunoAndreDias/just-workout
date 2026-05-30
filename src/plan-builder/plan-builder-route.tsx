@@ -517,7 +517,7 @@ function PlanBuilderPage({
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:items-start 2xl:grid-cols-[906px_22.5rem] 2xl:gap-[1.625rem]">
       <section aria-label="Plan Builder workspace" className="min-w-0">
-        <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-7 lg:pt-11">
+        <Card className="plan-builder-workspace-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-3 lg:pt-11">
           <header className="space-y-2">
             <h1 className="font-serif text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
               Build your workout plan
@@ -525,7 +525,7 @@ function PlanBuilderPage({
             {intro}
           </header>
 
-          <div className="mt-7">
+          <div className="plan-builder-stepper mt-7">
             <Stepper
               currentIndex={currentStepIndex}
               items={planBuilderSteps}
@@ -533,7 +533,7 @@ function PlanBuilderPage({
             />
           </div>
 
-          <div className="mt-9">{children}</div>
+          <div className="plan-builder-step-content mt-9">{children}</div>
         </Card>
       </section>
 
@@ -602,7 +602,7 @@ function TrainingFrequencyStep({
   return (
     <section
       aria-labelledby="training-frequency-title"
-      className="rounded-lg border border-stone-950/10 bg-white/78 p-6 sm:p-8 lg:-mx-[1.375rem]"
+      className="training-frequency-panel rounded-lg border border-stone-950/10 bg-white/78 p-6 sm:p-8 lg:-mx-[1.375rem]"
     >
       <div>
         <h2
@@ -611,7 +611,7 @@ function TrainingFrequencyStep({
         >
           Training frequency
         </h2>
-        <p className="mt-4 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
+        <p className="training-frequency-copy mt-4 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
           Choose how many days per week you can realistically train.
         </p>
         <p className="mt-1 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
@@ -619,7 +619,7 @@ function TrainingFrequencyStep({
         </p>
       </div>
 
-      <fieldset className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <fieldset className="training-frequency-options mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         <legend className="sr-only">Training Frequency</legend>
         {trainingFrequencyOptions.map((option) => (
           <TrainingFrequencyOptionRadio
@@ -638,9 +638,9 @@ function TrainingFrequencyStep({
         title="Unavailable"
       />
 
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="training-frequency-actions mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
-          className="h-[3.75rem] min-w-[7.375rem] border-stone-950/10 bg-[#fbf7f1] text-base text-stone-400 hover:bg-[#fbf7f1]"
+          className="training-frequency-action-button h-[3.75rem] min-w-[7.375rem] border-stone-950/10 bg-[#fbf7f1] text-base text-stone-400 hover:bg-[#fbf7f1]"
           disabled
           type="button"
           variant="outline"
@@ -651,7 +651,7 @@ function TrainingFrequencyStep({
         {canContinueToSplit ? (
           <Button
             asChild
-            className="h-[3.75rem] min-w-[14.25rem] bg-[#007780] text-base font-medium shadow-[0_12px_26px_rgba(0,119,128,0.18)] hover:bg-[#00666e] focus-visible:outline-[#007780]"
+            className="training-frequency-action-button h-[3.75rem] min-w-[14.25rem] bg-[#007780] text-base font-medium shadow-[0_12px_26px_rgba(0,119,128,0.18)] hover:bg-[#00666e] focus-visible:outline-[#007780]"
           >
             <Link to={planBuilderPaths.split}>
               Continue to Split
@@ -872,10 +872,16 @@ function TrainingFrequencyOptionRadio({
   option,
 }: TrainingFrequencyOptionRadioProps) {
   const optionLabel = `${option.daysPerWeek} days/week`;
-  const optionState = getSelectableOptionState(isSelected);
 
   return (
-    <label className={getSelectableOptionCardClassName(optionState)}>
+    <label
+      className={cn(
+        "training-frequency-option relative flex min-h-60 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border bg-white/80 p-5 text-center transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#007780]",
+        isSelected
+          ? "border-[#0b8490] text-[#00636a] shadow-[0_14px_30px_rgba(0,119,128,0.08)]"
+          : "border-stone-950/10 text-stone-950 hover:bg-white",
+      )}
+    >
       <input
         checked={isSelected}
         className="sr-only"
@@ -884,11 +890,28 @@ function TrainingFrequencyOptionRadio({
         type="radio"
         value={option.daysPerWeek}
       />
-      <p className="text-sm font-bold uppercase tracking-wide text-inherit/80">Days per week</p>
-      <p className="mt-2 text-lg font-black">{optionLabel}</p>
-      <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
+      {isSelected ? (
+        <CheckCircle2
+          aria-hidden="true"
+          className="absolute right-4 top-4 text-[#006f78]"
+          size={22}
+          strokeWidth={2}
+        />
+      ) : null}
+      <span className="training-frequency-option__icon flex h-16 w-16 items-center justify-center text-stone-950">
+        <span className="training-frequency-option__icon-frame relative flex h-16 w-16 items-center justify-center">
+          <Calendar aria-hidden="true" size={58} strokeWidth={1.4} />
+          <span className="training-frequency-option__day absolute top-[1.58rem] text-[1.35rem] font-medium leading-none">
+            {option.daysPerWeek}
+          </span>
+        </span>
+      </span>
+      <span className="training-frequency-option__label mt-6 block text-[1.35rem] font-medium leading-7 text-stone-950">
+        {optionLabel}
+      </span>
+      <span className="training-frequency-option__helper mt-4 block min-h-12 text-base font-medium leading-6 text-[#526873]">
         {option.helperText}
-      </p>
+      </span>
     </label>
   );
 }
@@ -1135,9 +1158,9 @@ function TrainingFrequencyRecommendationCard({
   return (
     <section
       aria-labelledby="training-frequency-recommendation-title"
-      className="mt-6 flex items-center gap-5 rounded-lg border border-stone-950/8 bg-[#f5f6f4] px-5 py-[17px] text-[#075d63]"
+      className="training-frequency-recommendation mt-6 flex items-center gap-5 rounded-lg border border-stone-950/8 bg-[#f5f6f4] px-5 py-[17px] text-[#075d63]"
     >
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#0b8490]/20 bg-white/60">
+      <span className="training-frequency-recommendation__icon flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#0b8490]/20 bg-white/60">
         <Star aria-hidden="true" size={28} strokeWidth={1.5} />
       </span>
       <div className="min-w-0">
@@ -1154,7 +1177,7 @@ function TrainingFrequencyRecommendationCard({
 
 function PlanBuilderStepStatusCard({ body, title }: PlanBuilderStepStatusCardProps) {
   return (
-    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]">
+    <div className="plan-builder-step-status mt-4 flex items-center gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[#db7a1d]">
         <Info aria-hidden="true" size={24} strokeWidth={1.7} />
       </span>

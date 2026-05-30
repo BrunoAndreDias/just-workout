@@ -36,7 +36,7 @@ const appShellNavigationItems = [
 export function AppShell({ children, currentPathname }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#162325]">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1600px] lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <div className="grid min-h-screen w-full max-w-[1600px] lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="border-stone-950/8 bg-[#fbf8f3]/92 px-4 py-5 lg:min-h-screen lg:border-r lg:px-8 lg:py-8">
           <Link className="flex min-w-0 items-center gap-3" to="/">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#00636a] text-white">
