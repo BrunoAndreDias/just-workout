@@ -67,6 +67,18 @@ type PlanBlueprintSummaryRow = {
 
 const pendingPlanBuilderStepStatus = "Pending";
 
+function createPendingPlanBlueprintSummaryRow({
+  icon,
+  label,
+}: Pick<PlanBlueprintSummaryRow, "icon" | "label">): PlanBlueprintSummaryRow {
+  return {
+    getStatus: () => pendingPlanBuilderStepStatus,
+    getValue: () => pendingPlanBuilderStepStatus,
+    icon,
+    label,
+  };
+}
+
 const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   {
     getValue: (summary) => summary.trainingGoal,
@@ -90,25 +102,10 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     icon: SlidersHorizontal,
     label: "Rep ranges",
   },
-  {
-    getStatus: () => pendingPlanBuilderStepStatus,
-    getValue: () => pendingPlanBuilderStepStatus,
-    icon: List,
-    label: "Volume preset",
-  },
-  {
-    getStatus: () => pendingPlanBuilderStepStatus,
-    getValue: () => pendingPlanBuilderStepStatus,
-    icon: Dumbbell,
-    label: "Exercises",
-  },
-  {
-    getStatus: () => pendingPlanBuilderStepStatus,
-    getValue: () => pendingPlanBuilderStepStatus,
-    icon: Clock3,
-    label: "Generation status",
-  },
-];
+  createPendingPlanBlueprintSummaryRow({ icon: List, label: "Volume preset" }),
+  createPendingPlanBlueprintSummaryRow({ icon: Dumbbell, label: "Exercises" }),
+  createPendingPlanBlueprintSummaryRow({ icon: Clock3, label: "Generation status" }),
+] as const satisfies ReadonlyArray<PlanBlueprintSummaryRow>;
 
 const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
@@ -246,8 +243,8 @@ type TrainingSplitSchedulePanelProps = {
 
 type RepRangeStyleStepProps = {
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
+  persistedRepRangeStyleId: RepRangeStyleId | null;
   selectedRepRangeStyle: RepRangeStyle;
-  savedRepRangeStyleId: RepRangeStyleId | null;
 };
 
 type RepRangeStyleEffectsPanelProps = {
@@ -255,8 +252,8 @@ type RepRangeStyleEffectsPanelProps = {
 };
 
 type RepRangeStyleOptionRadioProps = {
+  isPersisted: boolean;
   isSelected: boolean;
-  isSaved: boolean;
   onSelect: (repRangeStyle: RepRangeStyleId) => void;
   option: RepRangeStyle;
 };
@@ -386,7 +383,7 @@ export function PlanBuilderRepRangesRoute() {
       {blueprint && selectedRepRangeStyle ? (
         <RepRangeStyleStep
           onRepRangeStyleChange={handleRepRangeStyleChange}
-          savedRepRangeStyleId={blueprint.repRanges}
+          persistedRepRangeStyleId={blueprint.repRanges}
           selectedRepRangeStyle={selectedRepRangeStyle}
         />
       ) : (
@@ -786,7 +783,7 @@ function getTrainingSplitFitStatus({
 
 function RepRangeStyleStep({
   onRepRangeStyleChange,
-  savedRepRangeStyleId,
+  persistedRepRangeStyleId,
   selectedRepRangeStyle,
 }: RepRangeStyleStepProps) {
   return (
@@ -810,7 +807,7 @@ function RepRangeStyleStep({
             <legend className="sr-only">Rep Range Style</legend>
             {repRangeStyles.map((option) => (
               <RepRangeStyleOptionRadio
-                isSaved={option.id === savedRepRangeStyleId}
+                isPersisted={option.id === persistedRepRangeStyleId}
                 isSelected={option.id === selectedRepRangeStyle.id}
                 key={option.id}
                 onSelect={onRepRangeStyleChange}
@@ -1018,13 +1015,22 @@ function TrainingSplitOptionRadio({
 }
 
 function RepRangeStyleOptionRadio({
-  isSaved,
+  isPersisted,
   isSelected,
   onSelect,
   option,
 }: RepRangeStyleOptionRadioProps) {
   const optionState = getSelectableOptionState(isSelected);
   const detailStyles = repRangeStyleDetailStyles[optionState];
+  function selectOption() {
+    onSelect(option.id);
+  }
+
+  function handleRadioClick() {
+    if (isSelected && !isPersisted) {
+      selectOption();
+    }
+  }
 
   return (
     <label className={getSelectableOptionCardClassName(optionState)}>
@@ -1032,12 +1038,8 @@ function RepRangeStyleOptionRadio({
         checked={isSelected}
         className="sr-only"
         name="rep-range-style"
-        onClick={() => {
-          if (isSelected && !isSaved) {
-            onSelect(option.id);
-          }
-        }}
-        onChange={() => onSelect(option.id)}
+        onClick={handleRadioClick}
+        onChange={selectOption}
         type="radio"
         value={option.id}
       />
