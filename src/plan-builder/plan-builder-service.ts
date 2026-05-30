@@ -27,10 +27,17 @@ type UpdateTrainingFrequencyOptions = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
-type UpdateTrainingSplitOptions = {
-  split: TrainingSplitId;
-  timestamp?: string;
-};
+type UpdateTrainingSplitOptions =
+  | {
+      split: TrainingSplitId;
+      timestamp?: string;
+      trainingSplitId?: never;
+    }
+  | {
+      split?: never;
+      timestamp?: string;
+      trainingSplitId: TrainingSplitId;
+    };
 
 async function updateTrainingFrequency({
   timestamp = new Date().toISOString(),
@@ -47,17 +54,14 @@ async function updateTrainingFrequency({
   );
 }
 
-async function updateTrainingSplit({
-  split,
-  timestamp = new Date().toISOString(),
-}: UpdateTrainingSplitOptions) {
+async function updateTrainingSplit(options: UpdateTrainingSplitOptions) {
   const blueprint = await getOrCreatePlanBlueprint();
 
   return savePlanBlueprint(
     selectTrainingSplit({
       blueprint,
-      split,
-      timestamp,
+      split: options.split ?? options.trainingSplitId,
+      timestamp: options.timestamp ?? new Date().toISOString(),
     }),
   );
 }

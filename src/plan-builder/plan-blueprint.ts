@@ -46,11 +46,19 @@ type SelectTrainingFrequencyOptions = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
-type SelectTrainingSplitOptions = {
-  blueprint: PlanBlueprint;
-  split: TrainingSplitId;
-  timestamp: string;
-};
+type SelectTrainingSplitOptions =
+  | {
+      blueprint: PlanBlueprint;
+      split: TrainingSplitId;
+      timestamp: string;
+      trainingSplitId?: never;
+    }
+  | {
+      blueprint: PlanBlueprint;
+      split?: never;
+      timestamp: string;
+      trainingSplitId: TrainingSplitId;
+    };
 
 const defaultPlanBlueprintValues = {
   trainingGoal: "build-muscle",
@@ -159,29 +167,33 @@ export function selectTrainingFrequency({
 }: SelectTrainingFrequencyOptions): PlanBlueprint {
   return {
     ...blueprint,
-    split: isTrainingSplitCompatible(blueprint.split, trainingFrequencyDaysPerWeek)
-      ? blueprint.split
-      : null,
+    split: getCompatibleSelectedTrainingSplit({
+      selectedTrainingSplit: blueprint.split,
+      trainingFrequencyDaysPerWeek,
+    }),
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
 }
 
-export function selectTrainingSplit({
-  blueprint,
-  split,
-  timestamp,
-}: SelectTrainingSplitOptions): PlanBlueprint {
-  if (!isTrainingSplitCompatible(split, blueprint.trainingFrequencyDaysPerWeek)) {
+export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBlueprint {
+  const selectedTrainingSplitId = getSelectedTrainingSplitId(options);
+
+  if (
+    !isTrainingSplitCompatible(
+      selectedTrainingSplitId,
+      options.blueprint.trainingFrequencyDaysPerWeek,
+    )
+  ) {
     throw new Error(
-      `Training Split "${split}" is not compatible with ${blueprint.trainingFrequencyDaysPerWeek} days/week.`,
+      `Training Split "${selectedTrainingSplitId}" is not compatible with ${options.blueprint.trainingFrequencyDaysPerWeek} days/week.`,
     );
   }
 
   return {
-    ...blueprint,
-    split,
-    updatedAt: timestamp,
+    ...options.blueprint,
+    split: selectedTrainingSplitId,
+    updatedAt: options.timestamp,
   };
 }
 
@@ -217,4 +229,29 @@ function formatTrainingFrequency(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): string {
   return `${trainingFrequencyDaysPerWeek} days/week`;
+}
+
+function getCompatibleSelectedTrainingSplit({
+  selectedTrainingSplit,
+  trainingFrequencyDaysPerWeek,
+}: {
+  selectedTrainingSplit: TrainingSplitId | null;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+}): TrainingSplitId | null {
+  if (!selectedTrainingSplit) {
+    return null;
+  }
+
+  if (!isTrainingSplitCompatible(selectedTrainingSplit, trainingFrequencyDaysPerWeek)) {
+    return null;
+  }
+
+  return selectedTrainingSplit;
+}
+
+function getSelectedTrainingSplitId({
+  split,
+  trainingSplitId,
+}: SelectTrainingSplitOptions): TrainingSplitId {
+  return split ?? trainingSplitId;
 }

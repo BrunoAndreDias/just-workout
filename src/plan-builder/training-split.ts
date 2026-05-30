@@ -42,11 +42,18 @@ export type TrainingSplitDefinition = {
   weeklyRhythm: string;
 };
 
+export type TrainingSplitOption = Pick<TrainingSplitDefinition, "id" | "label">;
+
 export type TrainingSplitSummary = {
   muscleFrequency: string;
   recovery: string;
   split: string;
   weeklyRhythm: string;
+};
+
+type TrainingSplitCompatibilityOptions = {
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+  trainingSplitId: TrainingSplitId;
 };
 
 const trainingSplitDefinitions = [
@@ -207,12 +214,27 @@ export function getRecommendedTrainingSplitId(
   return recommendedTrainingSplitByFrequency[trainingFrequencyDaysPerWeek];
 }
 
+export function getRecommendedTrainingSplitOption(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): TrainingSplitOption {
+  return getTrainingSplitOption(getRecommendedTrainingSplitId(trainingFrequencyDaysPerWeek));
+}
+
 export function getCompatibleTrainingSplits(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): ReadonlyArray<TrainingSplitDefinition> {
   return trainingSplitDefinitions.filter((split) =>
     supportsTrainingFrequency(split, trainingFrequencyDaysPerWeek),
   );
+}
+
+export function getCompatibleTrainingSplitOptions(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): ReadonlyArray<TrainingSplitOption> {
+  return getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek).map(({ id, label }) => ({
+    id,
+    label,
+  }));
 }
 
 export function getTrainingSplit(splitId: TrainingSplitId): TrainingSplitDefinition {
@@ -225,6 +247,10 @@ export function getTrainingSplit(splitId: TrainingSplitId): TrainingSplitDefinit
   return split;
 }
 
+export function getTrainingSplitLabel(trainingSplitId: TrainingSplitId): string {
+  return getTrainingSplit(trainingSplitId).label;
+}
+
 export function isTrainingSplitId(value: unknown): value is TrainingSplitId {
   return trainingSplitDefinitions.some((split) => split.id === value);
 }
@@ -232,14 +258,24 @@ export function isTrainingSplitId(value: unknown): value is TrainingSplitId {
 export function isTrainingSplitCompatible(
   splitId: unknown,
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
-): splitId is TrainingSplitId {
-  if (!isTrainingSplitId(splitId)) {
+): splitId is TrainingSplitId;
+export function isTrainingSplitCompatible(options: TrainingSplitCompatibilityOptions): boolean;
+export function isTrainingSplitCompatible(
+  splitOrOptions: TrainingSplitCompatibilityOptions | unknown,
+  trainingFrequencyDaysPerWeek?: TrainingFrequencyDaysPerWeek,
+): boolean {
+  if (isTrainingSplitCompatibilityOptions(splitOrOptions)) {
+    return isCompatibleTrainingSplitId(
+      splitOrOptions.trainingSplitId,
+      splitOrOptions.trainingFrequencyDaysPerWeek,
+    );
+  }
+
+  if (trainingFrequencyDaysPerWeek === undefined) {
     return false;
   }
 
-  return getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek).some(
-    (split) => split.id === splitId,
-  );
+  return isCompatibleTrainingSplitId(splitOrOptions, trainingFrequencyDaysPerWeek);
 }
 
 export function summarizeTrainingSplit(splitId: TrainingSplitId): TrainingSplitSummary {
@@ -251,6 +287,36 @@ export function summarizeTrainingSplit(splitId: TrainingSplitId): TrainingSplitS
     split: split.label,
     weeklyRhythm: split.weeklyRhythm,
   };
+}
+
+function getTrainingSplitOption(trainingSplitId: TrainingSplitId): TrainingSplitOption {
+  const { id, label } = getTrainingSplit(trainingSplitId);
+
+  return { id, label };
+}
+
+function isTrainingSplitCompatibilityOptions(
+  value: TrainingSplitCompatibilityOptions | unknown,
+): value is TrainingSplitCompatibilityOptions {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "trainingFrequencyDaysPerWeek" in value &&
+    "trainingSplitId" in value
+  );
+}
+
+function isCompatibleTrainingSplitId(
+  splitId: unknown,
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): splitId is TrainingSplitId {
+  if (!isTrainingSplitId(splitId)) {
+    return false;
+  }
+
+  return getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek).some(
+    (split) => split.id === splitId,
+  );
 }
 
 function supportsTrainingFrequency(
