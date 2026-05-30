@@ -81,6 +81,10 @@ type PlanBuilderStepProgressProps = {
   currentStep: PlanBuilderStep;
 };
 
+type PlanBuilderCurrentStepCardProps = {
+  currentStep: PlanBuilderStep;
+};
+
 type PlanBuilderStepStatusCardProps = {
   body: string;
   title: string;
@@ -207,10 +211,6 @@ function PlanBuilderPage({
   stepLabel,
   summary,
 }: PlanBuilderPageProps) {
-  const currentStepIndex = planBuilderSteps.findIndex((step) => step.id === currentStep);
-  const currentStepNumber = currentStepIndex + 1;
-  const currentStepTitle = planBuilderSteps[currentStepIndex]?.label ?? "Current step";
-
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
       <section aria-label="Plan Builder workspace" className="min-w-0 space-y-4">
@@ -224,21 +224,7 @@ function PlanBuilderPage({
               {intro}
             </div>
 
-            <div className="w-full rounded-lg border border-stone-900/10 bg-white/72 p-4 xl:max-w-[18rem]">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                  Current step
-                </p>
-                <p className="text-xs font-bold uppercase tracking-wide text-[#b93725]">
-                  Step {currentStepNumber} of {planBuilderSteps.length}
-                </p>
-              </div>
-              <p className="mt-2 text-lg font-black text-stone-950">{currentStepTitle}</p>
-              <p className="mt-2 text-sm text-stone-600">
-                Just Workout keeps this in-progress Plan Blueprint visible while you move through
-                each builder step.
-              </p>
-            </div>
+            <PlanBuilderCurrentStepCard currentStep={currentStep} />
           </CardHeader>
 
           <div className="mt-4">
@@ -254,8 +240,28 @@ function PlanBuilderPage({
   );
 }
 
+function PlanBuilderCurrentStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
+  const stepDetails = getPlanBuilderStepDetails(currentStep);
+
+  return (
+    <div className="w-full rounded-lg border border-stone-900/10 bg-white/72 p-4 xl:max-w-[18rem]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Current step</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-[#b93725]">
+          Step {stepDetails.number} of {planBuilderSteps.length}
+        </p>
+      </div>
+      <p className="mt-2 text-lg font-black text-stone-950">{stepDetails.title}</p>
+      <p className="mt-2 text-sm text-stone-600">
+        Just Workout keeps this in-progress Plan Blueprint visible while you move through each
+        builder step.
+      </p>
+    </div>
+  );
+}
+
 function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) {
-  const currentStepIndex = planBuilderSteps.findIndex((step) => step.id === currentStep);
+  const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
 
   return (
     <nav aria-label="Plan Builder progress">
@@ -289,6 +295,17 @@ function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) 
       </ol>
     </nav>
   );
+}
+
+function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
+  const index = planBuilderSteps.findIndex((step) => step.id === currentStep);
+  const step = planBuilderSteps[index];
+
+  return {
+    index,
+    number: index + 1,
+    title: step?.label ?? "Current step",
+  };
 }
 
 function getPlanBuilderStepProgressStatus(
