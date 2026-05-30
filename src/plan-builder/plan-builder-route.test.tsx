@@ -7,6 +7,7 @@ import { createAppRouter } from "../app/router";
 import { db } from "../training/local-database";
 import { trainingService } from "../training/training-service";
 import { planBuilderPaths } from "./plan-builder-paths";
+import { planBuilderService } from "./plan-builder-service";
 
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
@@ -148,6 +149,97 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it.each([
+    {
+      daysPerWeek: 2 as const,
+      expectedLabels: ["2-Day Full Body"],
+      recommendedLabel: "2-Day Full Body",
+    },
+    {
+      daysPerWeek: 3 as const,
+      expectedLabels: ["3-Day Full Body", "Upper / Lower / Full Body", "Alternating Full Body A/B"],
+      recommendedLabel: "3-Day Full Body",
+    },
+    {
+      daysPerWeek: 4 as const,
+      expectedLabels: ["4-Day Upper/Lower", "Rotating Push/Pull/Legs"],
+      recommendedLabel: "4-Day Upper/Lower",
+    },
+    {
+      daysPerWeek: 5 as const,
+      expectedLabels: ["Rotating Push/Pull/Legs"],
+      recommendedLabel: "Rotating Push/Pull/Legs",
+    },
+  ])("shows only the approved selectable Training Splits for $daysPerWeek days/week", async ({
+    daysPerWeek,
+    expectedLabels,
+    recommendedLabel,
+  }) => {
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:00:00.000Z",
+      trainingFrequencyDaysPerWeek: daysPerWeek,
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const radios = within(splitGroup).getAllByRole("radio");
+
+    expect(radios).toHaveLength(expectedLabels.length);
+    expect(
+      within(splitGroup).getByRole("radio", { name: getAccessibleLabelMatcher(recommendedLabel) }),
+    ).toBeChecked();
+    expect(within(splitGroup).getAllByText("Recommended")).toHaveLength(1);
+    expect(within(splitGroup).queryAllByText("Also works")).toHaveLength(expectedLabels.length - 1);
+
+    for (const label of expectedLabels) {
+      expect(within(splitGroup).getByText(label)).toBeVisible();
+      expect(
+        within(splitGroup).getByRole("radio", { name: getAccessibleLabelMatcher(label) }),
+      ).toBeVisible();
+    }
+  });
+
+  it("auto-selects and persists the recommended split when Split opens without a compatible selection", async () => {
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:05:00.000Z",
+      trainingFrequencyDaysPerWeek: 5,
+    });
+
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await waitFor(() => {
+      expect(
+        within(splitGroup).getByRole("radio", {
+          name: getAccessibleLabelMatcher("Rotating Push/Pull/Legs"),
+        }),
+      ).toBeChecked();
+    });
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(
+        "rotating-push-pull-legs",
+      );
+    });
+
+    firstView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    expect(
+      within(resumedSplitGroup).getByRole("radio", {
+        name: getAccessibleLabelMatcher("Rotating Push/Pull/Legs"),
+      }),
+    ).toBeChecked();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Rotating Push/Pull/Legs",
+      ),
+    ).toBeVisible();
+  });
+
   it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency, Split, and Rep ranges URLs", async () => {
     const user = userEvent.setup();
 
@@ -248,4 +340,8 @@ function renderPlanBuilder({
     ...view,
     router,
   };
+}
+
+function getAccessibleLabelMatcher(label: string) {
+  return new RegExp(label.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 }

@@ -17,7 +17,7 @@ test.describe("desktop plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 5);
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
 
-    await continueToSplit(page);
+    await continueToSplit(page, "Rotating Push/Pull/Legs");
 
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -34,7 +34,7 @@ test.describe("mobile plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 4);
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
 
-    await continueToSplit(page);
+    await continueToSplit(page, "4-Day Upper/Lower");
 
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -113,11 +113,13 @@ async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: num
   await expect(frequencyGroup.getByRole("radio", { name: new RegExp(label, "i") })).toBeChecked();
 }
 
-async function continueToSplit(page: Page) {
+async function continueToSplit(page: Page, expectedSplitLabel = "3-Day Full Body") {
   await page.getByRole("link", { name: /continue to split/i }).click();
 
   await expect(page.getByRole("heading", { name: /select training split/i })).toBeVisible();
-  await expect(page.getByRole("radio", { name: /3-day full body/i })).toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: new RegExp(expectedSplitLabel, "i") }),
+  ).toBeChecked();
   await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
 }
 
