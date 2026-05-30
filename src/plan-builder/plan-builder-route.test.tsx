@@ -10,6 +10,7 @@ import { trainingService } from "../training/training-service";
 import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
+import type { TrainingSplitId } from "./training-split";
 
 const trainingSplitLabels = {
   alternatingFullBodyAB: "Alternating Full Body A/B",
@@ -50,6 +51,25 @@ const selectableTrainingSplitCases = [
   expectedLabels: ReadonlyArray<string>;
   recommendedLabel: string;
 }>;
+
+const singleSelectableTrainingSplitCases = [
+  {
+    daysPerWeek: 2,
+    expectedSplitId: "full-body-2-day",
+    label: trainingSplitLabels.fullBody2Day,
+  },
+  {
+    daysPerWeek: 5,
+    expectedSplitId: "rotating-push-pull-legs",
+    label: trainingSplitLabels.rotatingPushPullLegs,
+  },
+] satisfies ReadonlyArray<{
+  daysPerWeek: TrainingFrequencyDaysPerWeek;
+  expectedSplitId: TrainingSplitId;
+  label: string;
+}>;
+
+type PlanBuilderTestUser = ReturnType<typeof userEvent.setup>;
 
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
@@ -378,18 +398,9 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it.each([
-    {
-      daysPerWeek: 2,
-      expectedSplitId: "full-body-2-day",
-      label: trainingSplitLabels.fullBody2Day,
-    },
-    {
-      daysPerWeek: 5,
-      expectedSplitId: "rotating-push-pull-legs",
-      label: trainingSplitLabels.rotatingPushPullLegs,
-    },
-  ] as const)("keeps the Split step actionable for $daysPerWeek days/week when only one Training Split is selectable", async ({
+  it.each(
+    singleSelectableTrainingSplitCases,
+  )("keeps the Split step actionable for $daysPerWeek days/week when only one Training Split is selectable", async ({
     daysPerWeek,
     expectedSplitId,
     label,
@@ -397,30 +408,13 @@ describe("PlanBuilderRoute", () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    const frequencyGroup = await screen.findByRole("group", {
-      name: /training frequency/i,
-    });
+    await selectTrainingFrequency(user, daysPerWeek);
 
-    await user.click(within(frequencyGroup).getByText(`${daysPerWeek} days/week`));
-    await waitFor(() => {
-      expect(
-        within(frequencyGroup).getByRole("radio", {
-          name: new RegExp(`${daysPerWeek} days/week`, "i"),
-        }),
-      ).toBeChecked();
-    });
-
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const splitGroup = await continueToSplitStep(user);
     const splitOptions = within(splitGroup);
 
     expect(splitOptions.getAllByRole("radio")).toHaveLength(1);
-    expect(
-      splitOptions.getByRole("radio", {
-        name: getLabelMatcher(label),
-      }),
-    ).toBeChecked();
+    expectTrainingSplitChecked(splitGroup, label);
     expect(screen.getByRole("link", { name: /back to frequency/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /continue to rep ranges/i })).toBeVisible();
 
@@ -431,16 +425,12 @@ describe("PlanBuilderRoute", () => {
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+    const resumedSplitGroup = await continueToSplitStep(user);
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.split);
     });
-    expect(
-      await screen.findByRole("radio", {
-        name: getLabelMatcher(label),
-      }),
-    ).toBeChecked();
+    expectTrainingSplitChecked(resumedSplitGroup, label);
 
     await user.click(screen.getByRole("link", { name: /continue to rep ranges/i }));
 
@@ -448,9 +438,7 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
     expect(await screen.findByRole("heading", { name: /rep ranges placeholder/i })).toBeVisible();
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(expectedSplitId);
-    });
+    await expectPersistedTrainingSplit(expectedSplitId);
   });
 
   it("resumes a user-selected compatible Training Split after the route unmounts and remounts", async () => {
@@ -458,44 +446,19 @@ describe("PlanBuilderRoute", () => {
 
     const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    const frequencyGroup = await screen.findByRole("group", {
-      name: /training frequency/i,
-    });
+    await selectTrainingFrequency(user, 4);
 
-    await user.click(within(frequencyGroup).getByText("4 days/week"));
-    await waitFor(() => {
-      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
-    });
+    const splitGroup = await continueToSplitStep(user);
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    await user.click(within(splitGroup).getByText(trainingSplitLabels.rotatingPushPullLegs));
-
-    await waitFor(() => {
-      expect(
-        within(splitGroup).getByRole("radio", {
-          name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
-        }),
-      ).toBeChecked();
-    });
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(
-        "rotating-push-pull-legs",
-      );
-    });
+    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+    await expectPersistedTrainingSplit("rotating-push-pull-legs");
 
     firstView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
 
-    expect(
-      within(resumedSplitGroup).getByRole("radio", {
-        name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
-      }),
-    ).toBeChecked();
+    expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.rotatingPushPullLegs);
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
         trainingSplitLabels.rotatingPushPullLegs,
@@ -508,26 +471,12 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    const frequencyGroup = await screen.findByRole("group", {
-      name: /training frequency/i,
-    });
+    await selectTrainingFrequency(user, 4);
 
-    await user.click(within(frequencyGroup).getByText("4 days/week"));
-    await waitFor(() => {
-      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
-    });
+    const splitGroup = await continueToSplitStep(user);
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    await user.click(within(splitGroup).getByText(trainingSplitLabels.rotatingPushPullLegs));
-
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(
-        "rotating-push-pull-legs",
-      );
-    });
+    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+    await expectPersistedTrainingSplit("rotating-push-pull-legs");
 
     await user.click(screen.getByRole("link", { name: /back to frequency/i }));
 
@@ -538,33 +487,21 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    await user.click(within(resumedFrequencyGroup).getByText("3 days/week"));
+    await user.click(within(resumedFrequencyGroup).getByText(getTrainingFrequencyLabel(3)));
 
-    await waitFor(() => {
-      expect(screen.getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
-    });
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBeNull();
-    });
+    await expectTrainingFrequencyChecked(resumedFrequencyGroup, 3);
+    await expectPersistedTrainingSplit(null);
     expect(
       within(summary).queryByText(trainingSplitLabels.rotatingPushPullLegs),
     ).not.toBeInTheDocument();
     expect(within(summary).getAllByText("Choose a Training Split")).toHaveLength(2);
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-
-    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
+    const resumedSplitGroup = await continueToSplitStep(user);
 
     await waitFor(() => {
-      expect(
-        within(resumedSplitGroup).getByRole("radio", {
-          name: getLabelMatcher(trainingSplitLabels.fullBody3Day),
-        }),
-      ).toBeChecked();
+      expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.fullBody3Day);
     });
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe("full-body-3-day");
-    });
+    await expectPersistedTrainingSplit("full-body-3-day");
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
         trainingSplitLabels.fullBody3Day,
@@ -708,6 +645,65 @@ function renderPlanBuilder({
   };
 }
 
+async function selectTrainingFrequency(
+  user: PlanBuilderTestUser,
+  daysPerWeek: TrainingFrequencyDaysPerWeek,
+) {
+  const frequencyGroup = await screen.findByRole("group", {
+    name: /training frequency/i,
+  });
+
+  await user.click(within(frequencyGroup).getByText(getTrainingFrequencyLabel(daysPerWeek)));
+  await expectTrainingFrequencyChecked(frequencyGroup, daysPerWeek);
+
+  return frequencyGroup;
+}
+
+async function expectTrainingFrequencyChecked(
+  frequencyGroup: HTMLElement,
+  daysPerWeek: TrainingFrequencyDaysPerWeek,
+) {
+  await waitFor(() => {
+    expect(
+      within(frequencyGroup).getByRole("radio", {
+        name: getLabelMatcher(getTrainingFrequencyLabel(daysPerWeek)),
+      }),
+    ).toBeChecked();
+  });
+}
+
+async function continueToSplitStep(user: PlanBuilderTestUser) {
+  await user.click(screen.getByRole("link", { name: /continue to split/i }));
+
+  return screen.findByRole("group", { name: /training split/i });
+}
+
+async function selectTrainingSplit(
+  user: PlanBuilderTestUser,
+  splitGroup: HTMLElement,
+  label: string,
+) {
+  await user.click(within(splitGroup).getByText(label));
+
+  await waitFor(() => {
+    expectTrainingSplitChecked(splitGroup, label);
+  });
+}
+
+function expectTrainingSplitChecked(splitGroup: HTMLElement, label: string) {
+  expect(
+    within(splitGroup).getByRole("radio", {
+      name: getLabelMatcher(label),
+    }),
+  ).toBeChecked();
+}
+
+async function expectPersistedTrainingSplit(split: TrainingSplitId | null) {
+  await waitFor(async () => {
+    expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(split);
+  });
+}
+
 function getSelectedTrainingSplitDetails(label: string) {
   return screen.getByRole("region", { name: getLabelMatcher(label) });
 }
@@ -758,6 +754,10 @@ function expectUnsupportedTrainingSplitGuidance(detailsPanel: HTMLElement) {
 
 function getLabelMatcher(label: string) {
   return new RegExp(escapeRegExp(label), "i");
+}
+
+function getTrainingFrequencyLabel(daysPerWeek: TrainingFrequencyDaysPerWeek) {
+  return `${daysPerWeek} days/week`;
 }
 
 function escapeRegExp(value: string) {
