@@ -41,6 +41,11 @@ export type PlanBlueprintSummary = {
   weeklyRhythm: string;
 };
 
+type PlanBlueprintSplitSummaryDetails = {
+  splitStatus: PlanBlueprintSummary["splitStatus"];
+  splitSummary: TrainingSplitSummary | null;
+};
+
 type CreateDefaultPlanBlueprintOptions = {
   id: string;
   timestamp: string;
@@ -103,7 +108,6 @@ const planBlueprintSummaryFallbacks = {
   nextStep: "Choose a Training Split",
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
   split: "Choose a Training Split",
-  trainingFrequencyStatus: "Completed",
 } as const;
 
 const trainingFrequencyRecommendations = {
@@ -205,7 +209,7 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
 }
 
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
-  const splitSummary = getPlanBlueprintSplitSummary(blueprint);
+  const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
 
   return {
@@ -214,32 +218,32 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     nextStep: splitSummary ? "Rep ranges" : planBlueprintSummaryFallbacks.nextStep,
     recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
-    splitStatus: getPlanBlueprintSplitStatus(blueprint),
+    splitStatus,
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
-    trainingFrequencyStatus: planBlueprintSummaryFallbacks.trainingFrequencyStatus,
+    trainingFrequencyStatus: "Completed",
     weeklyRhythm: splitSummary?.weeklyRhythm ?? pendingSplitDetail,
   };
 }
 
-function getPlanBlueprintSplitSummary(blueprint: PlanBlueprint): TrainingSplitSummary | null {
-  if (!isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
-    return null;
-  }
-
-  return summarizeTrainingSplit(blueprint.split);
-}
-
-function getPlanBlueprintSplitStatus(
+function getPlanBlueprintSplitSummaryDetails(
   blueprint: PlanBlueprint,
-): PlanBlueprintSummary["splitStatus"] {
-  if (!isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
-    return null;
+): PlanBlueprintSplitSummaryDetails {
+  const selectedSplit = blueprint.split;
+
+  if (!isTrainingSplitCompatible(selectedSplit, blueprint.trainingFrequencyDaysPerWeek)) {
+    return {
+      splitStatus: null,
+      splitSummary: null,
+    };
   }
 
-  return blueprint.split === getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek)
-    ? "Recommended"
-    : "Also works";
+  const recommendedSplit = getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek);
+
+  return {
+    splitStatus: selectedSplit === recommendedSplit ? "Recommended" : "Also works",
+    splitSummary: summarizeTrainingSplit(selectedSplit),
+  };
 }
 
 function formatTrainingGoal(trainingGoal: TrainingGoal): string {

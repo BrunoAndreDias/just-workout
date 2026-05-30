@@ -29,15 +29,20 @@ import {
   unsupportedTrainingSplitCategories,
 } from "./training-split";
 
+type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
+
 type PlanBlueprintSummaryValueKey = Exclude<
   keyof PlanBlueprintSummary,
-  "splitStatus" | "trainingFrequencyStatus"
+  PlanBlueprintSummaryStatusKey
 >;
 
-type PlanBlueprintSummaryStatus = Exclude<
-  PlanBlueprintSummary["splitStatus"] | PlanBlueprintSummary["trainingFrequencyStatus"],
-  null
->;
+type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
+
+type PlanBlueprintSummaryRow = {
+  key: PlanBlueprintSummaryValueKey;
+  label: string;
+  statusKey: PlanBlueprintSummaryStatusKey | null;
+};
 
 const planBlueprintSummaryRows = [
   { key: "trainingGoal", label: "Training Goal", statusKey: null },
@@ -52,11 +57,7 @@ const planBlueprintSummaryRows = [
   { key: "recovery", label: "Recovery", statusKey: null },
   { key: "nextStep", label: "Next step", statusKey: null },
   { key: "generationStatus", label: "Training Plan", statusKey: null },
-] as const satisfies ReadonlyArray<{
-  key: PlanBlueprintSummaryValueKey;
-  label: string;
-  statusKey: "splitStatus" | "trainingFrequencyStatus" | null;
-}>;
+] as const satisfies ReadonlyArray<PlanBlueprintSummaryRow>;
 
 const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
@@ -992,11 +993,11 @@ const planBlueprintSummaryStatusStyles = {
   Recommended: "bg-[#fff3ea] text-[#b93725]",
 } as const satisfies Record<PlanBlueprintSummaryStatus, string>;
 
-function SummaryRow({ label, status, value }: SummaryRowProps) {
+function SummaryRow({ label, status = null, value }: SummaryRowProps) {
   return (
     <div className="min-w-0 rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-3 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">{label}</dt>
+      <dt className="flex items-start justify-between gap-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+        <span>{label}</span>
         {status ? (
           <span
             className={cn(
@@ -1007,7 +1008,7 @@ function SummaryRow({ label, status, value }: SummaryRowProps) {
             {status}
           </span>
         ) : null}
-      </div>
+      </dt>
       <dd className="mt-1 break-words text-sm font-semibold text-stone-900">{value}</dd>
     </div>
   );
