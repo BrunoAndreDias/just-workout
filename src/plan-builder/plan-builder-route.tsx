@@ -1,9 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import {
+  ArrowRight,
+  Calendar,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  Clock3,
+  Dumbbell,
+  Grid2X2,
+  Info,
+  List,
+  type LucideIcon,
+  SlidersHorizontal,
+  Star,
+  Target,
+  UserRound,
+} from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { Button } from "../design-system/button";
-import { Card, CardHeader, CardTitle } from "../design-system/card";
+import { Card } from "../design-system/card";
 import { cn } from "../design-system/cn";
+import { KeyValueRow } from "../design-system/key-value-row";
+import { Stepper } from "../design-system/stepper";
 import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
   getTrainingFrequencyRecommendation,
@@ -30,34 +49,60 @@ import {
 } from "./training-split";
 
 type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
-
-type PlanBlueprintSummaryValueKey = Exclude<
-  keyof PlanBlueprintSummary,
-  PlanBlueprintSummaryStatusKey
->;
-
 type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
 
 type PlanBlueprintSummaryRow = {
-  key: PlanBlueprintSummaryValueKey;
+  getStatus?: (summary: PlanBlueprintSummary) => string | null;
+  getValue: (summary: PlanBlueprintSummary) => string;
+  icon: LucideIcon;
   label: string;
-  statusKey: PlanBlueprintSummaryStatusKey | null;
 };
 
-const planBlueprintSummaryRows = [
-  { key: "trainingGoal", label: "Training Goal", statusKey: null },
+const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   {
-    key: "trainingFrequency",
-    label: "Training Frequency",
-    statusKey: "trainingFrequencyStatus",
+    getValue: (summary) => summary.trainingGoal,
+    icon: Target,
+    label: "Goal",
   },
-  { key: "split", label: "Training Split", statusKey: "splitStatus" },
-  { key: "weeklyRhythm", label: "Weekly rhythm", statusKey: null },
-  { key: "muscleFrequency", label: "Muscle frequency", statusKey: null },
-  { key: "recovery", label: "Recovery", statusKey: null },
-  { key: "nextStep", label: "Next step", statusKey: null },
-  { key: "generationStatus", label: "Training Plan", statusKey: null },
-] as const satisfies ReadonlyArray<PlanBlueprintSummaryRow>;
+  {
+    getValue: () => "Intermediate",
+    icon: UserRound,
+    label: "Experience",
+  },
+  {
+    getValue: (summary) => summary.trainingFrequency,
+    icon: CalendarDays,
+    label: "Frequency",
+  },
+  {
+    getValue: (summary) =>
+      summary.split === "Choose a Training Split" ? "Not chosen yet" : summary.split,
+    icon: Grid2X2,
+    label: "Split",
+  },
+  {
+    getValue: (summary) =>
+      summary.repRanges === "Choose Rep ranges" ? "Not chosen yet" : summary.repRanges,
+    icon: SlidersHorizontal,
+    label: "Rep ranges",
+  },
+  {
+    getValue: () => "Not chosen yet",
+    icon: List,
+    label: "Volume preset",
+  },
+  {
+    getValue: () => "Not configured yet",
+    icon: Dumbbell,
+    label: "Equipment",
+  },
+  {
+    getStatus: () => "Not ready yet",
+    getValue: () => "Not ready yet",
+    icon: Clock3,
+    label: "Generation status",
+  },
+];
 
 const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
@@ -71,26 +116,6 @@ const planBuilderSteps = [
 const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
 
 type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
-
-type PlanBuilderStepProgressStatus = "completed" | "current" | "upcoming";
-
-const planBuilderStepProgressStyles = {
-  completed: {
-    cardClassName: "border-[#d6462f]/30 bg-[#fff3ea] text-stone-950",
-    labelClassName: "text-stone-500",
-  },
-  current: {
-    cardClassName: "border-stone-950 bg-stone-950 text-stone-50",
-    labelClassName: "text-[#f4b860]",
-  },
-  upcoming: {
-    cardClassName: "border-stone-900/10 bg-white/80 text-stone-950",
-    labelClassName: "text-stone-500",
-  },
-} as const satisfies Record<
-  PlanBuilderStepProgressStatus,
-  { cardClassName: string; labelClassName: string }
->;
 
 type UpdateTrainingFrequencyVariables = {
   timestamp: string;
@@ -117,10 +142,6 @@ type PlanBuilderPageProps = {
   intro: ReactNode;
   stepLabel: string;
   summary: PlanBlueprintSummary | null;
-};
-
-type PlanBuilderStepProgressProps = {
-  currentStep: PlanBuilderStep;
 };
 
 type PlanBuilderCurrentStepCardProps = {
@@ -187,9 +208,8 @@ export function PlanBuilderRoute() {
     <PlanBuilderPage
       currentStep="frequency"
       intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Start a new Plan Blueprint or resume the unfinished one saved on this device. The builder
-          currently assumes a Build Muscle goal and starts Training Frequency at 3 days/week.
+        <p className="text-[1.05rem] font-medium leading-6 text-[#31505d]">
+          Configure your training blueprint step by step before generating your plan.
         </p>
       }
       stepLabel="Frequency step"
@@ -236,7 +256,7 @@ export function PlanBuilderSplitRoute() {
     <PlanBuilderPage
       currentStep="split"
       intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+        <p className="max-w-2xl text-base font-medium leading-7 text-[#31505d]">
           Choose a compatible Training Split for the saved Plan Blueprint. Just Workout will
           recommend the best fit for this Training Frequency without locking you into one option.
         </p>
@@ -264,7 +284,7 @@ export function PlanBuilderRepRangesRoute() {
     <PlanBuilderPage
       currentStep="rep-ranges"
       intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+        <p className="max-w-2xl text-base font-medium leading-7 text-[#31505d]">
           The Plan Blueprint keeps moving forward by route, but Rep ranges stay out of scope in this
           slice.
         </p>
@@ -384,93 +404,70 @@ function PlanBuilderPage({
   children,
   currentStep,
   intro,
-  stepLabel,
+  stepLabel: _stepLabel,
   summary,
 }: PlanBuilderPageProps) {
+  const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
+
   return (
-    <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-      <section aria-label="Plan Builder workspace" className="min-w-0 space-y-4">
-        <Card className="overflow-hidden bg-[#f2ecdf]">
-          <CardHeader className="mb-0 flex-col items-start gap-4 xl:flex-row xl:justify-between">
-            <div className="min-w-0 space-y-2">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#b93725]">
-                {stepLabel}
-              </p>
-              <CardTitle className="text-3xl font-black sm:text-4xl">Plan Builder</CardTitle>
-              {intro}
-            </div>
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:items-start 2xl:grid-cols-[906px_22.5rem] 2xl:gap-[1.625rem]">
+      <section aria-label="Plan Builder workspace" className="min-w-0">
+        <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-7 lg:pt-11">
+          <header className="space-y-2">
+            <h1 className="font-serif text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
+              Build your workout plan
+            </h1>
+            {intro}
+          </header>
 
-            <PlanBuilderCurrentStepCard currentStep={currentStep} />
-          </CardHeader>
-
-          <div className="mt-4">
-            <PlanBuilderStepProgress currentStep={currentStep} />
+          <div className="mt-7">
+            <Stepper
+              currentIndex={currentStepIndex}
+              items={planBuilderSteps}
+              label="Plan Builder"
+            />
           </div>
-        </Card>
 
-        <Card className="bg-white/82">{children}</Card>
+          <div className="mt-9">{children}</div>
+        </Card>
       </section>
 
-      <PlanBlueprintSummaryCard summary={summary} />
+      <div className="grid gap-6 self-start xl:pt-6">
+        <PlanBlueprintSummaryCard summary={summary} />
+        <PlanBuilderNextStepCard currentStep={currentStep} />
+      </div>
     </section>
   );
 }
 
-function PlanBuilderCurrentStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
-  const stepDetails = getPlanBuilderStepDetails(currentStep);
+function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
+  const body = getPlanBuilderNextStepBody(currentStep);
 
   return (
-    <div className="w-full rounded-lg border border-stone-900/10 bg-white/72 p-4 xl:max-w-[18rem]">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Current step</p>
-        <p className="text-xs font-bold uppercase tracking-wide text-[#b93725]">
-          Step {stepDetails.number} of {planBuilderSteps.length}
-        </p>
-      </div>
-      <p className="mt-2 text-lg font-black text-stone-950">{stepDetails.title}</p>
-      <p className="mt-2 text-sm text-stone-600">
-        Just Workout keeps this in-progress Plan Blueprint visible while you move through each
-        builder step.
-      </p>
-    </div>
+    <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
+      <h2 className="font-serif text-2xl font-black leading-tight text-[#120f0d]">
+        What happens next
+      </h2>
+      <p className="mt-5 text-base font-medium leading-8 text-[#31505d]">{body}</p>
+    </Card>
   );
 }
 
-function PlanBuilderStepProgress({ currentStep }: PlanBuilderStepProgressProps) {
-  const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
-
-  return (
-    <nav aria-label="Plan Builder progress">
-      <ol aria-label="Plan Builder steps" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {planBuilderSteps.map((step, index) => {
-          const status = getPlanBuilderStepProgressStatus(index, currentStepIndex);
-          const styles = planBuilderStepProgressStyles[status];
-
-          return (
-            <li
-              className={cn("min-w-0 rounded-lg border px-3 py-3", styles.cardClassName)}
-              key={step.id}
-            >
-              <p
-                className={cn(
-                  "text-[11px] font-bold uppercase tracking-wide",
-                  styles.labelClassName,
-                )}
-              >
-                Step {index + 1}
-              </p>
-              <p
-                aria-current={status === "current" ? "step" : undefined}
-                className="mt-1 text-sm font-black leading-5"
-              >
-                {step.label}
-              </p>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
-  );
+function getPlanBuilderNextStepBody(currentStep: PlanBuilderStep) {
+  switch (currentStep) {
+    case "frequency":
+      return "Next, you'll choose the best Training Split for your weekly schedule.";
+    case "split":
+      return "Next, you'll choose Rep ranges that fit your Training Plan.";
+    case "rep-ranges":
+      return "Next, you'll tune the volume preset before choosing exercises.";
+    case "volume":
+      return "Next, you'll choose the exercise pool for the generated Training Plan.";
+    case "exercises":
+      return "Next, you'll review the blueprint before generating the Training Plan.";
+    case "review":
+      return "Review the blueprint and generate the Training Plan when everything is ready.";
+  }
 }
 
 function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
@@ -482,21 +479,6 @@ function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
     number: index + 1,
     title: step?.label ?? "Current step",
   };
-}
-
-function getPlanBuilderStepProgressStatus(
-  stepIndex: number,
-  currentStepIndex: number,
-): PlanBuilderStepProgressStatus {
-  if (stepIndex < currentStepIndex) {
-    return "completed";
-  }
-
-  if (stepIndex === currentStepIndex) {
-    return "current";
-  }
-
-  return "upcoming";
 }
 
 type TrainingFrequencyStepProps = {
@@ -513,63 +495,72 @@ function TrainingFrequencyStep({
   const recommendation = getTrainingFrequencyRecommendation(selectedTrainingFrequencyDaysPerWeek);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-      <div className="min-w-0 space-y-4">
-        <section aria-labelledby="training-frequency-title" className="space-y-3">
-          <div>
-            <h3
-              className="text-xl font-black text-stone-950 sm:text-2xl"
-              id="training-frequency-title"
-            >
-              Select Training Frequency
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm text-stone-600">
-              Later builder steps will adapt split choices to this frequency without forcing a
-              single split style.
-            </p>
-          </div>
+    <section
+      aria-labelledby="training-frequency-title"
+      className="rounded-lg border border-stone-950/10 bg-white/78 p-6 sm:p-8 lg:-mx-[1.375rem]"
+    >
+      <div>
+        <h2
+          className="font-serif text-3xl font-black leading-tight text-[#120f0d]"
+          id="training-frequency-title"
+        >
+          Training frequency
+        </h2>
+        <p className="mt-4 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
+          Choose how many days per week you can realistically train.
+        </p>
+        <p className="mt-1 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
+          Just Workout will recommend the best Training Split based on this choice.
+        </p>
+      </div>
 
-          <fieldset className="grid gap-3 sm:grid-cols-2">
-            <legend className="sr-only">Training Frequency</legend>
-            {trainingFrequencyOptions.map((option) => (
-              <TrainingFrequencyOptionRadio
-                isSelected={option.daysPerWeek === selectedTrainingFrequencyDaysPerWeek}
-                key={option.daysPerWeek}
-                onSelect={onTrainingFrequencyChange}
-                option={option}
-              />
-            ))}
-          </fieldset>
+      <fieldset className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+        <legend className="sr-only">Training Frequency</legend>
+        {trainingFrequencyOptions.map((option) => (
+          <TrainingFrequencyOptionRadio
+            isSelected={option.daysPerWeek === selectedTrainingFrequencyDaysPerWeek}
+            key={option.daysPerWeek}
+            onSelect={onTrainingFrequencyChange}
+            option={option}
+          />
+        ))}
+      </fieldset>
 
-          <p className="text-sm font-semibold text-stone-600">
-            6-day plans are not available in this first version.
-          </p>
-        </section>
+      <TrainingFrequencyRecommendationCard recommendation={recommendation} />
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button disabled type="button" variant="outline">
-            Back
-          </Button>
-          {canContinueToSplit ? (
-            <Button asChild>
-              <Link to={planBuilderPaths.split}>Continue to Split</Link>
-            </Button>
-          ) : (
-            <Button disabled type="button">
+      <PlanBuilderStepStatusCard
+        body="6-day plans are not available in this first version."
+        title="Unavailable"
+      />
+
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button
+          className="h-[3.75rem] min-w-[7.375rem] border-stone-950/10 bg-[#fbf7f1] text-base text-stone-400 hover:bg-[#fbf7f1]"
+          disabled
+          type="button"
+          variant="outline"
+        >
+          <ChevronLeft aria-hidden="true" size={20} />
+          Back
+        </Button>
+        {canContinueToSplit ? (
+          <Button
+            asChild
+            className="h-[3.75rem] min-w-[14.25rem] bg-[#007780] text-base font-medium shadow-[0_12px_26px_rgba(0,119,128,0.18)] hover:bg-[#00666e] focus-visible:outline-[#007780]"
+          >
+            <Link to={planBuilderPaths.split}>
               Continue to Split
-            </Button>
-          )}
-        </div>
+              <ArrowRight aria-hidden="true" size={20} />
+            </Link>
+          </Button>
+        ) : (
+          <Button disabled type="button">
+            Continue to Split
+            <ArrowRight aria-hidden="true" size={20} />
+          </Button>
+        )}
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <PlanBuilderStepStatusCard
-          body="This entry point establishes the resumable blueprint before later builder choices exist."
-          title="Current step"
-        />
-        <TrainingFrequencyRecommendationCard recommendation={recommendation} />
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -713,10 +704,10 @@ function TrainingFrequencyOptionRadio({
   return (
     <label
       className={cn(
-        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
+        "relative flex min-h-60 min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border bg-white/80 p-5 text-center transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[#007780]",
         isSelected
-          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
-          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
+          ? "border-[#0b8490] text-[#00636a] shadow-[0_14px_30px_rgba(0,119,128,0.08)]"
+          : "border-stone-950/10 text-stone-950 hover:bg-white",
       )}
     >
       <input
@@ -727,11 +718,28 @@ function TrainingFrequencyOptionRadio({
         type="radio"
         value={option.daysPerWeek}
       />
-      <p className="text-sm font-bold uppercase tracking-wide text-inherit/80">Days per week</p>
-      <p className="mt-2 text-lg font-black">{optionLabel}</p>
-      <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+      {isSelected ? (
+        <CheckCircle2
+          aria-hidden="true"
+          className="absolute right-4 top-4 text-[#006f78]"
+          size={22}
+          strokeWidth={2}
+        />
+      ) : null}
+      <span className="flex h-16 w-16 items-center justify-center text-stone-950">
+        <span className="relative flex h-16 w-16 items-center justify-center">
+          <Calendar aria-hidden="true" size={58} strokeWidth={1.4} />
+          <span className="absolute top-[1.58rem] text-[1.35rem] font-medium leading-none">
+            {option.daysPerWeek}
+          </span>
+        </span>
+      </span>
+      <span className="mt-6 block text-[1.35rem] font-medium leading-7 text-stone-950">
+        {optionLabel}
+      </span>
+      <span className="mt-4 block min-h-12 text-base font-medium leading-6 text-[#526873]">
         {option.helperText}
-      </p>
+      </span>
     </label>
   );
 }
@@ -921,26 +929,31 @@ function TrainingFrequencyRecommendationCard({
   return (
     <section
       aria-labelledby="training-frequency-recommendation-title"
-      className="rounded-md border border-stone-900/10 bg-stone-950 p-4 text-stone-50"
+      className="mt-6 flex items-center gap-5 rounded-lg border border-stone-950/8 bg-[#f5f6f4] px-5 py-[17px] text-[#075d63]"
     >
-      <p className="text-sm font-bold text-[#f4b860]">Recommendation</p>
-      <h3 className="mt-1 text-xl font-black" id="training-frequency-recommendation-title">
-        {recommendation.title}
-      </h3>
-      <p className="mt-2 text-sm text-stone-300">{recommendation.description}</p>
-      <p className="mt-3 text-sm font-semibold text-stone-200">
-        Future steps will narrow the split options for this frequency without locking you into a
-        single template.
-      </p>
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#0b8490]/20 bg-white/60">
+        <Star aria-hidden="true" size={28} strokeWidth={1.5} />
+      </span>
+      <div className="min-w-0">
+        <h3 className="text-base font-bold" id="training-frequency-recommendation-title">
+          Recommended for you
+        </h3>
+        <p className="mt-2 text-base font-medium leading-7 text-[#31505d]">
+          {recommendation.description}
+        </p>
+      </div>
     </section>
   );
 }
 
 function PlanBuilderStepStatusCard({ body, title }: PlanBuilderStepStatusCardProps) {
   return (
-    <div className="rounded-md border border-stone-900/10 bg-white/80 p-4">
-      <p className="text-sm font-bold text-stone-700">{title}</p>
-      <p className="mt-2 text-sm text-stone-600">{body}</p>
+    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[#db7a1d]">
+        <Info aria-hidden="true" size={24} strokeWidth={1.7} />
+      </span>
+      <p className="sr-only">{title}</p>
+      <p className="text-base font-medium leading-7">{body}</p>
     </div>
   );
 }
@@ -951,30 +964,30 @@ type PlanBlueprintSummaryCardProps = {
 
 function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
   return (
-    <aside aria-labelledby="plan-blueprint-summary-title" className="self-start lg:sticky lg:top-4">
-      <Card className="bg-white/78">
-        <CardHeader>
-          <div>
-            <CardTitle id="plan-blueprint-summary-title">Plan Blueprint Summary</CardTitle>
-            <p className="mt-2 text-sm text-stone-600">
-              Review the saved Just Workout blueprint while you move through the builder.
-            </p>
-          </div>
-        </CardHeader>
+    <aside aria-label="Plan blueprint summary" className="self-start xl:sticky xl:top-6">
+      <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
+        <h2
+          className="font-serif text-2xl font-black leading-tight text-[#120f0d]"
+          id="plan-blueprint-summary-title"
+        >
+          Plan blueprint
+        </h2>
 
         {summary ? (
-          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {planBlueprintSummaryRows.map(({ key, label, statusKey }) => (
-              <SummaryRow
-                key={key}
+          <dl className="mt-6 divide-y divide-stone-950/8">
+            {planBlueprintSummaryRows.map(({ getStatus, getValue, icon, label }) => (
+              <KeyValueRow
+                icon={icon}
+                key={label}
                 label={label}
-                status={statusKey ? summary[statusKey] : null}
-                value={summary[key]}
+                status={getStatus?.(summary)}
+                statusClassName="bg-[#f8eee6]"
+                value={getValue(summary)}
               />
             ))}
           </dl>
         ) : (
-          <p className="text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>
+          <p className="mt-6 text-base font-medium text-[#526873]">Loading Plan Blueprint...</p>
         )}
       </Card>
     </aside>

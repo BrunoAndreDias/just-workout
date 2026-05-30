@@ -156,19 +156,19 @@ export const repRangeStyles = [
 export const trainingFrequencyOptions = [
   {
     daysPerWeek: 2,
-    helperText: "Focused full-body week",
+    helperText: "Full Body A/B only",
   },
   {
     daysPerWeek: 3,
-    helperText: "Flexible split options",
+    helperText: "Full Body recommended",
   },
   {
     daysPerWeek: 4,
-    helperText: "More split variety",
+    helperText: "Upper/Lower recommended",
   },
   {
     daysPerWeek: 5,
-    helperText: "Higher weekly frequency",
+    helperText: "Advanced Push/Pull/Legs variation",
   },
 ] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
 
@@ -192,8 +192,7 @@ const trainingFrequencyRecommendations = {
     title: "Practical starting point",
   },
   4: {
-    description:
-      "Four days/week opens up more split variety while still leaving room for steady progress and recovery.",
+    description: "4 days/week is a strong balance of progress, recovery, and schedule flexibility.",
     title: "Expand your split options",
   },
   5: {

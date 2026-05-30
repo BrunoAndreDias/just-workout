@@ -6,3 +6,5 @@ test-results
 .DS_Store
 *.local
 .pnpm-store
+.sandcastle/logs
+.sandcastle/worktrees
