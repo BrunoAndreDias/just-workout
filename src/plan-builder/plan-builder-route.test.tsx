@@ -29,15 +29,20 @@ describe("PlanBuilderRoute", () => {
 
   it("renders the resumable plan builder summary inside the app shell", async () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+    const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(await screen.findByRole("heading", { name: /plan builder/i })).toBeVisible();
     expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
     expect(await screen.findByText("Build Muscle")).toBeVisible();
     expect(await screen.findAllByText("3 days/week")).toHaveLength(2);
-    expect(screen.getAllByText("Not chosen yet")).toHaveLength(3);
-    expect(screen.getByText("Not configured yet")).toBeVisible();
-    expect(screen.getByText("Not ready yet")).toBeVisible();
+    expect(within(summary).getAllByText("Choose a Training Split")).toHaveLength(2);
+    expect(
+      within(summary).getAllByText("Choose a compatible split to see this detail."),
+    ).toHaveLength(3);
+    expect(
+      within(summary).getByText("No Training Plan yet. Review creates the full Training Plan."),
+    ).toBeVisible();
   });
 
   it("lets the user select a training frequency, updates the summary, and restores it on return", async () => {
@@ -93,7 +98,57 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency and Split URLs", async () => {
+  it("defaults 4 days/week to 4-Day Upper/Lower and lets the user switch to Rotating Push/Pull/Legs", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    const frequencyGroup = await screen.findByRole("group", {
+      name: /training frequency/i,
+    });
+
+    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await waitFor(() => {
+      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
+    });
+
+    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await waitFor(() => {
+      expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
+    });
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "4-Day Upper/Lower",
+      ),
+    ).toBeVisible();
+
+    await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
+
+    await waitFor(() => {
+      expect(
+        within(splitGroup).getByRole("radio", { name: /rotating push\/pull\/legs/i }),
+      ).toBeChecked();
+    });
+    expect(await screen.findByText(/rotating-cycle preview/i)).toBeVisible();
+    expect(
+      await screen.findByText(/schedule-flexible: the cycle rotates across available weekdays/i),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Rotating Push/Pull/Legs",
+      ),
+    ).toBeVisible();
+    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
+      activePlan: null,
+      exercises: [],
+      recentSessions: [],
+    });
+  });
+
+  it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency, Split, and Rep ranges URLs", async () => {
     const user = userEvent.setup();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
@@ -110,11 +165,11 @@ describe("PlanBuilderRoute", () => {
 
     await user.click(await screen.findByRole("link", { name: /continue to split/i }));
 
-    expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.split);
     });
-    expect(screen.getByText(/split selection is not built yet/i)).toBeVisible();
+    expect(screen.getByRole("radio", { name: /3-day full body/i })).toBeChecked();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
     ).toHaveAttribute("aria-current", "step");
@@ -125,13 +180,35 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+    await user.click(await screen.findByRole("link", { name: /continue to rep ranges/i }));
+
+    expect(await screen.findByRole("heading", { name: /rep ranges placeholder/i })).toBeVisible();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
+        "Rep ranges",
+      ),
+    ).toHaveAttribute("aria-current", "step");
   });
 
-  it("renders the split URL directly without generating a training plan", async () => {
+  it("renders the split URL directly with the recommended 3-day split selected and without generating a training plan", async () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
-    expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
     expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    expect(within(splitGroup).getByRole("radio", { name: /3-day full body/i })).toBeChecked();
+    expect(within(splitGroup).getByText("Upper / Lower / Full Body")).toBeVisible();
+    expect(within(splitGroup).getByText("Alternating Full Body A/B")).toBeVisible();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "3-Day Full Body",
+      ),
+    ).toBeVisible();
     expect(await trainingService.getDashboardSnapshot()).toMatchObject({
       activePlan: null,
       exercises: [],

@@ -116,7 +116,8 @@ async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: num
 async function continueToSplit(page: Page) {
   await page.getByRole("link", { name: /continue to split/i }).click();
 
-  await expect(page.getByRole("heading", { name: /split placeholder/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /select training split/i })).toBeVisible();
+  await expect(page.getByRole("radio", { name: /3-day full body/i })).toBeChecked();
   await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
 }
 

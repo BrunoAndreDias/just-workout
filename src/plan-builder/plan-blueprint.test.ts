@@ -5,6 +5,7 @@ import {
   isFrequencyStepComplete,
   isTrainingFrequencyDaysPerWeek,
   selectTrainingFrequency,
+  summarizePlanBlueprint,
   trainingFrequencyOptions,
 } from "./plan-blueprint";
 
@@ -54,6 +55,30 @@ describe("createDefaultPlanBlueprint", () => {
     });
   });
 
+  it("clears an incompatible Training Split when the training frequency changes", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      split: "upper-lower-4-day" as const,
+      trainingFrequencyDaysPerWeek: 4 as const,
+    };
+
+    expect(
+      selectTrainingFrequency({
+        blueprint,
+        timestamp: "2026-05-30T10:05:00.000Z",
+        trainingFrequencyDaysPerWeek: 3,
+      }),
+    ).toEqual({
+      ...blueprint,
+      split: null,
+      trainingFrequencyDaysPerWeek: 3,
+      updatedAt: "2026-05-30T10:05:00.000Z",
+    });
+  });
+
   it("treats the frequency step as complete only when a supported frequency is available", () => {
     const blueprint = createDefaultPlanBlueprint({
       id: "blueprint-1",
@@ -75,6 +100,29 @@ describe("createDefaultPlanBlueprint", () => {
       description:
         "Flexible split options, steady recovery, and enough training frequency to build momentum.",
       title: "Practical starting point",
+    });
+  });
+
+  it("derives split summary details from the selected Training Split", () => {
+    const blueprint = {
+      ...createDefaultPlanBlueprint({
+        id: "blueprint-1",
+        timestamp: "2026-05-30T10:00:00.000Z",
+      }),
+      split: "upper-lower-4-day" as const,
+      trainingFrequencyDaysPerWeek: 4 as const,
+    };
+
+    expect(summarizePlanBlueprint(blueprint)).toMatchObject({
+      generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
+      muscleFrequency:
+        "Each major muscle group is trained about twice per week with focused volume.",
+      nextStep: "Rep ranges",
+      recovery:
+        "Upper and lower sessions alternate so each region gets recovery before the next hard effort.",
+      split: "4-Day Upper/Lower",
+      trainingFrequency: "4 days/week",
+      weeklyRhythm: "Two upper sessions and two lower sessions in a stable weekly layout.",
     });
   });
 });

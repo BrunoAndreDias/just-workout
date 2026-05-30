@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { Button } from "../design-system/button";
 import { Card, CardHeader, CardTitle } from "../design-system/card";
 import { cn } from "../design-system/cn";
@@ -9,6 +9,7 @@ import {
   getTrainingFrequencyRecommendation,
   isFrequencyStepComplete,
   selectTrainingFrequency,
+  selectTrainingSplit,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
@@ -17,15 +18,25 @@ import {
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
+import {
+  getCompatibleTrainingSplits,
+  getRecommendedTrainingSplitId,
+  getTrainingSplit,
+  isTrainingSplitCompatible,
+  nonRecommendedTrainingSplitCategories,
+  type TrainingSplitDefinition,
+  type TrainingSplitId,
+} from "./training-split";
 
 const planBlueprintSummaryRows = [
   { key: "trainingGoal", label: "Training Goal" },
   { key: "trainingFrequency", label: "Training Frequency" },
-  { key: "split", label: "Split" },
-  { key: "repRanges", label: "Rep ranges" },
-  { key: "volumePreset", label: "Volume preset" },
-  { key: "equipment", label: "Equipment" },
-  { key: "generationStatus", label: "Generation status" },
+  { key: "split", label: "Training Split" },
+  { key: "weeklyRhythm", label: "Weekly rhythm" },
+  { key: "muscleFrequency", label: "Muscle frequency" },
+  { key: "recovery", label: "Recovery" },
+  { key: "nextStep", label: "Next step" },
+  { key: "generationStatus", label: "Training Plan" },
 ] as const satisfies ReadonlyArray<{ key: keyof PlanBlueprintSummary; label: string }>;
 
 const planBuilderSteps = [
@@ -70,6 +81,15 @@ type UpdateTrainingFrequencyContext = {
   previousBlueprint?: PlanBlueprint;
 };
 
+type UpdateTrainingSplitVariables = {
+  split: TrainingSplitId;
+  timestamp: string;
+};
+
+type UpdateTrainingSplitContext = {
+  previousBlueprint?: PlanBlueprint;
+};
+
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
@@ -91,11 +111,154 @@ type PlanBuilderStepStatusCardProps = {
   title: string;
 };
 
-export function PlanBuilderRoute() {
-  const queryClient = useQueryClient();
-  const { blueprint, summary } = usePlanBuilderBlueprint();
+type TrainingSplitStepProps = {
+  onTrainingSplitChange: (split: TrainingSplitId) => void;
+  selectedSplit: TrainingSplitDefinition;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
 
-  const updateTrainingFrequencyMutation = useMutation<
+type TrainingSplitOptionRadioProps = {
+  isRecommended: boolean;
+  isSelected: boolean;
+  onSelect: (split: TrainingSplitId) => void;
+  option: TrainingSplitDefinition;
+};
+
+type TrainingSplitDetailsPanelProps = {
+  split: TrainingSplitDefinition;
+};
+
+export function PlanBuilderRoute() {
+  const { blueprint, summary } = usePlanBuilderBlueprint();
+  const updateTrainingFrequencyMutation = useUpdateTrainingFrequencyMutation();
+
+  function handleTrainingFrequencyChange(
+    trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+  ) {
+    updateTrainingFrequencyMutation.mutate({
+      timestamp: new Date().toISOString(),
+      trainingFrequencyDaysPerWeek,
+    });
+  }
+
+  return (
+    <PlanBuilderPage
+      currentStep="frequency"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          Start a new Plan Blueprint or resume the unfinished one saved on this device. The builder
+          currently assumes a Build Muscle goal and starts Training Frequency at 3 days/week.
+        </p>
+      }
+      stepLabel="Frequency step"
+      summary={summary}
+    >
+      {blueprint ? (
+        <TrainingFrequencyStep
+          canContinueToSplit={isFrequencyStepComplete(blueprint)}
+          onTrainingFrequencyChange={handleTrainingFrequencyChange}
+          selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+        />
+      ) : (
+        <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
+      )}
+    </PlanBuilderPage>
+  );
+}
+
+export function PlanBuilderSplitRoute() {
+  const { blueprint, summary } = usePlanBuilderBlueprint();
+  const updateTrainingSplitMutation = useUpdateTrainingSplitMutation();
+  const selectedSplitId = blueprint ? getSelectedTrainingSplitId(blueprint) : null;
+  const selectedSplit = selectedSplitId ? getTrainingSplit(selectedSplitId) : null;
+
+  useEffect(() => {
+    if (!blueprint || isCurrentTrainingSplitCompatible(blueprint)) {
+      return;
+    }
+
+    updateTrainingSplitMutation.mutate({
+      split: getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek),
+      timestamp: new Date().toISOString(),
+    });
+  }, [blueprint, updateTrainingSplitMutation]);
+
+  function handleTrainingSplitChange(split: TrainingSplitId) {
+    updateTrainingSplitMutation.mutate({
+      split,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return (
+    <PlanBuilderPage
+      currentStep="split"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          Choose a compatible Training Split for the saved Plan Blueprint. Just Workout will
+          recommend the best fit for this Training Frequency without locking you into one option.
+        </p>
+      }
+      stepLabel="Split step"
+      summary={summary}
+    >
+      {blueprint && selectedSplit ? (
+        <TrainingSplitStep
+          onTrainingSplitChange={handleTrainingSplitChange}
+          selectedSplit={selectedSplit}
+          trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+        />
+      ) : (
+        <p className="text-sm font-semibold text-stone-600">Loading Training Split...</p>
+      )}
+    </PlanBuilderPage>
+  );
+}
+
+export function PlanBuilderRepRangesRoute() {
+  const { summary } = usePlanBuilderBlueprint();
+
+  return (
+    <PlanBuilderPage
+      currentStep="rep-ranges"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          The Plan Blueprint keeps moving forward by route, but Rep ranges stay out of scope in this
+          slice.
+        </p>
+      }
+      stepLabel="Rep ranges step"
+      summary={summary}
+    >
+      <PlanBuilderFutureStepPlaceholder
+        backPath={planBuilderPaths.split}
+        backText="Back to Split"
+        description="Split is now configured, but Rep ranges will land in a later issue."
+        title="Rep ranges placeholder"
+      />
+    </PlanBuilderPage>
+  );
+}
+
+function usePlanBuilderBlueprint() {
+  const blueprintQuery = useQuery({
+    queryKey: planBuilderBlueprintQueryKey,
+    queryFn: planBuilderService.getOrCreatePlanBlueprint,
+  });
+
+  const blueprint = blueprintQuery.data;
+  const summary = blueprint ? summarizePlanBlueprint(blueprint) : null;
+
+  return {
+    blueprint,
+    summary,
+  };
+}
+
+function useUpdateTrainingFrequencyMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
     PlanBlueprint,
     Error,
     UpdateTrainingFrequencyVariables,
@@ -135,74 +298,65 @@ export function PlanBuilderRoute() {
       queryClient.setQueryData(planBuilderBlueprintQueryKey, updatedBlueprint);
     },
   });
+}
 
-  function handleTrainingFrequencyChange(
-    trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
-  ) {
-    updateTrainingFrequencyMutation.mutate({
-      timestamp: new Date().toISOString(),
-      trainingFrequencyDaysPerWeek,
-    });
+function useUpdateTrainingSplitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    PlanBlueprint,
+    Error,
+    UpdateTrainingSplitVariables,
+    UpdateTrainingSplitContext
+  >({
+    mutationFn: ({ split, timestamp }) =>
+      planBuilderService.updateTrainingSplit({
+        split,
+        timestamp,
+      }),
+    onError: (_error, _variables, context) => {
+      if (context?.previousBlueprint) {
+        queryClient.setQueryData(planBuilderBlueprintQueryKey, context.previousBlueprint);
+      }
+    },
+    onMutate: async ({ split, timestamp }) => {
+      await queryClient.cancelQueries({ queryKey: planBuilderBlueprintQueryKey });
+
+      const previousBlueprint = queryClient.getQueryData<PlanBlueprint>(
+        planBuilderBlueprintQueryKey,
+      );
+
+      if (previousBlueprint) {
+        queryClient.setQueryData(
+          planBuilderBlueprintQueryKey,
+          selectTrainingSplit({
+            blueprint: previousBlueprint,
+            split,
+            timestamp,
+          }),
+        );
+      }
+
+      return { previousBlueprint };
+    },
+    onSuccess: (updatedBlueprint) => {
+      queryClient.setQueryData(planBuilderBlueprintQueryKey, updatedBlueprint);
+    },
+  });
+}
+
+function getSelectedTrainingSplitId(blueprint: PlanBlueprint): TrainingSplitId {
+  if (isCurrentTrainingSplitCompatible(blueprint)) {
+    return blueprint.split;
   }
 
-  return (
-    <PlanBuilderPage
-      currentStep="frequency"
-      intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Start a new Plan Blueprint or resume the unfinished one saved on this device. The builder
-          currently assumes a Build Muscle goal and starts Training Frequency at 3 days/week.
-        </p>
-      }
-      stepLabel="Frequency step"
-      summary={summary}
-    >
-      {blueprint ? (
-        <TrainingFrequencyStep
-          canContinueToSplit={isFrequencyStepComplete(blueprint)}
-          onTrainingFrequencyChange={handleTrainingFrequencyChange}
-          selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
-        />
-      ) : (
-        <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
-      )}
-    </PlanBuilderPage>
-  );
+  return getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek);
 }
 
-export function PlanBuilderSplitRoute() {
-  const { summary } = usePlanBuilderBlueprint();
-
-  return (
-    <PlanBuilderPage
-      currentStep="split"
-      intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Move into the next builder step without losing the in-progress Plan Blueprint. Split
-          selection stays intentionally lightweight in this slice.
-        </p>
-      }
-      stepLabel="Split step"
-      summary={summary}
-    >
-      <SplitPlaceholderStep />
-    </PlanBuilderPage>
-  );
-}
-
-function usePlanBuilderBlueprint() {
-  const blueprintQuery = useQuery({
-    queryKey: planBuilderBlueprintQueryKey,
-    queryFn: planBuilderService.getOrCreatePlanBlueprint,
-  });
-
-  const blueprint = blueprintQuery.data;
-  const summary = blueprint ? summarizePlanBlueprint(blueprint) : null;
-
-  return {
-    blueprint,
-    summary,
-  };
+function isCurrentTrainingSplitCompatible(blueprint: PlanBlueprint): blueprint is PlanBlueprint & {
+  split: TrainingSplitId;
+} {
+  return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
 }
 
 function PlanBuilderPage({
@@ -398,33 +552,130 @@ function TrainingFrequencyStep({
   );
 }
 
-function SplitPlaceholderStep() {
+function TrainingSplitStep({
+  onTrainingSplitChange,
+  selectedSplit,
+  trainingFrequencyDaysPerWeek,
+}: TrainingSplitStepProps) {
+  const compatibleSplits = getCompatibleTrainingSplits(trainingFrequencyDaysPerWeek);
+  const recommendedSplitId = getRecommendedTrainingSplitId(trainingFrequencyDaysPerWeek);
+  const trainingFrequencyLabel = `${trainingFrequencyDaysPerWeek} days/week`;
+  const selectionStatus =
+    selectedSplit.id === recommendedSplitId ? "Recommended fit" : "Compatible alternative";
+  const selectionStatusBody =
+    selectedSplit.id === recommendedSplitId
+      ? `Just Workout recommends ${selectedSplit.label} for ${trainingFrequencyLabel} as the clearest starting point.`
+      : `${selectedSplit.label} still fits ${trainingFrequencyLabel}, but it trades the default recommendation for a different weekly rhythm.`;
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section aria-labelledby="training-split-title" className="space-y-3">
+          <div>
+            <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="training-split-title">
+              Select Training Split
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-stone-600">
+              These options stay compatible with {trainingFrequencyLabel}. The saved Plan Blueprint
+              keeps only the selected split id while weekly rhythm and recovery stay derived.
+            </p>
+          </div>
+
+          <fieldset className="grid gap-3">
+            <legend className="sr-only">Training Split</legend>
+            {compatibleSplits.map((option) => (
+              <TrainingSplitOptionRadio
+                isRecommended={option.id === recommendedSplitId}
+                isSelected={option.id === selectedSplit.id}
+                key={option.id}
+                onSelect={onTrainingSplitChange}
+                option={option}
+              />
+            ))}
+          </fieldset>
+        </section>
+
+        <TrainingSplitDetailsPanel key={selectedSplit.id} split={selectedSplit} />
+
+        <section aria-labelledby="not-recommended-split-title" className="space-y-3">
+          <div>
+            <h3
+              className="text-lg font-black text-stone-950 sm:text-xl"
+              id="not-recommended-split-title"
+            >
+              Not included in this step
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-stone-600">
+              Common split categories that do not fit this first Plan Builder version stay
+              explanatory only.
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {nonRecommendedTrainingSplitCategories.map((category) => (
+              <PlanBuilderStepStatusCard
+                body={category.description}
+                key={category.title}
+                title={category.title}
+              />
+            ))}
+          </div>
+        </section>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button asChild variant="outline">
+            <Link to={planBuilderPaths.frequency}>Back to Frequency</Link>
+          </Button>
+          <Button asChild>
+            <Link to={planBuilderPaths.repRanges}>Continue to Rep ranges</Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <PlanBuilderStepStatusCard
+          body="No Training Plan has been generated yet. Review is still the point where the full Training Plan is created."
+          title="Plan status"
+        />
+        <PlanBuilderStepStatusCard body={selectionStatusBody} title={selectionStatus} />
+      </div>
+    </div>
+  );
+}
+
+function PlanBuilderFutureStepPlaceholder({
+  backPath,
+  backText,
+  description,
+  title,
+}: {
+  backPath: string;
+  backText: string;
+  description: string;
+  title: string;
+}) {
   return (
     <div className="space-y-4">
-      <section aria-labelledby="split-placeholder-title" className="space-y-3">
+      <section aria-labelledby="future-step-placeholder-title" className="space-y-3">
         <div>
           <h3
             className="text-xl font-black text-stone-950 sm:text-2xl"
-            id="split-placeholder-title"
+            id="future-step-placeholder-title"
           >
-            Split placeholder
+            {title}
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Split selection is not built yet. This placeholder only proves the next Plan Builder
-            route and keeps the unfinished Plan Blueprint visible while future steps stay out of
-            scope.
-          </p>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">{description}</p>
         </div>
 
         <PlanBuilderStepStatusCard
-          body="Frequency is already captured, so this route can stay lightweight until split selection is implemented."
+          body="This placeholder keeps the builder flow moving by route without generating a Training Plan early."
           title="What this step proves"
         />
       </section>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button asChild variant="outline">
-          <Link to={planBuilderPaths.frequency}>Back to Frequency</Link>
+          <Link to={backPath}>{backText}</Link>
         </Button>
       </div>
     </div>
@@ -467,6 +718,117 @@ function TrainingFrequencyOptionRadio({
         {option.helperText}
       </p>
     </label>
+  );
+}
+
+function TrainingSplitOptionRadio({
+  isRecommended,
+  isSelected,
+  onSelect,
+  option,
+}: TrainingSplitOptionRadioProps) {
+  const badgeLabel = isRecommended ? "Recommended" : "Also works";
+
+  return (
+    <label
+      className={cn(
+        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
+        isSelected
+          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
+          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
+      )}
+    >
+      <input
+        checked={isSelected}
+        className="sr-only"
+        name="training-split"
+        onChange={() => onSelect(option.id)}
+        type="radio"
+        value={option.id}
+      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-black">{option.label}</p>
+          <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+            {option.cardDescription}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+            isSelected ? "bg-white/12 text-[#f4b860]" : "bg-[#fff3ea] text-[#b93725]",
+          )}
+        >
+          {badgeLabel}
+        </span>
+      </div>
+    </label>
+  );
+}
+
+function TrainingSplitDetailsPanel({ split }: TrainingSplitDetailsPanelProps) {
+  return (
+    <section
+      aria-labelledby="training-split-details-title"
+      aria-live="polite"
+      className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
+    >
+      <p className="text-sm font-bold uppercase tracking-wide text-[#b93725]">Selected split</p>
+      <h3 className="mt-1 text-xl font-black text-stone-950" id="training-split-details-title">
+        {split.label}
+      </h3>
+      <p className="mt-2 max-w-3xl text-sm text-stone-600">{split.cardDescription}</p>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <SummaryRow label="Weekly rhythm" value={split.weeklyRhythm} />
+        <SummaryRow label="Muscle frequency" value={split.muscleFrequency} />
+        <SummaryRow label="Recovery" value={split.recovery} />
+      </dl>
+
+      <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
+        <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+          {split.schedule.kind === "fixed-week"
+            ? "Suggested weekly layout"
+            : "Rotating-cycle preview"}
+        </h4>
+        <p className="mt-2 text-sm text-stone-600">{split.schedule.description}</p>
+
+        {split.schedule.kind === "fixed-week" ? (
+          <ol className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {split.schedule.week.map((day) => (
+              <li
+                className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
+                key={`${day.dayLabel}-${day.sessionLabel}`}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                  {day.dayLabel}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-stone-900">{day.sessionLabel}</p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {split.schedule.cycle.map((session, index) => (
+                <li
+                  className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
+                  key={session.id}
+                >
+                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                    Cycle step {index + 1}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-stone-900">
+                    {session.sessionLabel}
+                  </p>
+                </li>
+              ))}
+            </ol>
+            <p className="text-sm font-semibold text-stone-700">{split.schedule.cadence}</p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

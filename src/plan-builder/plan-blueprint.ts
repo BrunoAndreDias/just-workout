@@ -1,3 +1,6 @@
+import type { TrainingSplitId } from "./training-split";
+import { isTrainingSplitCompatible, summarizeTrainingSplit } from "./training-split";
+
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
 export type TrainingFrequencyOption = {
@@ -15,20 +18,21 @@ export type PlanBlueprint = {
   updatedAt: string;
   trainingGoal: TrainingGoal;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-  split: string | null;
+  split: TrainingSplitId | null;
   repRanges: string | null;
   volumePreset: string | null;
   equipment: string | null;
 };
 
 export type PlanBlueprintSummary = {
-  trainingGoal: string;
-  trainingFrequency: string;
-  split: string;
-  repRanges: string;
-  volumePreset: string;
-  equipment: string;
   generationStatus: string;
+  muscleFrequency: string;
+  nextStep: string;
+  recovery: string;
+  split: string;
+  trainingFrequency: string;
+  trainingGoal: string;
+  weeklyRhythm: string;
 };
 
 type CreateDefaultPlanBlueprintOptions = {
@@ -40,6 +44,12 @@ type SelectTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+type SelectTrainingSplitOptions = {
+  blueprint: PlanBlueprint;
+  split: TrainingSplitId;
+  timestamp: string;
 };
 
 const defaultPlanBlueprintValues = {
@@ -75,9 +85,10 @@ export const trainingFrequencyOptions = [
 ] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
 
 const planBlueprintSummaryFallbacks = {
-  unselectedBuilderChoice: "Not chosen yet",
-  unconfiguredEquipment: "Not configured yet",
-  pendingGenerationStatus: "Not ready yet",
+  generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
+  nextStep: "Choose a Training Split",
+  pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
+  split: "Choose a Training Split",
 } as const;
 
 const trainingFrequencyRecommendations = {
@@ -148,20 +159,51 @@ export function selectTrainingFrequency({
 }: SelectTrainingFrequencyOptions): PlanBlueprint {
   return {
     ...blueprint,
+    split: isTrainingSplitCompatible(blueprint.split, trainingFrequencyDaysPerWeek)
+      ? blueprint.split
+      : null,
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
 }
 
-export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
+export function selectTrainingSplit({
+  blueprint,
+  split,
+  timestamp,
+}: SelectTrainingSplitOptions): PlanBlueprint {
+  if (!isTrainingSplitCompatible(split, blueprint.trainingFrequencyDaysPerWeek)) {
+    throw new Error(
+      `Training Split "${split}" is not compatible with ${blueprint.trainingFrequencyDaysPerWeek} days/week.`,
+    );
+  }
+
   return {
+    ...blueprint,
+    split,
+    updatedAt: timestamp,
+  };
+}
+
+export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
+  const splitSummary = isTrainingSplitCompatible(
+    blueprint.split,
+    blueprint.trainingFrequencyDaysPerWeek,
+  )
+    ? summarizeTrainingSplit(blueprint.split)
+    : null;
+
+  return {
+    generationStatus: planBlueprintSummaryFallbacks.generationStatus,
+    muscleFrequency:
+      splitSummary?.muscleFrequency ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
+    nextStep: splitSummary ? "Rep ranges" : planBlueprintSummaryFallbacks.nextStep,
+    recovery: splitSummary?.recovery ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
+    split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
-    split: blueprint.split ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
-    repRanges: blueprint.repRanges ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
-    volumePreset: blueprint.volumePreset ?? planBlueprintSummaryFallbacks.unselectedBuilderChoice,
-    equipment: blueprint.equipment ?? planBlueprintSummaryFallbacks.unconfiguredEquipment,
-    generationStatus: planBlueprintSummaryFallbacks.pendingGenerationStatus,
+    weeklyRhythm:
+      splitSummary?.weeklyRhythm ?? planBlueprintSummaryFallbacks.pendingSplitDerivedDetail,
   };
 }
 

@@ -43,4 +43,21 @@ describe("planBuilderService", () => {
     });
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
+
+  it("persists a selected Training Split for the next resume", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    const updatedBlueprint = await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-full-body",
+      timestamp: "2026-05-30T10:20:00.000Z",
+    });
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(updatedBlueprint).toEqual({
+      ...initialBlueprint,
+      split: "upper-lower-full-body",
+      updatedAt: "2026-05-30T10:20:00.000Z",
+    });
+    expect(resumedBlueprint).toEqual(updatedBlueprint);
+  });
 });

@@ -1,9 +1,11 @@
 import {
   createDefaultPlanBlueprint,
   selectTrainingFrequency,
+  selectTrainingSplit,
   type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
+import type { TrainingSplitId } from "./training-split";
 
 async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
@@ -25,6 +27,11 @@ type UpdateTrainingFrequencyOptions = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
+type UpdateTrainingSplitOptions = {
+  split: TrainingSplitId;
+  timestamp?: string;
+};
+
 async function updateTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
@@ -40,7 +47,23 @@ async function updateTrainingFrequency({
   );
 }
 
+async function updateTrainingSplit({
+  split,
+  timestamp = new Date().toISOString(),
+}: UpdateTrainingSplitOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    selectTrainingSplit({
+      blueprint,
+      split,
+      timestamp,
+    }),
+  );
+}
+
 export const planBuilderService = {
   getOrCreatePlanBlueprint,
+  updateTrainingSplit,
   updateTrainingFrequency,
 };
