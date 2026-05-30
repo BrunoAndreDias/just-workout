@@ -251,6 +251,10 @@ type RepRangeStyleStepProps = {
   selectedRepRangeStyle: RepRangeStyle;
 };
 
+type RepRangeStyleEffectsPanelProps = {
+  repRangeStyle: RepRangeStyle;
+};
+
 type RepRangeStyleOptionRadioProps = {
   isSelected: boolean;
   onSelect: (repRangeStyle: RepRangeStyleId) => void;
@@ -793,28 +797,7 @@ function RepRangeStyleStep({
           </fieldset>
         </section>
 
-        <section
-          aria-labelledby="rep-range-style-effect-title"
-          aria-atomic="true"
-          aria-live="polite"
-          className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
-        >
-          <p className="text-sm font-bold uppercase tracking-wide text-[#b93725]">Selected style</p>
-          <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
-            How this affects your plan
-          </h3>
-          <p className="mt-2 text-sm font-semibold text-stone-900">{selectedRepRangeStyle.title}</p>
-          <ul className="mt-4 grid gap-3">
-            {selectedRepRangeStyle.planEffects.map((effect) => (
-              <li
-                className="rounded-lg border border-stone-900/10 bg-white/80 px-4 py-3 text-sm text-stone-700"
-                key={effect}
-              >
-                {effect}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button asChild variant="outline">
@@ -830,6 +813,33 @@ function RepRangeStyleStep({
         />
       </div>
     </div>
+  );
+}
+
+function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelProps) {
+  return (
+    <section
+      aria-labelledby="rep-range-style-effect-title"
+      aria-atomic="true"
+      aria-live="polite"
+      className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
+    >
+      <p className="text-sm font-bold uppercase tracking-wide text-[#b93725]">Selected style</p>
+      <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
+        How this affects your plan
+      </h3>
+      <p className="mt-2 text-sm font-semibold text-stone-900">{repRangeStyle.title}</p>
+      <ul className="mt-4 grid gap-3">
+        {repRangeStyle.planEffects.map((effect) => (
+          <li
+            className="rounded-lg border border-stone-900/10 bg-white/80 px-4 py-3 text-sm text-stone-700"
+            key={effect}
+          >
+            {effect}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

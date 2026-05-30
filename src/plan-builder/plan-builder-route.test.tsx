@@ -27,6 +27,24 @@ const repRangeStyleLabels = {
   strengthLeaning: "Strength-leaning",
 } as const;
 
+const repRangeStyleEffectCopy = {
+  balancedHypertrophy: [
+    "Main compounds stay in the 6-8 rep range for steady progression.",
+    "Secondary compounds move to 8-10 reps for productive muscle-building work.",
+    "Accessories stay in the 10-15 rep range to keep isolation work controlled and repeatable.",
+  ],
+  controlledHigherReps: [
+    "Main compounds move up to 8-10 reps for slightly lighter loading.",
+    "Secondary compounds sit in the 10-12 rep range for more controlled work.",
+    "Accessories extend to 12-20 reps so lighter lifts stay clearly higher-rep.",
+  ],
+} as const;
+
+const repRangeStyleBoundaryCopy =
+  "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.";
+
+const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
+
 const selectableTrainingSplitCases = [
   {
     daysPerWeek: 2,
@@ -452,30 +470,15 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const effectsPanel = getRepRangeStyleEffectsPanel();
 
-    expect(screen.getByRole("heading", { name: /how this affects your plan/i })).toBeVisible();
     expect(
-      screen.getByText("Main compounds stay in the 6-8 rep range for steady progression."),
+      within(effectsPanel).getByRole("heading", { name: /how this affects your plan/i }),
     ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Secondary compounds move to 8-10 reps for productive muscle-building work.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Accessories stay in the 10-15 rep range to keep isolation work controlled and repeatable.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.",
-      ),
-    ).toBeVisible();
+    expectRepRangeStyleEffects(effectsPanel, repRangeStyleEffectCopy.balancedHypertrophy);
+    expect(screen.getByText(repRangeStyleBoundaryCopy)).toBeVisible();
     expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(
-      screen.getByText("Next, you will set weekly volume targets for each muscle group."),
-    ).toBeVisible();
+    expect(screen.getByText(repRangeStyleNextStepCopy)).toBeVisible();
     expect(
       screen.queryByText("Next, you'll tune the volume preset before choosing exercises."),
     ).not.toBeInTheDocument();
@@ -486,21 +489,16 @@ describe("PlanBuilderRoute", () => {
       expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
     });
     await waitFor(() => {
-      expect(
-        screen.getByText("Main compounds move up to 8-10 reps for slightly lighter loading."),
-      ).toBeVisible();
+      expectRepRangeStyleEffects(
+        getRepRangeStyleEffectsPanel(),
+        repRangeStyleEffectCopy.controlledHigherReps,
+      );
     });
     expect(
-      screen.queryByText("Main compounds stay in the 6-8 rep range for steady progression."),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Secondary compounds sit in the 10-12 rep range for more controlled work."),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Accessories extend to 12-20 reps so lighter lifts stay clearly higher-rep.",
+      within(getRepRangeStyleEffectsPanel()).queryByText(
+        repRangeStyleEffectCopy.balancedHypertrophy[0],
       ),
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
   });
 
   it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
@@ -931,6 +929,21 @@ function expectRepRangeStyleChecked(repRangeGroup: HTMLElement, label: string) {
       name: getLabelMatcher(label),
     }),
   ).toBeChecked();
+}
+
+function getRepRangeStyleEffectsPanel() {
+  return screen.getByRole("region", { name: /how this affects your plan/i });
+}
+
+function expectRepRangeStyleEffects(
+  effectsPanel: HTMLElement,
+  expectedEffects: ReadonlyArray<string>,
+) {
+  const effects = within(effectsPanel);
+
+  for (const effect of expectedEffects) {
+    expect(effects.getByText(effect)).toBeVisible();
+  }
 }
 
 async function expectPersistedTrainingSplit(split: TrainingSplitId | null) {
