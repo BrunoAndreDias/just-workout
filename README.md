@@ -32,8 +32,9 @@ Sandcastle is configured with a blank Codex workflow in `.sandcastle/`.
 Edit `.sandcastle/prompt.md` with the task you want the sandboxed agent to run.
 
 ```bash
-pnpm sandcastle:build-image
 pnpm sandcastle
 ```
+
+`pnpm sandcastle` now auto-builds the `sandcastle:just-workout-v2` image the first time it is missing. You can still force a rebuild with `pnpm sandcastle:build-image`.
 
 Copy `.sandcastle/.env.example` to `.sandcastle/.env` and set the required local credentials before running an agent. The generated `.sandcastle/SETUP_ISSUE_TRACKER.md` is only needed if this project later gets wired to an issue tracker.

@@ -23,6 +23,7 @@
 
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { execFileSync } from "node:child_process";
 import { z } from "zod";
 
 // The planner emits its plan as JSON inside <plan> tags; Output.object extracts
@@ -40,21 +41,49 @@ const planSchema = z.object({
 // Maximum number of plan→execute→merge cycles before stopping.
 // Raise this if your backlog is large; lower it for a quick smoke-test run.
 const MAX_ITERATIONS = 10;
+const SANDBOX_IMAGE_NAME = "sandcastle:just-workout-v2";
 
 // Hooks run inside the sandbox before the agent starts each iteration.
-// npm install ensures the sandbox always has fresh dependencies.
+// This repo uses pnpm, so refresh dependencies with the locked pnpm graph.
 const hooks = {
-  sandbox: { onSandboxReady: [{ command: "npm install" }] },
+  sandbox: { onSandboxReady: [{ command: "CI=true pnpm install --frozen-lockfile" }] },
 };
 
 // Copy node_modules from the host into the worktree before each sandbox
-// starts. Avoids a full npm install from scratch; the hook above handles
+// starts. Avoids a full pnpm install from scratch; the hook above handles
 // platform-specific binaries and any packages added since the last copy.
 const copyToWorktree = ["node_modules"];
+
+const ensureDockerImage = () => {
+  try {
+    execFileSync("docker", ["image", "inspect", SANDBOX_IMAGE_NAME], {
+      stdio: "ignore",
+    });
+  } catch {
+    console.log(`Docker image '${SANDBOX_IMAGE_NAME}' not found. Building it now...`);
+
+    execFileSync(
+      "pnpm",
+      [
+        "exec",
+        "sandcastle",
+        "docker",
+        "build-image",
+        "--image-name",
+        SANDBOX_IMAGE_NAME,
+      ],
+      { stdio: "inherit" },
+    );
+  }
+};
+
+const sandboxProvider = docker({ imageName: SANDBOX_IMAGE_NAME });
 
 // ---------------------------------------------------------------------------
 // Main loop
 // ---------------------------------------------------------------------------
+
+ensureDockerImage();
 
 for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
@@ -70,7 +99,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // -------------------------------------------------------------------------
   const plan = await sandcastle.run({
     hooks,
-    sandbox: docker(),
+    sandbox: sandboxProvider,
     name: "planner",
     // One iteration is enough: the planner just needs to read and reason,
     // not write code. (Structured output requires maxIterations: 1.)
@@ -111,7 +140,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     issues.map(async (issue) => {
       const sandbox = await sandcastle.createSandbox({
         branch: issue.branch,
-        sandbox: docker(),
+        sandbox: sandboxProvider,
         hooks,
         copyToWorktree,
       });
@@ -197,7 +226,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // -------------------------------------------------------------------------
   await sandcastle.run({
     hooks,
-    sandbox: docker(),
+    sandbox: sandboxProvider,
     name: "merger",
     maxIterations: 1,
     agent: sandcastle.codex("gpt-5.4", { effort: "high" }),

@@ -27,6 +27,9 @@ RUN groupmod -o -g $AGENT_GID node && usermod -o -u $AGENT_UID -g $AGENT_GID -d 
 # Install Codex CLI (run as root before USER agent)
 RUN npm install -g @openai/codex
 
+# Activate the repo's pinned pnpm version so plain `pnpm` works in hooks and scripts.
+RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+
 USER ${AGENT_UID}:${AGENT_GID}
 
 WORKDIR /home/agent

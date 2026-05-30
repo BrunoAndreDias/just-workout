@@ -15,8 +15,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "sandcastle": "tsx .sandcastle/main.ts",
-    "sandcastle:build-image": "sandcastle docker build-image --image-name sandcastle:just-workout",
-    "sandcastle:remove-image": "sandcastle docker remove-image --image-name sandcastle:just-workout",
+    "sandcastle:build-image": "sandcastle docker build-image --image-name sandcastle:just-workout-v2",
+    "sandcastle:remove-image": "sandcastle docker remove-image --image-name sandcastle:just-workout-v2",
     "prepare": "husky"
   },
   "lint-staged": {
