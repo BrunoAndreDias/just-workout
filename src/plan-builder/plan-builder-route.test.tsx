@@ -472,6 +472,46 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
   });
 
+  it("shows a single Selected badge on the active Rep Range Style card and moves it when the choice changes", async () => {
+    const user = userEvent.setup();
+
+    await saveFourDayUpperLowerTrainingSplit();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const balancedHypertrophyOption = getRepRangeStyleOptionCard(
+      repRangeGroup,
+      repRangeStyleLabels.balancedHypertrophy,
+    );
+    const controlledHigherRepsOption = getRepRangeStyleOptionCard(
+      repRangeGroup,
+      repRangeStyleLabels.controlledHigherReps,
+    );
+
+    expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
+    expect(within(balancedHypertrophyOption).getByText("Selected")).toBeVisible();
+    expect(within(controlledHigherRepsOption).queryByText("Selected")).not.toBeInTheDocument();
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    });
+
+    expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
+    expect(
+      within(
+        getRepRangeStyleOptionCard(repRangeGroup, repRangeStyleLabels.controlledHigherReps),
+      ).getByText("Selected"),
+    ).toBeVisible();
+    expect(
+      within(
+        getRepRangeStyleOptionCard(repRangeGroup, repRangeStyleLabels.balancedHypertrophy),
+      ).queryByText("Selected"),
+    ).not.toBeInTheDocument();
+  });
+
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
     await saveFourDayUpperLowerTrainingSplit();
     await planBuilderService.updateRepRangeStyle({
@@ -1032,6 +1072,21 @@ function expectRepRangeStyleChecked(repRangeGroup: HTMLElement, label: string) {
       name: getLabelMatcher(label),
     }),
   ).toBeChecked();
+}
+
+function getRepRangeStyleOptionCard(repRangeGroup: HTMLElement, label: string) {
+  const radio = within(repRangeGroup).getByRole("radio", {
+    name: getLabelMatcher(label),
+  });
+  const optionCard = radio.closest("label");
+
+  expect(optionCard, `Rep Range Style option card for "${label}" should exist`).not.toBeNull();
+
+  if (!optionCard) {
+    throw new Error(`Rep Range Style option card for "${label}" was not found.`);
+  }
+
+  return optionCard;
 }
 
 function getRepRangeStyleEffectsPanel() {
