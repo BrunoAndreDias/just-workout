@@ -21,6 +21,12 @@ const trainingSplitLabels = {
   upperLowerFullBody: "Upper / Lower / Full Body",
 } as const;
 
+const repRangeStyleLabels = {
+  balancedHypertrophy: "Balanced hypertrophy",
+  controlledHigherReps: "Controlled higher reps",
+  strengthLeaning: "Strength-leaning",
+} as const;
+
 const selectableTrainingSplitCases = [
   {
     daysPerWeek: 2,
@@ -301,6 +307,136 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).queryByText("4-Day Upper/Lower")).not.toBeInTheDocument();
   });
 
+  it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {
+    const user = userEvent.setup();
+
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:30:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:31:00.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    expect(screen.getByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(within(repRangeGroup).getByText(repRangeStyleLabels.strengthLeaning)).toBeVisible();
+    expect(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
+    expect(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps)).toBeVisible();
+    expect(within(repRangeGroup).getAllByText("Recommended")).toHaveLength(1);
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Choose Rep ranges",
+      ),
+    ).toBeVisible();
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.strengthLeaning));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.strengthLeaning);
+    });
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).repRanges).toBe(
+        "strength_leaning",
+      );
+    });
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        repRangeStyleLabels.strengthLeaning,
+      ),
+    ).toBeVisible();
+  });
+
+  it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:40:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:41:00.000Z",
+    });
+    await planBuilderService.updateRepRangeStyle({
+      repRangeStyle: "controlled_higher_reps",
+      timestamp: "2026-05-30T11:42:00.000Z",
+    });
+
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        repRangeStyleLabels.controlledHigherReps,
+      ),
+    ).toBeVisible();
+    expect(
+      within(repRangeGroup).getByRole("radio", { name: /balanced hypertrophy/i }),
+    ).not.toBeChecked();
+
+    firstView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const resumedRepRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    expectRepRangeStyleChecked(resumedRepRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        repRangeStyleLabels.controlledHigherReps,
+      ),
+    ).toBeVisible();
+  });
+
+  it("shows data-driven Rep Range Style notes and targets without rendering advanced programming controls", async () => {
+    await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T11:45:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T11:46:00.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const options = within(repRangeGroup);
+
+    expect(options.getByText("Heavier main lifts with slightly lower reps.")).toBeVisible();
+    expect(
+      options.getByText(
+        "Biases the week toward lower-rep top work on the main lifts before accessories climb.",
+      ),
+    ).toBeVisible();
+    expect(
+      options.getByText(
+        "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
+      ),
+    ).toBeVisible();
+    expect(options.getAllByText("Main compounds")).toHaveLength(3);
+    expect(options.getAllByText("Secondary compounds")).toHaveLength(3);
+    expect(options.getAllByText("Accessories")).toHaveLength(3);
+    expect(options.getByText("4-6 reps")).toBeVisible();
+    expect(options.getAllByText("6-8 reps")).toHaveLength(2);
+    expect(options.getAllByText("8-10 reps")).toHaveLength(2);
+    expect(options.getByText("10-12 reps")).toBeVisible();
+    expect(options.getByText("10-15 reps")).toBeVisible();
+    expect(options.getByText("12-20 reps")).toBeVisible();
+    expect(screen.queryByText(/\bRPE\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bRIR\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\b1RM\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\btempo\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/rest time/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/load recommendation/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/advanced programming controls/i)).not.toBeInTheDocument();
+  });
+
   it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
     const user = userEvent.setup();
 
@@ -454,7 +590,11 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
-    expect(await screen.findByRole("heading", { name: /rep ranges placeholder/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expectRepRangeStyleChecked(
+      await screen.findByRole("group", { name: /rep range style/i }),
+      repRangeStyleLabels.balancedHypertrophy,
+    );
     await expectPersistedTrainingSplit(expectedSplitId);
   });
 
@@ -551,7 +691,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
-    expect(await screen.findByRole("heading", { name: /rep ranges placeholder/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
         "Not ready yet",
@@ -596,7 +736,11 @@ describe("PlanBuilderRoute", () => {
     await user.click(screen.getByRole("link", { name: /continue to split/i }));
     await user.click(await screen.findByRole("link", { name: /continue to rep ranges/i }));
 
-    expect(await screen.findByRole("heading", { name: /rep ranges placeholder/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expectRepRangeStyleChecked(
+      await screen.findByRole("group", { name: /rep range style/i }),
+      repRangeStyleLabels.balancedHypertrophy,
+    );
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
@@ -710,6 +854,14 @@ async function selectTrainingSplit(
 function expectTrainingSplitChecked(splitGroup: HTMLElement, label: string) {
   expect(
     within(splitGroup).getByRole("radio", {
+      name: getLabelMatcher(label),
+    }),
+  ).toBeChecked();
+}
+
+function expectRepRangeStyleChecked(repRangeGroup: HTMLElement, label: string) {
+  expect(
+    within(repRangeGroup).getByRole("radio", {
       name: getLabelMatcher(label),
     }),
   ).toBeChecked();

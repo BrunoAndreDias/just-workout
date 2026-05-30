@@ -25,8 +25,16 @@ import { KeyValueRow } from "../design-system/key-value-row";
 import { Stepper } from "../design-system/stepper";
 import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
+  defaultRepRangeStyleId,
+  getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   isFrequencyStepComplete,
+  type PlanBlueprint,
+  type PlanBlueprintSummary,
+  type RepRangeStyle,
+  type RepRangeStyleId,
+  repRangeStyles,
+  selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
   summarizePlanBlueprint,
@@ -136,6 +144,11 @@ type UpdateTrainingSplitVariables = {
   timestamp: string;
 };
 
+type UpdateRepRangeStyleVariables = {
+  repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
@@ -180,15 +193,19 @@ type TrainingSplitFitPanelProps = {
   fitStatus: TrainingSplitFitStatus;
 };
 
-type PlanBuilderFutureStepPlaceholderProps = {
-  backPath: string;
-  backText: string;
-  description: string;
-  title: string;
-};
-
 type TrainingSplitSchedulePanelProps = {
   schedule: TrainingSplitSchedule;
+};
+
+type RepRangeStyleStepProps = {
+  onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
+  selectedRepRangeStyle: RepRangeStyle;
+};
+
+type RepRangeStyleOptionRadioProps = {
+  isSelected: boolean;
+  onSelect: (repRangeStyle: RepRangeStyleId) => void;
+  option: RepRangeStyle;
 };
 
 export function PlanBuilderRoute() {
@@ -278,26 +295,39 @@ export function PlanBuilderSplitRoute() {
 }
 
 export function PlanBuilderRepRangesRoute() {
-  const { summary } = usePlanBuilderBlueprint();
+  const { blueprint, summary } = usePlanBuilderBlueprint();
+  const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
+  const selectedRepRangeStyle = blueprint
+    ? getRepRangeStyle(blueprint.repRanges ?? defaultRepRangeStyleId)
+    : null;
+
+  function handleRepRangeStyleChange(repRangeStyle: RepRangeStyleId) {
+    updateRepRangeStyle({
+      repRangeStyle,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   return (
     <PlanBuilderPage
       currentStep="rep-ranges"
       intro={
         <p className="max-w-2xl text-base font-medium leading-7 text-[#31505d]">
-          The Plan Blueprint keeps moving forward by route, but Rep ranges stay out of scope in this
-          slice.
+          Choose the Rep Range Style that should later guide how Just Workout translates Training
+          Volume into sets and reps. This step stays focused on rep targets only.
         </p>
       }
       stepLabel="Rep ranges step"
       summary={summary}
     >
-      <PlanBuilderFutureStepPlaceholder
-        backPath={planBuilderPaths.split}
-        backText="Back to Split"
-        description="Split is now configured, but Rep ranges will land in a later issue."
-        title="Rep ranges placeholder"
-      />
+      {blueprint && selectedRepRangeStyle ? (
+        <RepRangeStyleStep
+          onRepRangeStyleChange={handleRepRangeStyleChange}
+          selectedRepRangeStyle={selectedRepRangeStyle}
+        />
+      ) : (
+        <p className="text-sm font-semibold text-stone-600">Loading Rep Range Style...</p>
+      )}
     </PlanBuilderPage>
   );
 }
@@ -344,6 +374,22 @@ function useUpdateTrainingSplitMutation() {
       selectTrainingSplit({
         blueprint,
         split,
+        timestamp,
+      }),
+  });
+}
+
+function useUpdateRepRangeStyleMutation() {
+  return usePlanBlueprintMutation<UpdateRepRangeStyleVariables>({
+    mutationFn: ({ repRangeStyle, timestamp }) =>
+      planBuilderService.updateRepRangeStyle({
+        repRangeStyle,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { repRangeStyle, timestamp }) =>
+      selectRepRangeStyle({
+        blueprint,
+        repRangeStyle,
         timestamp,
       }),
   });
@@ -654,35 +700,91 @@ function getTrainingSplitFitStatus({
   };
 }
 
-function PlanBuilderFutureStepPlaceholder({
-  backPath,
-  backText,
-  description,
-  title,
-}: PlanBuilderFutureStepPlaceholderProps) {
+function RepRangeStyleStep({
+  onRepRangeStyleChange,
+  selectedRepRangeStyle,
+}: RepRangeStyleStepProps) {
   return (
-    <div className="space-y-4">
-      <section aria-labelledby="future-step-placeholder-title" className="space-y-3">
-        <div>
-          <h3
-            className="text-xl font-black text-stone-950 sm:text-2xl"
-            id="future-step-placeholder-title"
-          >
-            {title}
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section aria-labelledby="rep-range-style-title" className="space-y-3">
+          <div>
+            <h3
+              className="text-xl font-black text-stone-950 sm:text-2xl"
+              id="rep-range-style-title"
+            >
+              Select Rep Range Style
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-stone-600">
+              Pick the rep target bias that fits how you want main compounds, secondary compounds,
+              and accessories to feel before Volume is set next.
+            </p>
+          </div>
+
+          <fieldset className="grid gap-3">
+            <legend className="sr-only">Rep Range Style</legend>
+            {repRangeStyles.map((option) => (
+              <RepRangeStyleOptionRadio
+                isSelected={option.id === selectedRepRangeStyle.id}
+                key={option.id}
+                onSelect={onRepRangeStyleChange}
+                option={option}
+              />
+            ))}
+          </fieldset>
+        </section>
+
+        <section
+          aria-labelledby="rep-range-style-effect-title"
+          aria-atomic="true"
+          aria-live="polite"
+          className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
+        >
+          <p className="text-sm font-bold uppercase tracking-wide text-[#b93725]">Selected style</p>
+          <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
+            How this affects your plan
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">{description}</p>
+          <p className="mt-2 max-w-3xl text-sm text-stone-600">
+            {selectedRepRangeStyle.description}
+          </p>
+
+          <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
+            <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+              Current guidance
+            </h4>
+            <p className="mt-2 text-sm text-stone-600">{selectedRepRangeStyle.note}</p>
+            <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+              {selectedRepRangeStyle.targets.map((target) => (
+                <div
+                  className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
+                  key={target.label}
+                >
+                  <dt className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                    {target.label}
+                  </dt>
+                  <dd className="mt-1 text-sm font-semibold text-stone-900">{target.reps}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button asChild variant="outline">
+            <Link to={planBuilderPaths.split}>Back to Split</Link>
+          </Button>
         </div>
+      </div>
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <PlanBuilderStepStatusCard
-          body="This placeholder keeps the builder flow moving by route without generating a Training Plan early."
-          title="What this step proves"
+          body="Volume targets are set next. Just Workout will use this rep range style later when translating volume into sets and reps."
+          title="Boundary for this step"
         />
-      </section>
-
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button asChild variant="outline">
-          <Link to={backPath}>{backText}</Link>
-        </Button>
+        <PlanBuilderStepStatusCard
+          body="Next, you will set weekly volume targets for each muscle group."
+          title="What happens next"
+        />
       </div>
     </div>
   );
@@ -785,6 +887,96 @@ function TrainingSplitOptionRadio({
           {badgeLabel}
         </span>
       </div>
+    </label>
+  );
+}
+
+function RepRangeStyleOptionRadio({ isSelected, onSelect, option }: RepRangeStyleOptionRadioProps) {
+  return (
+    <label
+      className={cn(
+        "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950",
+        isSelected
+          ? "border-stone-950 bg-stone-950 text-stone-50 shadow-sm"
+          : "border-stone-900/10 bg-white/85 text-stone-950 hover:bg-white",
+      )}
+    >
+      <input
+        checked={isSelected}
+        className="sr-only"
+        name="rep-range-style"
+        onChange={() => onSelect(option.id)}
+        type="radio"
+        value={option.id}
+      />
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-black">{option.title}</p>
+          <p className={cn("mt-2 text-sm", isSelected ? "text-stone-300" : "text-stone-600")}>
+            {option.description}
+          </p>
+        </div>
+
+        {option.isRecommended ? (
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+              isSelected ? "bg-white/12 text-[#f4b860]" : "bg-[#fff3ea] text-[#b93725]",
+            )}
+          >
+            Recommended
+          </span>
+        ) : null}
+      </div>
+
+      <div
+        className={cn(
+          "mt-4 rounded-lg border p-3",
+          isSelected ? "border-white/12 bg-white/8" : "border-stone-900/10 bg-[#f9f6ef]",
+        )}
+      >
+        <p
+          className={cn(
+            "text-xs font-bold uppercase tracking-wide",
+            isSelected ? "text-[#f4b860]" : "text-stone-500",
+          )}
+        >
+          Contextual note
+        </p>
+        <p className={cn("mt-2 text-sm", isSelected ? "text-stone-200" : "text-stone-600")}>
+          {option.note}
+        </p>
+      </div>
+
+      <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+        {option.targets.map((target) => (
+          <div
+            className={cn(
+              "rounded-md border px-3 py-3",
+              isSelected ? "border-white/12 bg-white/8" : "border-stone-900/10 bg-[#f4f0e8]",
+            )}
+            key={target.label}
+          >
+            <dt
+              className={cn(
+                "text-xs font-bold uppercase tracking-wide",
+                isSelected ? "text-stone-300" : "text-stone-500",
+              )}
+            >
+              {target.label}
+            </dt>
+            <dd
+              className={cn(
+                "mt-1 text-sm font-semibold",
+                isSelected ? "text-stone-50" : "text-stone-900",
+              )}
+            >
+              {target.reps}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </label>
   );
 }

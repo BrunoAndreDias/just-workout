@@ -23,7 +23,7 @@ export type RepRangeStyle = {
   description: string;
   id: RepRangeStyleId;
   isRecommended: boolean;
-  note: string | null;
+  note: string;
   targets: ReadonlyArray<{
     label: string;
     reps: string;
@@ -119,7 +119,7 @@ export const repRangeStyles = [
     description: "Heavier main lifts with slightly lower reps.",
     id: "strength_leaning",
     isRecommended: false,
-    note: null,
+    note: "Biases the week toward lower-rep top work on the main lifts before accessories climb.",
     targets: [
       { label: "Main compounds", reps: "4-6 reps" },
       { label: "Secondary compounds", reps: "6-8 reps" },
@@ -143,7 +143,7 @@ export const repRangeStyles = [
     description: "Higher reps with slightly lighter loads and more controlled work.",
     id: "controlled_higher_reps",
     isRecommended: false,
-    note: null,
+    note: "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
     targets: [
       { label: "Main compounds", reps: "8-10 reps" },
       { label: "Secondary compounds", reps: "10-12 reps" },
