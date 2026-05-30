@@ -158,14 +158,10 @@ export function selectTrainingFrequency({
   timestamp,
   trainingFrequencyDaysPerWeek,
 }: SelectTrainingFrequencyOptions): PlanBlueprint {
-  const split =
-    blueprint.split &&
-    isTrainingSplitCompatible({
-      trainingFrequencyDaysPerWeek,
-      trainingSplitId: blueprint.split,
-    })
-      ? blueprint.split
-      : null;
+  const split = getCompatibleSelectedTrainingSplit({
+    selectedTrainingSplit: blueprint.split,
+    trainingFrequencyDaysPerWeek,
+  });
 
   return {
     ...blueprint,
@@ -220,4 +216,27 @@ function formatTrainingFrequency(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): string {
   return `${trainingFrequencyDaysPerWeek} days/week`;
+}
+
+function getCompatibleSelectedTrainingSplit({
+  selectedTrainingSplit,
+  trainingFrequencyDaysPerWeek,
+}: {
+  selectedTrainingSplit: TrainingSplitId | null;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+}): TrainingSplitId | null {
+  if (!selectedTrainingSplit) {
+    return null;
+  }
+
+  if (
+    !isTrainingSplitCompatible({
+      trainingFrequencyDaysPerWeek,
+      trainingSplitId: selectedTrainingSplit,
+    })
+  ) {
+    return null;
+  }
+
+  return selectedTrainingSplit;
 }

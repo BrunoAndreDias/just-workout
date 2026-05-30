@@ -1,18 +1,5 @@
 import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 
-export type TrainingSplitId =
-  | "full-body-2-day"
-  | "full-body-3-day"
-  | "upper-lower-full-body"
-  | "alternating-full-body-a-b"
-  | "upper-lower-4-day"
-  | "rotating-push-pull-legs";
-
-export type TrainingSplitOption = {
-  id: TrainingSplitId;
-  label: string;
-};
-
 const trainingSplitOptions = [
   { id: "full-body-2-day", label: "2-Day Full Body" },
   { id: "full-body-3-day", label: "3-Day Full Body" },
@@ -20,7 +7,19 @@ const trainingSplitOptions = [
   { id: "alternating-full-body-a-b", label: "Alternating Full Body A/B" },
   { id: "upper-lower-4-day", label: "4-Day Upper/Lower" },
   { id: "rotating-push-pull-legs", label: "Rotating Push/Pull/Legs" },
-] as const satisfies ReadonlyArray<TrainingSplitOption>;
+] as const;
+
+export type TrainingSplitId = (typeof trainingSplitOptions)[number]["id"];
+
+export type TrainingSplitOption = {
+  id: TrainingSplitId;
+  label: string;
+};
+
+type TrainingSplitCompatibilityOptions = {
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+  trainingSplitId: TrainingSplitId;
+};
 
 const compatibleTrainingSplitIdsByFrequency = {
   2: ["full-body-2-day"],
@@ -59,10 +58,7 @@ export function getTrainingSplitLabel(trainingSplitId: TrainingSplitId): string 
 export function isTrainingSplitCompatible({
   trainingFrequencyDaysPerWeek,
   trainingSplitId,
-}: {
-  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-  trainingSplitId: TrainingSplitId;
-}): boolean {
+}: TrainingSplitCompatibilityOptions): boolean {
   return compatibleTrainingSplitIdsByFrequency[trainingFrequencyDaysPerWeek].some(
     (compatibleTrainingSplitId) => compatibleTrainingSplitId === trainingSplitId,
   );
