@@ -76,6 +76,30 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toBeVisible();
   });
+
+  it("shows the builder steps, disables Back on Frequency, and continues to the Split placeholder", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder();
+
+    const stepList = await screen.findByRole("list", { name: /plan builder steps/i });
+
+    expect(within(stepList).getByText("Frequency")).toHaveAttribute("aria-current", "step");
+    expect(within(stepList).getByText("Split")).toBeVisible();
+    expect(within(stepList).getByText("Rep ranges")).toBeVisible();
+    expect(within(stepList).getByText("Volume")).toBeVisible();
+    expect(within(stepList).getByText("Exercises")).toBeVisible();
+    expect(within(stepList).getByText("Review")).toBeVisible();
+    expect(await screen.findByRole("button", { name: /^back$/i })).toBeDisabled();
+
+    await user.click(await screen.findByRole("link", { name: /continue to split/i }));
+
+    expect(await screen.findByRole("heading", { name: /split placeholder/i })).toBeVisible();
+    expect(screen.getByText(/split selection is not built yet/i)).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
+    ).toHaveAttribute("aria-current", "step");
+  });
 });
 
 function renderPlanBuilder() {

@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { PlanBuilderRoute } from "../plan-builder";
+import { PlanBuilderRoute, PlanBuilderSplitRoute } from "../plan-builder";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -25,7 +25,18 @@ const planBuilderRoute = createRoute({
   path: "/plan-builder",
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, workoutRoute, planBuilderRoute]);
+const planBuilderSplitRoute = createRoute({
+  component: PlanBuilderSplitRoute,
+  getParentRoute: () => rootRoute,
+  path: "/plan-builder/split",
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  workoutRoute,
+  planBuilderRoute,
+  planBuilderSplitRoute,
+]);
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];
 
