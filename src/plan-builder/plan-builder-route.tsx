@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
   Star,
   Target,
+  UserRound,
 } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { Button } from "../design-system/button";
@@ -65,25 +66,16 @@ type PlanBlueprintSummaryRow = {
   label: string;
 };
 
-const pendingPlanBuilderStepStatus = "Pending";
-
-function createPendingPlanBlueprintSummaryRow({
-  icon,
-  label,
-}: Pick<PlanBlueprintSummaryRow, "icon" | "label">): PlanBlueprintSummaryRow {
-  return {
-    getStatus: () => pendingPlanBuilderStepStatus,
-    getValue: () => pendingPlanBuilderStepStatus,
-    icon,
-    label,
-  };
-}
-
 const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   {
     getValue: (summary) => summary.trainingGoal,
     icon: Target,
     label: "Goal",
+  },
+  {
+    getValue: () => "Intermediate",
+    icon: UserRound,
+    label: "Experience",
   },
   {
     getValue: (summary) => summary.trainingFrequency,
@@ -102,9 +94,22 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     icon: SlidersHorizontal,
     label: "Rep ranges",
   },
-  createPendingPlanBlueprintSummaryRow({ icon: List, label: "Volume preset" }),
-  createPendingPlanBlueprintSummaryRow({ icon: Dumbbell, label: "Exercises" }),
-  createPendingPlanBlueprintSummaryRow({ icon: Clock3, label: "Generation status" }),
+  {
+    getValue: () => "Not chosen yet",
+    icon: List,
+    label: "Volume preset",
+  },
+  {
+    getValue: () => "Not configured yet",
+    icon: Dumbbell,
+    label: "Equipment",
+  },
+  {
+    getStatus: () => "Not ready yet",
+    getValue: () => "Not ready yet",
+    icon: Clock3,
+    label: "Generation status",
+  },
 ] as const satisfies ReadonlyArray<PlanBlueprintSummaryRow>;
 
 const planBuilderSteps = [
@@ -573,7 +578,7 @@ function PlanBuilderPage({
   const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:items-start 2xl:grid-cols-[906px_22.5rem] 2xl:gap-[1.625rem]">
+    <section className="plan-builder-page grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[906px_22.5rem] 2xl:gap-[1.625rem]">
       <section aria-label="Plan Builder workspace" className="min-w-0">
         <Card className="plan-builder-workspace-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-3 lg:pt-11">
           <header className="space-y-2">
@@ -660,7 +665,7 @@ function TrainingFrequencyStep({
         </p>
       </div>
 
-      <fieldset className="training-frequency-options mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <fieldset className="training-frequency-options mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <legend className="sr-only">Training Frequency</legend>
         {trainingFrequencyOptions.map((option) => (
           <TrainingFrequencyOptionRadio

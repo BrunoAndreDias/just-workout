@@ -104,7 +104,7 @@ const defaultPlanBlueprintValues = {
 } satisfies Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt">;
 
 const trainingGoalLabels = {
-  "build-muscle": "Build Muscle",
+  "build-muscle": "Build muscle",
 } satisfies Record<TrainingGoal, string>;
 
 const repRangeStyleLabels = {

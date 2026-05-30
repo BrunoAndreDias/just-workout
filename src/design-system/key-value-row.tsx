@@ -21,7 +21,7 @@ export function KeyValueRow({
   return (
     <div
       className={cn(
-        "grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 border-stone-950/8 py-[1.0625rem]",
+        "grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,9rem)] items-center gap-3 border-stone-950/8 py-[1.0625rem]",
         className,
       )}
     >
@@ -29,13 +29,13 @@ export function KeyValueRow({
         <span className="flex h-7 w-7 items-center justify-center text-stone-950">
           {Icon ? <Icon aria-hidden="true" size={22} strokeWidth={1.7} /> : null}
         </span>
-        <span className="min-w-0 text-base font-medium text-stone-950">{label}</span>
+        <span className="min-w-0 text-base font-medium leading-snug text-stone-950">{label}</span>
       </dt>
-      <dd className="min-w-0 text-right text-base font-medium text-stone-950">
+      <dd className="min-w-0 justify-self-end text-right text-base font-medium text-stone-950">
         {status ? (
           <span
             className={cn(
-              "inline-flex min-h-11 items-center rounded-md px-4 text-sm text-[#5c6d73]",
+              "inline-flex min-h-11 max-w-full items-center whitespace-normal rounded-md px-4 text-center text-sm text-[#5c6d73]",
               statusClassName,
             )}
           >
