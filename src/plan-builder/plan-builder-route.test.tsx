@@ -43,6 +43,11 @@ const repRangeStyleEffectCopy = {
 const repRangeStyleBoundaryCopy =
   "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.";
 
+const frequencyNextStepCopy =
+  "Next, you'll choose the best Training Split for your weekly schedule.";
+const splitNextStepCopy = "Next, you'll choose a Rep Range Style for your Plan Blueprint.";
+const generatedPlanSplitNextStepCopy =
+  "Next, you'll choose Rep ranges that fit your Training Plan.";
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 
 const selectableTrainingSplitCases = [
@@ -172,9 +177,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getAllByText("Pending")).toHaveLength(3);
 
     expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(
-      screen.getByText("Next, you'll choose the best Training Split for your weekly schedule."),
-    ).toBeVisible();
+    expect(screen.getByText(frequencyNextStepCopy)).toBeVisible();
   });
 
   it("lets the user select a training frequency, updates the summary, and restores it on return", async () => {
@@ -326,12 +329,8 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
     expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(
-      screen.getByText("Next, you'll choose a Rep Range Style for your Plan Blueprint."),
-    ).toBeVisible();
-    expect(
-      screen.queryByText("Next, you'll choose Rep ranges that fit your Training Plan."),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(splitNextStepCopy)).toBeVisible();
+    expect(screen.queryByText(generatedPlanSplitNextStepCopy)).not.toBeInTheDocument();
   });
 
   it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {

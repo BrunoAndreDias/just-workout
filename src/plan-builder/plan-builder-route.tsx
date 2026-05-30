@@ -120,6 +120,15 @@ const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
 
 type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
 
+const planBuilderNextStepBodyByStep = {
+  frequency: "Next, you'll choose the best Training Split for your weekly schedule.",
+  split: "Next, you'll choose a Rep Range Style for your Plan Blueprint.",
+  "rep-ranges": "Next, you will set weekly volume targets for each muscle group.",
+  volume: "Later builder steps stay pending until weekly volume targets are implemented.",
+  exercises: "Next, you'll review the blueprint before generating the Training Plan.",
+  review: "Review the blueprint and generate the Training Plan when everything is ready.",
+} as const satisfies Record<PlanBuilderStep, string>;
+
 type SelectableOptionState = "selected" | "unselected";
 
 const selectableOptionCardBaseClassName =
@@ -568,7 +577,7 @@ function PlanBuilderPage({
 }
 
 function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
-  const body = getPlanBuilderNextStepBody(currentStep);
+  const body = planBuilderNextStepBodyByStep[currentStep];
 
   return (
     <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
@@ -578,23 +587,6 @@ function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProp
       <p className="mt-5 text-base font-medium leading-8 text-[#31505d]">{body}</p>
     </Card>
   );
-}
-
-function getPlanBuilderNextStepBody(currentStep: PlanBuilderStep) {
-  switch (currentStep) {
-    case "frequency":
-      return "Next, you'll choose the best Training Split for your weekly schedule.";
-    case "split":
-      return "Next, you'll choose a Rep Range Style for your Plan Blueprint.";
-    case "rep-ranges":
-      return "Next, you will set weekly volume targets for each muscle group.";
-    case "volume":
-      return "Later builder steps stay pending until weekly volume targets are implemented.";
-    case "exercises":
-      return "Next, you'll review the blueprint before generating the Training Plan.";
-    case "review":
-      return "Review the blueprint and generate the Training Plan when everything is ready.";
-  }
 }
 
 function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
