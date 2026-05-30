@@ -328,14 +328,7 @@ describe("PlanBuilderRoute", () => {
   it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {
     const user = userEvent.setup();
 
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:30:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:31:00.000Z",
-    });
+    await saveFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -371,10 +364,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("redirects direct access to Rep ranges back to Split when no compatible Training Split is saved", async () => {
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:35:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
+    await saveFourDayTrainingFrequency();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -393,14 +383,7 @@ describe("PlanBuilderRoute", () => {
   it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {
     const user = userEvent.setup();
 
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:37:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:38:00.000Z",
-    });
+    await saveFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -431,14 +414,7 @@ describe("PlanBuilderRoute", () => {
   it("navigates back from Rep ranges to Split", async () => {
     const user = userEvent.setup();
 
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:39:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:40:00.000Z",
-    });
+    await saveFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -456,14 +432,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:40:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:41:00.000Z",
-    });
+    await saveFourDayUpperLowerTrainingSplit();
     await planBuilderService.updateRepRangeStyle({
       repRangeStyle: "controlled_higher_reps",
       timestamp: "2026-05-30T11:42:00.000Z",
@@ -497,14 +466,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("shows data-driven Rep Range Style notes and targets without rendering advanced programming controls", async () => {
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:45:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:46:00.000Z",
-    });
+    await saveFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -953,6 +915,21 @@ function renderPlanBuilder({
     ...view,
     router,
   };
+}
+
+async function saveFourDayTrainingFrequency() {
+  await planBuilderService.updateTrainingFrequency({
+    timestamp: "2026-05-30T11:30:00.000Z",
+    trainingFrequencyDaysPerWeek: 4,
+  });
+}
+
+async function saveFourDayUpperLowerTrainingSplit() {
+  await saveFourDayTrainingFrequency();
+  await planBuilderService.updateTrainingSplit({
+    split: "upper-lower-4-day",
+    timestamp: "2026-05-30T11:31:00.000Z",
+  });
 }
 
 async function selectTrainingFrequency(

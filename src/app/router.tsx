@@ -50,19 +50,21 @@ const planBuilderSplitRoute = createRoute({
   path: planBuilderPaths.split,
 });
 
+async function requireCompatibleTrainingSplit() {
+  const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+  if (isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
+    return;
+  }
+
+  throw redirect({
+    replace: true,
+    to: planBuilderPaths.split,
+  });
+}
+
 const planBuilderRepRangesRoute = createRoute({
-  beforeLoad: async () => {
-    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    if (isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
-      return;
-    }
-
-    throw redirect({
-      replace: true,
-      to: planBuilderPaths.split,
-    });
-  },
+  beforeLoad: requireCompatibleTrainingSplit,
   component: PlanBuilderRepRangesRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.repRanges,
