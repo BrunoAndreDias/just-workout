@@ -480,18 +480,12 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
-    const balancedHypertrophyOption = getRepRangeStyleOptionCard(
+
+    expectOnlyRepRangeStyleCardSelected(
       repRangeGroup,
       repRangeStyleLabels.balancedHypertrophy,
-    );
-    const controlledHigherRepsOption = getRepRangeStyleOptionCard(
-      repRangeGroup,
       repRangeStyleLabels.controlledHigherReps,
     );
-
-    expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
-    expect(within(balancedHypertrophyOption).getByText("Selected")).toBeVisible();
-    expect(within(controlledHigherRepsOption).queryByText("Selected")).not.toBeInTheDocument();
 
     await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
 
@@ -499,20 +493,11 @@ describe("PlanBuilderRoute", () => {
       expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
     });
 
-    expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
-    const selectedControlledHigherRepsOption = getRepRangeStyleOptionCard(
+    expectOnlyRepRangeStyleCardSelected(
       repRangeGroup,
       repRangeStyleLabels.controlledHigherReps,
-    );
-    const unselectedBalancedHypertrophyOption = getRepRangeStyleOptionCard(
-      repRangeGroup,
       repRangeStyleLabels.balancedHypertrophy,
     );
-
-    expect(within(selectedControlledHigherRepsOption).getByText("Selected")).toBeVisible();
-    expect(
-      within(unselectedBalancedHypertrophyOption).queryByText("Selected"),
-    ).not.toBeInTheDocument();
   });
 
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
@@ -1089,6 +1074,20 @@ function getRepRangeStyleOptionCard(repRangeGroup: HTMLElement, label: string) {
   }
 
   return optionCard;
+}
+
+function expectOnlyRepRangeStyleCardSelected(
+  repRangeGroup: HTMLElement,
+  selectedLabel: string,
+  unselectedLabel: string,
+) {
+  expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
+  expect(
+    within(getRepRangeStyleOptionCard(repRangeGroup, selectedLabel)).getByText("Selected"),
+  ).toBeVisible();
+  expect(
+    within(getRepRangeStyleOptionCard(repRangeGroup, unselectedLabel)).queryByText("Selected"),
+  ).not.toBeInTheDocument();
 }
 
 function getRepRangeStyleEffectsPanel() {

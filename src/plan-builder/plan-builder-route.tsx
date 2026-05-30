@@ -235,9 +235,11 @@ type PlanBuilderCurrentStepCardProps = {
 type PlanBuilderStepStatusCardProps = {
   body: string;
   className?: string;
-  showTitle?: boolean;
   title: string;
+  titleDisplay?: PlanBuilderStepStatusCardTitleDisplay;
 };
+
+type PlanBuilderStepStatusCardTitleDisplay = "screen-reader-only" | "visible";
 
 type TrainingSplitStepProps = {
   onTrainingSplitChange: (split: TrainingSplitId) => void;
@@ -272,7 +274,7 @@ type TrainingSplitSchedulePanelProps = {
 
 type RepRangeStyleStepProps = {
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
-  persistedRepRangeStyleId: RepRangeStyleId | null;
+  savedRepRangeStyleId: RepRangeStyleId | null;
   selectedRepRangeStyle: RepRangeStyle;
 };
 
@@ -281,7 +283,7 @@ type RepRangeStyleEffectsPanelProps = {
 };
 
 type RepRangeStyleOptionRadioProps = {
-  isPersisted: boolean;
+  isSavedSelection: boolean;
   isSelected: boolean;
   onSelect: (repRangeStyle: RepRangeStyleId) => void;
   option: RepRangeStyle;
@@ -417,7 +419,7 @@ export function PlanBuilderRepRangesRoute() {
       {blueprint && selectedRepRangeStyle ? (
         <RepRangeStyleStep
           onRepRangeStyleChange={handleRepRangeStyleChange}
-          persistedRepRangeStyleId={blueprint.repRanges}
+          savedRepRangeStyleId={blueprint.repRanges}
           selectedRepRangeStyle={selectedRepRangeStyle}
         />
       ) : (
@@ -801,7 +803,7 @@ function getTrainingSplitFitStatus({
 
 function RepRangeStyleStep({
   onRepRangeStyleChange,
-  persistedRepRangeStyleId,
+  savedRepRangeStyleId,
   selectedRepRangeStyle,
 }: RepRangeStyleStepProps) {
   return (
@@ -825,7 +827,7 @@ function RepRangeStyleStep({
             <legend className="sr-only">Rep Range Style</legend>
             {repRangeStyles.map((option) => (
               <RepRangeStyleOptionRadio
-                isPersisted={option.id === persistedRepRangeStyleId}
+                isSavedSelection={option.id === savedRepRangeStyleId}
                 isSelected={option.id === selectedRepRangeStyle.id}
                 key={option.id}
                 onSelect={onRepRangeStyleChange}
@@ -839,8 +841,8 @@ function RepRangeStyleStep({
           <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
           <PlanBuilderStepStatusCard
             body="Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps."
-            showTitle
             title="Boundary for this step"
+            titleDisplay="visible"
           />
         </div>
       </div>
@@ -1050,7 +1052,7 @@ function TrainingSplitOptionRadio({
 }
 
 function RepRangeStyleOptionRadio({
-  isPersisted,
+  isSavedSelection,
   isSelected,
   onSelect,
   option,
@@ -1061,8 +1063,8 @@ function RepRangeStyleOptionRadio({
     onSelect(option.id);
   }
 
-  function handleRadioClick() {
-    if (isSelected && !isPersisted) {
+  function saveImplicitDefaultSelection() {
+    if (isSelected && !isSavedSelection) {
       selectOption();
     }
   }
@@ -1073,7 +1075,7 @@ function RepRangeStyleOptionRadio({
         checked={isSelected}
         className="sr-only"
         name="rep-range-style"
-        onClick={handleRadioClick}
+        onClick={saveImplicitDefaultSelection}
         onChange={selectOption}
         type="radio"
         value={option.id}
@@ -1303,14 +1305,16 @@ function TrainingFrequencyRecommendationCard({
 function PlanBuilderStepStatusCard({
   body,
   className,
-  showTitle = false,
   title,
+  titleDisplay = "screen-reader-only",
 }: PlanBuilderStepStatusCardProps) {
+  const hasVisibleTitle = titleDisplay === "visible";
+
   return (
     <div
       className={cn(
         "plan-builder-step-status flex gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]",
-        showTitle ? "items-start" : "items-center",
+        hasVisibleTitle ? "items-start" : "items-center",
         className,
       )}
     >
@@ -1318,12 +1322,14 @@ function PlanBuilderStepStatusCard({
         <Info aria-hidden="true" size={24} strokeWidth={1.7} />
       </span>
       <div className="min-w-0">
-        {showTitle ? (
+        {hasVisibleTitle ? (
           <h4 className="text-sm font-bold uppercase tracking-wide text-[#9a612c]">{title}</h4>
         ) : (
           <p className="sr-only">{title}</p>
         )}
-        <p className={cn("text-base font-medium leading-7", showTitle ? "mt-1" : null)}>{body}</p>
+        <p className={cn("text-base font-medium leading-7", hasVisibleTitle ? "mt-1" : null)}>
+          {body}
+        </p>
       </div>
     </div>
   );
