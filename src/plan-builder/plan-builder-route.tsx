@@ -26,6 +26,7 @@ import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
   createDefaultExerciseSelectionPreferences,
+  type ExerciseSelectionPreferences,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
 } from "./exercise-selection-preferences";
@@ -244,6 +245,32 @@ const weeklyVolumeHowItWorksItems = [
 
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
+
+const readOnlyExercisesHighlights = [
+  {
+    body: "Main work favors productive compound lifts when they fit the Plan Blueprint.",
+    title: "Compound-first bias",
+  },
+  {
+    body: "Isolation work can still support Weekly Rep Targets when more direct work is needed.",
+    title: "Targeted support",
+  },
+  {
+    body: "Painful or unsuitable exercises stay out of the later Training Plan choices.",
+    title: "Safety boundary",
+  },
+] as const satisfies ReadonlyArray<ReadOnlyExercisesHighlightProps>;
+
+const readOnlyExercisesStatusCards = [
+  {
+    body: "This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created.",
+    title: "Plan status",
+  },
+  {
+    body: "Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here.",
+    title: "Step scope",
+  },
+] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
 
 const volumePresetDescriptions = {
   balanced:
@@ -526,6 +553,15 @@ type WeeklyVolumeTargetsStepProps = {
   selectedVolumePresetId: VolumePresetId | null;
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
+
+type ReadOnlyExercisesStepProps = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+};
+
+type ReadOnlyExercisesHighlightProps = {
+  body: string;
+  title: string;
 };
 
 type VolumePresetSelectorProps = {
@@ -2164,11 +2200,7 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ReadOnlyExercisesStep({
-  exerciseSelectionPreferences,
-}: {
-  exerciseSelectionPreferences: PlanBlueprint["exerciseSelectionPreferences"];
-}) {
+function ReadOnlyExercisesStep({ exerciseSelectionPreferences }: ReadOnlyExercisesStepProps) {
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
 
@@ -2211,18 +2243,9 @@ function ReadOnlyExercisesStep({
               {selectedStrategy.description}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <ReadOnlyExercisesHighlight
-                body="Main work favors productive compound lifts when they fit the Plan Blueprint."
-                title="Compound-first bias"
-              />
-              <ReadOnlyExercisesHighlight
-                body="Isolation work can still support Weekly Rep Targets when more direct work is needed."
-                title="Targeted support"
-              />
-              <ReadOnlyExercisesHighlight
-                body="Painful or unsuitable exercises stay out of the later Training Plan choices."
-                title="Safety boundary"
-              />
+              {readOnlyExercisesHighlights.map((highlight) => (
+                <ReadOnlyExercisesHighlight key={highlight.title} {...highlight} />
+              ))}
             </div>
           </div>
         </section>
@@ -2286,22 +2309,20 @@ function ReadOnlyExercisesStep({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <PlanBuilderStepStatusCard
-          body="This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created."
-          title="Plan status"
-          titleDisplay="visible"
-        />
-        <PlanBuilderStepStatusCard
-          body="Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here."
-          title="Step scope"
-          titleDisplay="visible"
-        />
+        {readOnlyExercisesStatusCards.map((statusCard) => (
+          <PlanBuilderStepStatusCard
+            body={statusCard.body}
+            key={statusCard.title}
+            title={statusCard.title}
+            titleDisplay="visible"
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-function ReadOnlyExercisesHighlight({ body, title }: { body: string; title: string }) {
+function ReadOnlyExercisesHighlight({ body, title }: ReadOnlyExercisesHighlightProps) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/8 p-4">
       <h5 className="text-sm font-black uppercase tracking-wide text-stone-100">{title}</h5>

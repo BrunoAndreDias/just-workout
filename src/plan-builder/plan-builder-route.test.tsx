@@ -82,6 +82,15 @@ const exercisesStepExcludedContentPatterns = [
   /progress charts?/i,
 ] as const;
 
+const defaultExerciseStepIncludedEquipmentLabels = [
+  "Barbell",
+  "Dumbbells",
+  "Machines",
+  "Cables",
+  "Pull-up bar",
+  "Bodyweight",
+] as const;
+
 const conservativePresetWeeklyRepTargets = [
   { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
   { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
@@ -715,24 +724,12 @@ describe("PlanBuilderRoute", () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectPlanBuilderPath(router, planBuilderPaths.exercises);
-    expect(
-      await screen.findByRole("heading", { name: /exercise selection strategy/i }),
-    ).toBeVisible();
+    await expectReadOnlyExercisesStep();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Exercises",
       ),
     ).toHaveAttribute("aria-current", "step");
-    expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
-    const includedEquipment = screen.getByRole("list", { name: /included equipment/i });
-
-    expect(within(includedEquipment).getByText("Barbell")).toBeVisible();
-    expect(within(includedEquipment).getByText("Dumbbells")).toBeVisible();
-    expect(within(includedEquipment).getByText("Machines")).toBeVisible();
-    expect(within(includedEquipment).getByText("Cables")).toBeVisible();
-    expect(within(includedEquipment).getByText("Pull-up bar")).toBeVisible();
-    expect(within(includedEquipment).getByText("Bodyweight")).toBeVisible();
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(summary).toBeVisible();
@@ -1057,8 +1054,6 @@ describe("PlanBuilderRoute", () => {
         "Exercises",
       ),
     ).toHaveAttribute("aria-current", "step");
-    expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
     expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
 
     await waitFor(async () => {
@@ -1912,6 +1907,14 @@ async function expectReadOnlyExercisesStep() {
   expect(
     await screen.findByRole("heading", { name: /exercise selection strategy/i }),
   ).toBeVisible();
+  expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
+
+  const includedEquipment = screen.getByRole("list", { name: /included equipment/i });
+
+  for (const label of defaultExerciseStepIncludedEquipmentLabels) {
+    expect(within(includedEquipment).getByText(label)).toBeVisible();
+  }
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {
