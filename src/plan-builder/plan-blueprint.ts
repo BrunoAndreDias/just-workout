@@ -53,10 +53,11 @@ export type RepRangeStyle = {
   title: string;
   volumeEstimationRepRange: VolumeEstimationRepRange;
 };
-export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume" | "exercises";
-export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges" | "volume";
+export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume" | "exercises" | "review";
+export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges" | "volume" | "exercises";
 
 type PlanBuilderConfirmedSteps = {
+  exercises: boolean;
   frequency: boolean;
   repRanges: boolean;
   split: boolean;
@@ -171,6 +172,11 @@ type ConfirmTrainingVolumeOptions = {
   timestamp: string;
 };
 
+type ConfirmExerciseSelectionPreferencesOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+};
+
 type StoredPlanBlueprint = Omit<
   PlanBlueprint,
   | "confirmedBuilderSteps"
@@ -187,6 +193,7 @@ type StoredPlanBlueprint = Omit<
 };
 
 const defaultConfirmedBuilderSteps = {
+  exercises: false,
   frequency: false,
   repRanges: false,
   split: false,
@@ -403,6 +410,11 @@ type VolumeStepCompletionCandidate = TrainingVolumeConfigurationCandidate & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
 };
 
+type ExercisesStepCompletionCandidate = {
+  confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+};
+
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {
   return {
     ...blueprint,
@@ -457,6 +469,16 @@ export function isVolumeStepComplete(
   return getConfirmedBuilderSteps(blueprint).volume && isTrainingVolumeConfiguration(blueprint);
 }
 
+export function isExercisesStepComplete(
+  blueprint: ExercisesStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).exercises;
+}
+
 export function getPlanBuilderRedirectStep(
   blueprint: PlanBlueprint,
   targetStep: PlanBuilderGuardedStep,
@@ -485,11 +507,19 @@ export function getPlanBuilderRedirectStep(
     return null;
   }
 
-  if (isVolumeStepComplete(blueprint)) {
+  if (!isVolumeStepComplete(blueprint)) {
+    return "volume";
+  }
+
+  if (targetStep === "exercises") {
     return null;
   }
 
-  return "volume";
+  if (isExercisesStepComplete(blueprint)) {
+    return null;
+  }
+
+  return "exercises";
 }
 
 export function selectTrainingFrequency({
@@ -509,12 +539,14 @@ export function selectTrainingFrequency({
   if (hasTrainingFrequencyChanged) {
     confirmedBuilderSteps = {
       ...confirmedBuilderSteps,
+      exercises: false,
       frequency: false,
       split: false,
     };
   } else if (hasSplitChanged) {
     confirmedBuilderSteps = {
       ...confirmedBuilderSteps,
+      exercises: false,
       split: false,
     };
   }
@@ -549,6 +581,7 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
     ...options.blueprint,
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
+      exercises: isSameTrainingSplit ? confirmedBuilderSteps.exercises : false,
       split: isSameTrainingSplit ? confirmedBuilderSteps.split : false,
     },
     split: selectedTrainingSplitId,
@@ -572,6 +605,7 @@ export function selectRepRangeStyle({
     ...blueprint,
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
+      exercises: isSameRepRangeStyle ? confirmedBuilderSteps.exercises : false,
       repRanges: isSameRepRangeStyle ? confirmedBuilderSteps.repRanges : false,
       volume: isSameRepRangeStyle ? confirmedBuilderSteps.volume : false,
     },
@@ -598,6 +632,7 @@ export function initializeTrainingVolume({
     ...createRecommendedTrainingVolumeConfiguration(),
     confirmedBuilderSteps: {
       ...getConfirmedBuilderSteps(blueprint),
+      exercises: false,
       volume: false,
     },
     updatedAt: timestamp,
@@ -630,6 +665,7 @@ export function selectTrainingVolumePreset({
     ...nextTrainingVolumeConfiguration,
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
+      exercises: hasVolumePresetChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
     },
     updatedAt: timestamp,
@@ -661,6 +697,7 @@ export function setOptionalVolumeTargetEnabled({
     ...nextTrainingVolumeConfiguration,
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
+      exercises: hasEnabledStateChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
     updatedAt: timestamp,
@@ -672,11 +709,22 @@ export function updateExerciseSelectionPreferences({
   exerciseSelectionPreferences,
   timestamp,
 }: UpdateExerciseSelectionPreferencesOptions): PlanBlueprint {
+  const normalizedExerciseSelectionPreferences = normalizeExerciseSelectionPreferences(
+    exerciseSelectionPreferences,
+  );
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+  const hasExerciseSelectionPreferencesChanged = !areExerciseSelectionPreferencesEqual(
+    blueprint.exerciseSelectionPreferences,
+    normalizedExerciseSelectionPreferences,
+  );
+
   return {
     ...blueprint,
-    exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
-      exerciseSelectionPreferences,
-    ),
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      exercises: hasExerciseSelectionPreferencesChanged ? false : confirmedBuilderSteps.exercises,
+    },
+    exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
     updatedAt: timestamp,
   };
 }
@@ -762,11 +810,30 @@ export function confirmTrainingVolume({
   };
 }
 
+export function confirmExerciseSelectionPreferences({
+  blueprint,
+  timestamp,
+}: ConfirmExerciseSelectionPreferencesOptions): PlanBlueprint {
+  if (!isVolumeStepComplete(blueprint)) {
+    throw new Error("Exercises cannot be confirmed before Training Volume is confirmed.");
+  }
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...blueprint.confirmedBuilderSteps,
+      exercises: true,
+    },
+    updatedAt: timestamp,
+  };
+}
+
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
   const hasRepRangeStyle = selectedRepRangeStyleId !== null;
+  const isExercisesConfirmed = isExercisesStepComplete(blueprint);
   const isVolumeConfirmed = isVolumeStepComplete(blueprint);
   const selectedVolumePresetId = isVolumePresetId(blueprint.volumePreset)
     ? blueprint.volumePreset
@@ -776,6 +843,7 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: getPlanBlueprintNextStep({
+      isExercisesConfirmed,
       hasCompatibleSplit: splitSummary !== null,
       hasRepRangeStyle,
       isVolumeConfirmed,
@@ -797,10 +865,12 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
 }
 
 function getPlanBlueprintNextStep({
+  isExercisesConfirmed,
   hasCompatibleSplit,
   hasRepRangeStyle,
   isVolumeConfirmed,
 }: {
+  isExercisesConfirmed: boolean;
   hasCompatibleSplit: boolean;
   hasRepRangeStyle: boolean;
   isVolumeConfirmed: boolean;
@@ -814,6 +884,10 @@ function getPlanBlueprintNextStep({
   }
 
   if (isVolumeConfirmed) {
+    if (isExercisesConfirmed) {
+      return "Review";
+    }
+
     return "Exercises";
   }
 
@@ -882,11 +956,39 @@ function getConfirmedBuilderSteps({
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
 }): PlanBuilderConfirmedSteps {
   return {
+    exercises: confirmedBuilderSteps?.exercises === true,
     frequency: confirmedBuilderSteps?.frequency === true,
     repRanges: confirmedBuilderSteps?.repRanges === true,
     split: confirmedBuilderSteps?.split === true,
     volume: confirmedBuilderSteps?.volume === true,
   };
+}
+
+function areExerciseSelectionPreferencesEqual(
+  left: ExerciseSelectionPreferences,
+  right: ExerciseSelectionPreferences,
+): boolean {
+  return (
+    left.equipmentPreset === right.equipmentPreset &&
+    left.strategy === right.strategy &&
+    areExerciseSelectionPreferenceItemsEqual(left.avoidedExercises, right.avoidedExercises) &&
+    areExerciseSelectionPreferenceItemsEqual(left.preferredExercises, right.preferredExercises)
+  );
+}
+
+function areExerciseSelectionPreferenceItemsEqual(
+  left: ExerciseSelectionPreferences["preferredExercises"],
+  right: ExerciseSelectionPreferences["preferredExercises"],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (item, index) =>
+        item.id === right[index]?.id &&
+        item.matchedExerciseId === right[index]?.matchedExerciseId &&
+        item.rawText === right[index]?.rawText,
+    )
+  );
 }
 
 function getSelectedTrainingSplitId({

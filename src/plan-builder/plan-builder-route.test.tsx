@@ -400,6 +400,7 @@ describe("PlanBuilderRoute", () => {
     });
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        exercises: false,
         frequency: true,
         repRanges: false,
         split: false,
@@ -414,6 +415,7 @@ describe("PlanBuilderRoute", () => {
     await db.planBlueprints.put({
       ...blueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: false,
         split: false,
@@ -520,6 +522,7 @@ describe("PlanBuilderRoute", () => {
     });
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        exercises: false,
         frequency: true,
         repRanges: false,
         split: true,
@@ -544,6 +547,7 @@ describe("PlanBuilderRoute", () => {
     });
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        exercises: false,
         frequency: true,
         split: true,
         repRanges: true,
@@ -558,6 +562,7 @@ describe("PlanBuilderRoute", () => {
     await db.planBlueprints.put({
       ...blueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: false,
         split: true,
@@ -601,6 +606,7 @@ describe("PlanBuilderRoute", () => {
     await db.planBlueprints.put({
       ...blueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -657,6 +663,7 @@ describe("PlanBuilderRoute", () => {
     await db.planBlueprints.put({
       ...blueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -715,6 +722,44 @@ describe("PlanBuilderRoute", () => {
     expect(summary).toBeVisible();
     expectBlueprintSummaryField(summary, "Volume preset", "Conservative");
     expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
+  });
+
+  it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
+    });
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+  });
+
+  it("renders the Review placeholder on direct access when Exercises is confirmed", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+
+    await expectPlanBuilderPath(router, planBuilderPaths.review);
+    await expectReviewStepComingNext();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Review"),
+    ).toHaveAttribute("aria-current", "step");
   });
 
   it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
@@ -1059,6 +1104,35 @@ describe("PlanBuilderRoute", () => {
           { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
         ],
       });
+    });
+  });
+
+  it("confirms Exercises before navigating from Exercises to Review", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectExercisesStepComingNext();
+
+    await user.click(screen.getByRole("button", { name: /continue to review/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.review);
+    await expectReviewStepComingNext();
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
     });
   });
 
@@ -1888,6 +1962,10 @@ async function expectPlanBlueprintToMatch(expectedBlueprint: object) {
 
 async function expectExercisesStepComingNext() {
   expect(await screen.findByRole("heading", { name: /exercises step coming next/i })).toBeVisible();
+}
+
+async function expectReviewStepComingNext() {
+  expect(await screen.findByRole("heading", { name: /review step coming next/i })).toBeVisible();
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {

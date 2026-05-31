@@ -5,6 +5,7 @@ import {
   type PlanBuilderGuardedStep,
   type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
+  PlanBuilderReviewRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,
   PlanBuilderVolumeRoute,
@@ -53,6 +54,7 @@ const planBuilderSplitRoute = createRoute({
 });
 
 const planBuilderRedirectPaths = {
+  exercises: planBuilderPaths.exercises,
   frequency: planBuilderPaths.frequency,
   split: planBuilderPaths.split,
   "rep-ranges": planBuilderPaths.repRanges,
@@ -90,6 +92,10 @@ async function requireConfirmedTrainingVolume() {
   return requirePlanBuilderStep("exercises");
 }
 
+async function requireConfirmedExercises() {
+  return requirePlanBuilderStep("review");
+}
+
 const planBuilderRepRangesRoute = createRoute({
   beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderRepRangesRoute,
@@ -111,6 +117,13 @@ const planBuilderExercisesRoute = createRoute({
   path: planBuilderPaths.exercises,
 });
 
+const planBuilderReviewRoute = createRoute({
+  beforeLoad: requireConfirmedExercises,
+  component: PlanBuilderReviewRoute,
+  getParentRoute: () => rootRoute,
+  path: planBuilderPaths.review,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   planBuilderEntryRoute,
@@ -119,6 +132,7 @@ const routeTree = rootRoute.addChildren([
   planBuilderRepRangesRoute,
   planBuilderVolumeRoute,
   planBuilderExercisesRoute,
+  planBuilderReviewRoute,
 ]);
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];

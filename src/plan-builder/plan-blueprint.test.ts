@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
@@ -10,6 +11,7 @@ import {
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   hasValidTrainingFrequency,
+  isExercisesStepComplete,
   isFrequencyStepComplete,
   isRepRangeStyleId,
   isRepRangesStepComplete,
@@ -25,6 +27,7 @@ import {
   setOptionalVolumeTargetEnabled,
   summarizePlanBlueprint,
   trainingFrequencyOptions,
+  updateExerciseSelectionPreferences,
 } from "./plan-blueprint";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 
@@ -36,10 +39,20 @@ const testBlueprintOptions = {
 const firstUpdateTimestamp = "2026-05-30T10:05:00.000Z";
 const secondUpdateTimestamp = "2026-05-30T10:10:00.000Z";
 
-function createTestPlanBlueprint(overrides: Partial<PlanBlueprint> = {}): PlanBlueprint {
+type TestPlanBlueprintOverrides = Omit<Partial<PlanBlueprint>, "confirmedBuilderSteps"> & {
+  confirmedBuilderSteps?: Partial<PlanBlueprint["confirmedBuilderSteps"]>;
+};
+
+function createTestPlanBlueprint(overrides: TestPlanBlueprintOverrides = {}): PlanBlueprint {
+  const defaultBlueprint = createDefaultPlanBlueprint(testBlueprintOptions);
+
   return {
-    ...createDefaultPlanBlueprint(testBlueprintOptions),
+    ...defaultBlueprint,
     ...overrides,
+    confirmedBuilderSteps: {
+      ...defaultBlueprint.confirmedBuilderSteps,
+      ...overrides.confirmedBuilderSteps,
+    },
   };
 }
 
@@ -79,6 +92,7 @@ describe("plan blueprint", () => {
         strategy: "balanced",
       },
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: false,
         repRanges: false,
         split: false,
@@ -454,6 +468,38 @@ describe("plan blueprint", () => {
     expect(isVolumeStepComplete(confirmedBlueprint)).toBe(true);
   });
 
+  it("stores confirmed Exercises progress separately from draft Exercise Selection Preferences", () => {
+    const blueprint = createConfirmedPlanBlueprint({});
+
+    const confirmedBlueprint = confirmExerciseSelectionPreferences({
+      blueprint,
+      timestamp: firstUpdateTimestamp,
+    });
+    const updatedBlueprint = updateExerciseSelectionPreferences({
+      blueprint: confirmedBlueprint,
+      exerciseSelectionPreferences: {
+        ...confirmedBlueprint.exerciseSelectionPreferences,
+        preferredExercises: [{ id: "preferred-1", rawText: "Incline dumbbell press" }],
+      },
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(isExercisesStepComplete(blueprint)).toBe(false);
+    expect(isExercisesStepComplete(confirmedBlueprint)).toBe(true);
+    expect(updatedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ id: "preferred-1", rawText: "Incline dumbbell press" }],
+      },
+    });
+  });
+
   it("summarizes Exercises as the next step once Volume is confirmed", () => {
     const blueprint = createConfirmedPlanBlueprint({});
 
@@ -462,6 +508,17 @@ describe("plan blueprint", () => {
       repRanges: "Balanced hypertrophy",
       split: "4-Day Upper/Lower",
       volumePreset: "Balanced",
+    });
+  });
+
+  it("summarizes Review as the next step once Exercises is confirmed", () => {
+    const blueprint = confirmExerciseSelectionPreferences({
+      blueprint: createConfirmedPlanBlueprint({}),
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(summarizePlanBlueprint(blueprint)).toMatchObject({
+      nextStep: "Review",
     });
   });
 
@@ -759,6 +816,16 @@ describe("plan blueprint", () => {
       volumePresetSource: null,
       weeklyRepTargets: null,
     });
+    const blueprintWithUnconfirmedExercises = createConfirmedPlanBlueprint({});
+    const blueprintWithConfirmedExercises = createConfirmedPlanBlueprint({
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+    });
 
     expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "split")).toBe("frequency");
     expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "rep-ranges")).toBe("frequency");
@@ -769,6 +836,11 @@ describe("plan blueprint", () => {
     expect(getPlanBuilderRedirectStep(blueprintWithInvalidRepRanges, "volume")).toBe("rep-ranges");
     expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "exercises")).toBe("volume");
     expect(getPlanBuilderRedirectStep(blueprintWithInvalidVolume, "exercises")).toBe("volume");
+    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "review")).toBe("volume");
+    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedExercises, "review")).toBe(
+      "exercises",
+    );
+    expect(getPlanBuilderRedirectStep(blueprintWithConfirmedExercises, "review")).toBeNull();
   });
 
   it("describes the default 3-day recommendation", () => {

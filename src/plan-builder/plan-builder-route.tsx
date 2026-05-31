@@ -25,6 +25,7 @@ import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
+  confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
@@ -424,6 +425,10 @@ type UpdateOptionalVolumeTargetMutationVariables = {
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
+};
+
+type ConfirmExerciseSelectionPreferencesMutationVariables = {
+  timestamp: string;
 };
 
 type PlanBuilderPageProps = {
@@ -829,7 +834,17 @@ export function PlanBuilderVolumeRoute() {
 }
 
 export function PlanBuilderExercisesRoute() {
+  const navigate = useNavigate();
+  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
+    useConfirmExerciseSelectionPreferencesMutation();
   const { summary } = usePlanBuilderBlueprint();
+
+  async function handleContinueToReview() {
+    await confirmSelectedExerciseSelectionPreferences({
+      timestamp: new Date().toISOString(),
+    });
+    await navigate({ to: planBuilderPaths.review });
+  }
 
   return (
     <PlanBuilderPage
@@ -841,7 +856,26 @@ export function PlanBuilderExercisesRoute() {
       }
       summary={summary}
     >
-      <ExercisesPlaceholderStep />
+      <ExercisesPlaceholderStep onContinueToReview={handleContinueToReview} />
+    </PlanBuilderPage>
+  );
+}
+
+export function PlanBuilderReviewRoute() {
+  const { summary } = usePlanBuilderBlueprint();
+
+  return (
+    <PlanBuilderPage
+      currentStep="review"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          Exercises are confirmed. This route stays intentionally minimal until the full Review
+          screen lands.
+        </p>
+      }
+      summary={summary}
+    >
+      <ReviewPlaceholderStep />
     </PlanBuilderPage>
   );
 }
@@ -1018,6 +1052,20 @@ function useConfirmTrainingVolumeMutation() {
           ...blueprint,
           ...trainingVolumeConfiguration,
         },
+        timestamp,
+      }),
+  });
+}
+
+function useConfirmExerciseSelectionPreferencesMutation() {
+  return usePlanBlueprintMutation<ConfirmExerciseSelectionPreferencesMutationVariables>({
+    mutationFn: ({ timestamp }) =>
+      planBuilderService.confirmSelectedExerciseSelectionPreferences({
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { timestamp }) =>
+      confirmExerciseSelectionPreferences({
+        blueprint,
         timestamp,
       }),
   });
@@ -2156,7 +2204,11 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ExercisesPlaceholderStep() {
+function ExercisesPlaceholderStep({
+  onContinueToReview,
+}: {
+  onContinueToReview: () => Promise<void>;
+}) {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
@@ -2173,6 +2225,14 @@ function ExercisesPlaceholderStep() {
             <Button asChild variant="outline">
               <Link to={planBuilderPaths.volume}>Back to Volume</Link>
             </Button>
+            <Button
+              onClick={() => {
+                void onContinueToReview();
+              }}
+              type="button"
+            >
+              Continue to Review
+            </Button>
           </div>
         </section>
       </div>
@@ -2180,6 +2240,36 @@ function ExercisesPlaceholderStep() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <PlanBuilderStepStatusCard
           body="This route is a guarded placeholder only. Exercise picking stays out of scope in this slice."
+          title="Step scope"
+          titleDisplay="visible"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReviewPlaceholderStep() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
+          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Review step coming next</h3>
+          <p className="mt-3 max-w-2xl text-sm text-stone-600">
+            Exercises are confirmed. This placeholder keeps the final pre-generation route real
+            without introducing full Review content yet.
+          </p>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button asChild variant="outline">
+              <Link to={planBuilderPaths.exercises}>Back to Exercises</Link>
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <PlanBuilderStepStatusCard
+          body="This route is a guarded placeholder only. Final blueprint review stays out of scope in this slice."
           title="Step scope"
           titleDisplay="visible"
         />

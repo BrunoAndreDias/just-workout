@@ -46,6 +46,7 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual({
       ...legacyBlueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: false,
         repRanges: false,
         split: false,
@@ -53,6 +54,7 @@ describe("planBuilderService", () => {
       },
     });
     expect(updatedBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: false,
       repRanges: false,
       split: false,
@@ -85,6 +87,7 @@ describe("planBuilderService", () => {
       ...initialBlueprint,
       ...createRecommendedTrainingVolumeConfiguration(),
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -237,6 +240,7 @@ describe("planBuilderService", () => {
     const configuredBlueprint: PlanBlueprint = {
       ...initialBlueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -276,6 +280,7 @@ describe("planBuilderService", () => {
     const configuredBlueprint: PlanBlueprint = {
       ...initialBlueprint,
       confirmedBuilderSteps: {
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -448,24 +453,28 @@ describe("planBuilderService", () => {
     });
 
     expect(blueprintWithFrequency.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: false,
       repRanges: false,
       split: false,
       volume: false,
     });
     expect(confirmedFrequencyBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: false,
       split: false,
       volume: false,
     });
     expect(blueprintWithSplit.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: false,
       split: false,
       volume: false,
     });
     expect(confirmedSplitBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: false,
       split: true,
@@ -497,18 +506,21 @@ describe("planBuilderService", () => {
     });
 
     expect(selectedBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: false,
       split: true,
       volume: false,
     });
     expect(confirmedBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: true,
       split: true,
       volume: false,
     });
     expect(reSavedBlueprint.confirmedBuilderSteps).toEqual({
+      exercises: false,
       frequency: true,
       repRanges: true,
       split: true,

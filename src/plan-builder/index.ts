@@ -8,6 +8,7 @@ export { planBuilderPaths } from "./plan-builder-paths";
 export {
   PlanBuilderExercisesRoute,
   PlanBuilderRepRangesRoute,
+  PlanBuilderReviewRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,
   PlanBuilderVolumeRoute,

@@ -1,5 +1,6 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
+  confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
@@ -95,6 +96,10 @@ type ConfirmRepRangeStyleOptions = {
 type ConfirmTrainingVolumeOptions = {
   timestamp?: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
+};
+
+type ConfirmExerciseSelectionPreferencesOptions = {
+  timestamp?: string;
 };
 
 type InitializeTrainingVolumeOptions = {
@@ -252,6 +257,19 @@ async function confirmSelectedTrainingVolume({
   );
 }
 
+async function confirmSelectedExerciseSelectionPreferences({
+  timestamp = new Date().toISOString(),
+}: ConfirmExerciseSelectionPreferencesOptions = {}) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    confirmExerciseSelectionPreferences({
+      blueprint,
+      timestamp,
+    }),
+  );
+}
+
 async function initializeTrainingVolume({
   timestamp = new Date().toISOString(),
 }: InitializeTrainingVolumeOptions = {}) {
@@ -266,6 +284,7 @@ async function initializeTrainingVolume({
 }
 
 export const planBuilderService = {
+  confirmSelectedExerciseSelectionPreferences,
   confirmSelectedRepRangeStyle,
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
