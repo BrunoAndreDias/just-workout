@@ -38,12 +38,6 @@ export type ExerciseSelectionPreferences = {
   preferredExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
   strategy: ExerciseSelectionStrategyId;
 };
-export type ExerciseSelectionPreferencesCandidate = {
-  avoidedExercises?: unknown;
-  equipmentPreset?: unknown;
-  preferredExercises?: unknown;
-  strategy?: unknown;
-};
 export type IncludedEquipment = {
   id: IncludedEquipmentId;
   label: string;
@@ -77,14 +71,35 @@ export type MovementPatternCoverageGroup = {
   title: string;
 };
 
-const defaultMovementPatternCoverageByStrategy = {
+type MovementPatternCoverageDefinition = {
+  id: MovementPatternId;
+  label: string;
+  volumeTargets: ReadonlyArray<WeeklyRepTarget["muscleGroup"]>;
+};
+
+type MovementPatternCoverageStrategyDefinition = Record<
+  MovementPatternCoverageGroupId,
+  ReadonlyArray<MovementPatternCoverageDefinition>
+>;
+
+const movementPatternCoverageGroupOrder = [
+  "upper_body",
+  "lower_body",
+] as const satisfies ReadonlyArray<MovementPatternCoverageGroupId>;
+
+const movementPatternCoverageGroupTitles = {
+  lower_body: "Lower body movement patterns",
+  upper_body: "Upper body movement patterns",
+} satisfies Record<MovementPatternCoverageGroupId, string>;
+
+const movementPatternCoverageDefinitionsByStrategy = {
   balanced: {
-    lowerBodyPatterns: [
-      { id: "quad_dominant", label: "Quad dominant", volumeTarget: "quads" },
+    lower_body: [
+      { id: "quad_dominant", label: "Quad dominant", volumeTargets: ["quads"] },
       {
         id: "hip_hamstring_dominant",
         label: "Hip/hamstring dominant",
-        volumeTarget: "hamstrings",
+        volumeTargets: ["hamstrings"],
       },
       {
         id: "calves_accessories",
@@ -92,16 +107,16 @@ const defaultMovementPatternCoverageByStrategy = {
         volumeTargets: ["calves", "abs"],
       },
     ],
-    upperBodyPatterns: [
-      { id: "horizontal_push", label: "Horizontal push", volumeTarget: "chest" },
-      { id: "horizontal_pull", label: "Horizontal pull", volumeTarget: "back" },
-      { id: "vertical_push", label: "Vertical push", volumeTarget: "shoulders" },
-      { id: "vertical_pull", label: "Vertical pull", volumeTarget: "back" },
-      { id: "elbow_flexion", label: "Elbow flexion", volumeTarget: "biceps" },
-      { id: "elbow_extension", label: "Elbow extension", volumeTarget: "triceps" },
+    upper_body: [
+      { id: "horizontal_push", label: "Horizontal push", volumeTargets: ["chest"] },
+      { id: "horizontal_pull", label: "Horizontal pull", volumeTargets: ["back"] },
+      { id: "vertical_push", label: "Vertical push", volumeTargets: ["shoulders"] },
+      { id: "vertical_pull", label: "Vertical pull", volumeTargets: ["back"] },
+      { id: "elbow_flexion", label: "Elbow flexion", volumeTargets: ["biceps"] },
+      { id: "elbow_extension", label: "Elbow extension", volumeTargets: ["triceps"] },
     ],
   },
-} as const;
+} as const satisfies Record<ExerciseSelectionStrategyId, MovementPatternCoverageStrategyDefinition>;
 
 const movementPatternSessionBiasBySplit = {
   "alternating-full-body-a-b": {
@@ -179,20 +194,16 @@ export function createDefaultExerciseSelectionPreferences(): ExerciseSelectionPr
 export function normalizeExerciseSelectionPreferences(
   candidate: unknown,
 ): ExerciseSelectionPreferences {
-  const normalizedCandidate = isExerciseSelectionPreferencesCandidate(candidate) ? candidate : null;
+  const preferences = getRecord(candidate);
 
   return {
-    avoidedExercises: normalizeExerciseSelectionPreferenceItems(
-      normalizedCandidate?.avoidedExercises,
-    ),
-    equipmentPreset: isEquipmentPresetId(normalizedCandidate?.equipmentPreset)
-      ? normalizedCandidate.equipmentPreset
+    avoidedExercises: normalizeExerciseSelectionPreferenceItems(preferences?.avoidedExercises),
+    equipmentPreset: isEquipmentPresetId(preferences?.equipmentPreset)
+      ? preferences.equipmentPreset
       : defaultEquipmentPresetId,
-    preferredExercises: normalizeExerciseSelectionPreferenceItems(
-      normalizedCandidate?.preferredExercises,
-    ),
-    strategy: isExerciseSelectionStrategyId(normalizedCandidate?.strategy)
-      ? normalizedCandidate.strategy
+    preferredExercises: normalizeExerciseSelectionPreferenceItems(preferences?.preferredExercises),
+    strategy: isExerciseSelectionStrategyId(preferences?.strategy)
+      ? preferences.strategy
       : defaultExerciseSelectionStrategyId,
   };
 }
@@ -282,36 +293,33 @@ export function deriveMovementPatternCoverage({
   strategy: ExerciseSelectionStrategyId;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
 }): ReadonlyArray<MovementPatternCoverageGroup> {
-  const strategyDefinition = defaultMovementPatternCoverageByStrategy[strategy];
+  const strategyDefinition = movementPatternCoverageDefinitionsByStrategy[strategy];
   const splitBias = movementPatternSessionBiasBySplit[split];
 
-  return [
-    {
-      id: "upper_body",
-      patterns: strategyDefinition.upperBodyPatterns.map((pattern) => ({
-        id: pattern.id,
-        isDirectlyTargeted: isVolumeTargetEnabled(weeklyRepTargets, pattern.volumeTarget),
-        label: pattern.label,
-      })),
-      sessionBias: splitBias.upper_body,
-      title: "Upper body movement patterns",
-    },
-    {
-      id: "lower_body",
-      patterns: strategyDefinition.lowerBodyPatterns.map((pattern) => ({
-        id: pattern.id,
-        isDirectlyTargeted:
-          "volumeTarget" in pattern
-            ? isVolumeTargetEnabled(weeklyRepTargets, pattern.volumeTarget)
-            : pattern.volumeTargets.some((volumeTarget) =>
-                isVolumeTargetEnabled(weeklyRepTargets, volumeTarget),
-              ),
-        label: pattern.label,
-      })),
-      sessionBias: splitBias.lower_body,
-      title: "Lower body movement patterns",
-    },
-  ];
+  return movementPatternCoverageGroupOrder.map((groupId) => ({
+    id: groupId,
+    patterns: strategyDefinition[groupId].map((pattern) =>
+      deriveMovementPatternCoveragePattern({ pattern, weeklyRepTargets }),
+    ),
+    sessionBias: splitBias[groupId],
+    title: movementPatternCoverageGroupTitles[groupId],
+  }));
+}
+
+function deriveMovementPatternCoveragePattern({
+  pattern,
+  weeklyRepTargets,
+}: {
+  pattern: MovementPatternCoverageDefinition;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
+}): MovementPatternCoveragePattern {
+  return {
+    id: pattern.id,
+    isDirectlyTargeted: pattern.volumeTargets.some((volumeTarget) =>
+      isVolumeTargetEnabled(weeklyRepTargets, volumeTarget),
+    ),
+    label: pattern.label,
+  };
 }
 
 function normalizeExerciseSelectionPreferenceItems(
@@ -351,12 +359,6 @@ function isExerciseSelectionPreferenceItemCandidate(value: unknown): value is {
   }
 
   return typeof candidate.id === "string" && typeof candidate.rawText === "string";
-}
-
-function isExerciseSelectionPreferencesCandidate(
-  value: unknown,
-): value is ExerciseSelectionPreferencesCandidate {
-  return getRecord(value) !== null;
 }
 
 function getRecord(value: unknown): Record<string, unknown> | null {

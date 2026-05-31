@@ -128,7 +128,7 @@ describe("plan blueprint", () => {
         repRanges: null,
         split: null,
         updatedAt: testBlueprintOptions.timestamp,
-      } as never),
+      }),
     ).toMatchObject({
       exerciseSelectionPreferences: {
         avoidedExercises: [{ id: "avoided-1", rawText: "Behind-the-neck press" }],

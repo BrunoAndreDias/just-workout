@@ -319,14 +319,21 @@ export function createDefaultPlanBlueprint({
   id,
   timestamp,
 }: CreateDefaultPlanBlueprintOptions): PlanBlueprint {
-  const defaultPlanBlueprintValues = getDefaultPlanBlueprintValues();
-
   return {
     id,
     createdAt: timestamp,
     updatedAt: timestamp,
-    ...defaultPlanBlueprintValues,
-    confirmedBuilderSteps: getConfirmedBuilderSteps(defaultPlanBlueprintValues),
+    trainingGoal: "build-muscle",
+    trainingFrequencyDaysPerWeek: 3,
+    split: null,
+    repRanges: null,
+    volumePreset: null,
+    volumePresetSource: null,
+    weeklyRepTargets: null,
+    exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
+    confirmedBuilderSteps: getConfirmedBuilderSteps({
+      confirmedBuilderSteps: defaultConfirmedBuilderSteps,
+    }),
   };
 }
 
@@ -844,20 +851,6 @@ function getConfirmedBuilderSteps({
     repRanges: confirmedBuilderSteps?.repRanges === true,
     split: confirmedBuilderSteps?.split === true,
     volume: confirmedBuilderSteps?.volume === true,
-  };
-}
-
-function getDefaultPlanBlueprintValues(): Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt"> {
-  return {
-    trainingGoal: "build-muscle",
-    trainingFrequencyDaysPerWeek: 3,
-    split: null,
-    repRanges: null,
-    volumePreset: null,
-    volumePresetSource: null,
-    weeklyRepTargets: null,
-    exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
-    confirmedBuilderSteps: defaultConfirmedBuilderSteps,
   };
 }
 

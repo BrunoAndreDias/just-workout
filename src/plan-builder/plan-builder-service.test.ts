@@ -52,9 +52,7 @@ describe("planBuilderService", () => {
 
   it("resumes blueprints saved before Exercise Selection Preferences existed with the v1 defaults", async () => {
     const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-    const legacyBlueprint = { ...currentBlueprint } as Partial<PlanBlueprint> & {
-      exerciseSelectionPreferences?: PlanBlueprint["exerciseSelectionPreferences"];
-    };
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
 
     delete legacyBlueprint.exerciseSelectionPreferences;
 
