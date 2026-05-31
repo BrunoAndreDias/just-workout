@@ -251,7 +251,7 @@ const weeklyVolumeHowItWorksItems = [
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
 
-const readOnlyExercisesHighlights = [
+const exerciseSelectionStrategyHighlights = [
   {
     body: "Main work favors productive compound lifts when they fit the Plan Blueprint.",
     title: "Compound-first bias",
@@ -264,9 +264,9 @@ const readOnlyExercisesHighlights = [
     body: "Painful or unsuitable exercises stay out of the later Training Plan choices.",
     title: "Safety boundary",
   },
-] as const satisfies ReadonlyArray<ReadOnlyExercisesHighlightProps>;
+] as const satisfies ReadonlyArray<ExerciseSelectionStrategyHighlightProps>;
 
-const readOnlyExercisesStatusCards = [
+const exerciseSelectionStatusCards = [
   {
     body: "This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created.",
     title: "Plan status",
@@ -570,15 +570,14 @@ type WeeklyVolumeTargetsStepProps = {
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
 
-type ReadOnlyExercisesStepProps = {
-  avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
+type ExerciseSelectionStepProps = {
   onAddAvoidedExercise: (rawText: string) => Promise<void>;
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  onRemoveAvoidedExercise: (exerciseId: string) => Promise<void>;
+  onRemoveAvoidedExercise: (preferenceItemId: string) => Promise<void>;
 };
 
-type ReadOnlyExercisesHighlightProps = {
+type ExerciseSelectionStrategyHighlightProps = {
   body: string;
   title: string;
 };
@@ -586,7 +585,7 @@ type ReadOnlyExercisesHighlightProps = {
 type AvoidedExercisesSectionProps = {
   avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
   onAddAvoidedExercise: (rawText: string) => Promise<void>;
-  onRemoveAvoidedExercise: (exerciseId: string) => Promise<void>;
+  onRemoveAvoidedExercise: (preferenceItemId: string) => Promise<void>;
 };
 
 type VolumePresetSelectorProps = {
@@ -920,12 +919,12 @@ export function PlanBuilderExercisesRoute() {
     });
   }
 
-  async function handleRemoveAvoidedExercise(exerciseId: string) {
+  async function handleRemoveAvoidedExercise(preferenceItemId: string) {
     await updateExerciseSelectionPreferencesMutation({
       exerciseSelectionPreferences: {
         ...exerciseSelectionPreferences,
         avoidedExercises: exerciseSelectionPreferences.avoidedExercises.filter(
-          ({ id }) => id !== exerciseId,
+          ({ id }) => id !== preferenceItemId,
         ),
       },
       timestamp: new Date().toISOString(),
@@ -951,8 +950,7 @@ export function PlanBuilderExercisesRoute() {
       }
       summary={summary}
     >
-      <ReadOnlyExercisesStep
-        avoidedExercises={exerciseSelectionPreferences.avoidedExercises}
+      <ExerciseSelectionStep
         onAddAvoidedExercise={handleAddAvoidedExercise}
         exerciseSelectionPreferences={exerciseSelectionPreferences}
         onContinueToReview={handleContinueToReview}
@@ -2323,13 +2321,12 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ReadOnlyExercisesStep({
-  avoidedExercises,
+function ExerciseSelectionStep({
   onAddAvoidedExercise,
   exerciseSelectionPreferences,
   onContinueToReview,
   onRemoveAvoidedExercise,
-}: ReadOnlyExercisesStepProps) {
+}: ExerciseSelectionStepProps) {
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
   return (
@@ -2371,15 +2368,15 @@ function ReadOnlyExercisesStep({
               {selectedStrategy.description}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {readOnlyExercisesHighlights.map((highlight) => (
-                <ReadOnlyExercisesHighlight key={highlight.title} {...highlight} />
+              {exerciseSelectionStrategyHighlights.map((highlight) => (
+                <ExerciseSelectionStrategyHighlight key={highlight.title} {...highlight} />
               ))}
             </div>
           </div>
         </section>
 
         <AvoidedExercisesSection
-          avoidedExercises={avoidedExercises}
+          avoidedExercises={exerciseSelectionPreferences.avoidedExercises}
           onAddAvoidedExercise={onAddAvoidedExercise}
           onRemoveAvoidedExercise={onRemoveAvoidedExercise}
         />
@@ -2451,7 +2448,7 @@ function ReadOnlyExercisesStep({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        {readOnlyExercisesStatusCards.map((statusCard) => (
+        {exerciseSelectionStatusCards.map((statusCard) => (
           <PlanBuilderStepStatusCard
             body={statusCard.body}
             key={statusCard.title}
@@ -2469,9 +2466,10 @@ function AvoidedExercisesSection({
   onAddAvoidedExercise,
   onRemoveAvoidedExercise,
 }: AvoidedExercisesSectionProps) {
-  const [pendingValue, setPendingValue] = useState("");
-  const normalizedPendingValue = normalizeExerciseSelectionPreferenceText(pendingValue);
-  const canAddAvoidedExercise = normalizedPendingValue.length > 0;
+  const [pendingExerciseText, setPendingExerciseText] = useState("");
+  const normalizedPendingExerciseText =
+    normalizeExerciseSelectionPreferenceText(pendingExerciseText);
+  const canAddAvoidedExercise = normalizedPendingExerciseText.length > 0;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2480,8 +2478,8 @@ function AvoidedExercisesSection({
       return;
     }
 
-    await onAddAvoidedExercise(normalizedPendingValue);
-    setPendingValue("");
+    await onAddAvoidedExercise(pendingExerciseText);
+    setPendingExerciseText("");
   }
 
   return (
@@ -2512,11 +2510,11 @@ function AvoidedExercisesSection({
             className="min-h-11 flex-1 rounded-md border border-stone-900/15 bg-white px-3 py-2 text-sm text-stone-950 placeholder:text-stone-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-950"
             id="avoided-exercises-input"
             onChange={(event) => {
-              setPendingValue(event.target.value);
+              setPendingExerciseText(event.target.value);
             }}
             placeholder="Add an exercise to exclude later"
             type="text"
-            value={pendingValue}
+            value={pendingExerciseText}
           />
           <Button disabled={!canAddAvoidedExercise} type="submit">
             Add avoided exercise
@@ -2585,7 +2583,10 @@ function ReviewPlaceholderStep() {
   );
 }
 
-function ReadOnlyExercisesHighlight({ body, title }: ReadOnlyExercisesHighlightProps) {
+function ExerciseSelectionStrategyHighlight({
+  body,
+  title,
+}: ExerciseSelectionStrategyHighlightProps) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/8 p-4">
       <h5 className="text-sm font-black uppercase tracking-wide text-stone-100">{title}</h5>

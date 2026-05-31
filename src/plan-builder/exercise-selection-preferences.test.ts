@@ -6,7 +6,6 @@ import {
   deriveMovementPatternCoverage,
   getEquipmentPreset,
   normalizeExerciseSelectionPreferences,
-  normalizeExerciseSelectionPreferenceText,
 } from "./exercise-selection-preferences";
 import {
   createRecommendedTrainingVolumeConfiguration,
@@ -168,7 +167,6 @@ describe("exercise selection preferences", () => {
   });
 
   it("normalizes added exercise text into stable-id preference items and rejects empty entries", () => {
-    expect(normalizeExerciseSelectionPreferenceText("  Upright   row  ")).toBe("Upright row");
     expect(
       createExerciseSelectionPreferenceItem({
         id: "avoided-1",

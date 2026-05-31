@@ -71,6 +71,12 @@ export type MovementPatternCoverageGroup = {
   title: string;
 };
 
+type CreateExerciseSelectionPreferenceItemOptions = {
+  id: string;
+  matchedExerciseId?: string;
+  rawText: string;
+};
+
 type MovementPatternCoverageDefinition = {
   id: MovementPatternId;
   label: string;
@@ -199,27 +205,23 @@ export function createExerciseSelectionPreferenceItem({
   id,
   matchedExerciseId,
   rawText,
-}: {
-  id: string;
-  matchedExerciseId?: string;
-  rawText: string;
-}): ExerciseSelectionPreferenceItem {
+}: CreateExerciseSelectionPreferenceItemOptions): ExerciseSelectionPreferenceItem {
   const normalizedRawText = normalizeExerciseSelectionPreferenceText(rawText);
 
   if (normalizedRawText.length === 0) {
     throw new Error("Exercise Selection Preference text cannot be empty.");
   }
 
-  return matchedExerciseId
-    ? {
-        id,
-        matchedExerciseId,
-        rawText: normalizedRawText,
-      }
-    : {
-        id,
-        rawText: normalizedRawText,
-      };
+  const preferenceItem: ExerciseSelectionPreferenceItem = {
+    id,
+    rawText: normalizedRawText,
+  };
+
+  if (matchedExerciseId) {
+    preferenceItem.matchedExerciseId = matchedExerciseId;
+  }
+
+  return preferenceItem;
 }
 
 export function normalizeExerciseSelectionPreferences(
