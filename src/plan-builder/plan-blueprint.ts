@@ -142,6 +142,12 @@ type SetOptionalVolumeTargetEnabledOptions = {
   timestamp: string;
 };
 
+type UpdateExerciseSelectionPreferencesOptions = {
+  blueprint: PlanBlueprint;
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp: string;
+};
+
 type ConfirmTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
@@ -657,6 +663,20 @@ export function setOptionalVolumeTargetEnabled({
       ...confirmedBuilderSteps,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
+    updatedAt: timestamp,
+  };
+}
+
+export function updateExerciseSelectionPreferences({
+  blueprint,
+  exerciseSelectionPreferences,
+  timestamp,
+}: UpdateExerciseSelectionPreferencesOptions): PlanBlueprint {
+  return {
+    ...blueprint,
+    exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
+      exerciseSelectionPreferences,
+    ),
     updatedAt: timestamp,
   };
 }
