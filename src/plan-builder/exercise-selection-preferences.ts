@@ -44,6 +44,11 @@ export type ExerciseSelectionPendingInputs = Record<ExerciseSelectionPendingInpu
 export type ExerciseSelectionPreferenceValidationErrors = Partial<
   Record<ExerciseSelectionPendingInputId, string>
 >;
+type CommitPendingExerciseSelectionPreferencesResult = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+  validationErrors: ExerciseSelectionPreferenceValidationErrors;
+};
 export type IncludedEquipment = {
   id: IncludedEquipmentId;
   label: string;
@@ -369,17 +374,13 @@ export function commitPendingExerciseSelectionPreferences({
   createId: () => string;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   pendingInputs: ExerciseSelectionPendingInputs;
-}): {
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  pendingInputs: ExerciseSelectionPendingInputs;
-  validationErrors: ExerciseSelectionPreferenceValidationErrors;
-} {
+}): CommitPendingExerciseSelectionPreferencesResult {
   const validationErrors = getExerciseSelectionPreferenceValidationErrors({
     exerciseSelectionPreferences,
     pendingInputs,
   });
 
-  if (Object.keys(validationErrors).length > 0) {
+  if (hasExerciseSelectionPreferenceValidationErrors(validationErrors)) {
     return {
       exerciseSelectionPreferences,
       pendingInputs,
@@ -424,14 +425,18 @@ export function isExerciseSelectionPreferencesConfirmationReady({
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   pendingInputs: ExerciseSelectionPendingInputs;
 }): boolean {
-  return (
-    Object.keys(
-      getExerciseSelectionPreferenceValidationErrors({
-        exerciseSelectionPreferences,
-        pendingInputs,
-      }),
-    ).length === 0
+  return !hasExerciseSelectionPreferenceValidationErrors(
+    getExerciseSelectionPreferenceValidationErrors({
+      exerciseSelectionPreferences,
+      pendingInputs,
+    }),
   );
+}
+
+export function hasExerciseSelectionPreferenceValidationErrors(
+  validationErrors: ExerciseSelectionPreferenceValidationErrors,
+): boolean {
+  return Object.keys(validationErrors).length > 0;
 }
 
 export function removeExerciseSelectionPreferenceItem({

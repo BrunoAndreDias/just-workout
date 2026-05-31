@@ -39,6 +39,7 @@ import {
   emptyExerciseSelectionPendingInputs,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
+  hasExerciseSelectionPreferenceValidationErrors,
   type MovementPatternCoverageGroup,
   removeExerciseSelectionPreferenceItem,
 } from "./exercise-selection-preferences";
@@ -260,7 +261,7 @@ const weeklyVolumeHowItWorksItems = [
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
 
-const readOnlyExercisesHighlights = [
+const exerciseSelectionHighlights = [
   {
     body: "Main work favors productive compound lifts when they fit the Plan Blueprint.",
     title: "Compound-first bias",
@@ -273,9 +274,9 @@ const readOnlyExercisesHighlights = [
     body: "Painful or unsuitable exercises stay out of the later Training Plan choices.",
     title: "Safety boundary",
   },
-] as const satisfies ReadonlyArray<ReadOnlyExercisesHighlightProps>;
+] as const satisfies ReadonlyArray<ExerciseSelectionHighlightProps>;
 
-const readOnlyExercisesStatusCards = [
+const exerciseSelectionStatusCards = [
   {
     body: "This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created.",
     title: "Plan status",
@@ -593,15 +594,15 @@ type ExerciseSelectionPreferencesStepProps = {
   rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
 };
 
-type ReadOnlyExercisesHighlightProps = {
+type ExerciseSelectionHighlightProps = {
   body: string;
   title: string;
 };
 
 type ExerciseSelectionPreferencesEditorProps = {
+  controlId: string;
   description: string;
   emptyState: string;
-  inputId: string;
   inputLabel: string;
   itemAriaLabel: string;
   items: ReadonlyArray<ExerciseSelectionPreferenceItem>;
@@ -929,7 +930,7 @@ export function PlanBuilderExercisesRoute() {
     useUpdateExerciseSelectionPreferencesMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const isExerciseSelectionStepReady =
-    blueprint &&
+    blueprint !== undefined &&
     hasCompatibleSelectedTrainingSplit(blueprint) &&
     isTrainingVolumeConfiguration(blueprint);
   const exerciseSelectionPreferences = isExerciseSelectionStepReady
@@ -2392,7 +2393,7 @@ function ExerciseSelectionPreferencesStep({
       },
     });
 
-    if (Object.keys(commitResult.validationErrors).length > 0) {
+    if (hasExerciseSelectionPreferenceValidationErrors(commitResult.validationErrors)) {
       setValidationErrors((currentValidationErrors) => ({
         ...currentValidationErrors,
         ...commitResult.validationErrors,
@@ -2433,7 +2434,7 @@ function ExerciseSelectionPreferencesStep({
       pendingInputs,
     });
 
-    if (Object.keys(commitResult.validationErrors).length > 0) {
+    if (hasExerciseSelectionPreferenceValidationErrors(commitResult.validationErrors)) {
       setValidationErrors(commitResult.validationErrors);
       return;
     }
@@ -2485,8 +2486,8 @@ function ExerciseSelectionPreferencesStep({
               {selectedStrategy.description}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {readOnlyExercisesHighlights.map((highlight) => (
-                <ReadOnlyExercisesHighlight key={highlight.title} {...highlight} />
+              {exerciseSelectionHighlights.map((highlight) => (
+                <ExerciseSelectionHighlight key={highlight.title} {...highlight} />
               ))}
             </div>
           </div>
@@ -2547,7 +2548,7 @@ function ExerciseSelectionPreferencesStep({
           <ExerciseSelectionPreferencesEditor
             description="Optional soft preferences. Just Workout will prioritize them when they fit your Plan Blueprint, movement balance, and Weekly Rep Targets."
             emptyState="No Preferred Exercises added yet."
-            inputId="preferred-exercises-input"
+            controlId="preferred-exercises-input"
             inputLabel="Preferred Exercises"
             itemAriaLabel="Preferred Exercise entries"
             items={exerciseSelectionPreferences.preferredExercises}
@@ -2564,7 +2565,7 @@ function ExerciseSelectionPreferencesStep({
           <ExerciseSelectionPreferencesEditor
             description="Optional hard exclusions. Painful, unavailable, or unsuitable exercises stay out. Real conflicts are resolved later if generation needs an alternative."
             emptyState="No Avoided Exercises added yet."
-            inputId="avoided-exercises-input"
+            controlId="avoided-exercises-input"
             inputLabel="Avoided Exercises"
             itemAriaLabel="Avoided Exercise entries"
             items={exerciseSelectionPreferences.avoidedExercises}
@@ -2617,7 +2618,7 @@ function ExerciseSelectionPreferencesStep({
         <ExerciseSelectionAutomaticRulesPanel
           rulesAppliedAutomatically={rulesAppliedAutomatically}
         />
-        {readOnlyExercisesStatusCards.map((statusCard) => (
+        {exerciseSelectionStatusCards.map((statusCard) => (
           <PlanBuilderStepStatusCard
             body={statusCard.body}
             key={statusCard.title}
@@ -2664,9 +2665,9 @@ function ReviewPlaceholderStep() {
 }
 
 function ExerciseSelectionPreferencesEditor({
+  controlId,
   description,
   emptyState,
-  inputId,
   inputLabel,
   itemAriaLabel,
   items,
@@ -2677,7 +2678,7 @@ function ExerciseSelectionPreferencesEditor({
   pendingValue,
   validationError,
 }: ExerciseSelectionPreferencesEditorProps) {
-  const validationMessageId = `${inputId}-validation-message`;
+  const validationMessageId = `${controlId}-validation-message`;
 
   return (
     <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
@@ -2693,7 +2694,7 @@ function ExerciseSelectionPreferencesEditor({
           void onAdd(listId);
         }}
       >
-        <label className="text-sm font-bold text-stone-900" htmlFor={inputId}>
+        <label className="text-sm font-bold text-stone-900" htmlFor={controlId}>
           {inputLabel}
         </label>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">
@@ -2706,7 +2707,7 @@ function ExerciseSelectionPreferencesEditor({
                 ? "border-[#d6462f] focus-visible:outline-[#d6462f]"
                 : "border-stone-900/15 focus-visible:outline-stone-950",
             )}
-            id={inputId}
+            id={controlId}
             onChange={(event) => onInputChange(listId, event.currentTarget.value)}
             placeholder="Add an exercise name"
             type="text"
@@ -2831,7 +2832,7 @@ function ExerciseSelectionAutomaticRulesPanel({
   );
 }
 
-function ReadOnlyExercisesHighlight({ body, title }: ReadOnlyExercisesHighlightProps) {
+function ExerciseSelectionHighlight({ body, title }: ExerciseSelectionHighlightProps) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/8 p-4">
       <h5 className="text-sm font-black uppercase tracking-wide text-stone-100">{title}</h5>
