@@ -606,14 +606,15 @@ export function setOptionalVolumeTargetEnabled({
     (weeklyRepTarget) => weeklyRepTarget.muscleGroup === muscleGroup,
   );
   const hasEnabledStateChanged = currentWeeklyRepTarget?.isEnabled !== isEnabled;
+  const nextTrainingVolumeConfiguration = setOptionalWeeklyRepTargetEnabled({
+    isEnabled,
+    muscleGroup,
+    trainingVolumeConfiguration,
+  });
 
   return {
     ...blueprint,
-    ...setOptionalWeeklyRepTargetEnabled({
-      isEnabled,
-      muscleGroup,
-      trainingVolumeConfiguration,
-    }),
+    ...nextTrainingVolumeConfiguration,
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,

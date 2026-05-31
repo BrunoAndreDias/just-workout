@@ -1,17 +1,16 @@
 export type VolumePresetId = "conservative" | "balanced" | "higher_volume";
 export type VolumePresetSource = "recommended_default" | "user_selected";
 export type WeeklyRepTargetSource = "preset" | "custom";
+
+const largerVolumeTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
+const smallerVolumeTargetMuscleGroups = ["shoulders", "biceps", "triceps"] as const;
+const optionalVolumeMuscleGroups = ["calves", "abs"] as const;
+
+export type OptionalVolumeMuscleGroupId = (typeof optionalVolumeMuscleGroups)[number];
 export type VolumeMuscleGroupId =
-  | "chest"
-  | "back"
-  | "quads"
-  | "hamstrings"
-  | "shoulders"
-  | "biceps"
-  | "triceps"
-  | "calves"
-  | "abs";
-export type OptionalVolumeMuscleGroupId = "calves" | "abs";
+  | (typeof largerVolumeTargetMuscleGroups)[number]
+  | (typeof smallerVolumeTargetMuscleGroups)[number]
+  | OptionalVolumeMuscleGroupId;
 export type WeeklyRepTarget = {
   isEnabled: boolean;
   muscleGroup: VolumeMuscleGroupId;
@@ -49,16 +48,11 @@ export type EstimatedSetRange = {
   min: number;
 };
 
-const largerVolumeTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
-const smallerVolumeTargetMuscleGroups = ["shoulders", "biceps", "triceps"] as const;
-const optionalVolumeMuscleGroups = ["calves", "abs"] as const;
 const largerVolumeTargetMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> =
   new Set<VolumeMuscleGroupId>(largerVolumeTargetMuscleGroups);
 const smallerVolumeTargetMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> =
   new Set<VolumeMuscleGroupId>(smallerVolumeTargetMuscleGroups);
-const optionalVolumeMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> = new Set<VolumeMuscleGroupId>(
-  optionalVolumeMuscleGroups,
-);
+const optionalVolumeMuscleGroupSet: ReadonlySet<unknown> = new Set(optionalVolumeMuscleGroups);
 
 export const defaultVolumePresetId = "balanced" satisfies VolumePresetId;
 
@@ -97,7 +91,7 @@ export function isVolumePresetSource(value: unknown): value is VolumePresetSourc
 export function isOptionalVolumeMuscleGroupId(
   value: unknown,
 ): value is OptionalVolumeMuscleGroupId {
-  return optionalVolumeMuscleGroupSet.has(value as OptionalVolumeMuscleGroupId);
+  return optionalVolumeMuscleGroupSet.has(value);
 }
 
 export function isTrainingVolumeConfiguration(
@@ -197,18 +191,22 @@ export function setOptionalWeeklyRepTargetEnabled({
 
   return {
     ...trainingVolumeConfiguration,
-    weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets.map((weeklyRepTarget) =>
-      weeklyRepTarget.muscleGroup === muscleGroup
-        ? weeklyRepTarget.isEnabled === isEnabled
-          ? weeklyRepTarget
-          : {
-              ...weeklyRepTarget,
-              isEnabled,
-              source: "preset",
-              target: isEnabled ? preset.smallerMuscleTarget : null,
-            }
-        : weeklyRepTarget,
-    ),
+    weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets.map((weeklyRepTarget) => {
+      if (weeklyRepTarget.muscleGroup !== muscleGroup) {
+        return weeklyRepTarget;
+      }
+
+      if (weeklyRepTarget.isEnabled === isEnabled) {
+        return weeklyRepTarget;
+      }
+
+      return {
+        ...weeklyRepTarget,
+        isEnabled,
+        source: "preset",
+        target: isEnabled ? preset.smallerMuscleTarget : null,
+      };
+    }),
   };
 }
 

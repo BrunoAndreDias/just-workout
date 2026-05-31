@@ -265,6 +265,11 @@ type OptionalWeeklyVolumeTargetDisplayRow = OptionalWeeklyVolumeTargetRowDefinit
   weeklyRepTargetLabel: string;
 };
 
+type OptionalVolumeTargetToggleHandler = (
+  muscleGroup: OptionalVolumeMuscleGroupId,
+  isEnabled: boolean,
+) => void;
+
 const weeklyVolumeTargetStatusStyles = {
   accessory: "bg-[#f7efe4] text-[#8a5a2b]",
   "main-target": "bg-[#e8f6f3] text-[#0d6d67]",
@@ -495,10 +500,7 @@ type RepRangeStyleTargetsProps = {
 };
 
 type WeeklyVolumeTargetsStepProps = {
-  onOptionalVolumeTargetToggle: (
-    muscleGroup: OptionalVolumeMuscleGroupId,
-    isEnabled: boolean,
-  ) => void;
+  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   repRangeStyle: RepRangeStyle | null;
   selectedVolumePresetId: VolumePresetId | null;
@@ -524,10 +526,12 @@ type RequiredWeeklyRepTargetsRowsProps = {
 };
 
 type OptionalWeeklyRepTargetsSectionProps = {
-  onOptionalVolumeTargetToggle: (
-    muscleGroup: OptionalVolumeMuscleGroupId,
-    isEnabled: boolean,
-  ) => void;
+  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
+  rows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
+};
+
+type OptionalWeeklyRepTargetsTableProps = {
+  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
   rows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
 };
 
@@ -1634,7 +1638,7 @@ function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsPro
 function OptionalWeeklyRepTargetsTable({
   onOptionalVolumeTargetToggle,
   rows,
-}: OptionalWeeklyRepTargetsSectionProps) {
+}: OptionalWeeklyRepTargetsTableProps) {
   return (
     <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
       <table aria-label="Optional Volume Targets" className="min-w-full border-collapse text-left">
@@ -1797,26 +1801,25 @@ function createOptionalWeeklyVolumeTargetDisplayRow({
   repRangeStyle: RepRangeStyle | null;
   weeklyRepTarget: WeeklyRepTarget;
 }): OptionalWeeklyVolumeTargetDisplayRow {
-  const estimatedSetRange =
-    repRangeStyle && weeklyRepTarget.target !== null
-      ? estimateWeeklySetRangeForTarget({
-          volumeEstimationRepRange: repRangeStyle.volumeEstimationRepRange,
-          weeklyRepTarget,
-        })
-      : null;
+  const optionalLabel = "Optional";
+  const hasVisibleTarget = weeklyRepTarget.isEnabled && weeklyRepTarget.target !== null;
+  let estimatedSetRange: EstimatedSetRange | null = null;
+
+  if (hasVisibleTarget && repRangeStyle) {
+    estimatedSetRange = estimateWeeklySetRangeForTarget({
+      volumeEstimationRepRange: repRangeStyle.volumeEstimationRepRange,
+      weeklyRepTarget,
+    });
+  }
 
   return {
     ...definition,
     actionLabel: weeklyRepTarget.isEnabled ? "Remove" : "Add",
-    estimatedSetRangeLabel:
-      weeklyRepTarget.isEnabled && estimatedSetRange
-        ? formatEstimatedSetRange(estimatedSetRange)
-        : "Optional",
+    estimatedSetRangeLabel: estimatedSetRange
+      ? formatEstimatedSetRange(estimatedSetRange)
+      : optionalLabel,
     isEnabled: weeklyRepTarget.isEnabled,
-    weeklyRepTargetLabel:
-      weeklyRepTarget.isEnabled && weeklyRepTarget.target !== null
-        ? `${weeklyRepTarget.target} reps/week`
-        : "Optional",
+    weeklyRepTargetLabel: hasVisibleTarget ? `${weeklyRepTarget.target} reps/week` : optionalLabel,
   };
 }
 
