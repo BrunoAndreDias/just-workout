@@ -578,6 +578,75 @@ describe("planBuilderService", () => {
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(confirmedBlueprint);
   });
 
+  it("preserves Exercise Selection Preferences while marking Exercises unconfirmed when Volume changes after Exercises is confirmed", async () => {
+    const exerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced",
+    };
+
+    await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:29:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:30:00.000Z",
+    });
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:31:00.000Z",
+    });
+
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-30T10:32:00.000Z",
+    });
+
+    if (!isTrainingVolumeConfiguration(initializedBlueprint)) {
+      throw new Error("Expected initialized Training Volume before confirmation.");
+    }
+
+    await planBuilderService.confirmSelectedTrainingVolume({
+      timestamp: "2026-05-30T10:33:00.000Z",
+      trainingVolumeConfiguration: initializedBlueprint,
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences,
+      timestamp: "2026-05-30T10:33:30.000Z",
+    });
+
+    const updatedBlueprint = await planBuilderService.updateTrainingVolumePreset({
+      timestamp: "2026-05-30T10:34:00.000Z",
+      volumePreset: "conservative",
+    });
+
+    expect(updatedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      exerciseSelectionPreferences,
+      volumePreset: "conservative",
+      volumePresetSource: "user_selected",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 30 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(updatedBlueprint);
+  });
+
   it("clears an incompatible selected Training Split when the training frequency changes", async () => {
     await planBuilderService.updateTrainingSplit({
       timestamp: "2026-05-30T10:20:00.000Z",
