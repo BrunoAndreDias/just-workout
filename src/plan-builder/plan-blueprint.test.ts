@@ -388,7 +388,7 @@ describe("plan blueprint", () => {
     });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
-      generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
+      generationStatus: "Not ready yet",
       muscleFrequency:
         "Each major muscle group is trained about twice per week with focused volume.",
       nextStep: "Rep ranges",

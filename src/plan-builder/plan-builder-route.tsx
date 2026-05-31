@@ -112,13 +112,14 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     label: "Volume preset",
   },
   {
+    getStatus: () => "Not configured yet",
     getValue: () => "Not configured yet",
     icon: Dumbbell,
     label: "Equipment",
   },
   {
-    getStatus: () => "Not ready yet",
-    getValue: () => "Not ready yet",
+    getStatus: (summary) => summary.generationStatus,
+    getValue: (summary) => summary.generationStatus,
     icon: Clock3,
     label: "Generation status",
   },

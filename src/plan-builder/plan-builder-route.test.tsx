@@ -665,6 +665,16 @@ describe("PlanBuilderRoute", () => {
         "Balanced",
       ),
     ).toBeVisible();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Not configured yet",
+      ),
+    ).toHaveClass("bg-[#f8eee6]", "text-[#5c6d73]");
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Not ready yet",
+      ),
+    ).toHaveClass("bg-[#f8eee6]", "text-[#5c6d73]");
   });
 
   it("continues from Rep ranges into the Weekly volume targets frame with the approved explanatory copy", async () => {

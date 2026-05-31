@@ -264,7 +264,7 @@ export const trainingFrequencyOptions = [
 ] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
 
 const planBlueprintSummaryFallbacks = {
-  generationStatus: "No Training Plan yet. Review creates the full Training Plan.",
+  generationStatus: "Not ready yet",
   nextStep: "Choose a Training Split",
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
   repRanges: "Choose Rep ranges",
