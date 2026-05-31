@@ -5,7 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
-import { deriveAutomaticExerciseSelectionRules } from "./exercise-selection-preferences";
+import {
+  deriveAutomaticExerciseSelectionRules,
+  type ExerciseSelectionPreferenceItem,
+  type ExerciseSelectionPreferenceListId,
+  type ExerciseSelectionPreferences,
+} from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -112,6 +117,37 @@ const defaultExerciseStepAutomaticRuleLabels = [
   "Respect avoided exercises as hard exclusions",
   "Apply rest timing automatically",
 ] as const;
+
+type ExercisePreferenceChipDraftCase = {
+  addedText: string;
+  confirmationTimestamp: string;
+  entryListName: RegExp;
+  initialItem: ExerciseSelectionPreferenceItem;
+  inputLabel: RegExp;
+  listId: ExerciseSelectionPreferenceListId;
+  title: string;
+};
+
+const exercisePreferenceChipDraftCases = [
+  {
+    addedText: "Incline dumbbell press",
+    confirmationTimestamp: "2026-05-31T09:06:00.000Z",
+    entryListName: /preferred exercise entries/i,
+    initialItem: { id: "preferred-1", rawText: "Chest-supported row" },
+    inputLabel: /preferred exercises/i,
+    listId: "preferredExercises",
+    title: "Preferred Exercise",
+  },
+  {
+    addedText: "Behind-the-neck press",
+    confirmationTimestamp: "2026-05-31T09:07:00.000Z",
+    entryListName: /avoided exercise entries/i,
+    initialItem: { id: "avoided-1", rawText: "Upright row" },
+    inputLabel: /avoided exercises/i,
+    listId: "avoidedExercises",
+    title: "Avoided Exercise",
+  },
+] satisfies ReadonlyArray<ExercisePreferenceChipDraftCase>;
 
 const conservativePresetWeeklyRepTargets = [
   { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
@@ -837,6 +873,40 @@ describe("PlanBuilderRoute", () => {
     expectNoManualRestControls();
   });
 
+  it("explains hard exclusions and later conflict handling without Step 5 conflict-resolution controls", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    const avoidedExercisesSection = getClosestSection(
+      await screen.findByRole("heading", { name: /avoided exercises/i }),
+      "Avoided Exercises",
+    );
+
+    expect(
+      within(avoidedExercisesSection).getByText(
+        /optional hard exclusions\. add painful, unavailable, or unsuitable exercises here so just workout excludes them from later training plan generation\./i,
+      ),
+    ).toBeVisible();
+
+    const continueSection = getClosestSection(
+      screen.getByRole("heading", { name: /before you continue/i }),
+      "Before you continue",
+    );
+
+    expect(
+      within(continueSection).getByText(
+        /avoided exercises are hard exclusions\. if generation later cannot find a safe viable replacement, review will surface an exercise selection conflict for you to resolve instead of silently keeping the avoided exercise\./i,
+      ),
+    ).toBeVisible();
+    expectNoConflictResolutionControls();
+  });
+
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
@@ -1328,7 +1398,17 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("persists committed Preferred Exercise chip edits as draft state and re-gates Review after Exercises was confirmed", async () => {
+  it.each(
+    exercisePreferenceChipDraftCases,
+  )("persists committed $title chip edits as draft state and re-gates Review after Exercises was confirmed", async ({
+    addedText,
+    confirmationTimestamp,
+    entryListName,
+    initialItem,
+    inputLabel,
+    listId,
+    title,
+  }) => {
     const user = userEvent.setup();
 
     await saveConfirmedPlanBuilderProgressForTest({
@@ -1338,38 +1418,28 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
     await planBuilderService.confirmSelectedExerciseSelectionPreferences({
-      exerciseSelectionPreferences: {
-        avoidedExercises: [],
-        equipmentPreset: "full_gym",
-        preferredExercises: [{ id: "preferred-1", rawText: "Chest-supported row" }],
-        strategy: "balanced",
-      },
-      timestamp: "2026-05-31T09:06:00.000Z",
+      exerciseSelectionPreferences: createExerciseSelectionPreferencesWithList(listId, [
+        initialItem,
+      ]),
+      timestamp: confirmationTimestamp,
     });
 
     const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(await screen.findByText("Chest-supported row")).toBeVisible();
+    expect(await screen.findByText(initialItem.rawText)).toBeVisible();
 
-    const preferredExercisesInput = screen.getByLabelText(/preferred exercises/i);
-    const preferredExercisesForm = preferredExercisesInput.closest("form");
+    const exerciseInput = screen.getByLabelText(inputLabel);
+    const exerciseForm = getRequiredClosestForm(exerciseInput, title);
 
-    if (!preferredExercisesForm) {
-      throw new Error("Expected the Preferred Exercises form.");
-    }
-
-    await user.type(preferredExercisesInput, "Incline dumbbell press");
-    await user.click(within(preferredExercisesForm).getByRole("button", { name: /^add$/i }));
+    await user.type(exerciseInput, addedText);
+    await user.click(within(exerciseForm).getByRole("button", { name: /^add$/i }));
 
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
         exercises: false,
       },
       exerciseSelectionPreferences: {
-        preferredExercises: [
-          { rawText: "Chest-supported row" },
-          { rawText: "Incline dumbbell press" },
-        ],
+        [listId]: [{ rawText: initialItem.rawText }, { rawText: addedText }],
       },
     });
 
@@ -1378,28 +1448,23 @@ describe("PlanBuilderRoute", () => {
     const reviewView = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
 
     await expectPlanBuilderPath(reviewView.router, planBuilderPaths.exercises);
-    expect(await screen.findByText("Chest-supported row")).toBeVisible();
-    expect(screen.getByText("Incline dumbbell press")).toBeVisible();
+    expect(await screen.findByText(initialItem.rawText)).toBeVisible();
+    expect(screen.getByText(addedText)).toBeVisible();
 
-    const preferredExerciseEntries = screen.getByRole("list", {
-      name: /preferred exercise entries/i,
+    const initialEntry = getExercisePreferenceListEntry({
+      entryListName,
+      entryText: initialItem.rawText,
+      title,
     });
-    const chestSupportedRowEntry = within(preferredExerciseEntries)
-      .getByText("Chest-supported row")
-      .closest("li");
 
-    if (!chestSupportedRowEntry) {
-      throw new Error('Expected the "Chest-supported row" Preferred Exercise chip.');
-    }
-
-    await user.click(within(chestSupportedRowEntry).getByRole("button", { name: /^remove$/i }));
+    await user.click(within(initialEntry).getByRole("button", { name: /^remove$/i }));
 
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
         exercises: false,
       },
       exerciseSelectionPreferences: {
-        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+        [listId]: [{ rawText: addedText }],
       },
     });
   });
@@ -2336,6 +2401,60 @@ async function expectPlanBlueprintToMatch(expectedBlueprint: object) {
   });
 }
 
+function createExerciseSelectionPreferencesWithList(
+  listId: ExerciseSelectionPreferenceListId,
+  items: ReadonlyArray<ExerciseSelectionPreferenceItem>,
+): ExerciseSelectionPreferences {
+  const defaultExerciseSelectionPreferences: ExerciseSelectionPreferences = {
+    avoidedExercises: [],
+    equipmentPreset: "full_gym",
+    preferredExercises: [],
+    strategy: "balanced",
+  };
+
+  switch (listId) {
+    case "avoidedExercises":
+      return {
+        ...defaultExerciseSelectionPreferences,
+        avoidedExercises: items,
+      };
+    case "preferredExercises":
+      return {
+        ...defaultExerciseSelectionPreferences,
+        preferredExercises: items,
+      };
+  }
+}
+
+function getRequiredClosestForm(element: HTMLElement, formName: string) {
+  const form = element.closest("form");
+
+  if (!form) {
+    throw new Error(`Expected the ${formName} form.`);
+  }
+
+  return form;
+}
+
+function getExercisePreferenceListEntry({
+  entryListName,
+  entryText,
+  title,
+}: {
+  entryListName: RegExp;
+  entryText: string;
+  title: string;
+}) {
+  const entries = screen.getByRole("list", { name: entryListName });
+  const entry = within(entries).getByText(entryText).closest("li");
+
+  if (!entry) {
+    throw new Error(`Expected the "${entryText}" ${title} chip.`);
+  }
+
+  return entry;
+}
+
 async function expectReadOnlyExercisesStep() {
   expect(
     await screen.findByRole("heading", { name: /exercise selection strategy/i }),
@@ -2378,6 +2497,32 @@ function expectNoManualRestControls() {
   expect(screen.queryByRole("button", { name: /rest/i })).not.toBeInTheDocument();
   expect(screen.queryByText(/60-90 seconds/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/2-3 minutes/i)).not.toBeInTheDocument();
+}
+
+function getClosestSection(element: HTMLElement, sectionName: string) {
+  const section = element.closest("section");
+
+  if (section instanceof HTMLElement) {
+    return section;
+  }
+
+  throw new Error(`Expected the ${sectionName} section.`);
+}
+
+function expectNoConflictResolutionControls() {
+  const controlLabels = [
+    /remove (?:the )?exclusion/i,
+    /adjust equipment/i,
+    /adjust preferences/i,
+    /accept (?:a )?lower-quality incomplete training plan/i,
+  ] as const;
+  const controlRoles = ["button", "link", "radio", "checkbox"] as const;
+
+  for (const label of controlLabels) {
+    for (const role of controlRoles) {
+      expect(screen.queryByRole(role, { name: label })).not.toBeInTheDocument();
+    }
+  }
 }
 
 async function expectReviewStepComingNext() {

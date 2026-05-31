@@ -272,7 +272,7 @@ const exerciseSelectionHighlights = [
     title: "Targeted support",
   },
   {
-    body: "Painful or unsuitable exercises stay out of the later Training Plan choices.",
+    body: "Painful, unavailable, or unsuitable exercises stay out of later Training Plan choices.",
     title: "Safety boundary",
   },
 ] as const satisfies ReadonlyArray<ExerciseSelectionHighlightProps>;
@@ -287,7 +287,7 @@ const exerciseSelectionStatusCards = [
     title: "Step scope",
   },
   {
-    body: "Preferred Exercises are soft preferences, while Avoided Exercises stay blocked unless you resolve a later Exercise Selection Conflict.",
+    body: "Preferred Exercises stay soft preferences, while Avoided Exercises remain hard exclusions. If generation cannot find a safe viable replacement later, Review will surface an Exercise Selection Conflict for you to resolve.",
     title: "Preference rules",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
@@ -2589,7 +2589,7 @@ function ExerciseSelectionPreferencesStep({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <ExerciseSelectionPreferencesEditor
-            description="Optional hard exclusions. Painful, unavailable, or unsuitable exercises stay out. Real conflicts are resolved later if generation needs an alternative."
+            description="Optional hard exclusions. Add painful, unavailable, or unsuitable exercises here so Just Workout excludes them from later Training Plan generation."
             emptyState="No Avoided Exercises added yet."
             controlId="avoided-exercises-input"
             inputLabel="Avoided Exercises"
@@ -2614,9 +2614,9 @@ function ExerciseSelectionPreferencesStep({
                 Conflict note
               </p>
               <p className="mt-2 text-sm leading-6 text-stone-700">
-                Avoided Exercises are hard exclusions. If one later creates a real Exercise
-                Selection Conflict, Review will surface that conflict instead of silently keeping
-                the avoided exercise.
+                Avoided Exercises are hard exclusions. If generation later cannot find a safe viable
+                replacement, Review will surface an Exercise Selection Conflict for you to resolve
+                instead of silently keeping the avoided exercise.
               </p>
             </div>
 

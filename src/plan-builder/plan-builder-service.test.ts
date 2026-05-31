@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
-import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
+import type {
+  ExerciseSelectionPreferenceItem,
+  ExerciseSelectionPreferenceListId,
+  ExerciseSelectionPreferences,
+} from "./exercise-selection-preferences";
 import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 import {
@@ -14,6 +18,37 @@ type DraftExerciseSelectionPreferences = ExerciseSelectionPreferences & {
   includedEquipment: ReadonlyArray<{ id: string; label: string }>;
   movementPatternCoverage: ReadonlyArray<{ id: string; patterns: ReadonlyArray<never> }>;
 };
+
+type ExercisePreferenceDraftUpdateCase = {
+  addedAt: string;
+  addedExercise: ExerciseSelectionPreferenceItem;
+  confirmedAt: string;
+  initialExercise: ExerciseSelectionPreferenceItem;
+  listId: ExerciseSelectionPreferenceListId;
+  removedAt: string;
+  title: string;
+};
+
+const exercisePreferenceDraftUpdateCases = [
+  {
+    addedAt: "2026-05-30T10:16:00.000Z",
+    addedExercise: { id: "preferred-2", rawText: "Incline dumbbell press" },
+    confirmedAt: "2026-05-30T10:15:30.000Z",
+    initialExercise: { id: "preferred-1", rawText: "Chest-supported row" },
+    listId: "preferredExercises",
+    removedAt: "2026-05-30T10:16:30.000Z",
+    title: "Preferred Exercise",
+  },
+  {
+    addedAt: "2026-05-30T10:17:00.000Z",
+    addedExercise: { id: "avoided-2", rawText: "Behind-the-neck press" },
+    confirmedAt: "2026-05-30T10:16:30.000Z",
+    initialExercise: { id: "avoided-1", rawText: "Upright row" },
+    listId: "avoidedExercises",
+    removedAt: "2026-05-30T10:17:30.000Z",
+    title: "Avoided Exercise",
+  },
+] satisfies ReadonlyArray<ExercisePreferenceDraftUpdateCase>;
 
 describe("planBuilderService", () => {
   beforeEach(async () => {
@@ -141,15 +176,21 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
-  it("persists committed Preferred Exercise draft add/remove changes while clearing confirmed Exercises", async () => {
+  it.each(
+    exercisePreferenceDraftUpdateCases,
+  )("persists committed $title draft add/remove changes while clearing confirmed Exercises", async ({
+    addedAt,
+    addedExercise,
+    confirmedAt,
+    initialExercise,
+    listId,
+    removedAt,
+  }) => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-    const initialPreferredExercises = [{ id: "preferred-1", rawText: "Chest-supported row" }];
-    const preferredExercisesAfterAdd = [
-      ...initialPreferredExercises,
-      { id: "preferred-2", rawText: "Incline dumbbell press" },
-    ];
-    const preferredExercisesAfterRemove = preferredExercisesAfterAdd.filter(
-      (exercise) => exercise.id !== "preferred-1",
+    const initialExercises = [initialExercise];
+    const exercisesAfterAdd = [...initialExercises, addedExercise];
+    const exercisesAfterRemove = exercisesAfterAdd.filter(
+      (exercise) => exercise.id !== initialExercise.id,
     );
     const confirmedBlueprint: PlanBlueprint = {
       ...initialBlueprint,
@@ -163,62 +204,58 @@ describe("planBuilderService", () => {
       },
       exerciseSelectionPreferences: {
         ...initialBlueprint.exerciseSelectionPreferences,
-        preferredExercises: initialPreferredExercises,
+        [listId]: initialExercises,
       },
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
-      updatedAt: "2026-05-30T10:15:30.000Z",
+      updatedAt: confirmedAt,
     };
 
     await db.planBlueprints.clear();
     await db.planBlueprints.put(confirmedBlueprint);
 
-    const addedPreferredExerciseBlueprint =
-      await planBuilderService.updateExerciseSelectionPreferences({
-        exerciseSelectionPreferences: {
-          ...confirmedBlueprint.exerciseSelectionPreferences,
-          preferredExercises: preferredExercisesAfterAdd,
-        },
-        timestamp: "2026-05-30T10:16:00.000Z",
-      });
+    const addedExerciseBlueprint = await planBuilderService.updateExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        ...confirmedBlueprint.exerciseSelectionPreferences,
+        [listId]: exercisesAfterAdd,
+      },
+      timestamp: addedAt,
+    });
     const expectedConfirmedBuilderStepsAfterDraftChange = {
       ...confirmedBlueprint.confirmedBuilderSteps,
       exercises: false,
     };
-    const expectedAddedPreferredExerciseBlueprint: PlanBlueprint = {
+    const expectedAddedExerciseBlueprint: PlanBlueprint = {
       ...confirmedBlueprint,
       confirmedBuilderSteps: expectedConfirmedBuilderStepsAfterDraftChange,
       exerciseSelectionPreferences: {
         ...confirmedBlueprint.exerciseSelectionPreferences,
-        preferredExercises: preferredExercisesAfterAdd,
+        [listId]: exercisesAfterAdd,
       },
-      updatedAt: "2026-05-30T10:16:00.000Z",
+      updatedAt: addedAt,
     };
 
-    expect(addedPreferredExerciseBlueprint).toEqual(expectedAddedPreferredExerciseBlueprint);
+    expect(addedExerciseBlueprint).toEqual(expectedAddedExerciseBlueprint);
 
-    const removedPreferredExerciseBlueprint =
-      await planBuilderService.updateExerciseSelectionPreferences({
-        exerciseSelectionPreferences: {
-          ...addedPreferredExerciseBlueprint.exerciseSelectionPreferences,
-          preferredExercises: preferredExercisesAfterRemove,
-        },
-        timestamp: "2026-05-30T10:16:30.000Z",
-      });
-    const expectedRemovedPreferredExerciseBlueprint: PlanBlueprint = {
-      ...expectedAddedPreferredExerciseBlueprint,
+    const removedExerciseBlueprint = await planBuilderService.updateExerciseSelectionPreferences({
       exerciseSelectionPreferences: {
-        ...expectedAddedPreferredExerciseBlueprint.exerciseSelectionPreferences,
-        preferredExercises: preferredExercisesAfterRemove,
+        ...addedExerciseBlueprint.exerciseSelectionPreferences,
+        [listId]: exercisesAfterRemove,
       },
-      updatedAt: "2026-05-30T10:16:30.000Z",
+      timestamp: removedAt,
+    });
+    const expectedRemovedExerciseBlueprint: PlanBlueprint = {
+      ...expectedAddedExerciseBlueprint,
+      exerciseSelectionPreferences: {
+        ...expectedAddedExerciseBlueprint.exerciseSelectionPreferences,
+        [listId]: exercisesAfterRemove,
+      },
+      updatedAt: removedAt,
     };
 
-    expect(removedPreferredExerciseBlueprint).toEqual(expectedRemovedPreferredExerciseBlueprint);
-    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(
-      removedPreferredExerciseBlueprint,
-    );
+    expect(removedExerciseBlueprint).toEqual(expectedRemovedExerciseBlueprint);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(removedExerciseBlueprint);
   });
 
   it("persists the final Step 5 Exercise Selection Preferences when Exercises is confirmed", async () => {

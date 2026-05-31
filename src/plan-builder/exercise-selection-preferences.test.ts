@@ -103,7 +103,7 @@ describe("exercise selection preferences", () => {
       },
       {
         description:
-          "Marked avoided exercises stay excluded so painful or unsuitable movements are not silently included later.",
+          "Marked avoided exercises stay excluded so painful, unavailable, or unsuitable movements are not silently included later.",
         id: "hard_avoid_exclusions",
         label: "Respect avoided exercises as hard exclusions",
       },
