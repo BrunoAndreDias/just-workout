@@ -1429,6 +1429,73 @@ describe("PlanBuilderRoute", () => {
     await expectReadOnlyExercisesStep();
   });
 
+  it("routes Review back through Volume and Exercises after Volume changes invalidate confirmed Exercises", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+        equipmentPreset: "full_gym",
+        preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+        strategy: "balanced",
+      },
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const volumeView = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+    const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
+
+    await user.click(within(volumePresetGroup).getByText("Conservative"));
+
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+        equipmentPreset: "full_gym",
+        preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+        strategy: "balanced",
+      },
+      volumePreset: "conservative",
+      volumePresetSource: "user_selected",
+    });
+
+    volumeView.unmount();
+
+    const guardedReviewAfterVolumeChange = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.review],
+    });
+
+    await expectPlanBuilderPath(guardedReviewAfterVolumeChange.router, planBuilderPaths.volume);
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
+    await expectReadOnlyExercisesStep();
+
+    guardedReviewAfterVolumeChange.unmount();
+
+    const guardedReviewAfterVolumeReconfirmation = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.review],
+    });
+
+    await expectPlanBuilderPath(
+      guardedReviewAfterVolumeReconfirmation.router,
+      planBuilderPaths.exercises,
+    );
+    await expectReadOnlyExercisesStep();
+  });
+
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
     const user = userEvent.setup();
 
