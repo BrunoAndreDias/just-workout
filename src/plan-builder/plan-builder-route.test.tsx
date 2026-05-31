@@ -759,24 +759,23 @@ describe("PlanBuilderRoute", () => {
     const coverageSection = await screen.findByRole("region", {
       name: /movement pattern coverage/i,
     });
+    const coverage = within(coverageSection);
 
     expect(
-      within(coverageSection).getByText(
-        /read-only in v1 and does not promise final exercise slots/i,
-      ),
+      coverage.getByText(/read-only in v1 and does not promise final exercise slots/i),
     ).toBeVisible();
     expect(
-      within(coverageSection).getByText(
+      coverage.getByText(
         /derived from the current training split, strategy, and weekly rep targets/i,
       ),
     ).toBeVisible();
     expect(
-      within(coverageSection).getByText(
+      coverage.getByText(
         /covered across the split's upper sessions while lower days stay focused/i,
       ),
     ).toBeVisible();
     expect(
-      within(coverageSection).getByText(
+      coverage.getByText(
         /covered across the split's lower sessions with room for direct accessory work/i,
       ),
     ).toBeVisible();
@@ -792,11 +791,11 @@ describe("PlanBuilderRoute", () => {
       "Hip/hamstring dominant",
       "Calves/accessories",
     ]) {
-      expect(within(coverageSection).getByText(patternLabel)).toBeVisible();
+      expect(coverage.getByText(patternLabel)).toBeVisible();
     }
 
-    expect(within(coverageSection).getAllByText("Direct Weekly Rep Target")).toHaveLength(8);
-    expect(within(coverageSection).getByText("Indirect support only")).toBeVisible();
+    expect(coverage.getAllByText("Direct Weekly Rep Target")).toHaveLength(8);
+    expect(coverage.getByText("Indirect support only")).toBeVisible();
   });
 
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
