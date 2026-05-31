@@ -50,6 +50,31 @@ const generatedPlanSplitNextStepCopy =
   "Next, you'll choose Rep ranges that fit your Training Plan.";
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 
+const weeklyVolumeTargetCopyPatterns = [
+  /set weekly rep targets for each muscle group before exercises are selected/i,
+  /just workout will translate those weekly targets into sets and reps across your training days later/i,
+  /weekly targets only: these targets describe your full training week/i,
+  /just workout will distribute your weekly reps across your training days/i,
+  /compound and isolation exercises will both count toward the same weekly muscle-group targets/i,
+  /you will refine the exact exercises later, after the weekly targets are in place/i,
+] as const;
+
+const weeklyVolumeExcludedContentPatterns = [
+  /strongplan/i,
+  /exercise selection/i,
+  /generated training plan/i,
+  /chart/i,
+  /analytics/i,
+  /\bRPE\b/i,
+  /\bRIR\b/i,
+  /\b1RM\b/i,
+  /tempo/i,
+  /progression rules/i,
+  /nutrition/i,
+  /recovery scores/i,
+  /bodyweight tracking/i,
+] as const;
+
 const selectableTrainingSplitCases = [
   {
     daysPerWeek: 2,
@@ -657,33 +682,10 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
     });
     expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
-    expect(
-      screen.getByText(
-        /set weekly rep targets for each muscle group before exercises are selected/i,
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        /just workout will translate those weekly targets into sets and reps across your training days later/i,
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(/weekly targets only: these targets describe your full training week/i),
-    ).toBeVisible();
     expect(screen.getByRole("heading", { name: /how this works/i })).toBeVisible();
-    expect(
-      screen.getByText(/just workout will distribute your weekly reps across your training days/i),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        /compound and isolation exercises will both count toward the same weekly muscle-group targets/i,
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        /you will refine the exact exercises later, after the weekly targets are in place/i,
-      ),
-    ).toBeVisible();
+    for (const copyPattern of weeklyVolumeTargetCopyPatterns) {
+      expect(screen.getByText(copyPattern)).toBeVisible();
+    }
     expect(screen.getByRole("link", { name: /back to rep ranges/i })).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Volume"),
@@ -691,19 +693,9 @@ describe("PlanBuilderRoute", () => {
     expect(
       screen.queryByRole("heading", { name: /select rep range style/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText(/strongplan/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/exercise selection/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/chart/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/analytics/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/\bRPE\b/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/\bRIR\b/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/\b1RM\b/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/tempo/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/progression rules/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/nutrition/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/recovery scores/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/bodyweight tracking/i)).not.toBeInTheDocument();
+    for (const excludedContentPattern of weeklyVolumeExcludedContentPatterns) {
+      expect(screen.queryByText(excludedContentPattern)).not.toBeInTheDocument();
+    }
     expect(await trainingService.getDashboardSnapshot()).toMatchObject({
       activePlan: null,
       exercises: [],

@@ -175,6 +175,15 @@ const repRangeStyleOptionCardStyles = {
     "border-stone-900/10 bg-white/90 text-stone-950 hover:border-stone-900/18 hover:bg-white",
 } as const satisfies Record<SelectableOptionState, string>;
 
+const weeklyVolumeHowItWorksItems = [
+  "Just Workout will distribute your weekly reps across your training days.",
+  "Compound and isolation exercises will both count toward the same weekly muscle-group targets.",
+  "You will refine the exact exercises later, after the weekly targets are in place.",
+] as const;
+
+const weeklyVolumeHowItWorksItemClassName =
+  "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
+
 const repRangeStyleDescriptionStyles = {
   selected: "text-[#31505d]",
   unselected: selectableOptionMutedTextStyles.unselected,
@@ -1097,16 +1106,11 @@ function WeeklyVolumeTargetsStep() {
               How this works
             </h4>
             <ul className="mt-3 grid gap-3">
-              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
-                Just Workout will distribute your weekly reps across your training days.
-              </li>
-              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
-                Compound and isolation exercises will both count toward the same weekly muscle-group
-                targets.
-              </li>
-              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
-                You will refine the exact exercises later, after the weekly targets are in place.
-              </li>
+              {weeklyVolumeHowItWorksItems.map((item) => (
+                <li className={weeklyVolumeHowItWorksItemClassName} key={item}>
+                  {item}
+                </li>
+              ))}
             </ul>
           </section>
 
