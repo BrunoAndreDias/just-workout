@@ -477,31 +477,42 @@ describe("planBuilderService", () => {
   });
 
   it("preserves Exercise Selection Preferences while marking Exercises unconfirmed when Volume changes after Exercises is confirmed", async () => {
-    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-    const configuredBlueprint: PlanBlueprint = {
-      ...initialBlueprint,
-      ...createRecommendedTrainingVolumeConfiguration(),
-      confirmedBuilderSteps: {
-        exercises: true,
-        frequency: true,
-        repRanges: true,
-        split: true,
-        volume: true,
-      },
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
-        strategy: "balanced",
-      },
-      repRanges: "balanced_hypertrophy",
-      split: "upper-lower-4-day",
-      trainingFrequencyDaysPerWeek: 4,
-      updatedAt: "2026-05-30T10:33:30.000Z",
+    const exerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced",
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:29:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:30:00.000Z",
+    });
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:31:00.000Z",
+    });
+
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-30T10:32:00.000Z",
+    });
+
+    if (!isTrainingVolumeConfiguration(initializedBlueprint)) {
+      throw new Error("Expected initialized Training Volume before confirmation.");
+    }
+
+    await planBuilderService.confirmSelectedTrainingVolume({
+      timestamp: "2026-05-30T10:33:00.000Z",
+      trainingVolumeConfiguration: initializedBlueprint,
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences,
+      timestamp: "2026-05-30T10:33:30.000Z",
+    });
 
     const updatedBlueprint = await planBuilderService.updateTrainingVolumePreset({
       timestamp: "2026-05-30T10:34:00.000Z",
@@ -516,7 +527,7 @@ describe("planBuilderService", () => {
         split: true,
         volume: false,
       },
-      exerciseSelectionPreferences: configuredBlueprint.exerciseSelectionPreferences,
+      exerciseSelectionPreferences,
       volumePreset: "conservative",
       volumePresetSource: "user_selected",
       weeklyRepTargets: [

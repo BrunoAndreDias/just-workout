@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -1439,12 +1440,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
     await planBuilderService.confirmSelectedExerciseSelectionPreferences({
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
-        strategy: "balanced",
-      },
+      exerciseSelectionPreferences: createConfirmedExerciseSelectionPreferencesForTest(),
       timestamp: "2026-05-31T09:06:00.000Z",
     });
 
@@ -1461,12 +1457,7 @@ describe("PlanBuilderRoute", () => {
         split: true,
         volume: false,
       },
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
-        strategy: "balanced",
-      },
+      exerciseSelectionPreferences: createConfirmedExerciseSelectionPreferencesForTest(),
       volumePreset: "conservative",
       volumePresetSource: "user_selected",
     });
@@ -2074,6 +2065,15 @@ async function expectReadOnlyExercisesStep() {
   for (const label of defaultExerciseStepIncludedEquipmentLabels) {
     expect(within(includedEquipment).getByText(label)).toBeVisible();
   }
+}
+
+function createConfirmedExerciseSelectionPreferencesForTest(): ExerciseSelectionPreferences {
+  return {
+    avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+    equipmentPreset: "full_gym",
+    preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+    strategy: "balanced",
+  };
 }
 
 async function expectReviewStepComingNext() {
