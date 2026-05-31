@@ -4,6 +4,9 @@ import {
   createDefaultExerciseSelectionPreferences,
   deriveAutomaticExerciseSelectionRules,
   deriveMovementPatternCoverage,
+  type ExerciseSelectionPendingInputs,
+  type ExerciseSelectionPreferences,
+  type ExerciseSelectionPreferenceValidationErrors,
   getEquipmentPreset,
   isExerciseSelectionPreferencesConfirmationReady,
   normalizeExerciseSelectionPreferences,
@@ -202,16 +205,7 @@ describe("exercise selection preferences", () => {
       preferredExercises: [{ id: "preferred-1", rawText: "Incline Dumbbell Press" }],
     });
 
-    expect(
-      commitPendingExerciseSelectionPreferences({
-        createId: () => "unused",
-        exerciseSelectionPreferences,
-        pendingInputs: {
-          avoidedExercise: "",
-          preferredExercise: "  incline dumbbell press ",
-        },
-      }),
-    ).toEqual({
+    expectPendingExerciseSelectionPreferencesValidationError({
       exerciseSelectionPreferences,
       pendingInputs: {
         avoidedExercise: "",
@@ -222,16 +216,7 @@ describe("exercise selection preferences", () => {
       },
     });
 
-    expect(
-      commitPendingExerciseSelectionPreferences({
-        createId: () => "unused",
-        exerciseSelectionPreferences,
-        pendingInputs: {
-          avoidedExercise: "  upright   ROW ",
-          preferredExercise: "",
-        },
-      }),
-    ).toEqual({
+    expectPendingExerciseSelectionPreferencesValidationError({
       exerciseSelectionPreferences,
       pendingInputs: {
         avoidedExercise: "  upright   ROW ",
@@ -242,16 +227,7 @@ describe("exercise selection preferences", () => {
       },
     });
 
-    expect(
-      commitPendingExerciseSelectionPreferences({
-        createId: () => "unused",
-        exerciseSelectionPreferences,
-        pendingInputs: {
-          avoidedExercise: "  incline dumbbell press ",
-          preferredExercise: "",
-        },
-      }),
-    ).toEqual({
+    expectPendingExerciseSelectionPreferencesValidationError({
       exerciseSelectionPreferences,
       pendingInputs: {
         avoidedExercise: "  incline dumbbell press ",
@@ -302,3 +278,25 @@ describe("exercise selection preferences", () => {
     });
   });
 });
+
+function expectPendingExerciseSelectionPreferencesValidationError({
+  exerciseSelectionPreferences,
+  pendingInputs,
+  validationErrors,
+}: {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+  validationErrors: ExerciseSelectionPreferenceValidationErrors;
+}) {
+  expect(
+    commitPendingExerciseSelectionPreferences({
+      createId: () => "unused",
+      exerciseSelectionPreferences,
+      pendingInputs,
+    }),
+  ).toEqual({
+    exerciseSelectionPreferences,
+    pendingInputs,
+    validationErrors,
+  });
+}

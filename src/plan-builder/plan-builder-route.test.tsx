@@ -1502,15 +1502,11 @@ describe("PlanBuilderRoute", () => {
       },
     });
 
-    await user.type(screen.getByLabelText(/avoided exercises/i), "incline dumbbell press");
-    const addButtons = screen.getAllByRole("button", { name: /^add$/i });
-    const avoidedAddButton = addButtons[1];
+    const avoidedInput = screen.getByLabelText(/avoided exercises/i);
+    const avoidedForm = getRequiredClosestForm(avoidedInput, "Avoided Exercise");
 
-    if (!avoidedAddButton) {
-      throw new Error("Expected the Avoided Exercises add button to be rendered.");
-    }
-
-    await user.click(avoidedAddButton);
+    await user.type(avoidedInput, "incline dumbbell press");
+    await user.click(within(avoidedForm).getByRole("button", { name: /^add$/i }));
 
     expect(
       await screen.findByText(
