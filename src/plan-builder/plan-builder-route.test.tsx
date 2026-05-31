@@ -91,6 +91,27 @@ const defaultExerciseStepIncludedEquipmentLabels = [
   "Bodyweight",
 ] as const;
 
+const defaultExerciseStepMovementPatternLabels = [
+  "Horizontal push",
+  "Horizontal pull",
+  "Vertical push",
+  "Vertical pull",
+  "Elbow flexion",
+  "Elbow extension",
+  "Quad dominant",
+  "Hip/hamstring dominant",
+  "Calves/accessories",
+] as const;
+
+const defaultExerciseStepAutomaticRuleLabels = [
+  "Prioritize compounds for main work",
+  "Use isolation work for targeted volume",
+  "Keep movement-pattern coverage balanced",
+  "Align exercise selection with Weekly Rep Targets",
+  "Respect avoided exercises as hard exclusions",
+  "Apply rest timing automatically",
+] as const;
+
 const conservativePresetWeeklyRepTargets = [
   { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
   { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
@@ -1153,6 +1174,180 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("auto-commits valid pending Preferred and Avoided Exercises when continuing to Review", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await screen.findByRole("heading", { name: /exercise selection strategy/i });
+
+    await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
+    await user.click(screen.getByRole("button", { name: /continue to review/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.review);
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ rawText: "Upright row" }],
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
+  });
+
+  it("persists committed exercise entries as draft values while pending text stays local to Step 5", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    const preferredInput = await screen.findByLabelText(/preferred exercises/i);
+
+    await user.type(preferredInput, "Chest-supported row");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        preferredExercises: [],
+      },
+    });
+
+    await user.keyboard("{Enter}");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ rawText: "Chest-supported row" }],
+      },
+    });
+
+    await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        preferredExercises: [{ rawText: "Chest-supported row" }],
+      },
+    });
+
+    firstView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(await screen.findByText("Chest-supported row")).toBeVisible();
+    expect(screen.getByLabelText(/avoided exercises/i)).toHaveValue("");
+
+    await user.click(screen.getByRole("button", { name: /^remove$/i }));
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        preferredExercises: [],
+      },
+    });
+  });
+
+  it("blocks duplicate and conflicting exercise entries with inline validation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await user.type(await screen.findByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    await user.keyboard("{Enter}");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
+
+    await user.type(screen.getByLabelText(/preferred exercises/i), "  incline   dumbbell press ");
+    await user.keyboard("{Enter}");
+
+    expect(
+      await screen.findByText("This exercise is already in Preferred Exercises."),
+    ).toBeVisible();
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
+
+    await user.type(screen.getByLabelText(/avoided exercises/i), "incline dumbbell press");
+    const addButtons = screen.getAllByRole("button", { name: /^add$/i });
+    const avoidedAddButton = addButtons[1];
+
+    if (!avoidedAddButton) {
+      throw new Error("Expected the Avoided Exercises add button to be rendered.");
+    }
+
+    await user.click(avoidedAddButton);
+
+    expect(
+      await screen.findByText(
+        "This exercise is already in Preferred Exercises. Remove it there or change this entry.",
+      ),
+    ).toBeVisible();
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
+  });
+
+  it("blocks Continue to Review when pending input is invalid", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await user.type(await screen.findByLabelText(/preferred exercises/i), "Hack squat");
+    await user.keyboard("{Enter}");
+    await user.type(screen.getByLabelText(/avoided exercises/i), "hack squat");
+    await user.click(screen.getByRole("button", { name: /continue to review/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.exercises);
+    expect(
+      await screen.findByText(
+        "This exercise is already in Preferred Exercises. Remove it there or change this entry.",
+      ),
+    ).toBeVisible();
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+    });
+  });
+
   it("returns from Exercises to Volume with the existing footer back action", async () => {
     const user = userEvent.setup();
 
@@ -2001,16 +2196,33 @@ async function expectReadOnlyExercisesStep() {
   ).toBeVisible();
   expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
   expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /preferred exercises/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /avoided exercises/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /movement-pattern coverage/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /rules applied automatically/i })).toBeVisible();
 
   const includedEquipment = screen.getByRole("list", { name: /included equipment/i });
 
   for (const label of defaultExerciseStepIncludedEquipmentLabels) {
     expect(within(includedEquipment).getByText(label)).toBeVisible();
   }
+
+  for (const label of defaultExerciseStepMovementPatternLabels) {
+    expect(screen.getByText(label)).toBeVisible();
+  }
+
+  for (const label of defaultExerciseStepAutomaticRuleLabels) {
+    expect(screen.getByText(label)).toBeVisible();
+  }
 }
 
 async function expectReviewStepComingNext() {
   expect(await screen.findByRole("heading", { name: /review step coming next/i })).toBeVisible();
+  expect(
+    screen.getByText(
+      /exercise order and rest rules will be applied automatically during generation/i,
+    ),
+  ).toBeVisible();
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {

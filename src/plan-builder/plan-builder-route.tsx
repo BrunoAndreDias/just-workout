@@ -25,10 +25,22 @@ import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
+  type AutomaticExerciseSelectionRule,
+  commitPendingExerciseSelectionPreferences,
   createDefaultExerciseSelectionPreferences,
+  deriveAutomaticExerciseSelectionRules,
+  deriveMovementPatternCoverage,
+  type ExerciseSelectionPendingInputId,
+  type ExerciseSelectionPendingInputs,
+  type ExerciseSelectionPreferenceItem,
+  type ExerciseSelectionPreferenceListId,
   type ExerciseSelectionPreferences,
+  type ExerciseSelectionPreferenceValidationErrors,
+  emptyExerciseSelectionPendingInputs,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
+  type MovementPatternCoverageGroup,
+  removeExerciseSelectionPreferenceItem,
 } from "./exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
@@ -57,6 +69,7 @@ import {
   type TrainingFrequencyOption,
   type TrainingFrequencyRecommendation,
   trainingFrequencyOptions,
+  updateExerciseSelectionPreferences,
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -268,8 +281,12 @@ const readOnlyExercisesStatusCards = [
     title: "Plan status",
   },
   {
-    body: "Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here.",
+    body: "Step 5 stays focused on preferences only. Day-by-day workouts and final exercise choices do not appear here.",
     title: "Step scope",
+  },
+  {
+    body: "Preferred Exercises are soft preferences, while Avoided Exercises stay blocked unless you resolve a later Exercise Selection Conflict.",
+    title: "Preference rules",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
 
@@ -464,6 +481,11 @@ type ConfirmExerciseSelectionPreferencesMutationVariables = {
   timestamp: string;
 };
 
+type UpdateExerciseSelectionPreferencesMutationVariables = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp: string;
+};
+
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
@@ -561,14 +583,37 @@ type WeeklyVolumeTargetsStepProps = {
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
 
-type ReadOnlyExercisesStepProps = {
-  onContinueToReview: () => Promise<void>;
+type ExerciseSelectionPreferencesStepProps = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  movementPatternCoverage: ReadonlyArray<MovementPatternCoverageGroup>;
+  onContinueToReview: (exerciseSelectionPreferences: ExerciseSelectionPreferences) => Promise<void>;
+  onExerciseSelectionPreferencesChange: (
+    exerciseSelectionPreferences: ExerciseSelectionPreferences,
+  ) => Promise<void>;
+  rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
 };
 
 type ReadOnlyExercisesHighlightProps = {
   body: string;
   title: string;
+};
+
+type ExerciseSelectionPreferencesEditorProps = {
+  description: string;
+  emptyState: string;
+  inputId: string;
+  inputLabel: string;
+  itemAriaLabel: string;
+  items: ReadonlyArray<ExerciseSelectionPreferenceItem>;
+  listId: ExerciseSelectionPreferenceListId;
+  onAdd: (listId: ExerciseSelectionPreferenceListId) => Promise<void>;
+  onInputChange: (listId: ExerciseSelectionPreferenceListId, value: string) => void;
+  onRemove: (
+    listId: ExerciseSelectionPreferenceListId,
+    itemId: ExerciseSelectionPreferenceItem["id"],
+  ) => Promise<void>;
+  pendingValue: string;
+  validationError?: string;
 };
 
 type VolumePresetSelectorProps = {
@@ -880,13 +925,41 @@ export function PlanBuilderExercisesRoute() {
   const navigate = useNavigate();
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
+  const { mutateAsync: updateSelectedExerciseSelectionPreferences } =
+    useUpdateExerciseSelectionPreferencesMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
-  const exerciseSelectionPreferences =
-    blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
+  const isExerciseSelectionStepReady =
+    blueprint &&
+    hasCompatibleSelectedTrainingSplit(blueprint) &&
+    isTrainingVolumeConfiguration(blueprint);
+  const exerciseSelectionPreferences = isExerciseSelectionStepReady
+    ? blueprint.exerciseSelectionPreferences
+    : createDefaultExerciseSelectionPreferences();
+  const movementPatternCoverage = isExerciseSelectionStepReady
+    ? deriveMovementPatternCoverage({
+        split: blueprint.split,
+        strategy: exerciseSelectionPreferences.strategy,
+        weeklyRepTargets: blueprint.weeklyRepTargets,
+      })
+    : [];
+  const rulesAppliedAutomatically = deriveAutomaticExerciseSelectionRules(
+    exerciseSelectionPreferences.strategy,
+  );
 
-  async function handleContinueToReview() {
+  async function handleExerciseSelectionPreferencesChange(
+    nextExerciseSelectionPreferences: ExerciseSelectionPreferences,
+  ) {
+    await updateSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences: nextExerciseSelectionPreferences,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async function handleContinueToReview(
+    nextExerciseSelectionPreferences: ExerciseSelectionPreferences,
+  ) {
     await confirmSelectedExerciseSelectionPreferences({
-      exerciseSelectionPreferences,
+      exerciseSelectionPreferences: nextExerciseSelectionPreferences,
       timestamp: new Date().toISOString(),
     });
     await navigate({ to: planBuilderPaths.review });
@@ -897,16 +970,25 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Review the read-only exercise-selection defaults that Just Workout will carry forward in
-          this Plan Blueprint before Review.
+          Set Exercise Selection Preferences before Review so Just Workout can carry the right
+          strategy, equipment, and exercise-fit notes forward into later Training Plan generation.
         </p>
       }
       summary={summary}
     >
-      <ReadOnlyExercisesStep
-        exerciseSelectionPreferences={exerciseSelectionPreferences}
-        onContinueToReview={handleContinueToReview}
-      />
+      {isExerciseSelectionStepReady ? (
+        <ExerciseSelectionPreferencesStep
+          exerciseSelectionPreferences={exerciseSelectionPreferences}
+          movementPatternCoverage={movementPatternCoverage}
+          onContinueToReview={handleContinueToReview}
+          onExerciseSelectionPreferencesChange={handleExerciseSelectionPreferencesChange}
+          rulesAppliedAutomatically={rulesAppliedAutomatically}
+        />
+      ) : (
+        <p className="text-sm font-semibold text-stone-600">
+          Loading Exercise Selection Preferences...
+        </p>
+      )}
     </PlanBuilderPage>
   );
 }
@@ -1116,6 +1198,22 @@ function useConfirmExerciseSelectionPreferencesMutation() {
       }),
     optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
       confirmExerciseSelectionPreferences({
+        blueprint,
+        exerciseSelectionPreferences,
+        timestamp,
+      }),
+  });
+}
+
+function useUpdateExerciseSelectionPreferencesMutation() {
+  return usePlanBlueprintMutation<UpdateExerciseSelectionPreferencesMutationVariables>({
+    mutationFn: ({ exerciseSelectionPreferences, timestamp }) =>
+      planBuilderService.updateExerciseSelectionPreferences({
+        exerciseSelectionPreferences,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
+      updateExerciseSelectionPreferences({
         blueprint,
         exerciseSelectionPreferences,
         timestamp,
@@ -2256,12 +2354,98 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ReadOnlyExercisesStep({
+function ExerciseSelectionPreferencesStep({
   exerciseSelectionPreferences,
+  movementPatternCoverage,
   onContinueToReview,
-}: ReadOnlyExercisesStepProps) {
+  onExerciseSelectionPreferencesChange,
+  rulesAppliedAutomatically,
+}: ExerciseSelectionPreferencesStepProps) {
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
+  const [pendingInputs, setPendingInputs] = useState<ExerciseSelectionPendingInputs>({
+    ...emptyExerciseSelectionPendingInputs,
+  });
+  const [validationErrors, setValidationErrors] =
+    useState<ExerciseSelectionPreferenceValidationErrors>({});
+
+  function handleInputChange(listId: ExerciseSelectionPreferenceListId, value: string) {
+    const inputId = getExerciseSelectionPendingInputId(listId);
+
+    setPendingInputs((currentPendingInputs) => ({
+      ...currentPendingInputs,
+      [inputId]: value,
+    }));
+    setValidationErrors((currentValidationErrors) =>
+      clearExerciseSelectionValidationError(currentValidationErrors, inputId),
+    );
+  }
+
+  async function handleAdd(listId: ExerciseSelectionPreferenceListId) {
+    const inputId = getExerciseSelectionPendingInputId(listId);
+    const commitResult = commitPendingExerciseSelectionPreferences({
+      createId: () => crypto.randomUUID(),
+      exerciseSelectionPreferences,
+      pendingInputs: {
+        ...emptyExerciseSelectionPendingInputs,
+        [inputId]: pendingInputs[inputId],
+      },
+    });
+
+    if (Object.keys(commitResult.validationErrors).length > 0) {
+      setValidationErrors((currentValidationErrors) => ({
+        ...currentValidationErrors,
+        ...commitResult.validationErrors,
+      }));
+      return;
+    }
+
+    setValidationErrors((currentValidationErrors) =>
+      clearExerciseSelectionValidationError(currentValidationErrors, inputId),
+    );
+    setPendingInputs((currentPendingInputs) => ({
+      ...currentPendingInputs,
+      [inputId]: "",
+    }));
+
+    await onExerciseSelectionPreferencesChange(commitResult.exerciseSelectionPreferences);
+  }
+
+  async function handleRemove(
+    listId: ExerciseSelectionPreferenceListId,
+    itemId: ExerciseSelectionPreferenceItem["id"],
+  ) {
+    setValidationErrors({});
+
+    await onExerciseSelectionPreferencesChange(
+      removeExerciseSelectionPreferenceItem({
+        exerciseSelectionPreferences,
+        itemId,
+        listId,
+      }),
+    );
+  }
+
+  async function handleContinueToReviewClick() {
+    const commitResult = commitPendingExerciseSelectionPreferences({
+      createId: () => crypto.randomUUID(),
+      exerciseSelectionPreferences,
+      pendingInputs,
+    });
+
+    if (Object.keys(commitResult.validationErrors).length > 0) {
+      setValidationErrors(commitResult.validationErrors);
+      return;
+    }
+
+    setPendingInputs({
+      ...emptyExerciseSelectionPendingInputs,
+    });
+    setValidationErrors({});
+
+    await onContinueToReview(commitResult.exerciseSelectionPreferences);
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
@@ -2308,73 +2492,131 @@ function ReadOnlyExercisesStep({
           </div>
         </section>
 
-        <section
-          aria-labelledby="equipment-preset-title"
-          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
-        >
-          <div>
-            <h3
-              className="text-xl font-black text-stone-950 sm:text-2xl"
-              id="equipment-preset-title"
-            >
-              Equipment preset
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm text-stone-600">
-              Full gym is the only v1 preset, and the included equipment chips below are derived
-              from that preset instead of stored separately in the Plan Blueprint.
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-black uppercase tracking-wide text-stone-500">
-                Selected preset
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section
+            aria-labelledby="equipment-preset-title"
+            className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+          >
+            <div>
+              <h3
+                className="text-xl font-black text-stone-950 sm:text-2xl"
+                id="equipment-preset-title"
+              >
+                Equipment preset
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm text-stone-600">
+                Full gym is the only v1 preset, and the included equipment chips below are derived
+                from that preset instead of stored separately in the Plan Blueprint.
               </p>
-              <span className="rounded-full bg-[#006f78] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
-                Only v1 preset
-              </span>
             </div>
-            <h4 className="mt-3 text-2xl font-black text-stone-950">
-              {selectedEquipmentPreset.title}
-            </h4>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-700">
-              Just Workout assumes standard full-gym availability here so later Training Plan
-              generation can pull from the expected equipment pool.
-            </p>
 
-            <div className="mt-5">
-              <p className="text-xs font-black uppercase tracking-wide text-stone-500">
-                Included equipment
+            <div className="mt-5 rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+                  Selected preset
+                </p>
+                <span className="rounded-full bg-[#006f78] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
+                  Only v1 preset
+                </span>
+              </div>
+              <h4 className="mt-3 text-2xl font-black text-stone-950">
+                {selectedEquipmentPreset.title}
+              </h4>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-700">
+                Just Workout assumes standard full-gym availability here so later Training Plan
+                generation can pull from the expected equipment pool.
               </p>
-              <ul aria-label="Included equipment" className="mt-3 flex flex-wrap gap-2.5">
-                {selectedEquipmentPreset.includedEquipment.map((equipment) => (
-                  <li key={equipment.id}>
-                    <span className="inline-flex items-center rounded-full border border-stone-900/10 bg-white px-3 py-1.5 text-sm font-bold text-stone-950 shadow-sm">
-                      {equipment.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
 
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button asChild variant="outline">
-              <Link to={planBuilderPaths.volume}>Back to Volume</Link>
-            </Button>
-            <Button
-              onClick={() => {
-                void onContinueToReview();
-              }}
-              type="button"
-            >
-              Continue to Review
-            </Button>
-          </div>
-        </section>
+              <div className="mt-5">
+                <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+                  Included equipment
+                </p>
+                <ul aria-label="Included equipment" className="mt-3 flex flex-wrap gap-2.5">
+                  {selectedEquipmentPreset.includedEquipment.map((equipment) => (
+                    <li key={equipment.id}>
+                      <span className="inline-flex items-center rounded-full border border-stone-900/10 bg-white px-3 py-1.5 text-sm font-bold text-stone-950 shadow-sm">
+                        {equipment.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <ExerciseSelectionPreferencesEditor
+            description="Optional soft preferences. Just Workout will prioritize them when they fit your Plan Blueprint, movement balance, and Weekly Rep Targets."
+            emptyState="No Preferred Exercises added yet."
+            inputId="preferred-exercises-input"
+            inputLabel="Preferred Exercises"
+            itemAriaLabel="Preferred Exercise entries"
+            items={exerciseSelectionPreferences.preferredExercises}
+            listId="preferredExercises"
+            onAdd={handleAdd}
+            onInputChange={handleInputChange}
+            onRemove={handleRemove}
+            pendingValue={pendingInputs.preferredExercise}
+            validationError={validationErrors.preferredExercise}
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <ExerciseSelectionPreferencesEditor
+            description="Optional hard exclusions. Painful, unavailable, or unsuitable exercises stay out. Real conflicts are resolved later if generation needs an alternative."
+            emptyState="No Avoided Exercises added yet."
+            inputId="avoided-exercises-input"
+            inputLabel="Avoided Exercises"
+            itemAriaLabel="Avoided Exercise entries"
+            items={exerciseSelectionPreferences.avoidedExercises}
+            listId="avoidedExercises"
+            onAdd={handleAdd}
+            onInputChange={handleInputChange}
+            onRemove={handleRemove}
+            pendingValue={pendingInputs.avoidedExercise}
+            validationError={validationErrors.avoidedExercise}
+          />
+
+          <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
+            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Before you continue</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+              Step 5 saves Exercise Selection Preferences only. The final Training Plan, exercise
+              order, and detailed rest prescriptions still come later during generation.
+            </p>
+            <div className="mt-5 rounded-lg border border-[#d9c8a7] bg-[#f9f6ef] p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+                Conflict note
+              </p>
+              <p className="mt-2 text-sm leading-6 text-stone-700">
+                Avoided Exercises are hard exclusions. If one later creates a real Exercise
+                Selection Conflict, Review will surface that conflict instead of silently keeping
+                the avoided exercise.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button asChild variant="outline">
+                <Link to={planBuilderPaths.volume}>Back to Volume</Link>
+              </Button>
+              <Button
+                onClick={() => {
+                  void handleContinueToReviewClick();
+                }}
+                type="button"
+              >
+                Continue to Review
+              </Button>
+            </div>
+          </section>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <ExerciseSelectionMovementPatternCoveragePanel
+          movementPatternCoverage={movementPatternCoverage}
+        />
+        <ExerciseSelectionAutomaticRulesPanel
+          rulesAppliedAutomatically={rulesAppliedAutomatically}
+        />
         {readOnlyExercisesStatusCards.map((statusCard) => (
           <PlanBuilderStepStatusCard
             body={statusCard.body}
@@ -2398,6 +2640,9 @@ function ReviewPlaceholderStep() {
             Exercises are confirmed. This placeholder keeps the final pre-generation route real
             without introducing full Review content yet.
           </p>
+          <p className="mt-3 max-w-2xl text-sm text-stone-600">
+            Exercise order and rest rules will be applied automatically during generation.
+          </p>
 
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button asChild variant="outline">
@@ -2415,6 +2660,174 @@ function ReviewPlaceholderStep() {
         />
       </div>
     </div>
+  );
+}
+
+function ExerciseSelectionPreferencesEditor({
+  description,
+  emptyState,
+  inputId,
+  inputLabel,
+  itemAriaLabel,
+  items,
+  listId,
+  onAdd,
+  onInputChange,
+  onRemove,
+  pendingValue,
+  validationError,
+}: ExerciseSelectionPreferencesEditorProps) {
+  const validationMessageId = `${inputId}-validation-message`;
+
+  return (
+    <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
+      <div>
+        <h3 className="text-xl font-black text-stone-950 sm:text-2xl">{inputLabel}</h3>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">{description}</p>
+      </div>
+
+      <form
+        className="mt-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onAdd(listId);
+        }}
+      >
+        <label className="text-sm font-bold text-stone-900" htmlFor={inputId}>
+          {inputLabel}
+        </label>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+          <input
+            aria-describedby={validationError ? validationMessageId : undefined}
+            aria-invalid={validationError ? "true" : undefined}
+            className={cn(
+              "min-h-11 flex-1 rounded-md border bg-white px-3 py-2 text-sm text-stone-950 placeholder:text-stone-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+              validationError
+                ? "border-[#d6462f] focus-visible:outline-[#d6462f]"
+                : "border-stone-900/15 focus-visible:outline-stone-950",
+            )}
+            id={inputId}
+            onChange={(event) => onInputChange(listId, event.currentTarget.value)}
+            placeholder="Add an exercise name"
+            type="text"
+            value={pendingValue}
+          />
+          <Button size="sm" type="submit" variant="outline">
+            Add
+          </Button>
+        </div>
+        {validationError ? (
+          <p className="mt-2 text-sm font-semibold text-[#b93725]" id={validationMessageId}>
+            {validationError}
+          </p>
+        ) : null}
+      </form>
+
+      <ul aria-label={itemAriaLabel} className="mt-5 grid gap-2.5">
+        {items.length > 0 ? (
+          items.map((item) => (
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3"
+              key={item.id}
+            >
+              <span className="text-sm font-semibold text-stone-950">{item.rawText}</span>
+              <Button
+                onClick={() => {
+                  void onRemove(listId, item.id);
+                }}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Remove
+              </Button>
+            </li>
+          ))
+        ) : (
+          <li className="rounded-lg border border-dashed border-stone-900/12 bg-[#fcfaf6] px-4 py-3 text-sm font-medium text-stone-600">
+            {emptyState}
+          </li>
+        )}
+      </ul>
+    </section>
+  );
+}
+
+function ExerciseSelectionMovementPatternCoveragePanel({
+  movementPatternCoverage,
+}: {
+  movementPatternCoverage: ReadonlyArray<MovementPatternCoverageGroup>;
+}) {
+  return (
+    <section className="rounded-lg border border-stone-900/10 bg-white/78 p-5">
+      <h3 className="text-lg font-black text-stone-950">Movement-pattern coverage</h3>
+      <p className="mt-2 text-sm leading-6 text-stone-600">
+        Derived from the saved Training Split, the Balanced strategy, and your current Weekly Rep
+        Targets.
+      </p>
+
+      <div className="mt-4 grid gap-3">
+        {movementPatternCoverage.map((group) => (
+          <article
+            className="rounded-lg border border-stone-900/10 bg-[#fcfaf6] p-4"
+            key={group.id}
+          >
+            <h4 className="text-sm font-black uppercase tracking-wide text-stone-950">
+              {group.title}
+            </h4>
+            <p className="mt-2 text-sm leading-6 text-stone-600">{group.sessionBias}</p>
+            <ul aria-label={group.title} className="mt-3 grid gap-2">
+              {group.patterns.map((pattern) => (
+                <li
+                  className="flex items-start justify-between gap-3 rounded-lg border border-stone-900/8 bg-white px-3 py-2"
+                  key={pattern.id}
+                >
+                  <span className="text-sm font-semibold text-stone-950">{pattern.label}</span>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide",
+                      pattern.isDirectlyTargeted
+                        ? "bg-[#e8f6f3] text-[#0d6d67]"
+                        : "bg-[#f4f0e8] text-[#5c6d73]",
+                    )}
+                  >
+                    {pattern.isDirectlyTargeted ? "Direct target" : "Accessory support"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExerciseSelectionAutomaticRulesPanel({
+  rulesAppliedAutomatically,
+}: {
+  rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
+}) {
+  return (
+    <section className="rounded-lg border border-stone-900/10 bg-white/78 p-5">
+      <h3 className="text-lg font-black text-stone-950">Rules applied automatically</h3>
+      <p className="mt-2 text-sm leading-6 text-stone-600">
+        These guide later Training Plan generation. Rest times adapt to exercise demand and the
+        selected Rep Range Style.
+      </p>
+
+      <ul className="mt-4 grid gap-2.5">
+        {rulesAppliedAutomatically.map((rule) => (
+          <li
+            className="rounded-lg border border-stone-900/10 bg-[#fcfaf6] px-4 py-3"
+            key={rule.id}
+          >
+            <p className="text-sm font-bold text-stone-950">{rule.label}</p>
+            <p className="mt-1 text-sm leading-6 text-stone-600">{rule.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -2819,6 +3232,27 @@ type TrainingFrequencyOptionRadioProps = {
   onSelect: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
   option: TrainingFrequencyOption;
 };
+
+function clearExerciseSelectionValidationError(
+  validationErrors: ExerciseSelectionPreferenceValidationErrors,
+  inputId: ExerciseSelectionPendingInputId,
+): ExerciseSelectionPreferenceValidationErrors {
+  if (!(inputId in validationErrors)) {
+    return validationErrors;
+  }
+
+  const nextValidationErrors = { ...validationErrors };
+
+  delete nextValidationErrors[inputId];
+
+  return nextValidationErrors;
+}
+
+function getExerciseSelectionPendingInputId(
+  listId: ExerciseSelectionPreferenceListId,
+): ExerciseSelectionPendingInputId {
+  return listId === "preferredExercises" ? "preferredExercise" : "avoidedExercise";
+}
 
 function getSelectableOptionState(isSelected: boolean): SelectableOptionState {
   return isSelected ? "selected" : "unselected";

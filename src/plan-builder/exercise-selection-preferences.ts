@@ -32,12 +32,18 @@ export type ExerciseSelectionPreferenceItem = {
   matchedExerciseId?: string;
   rawText: string;
 };
+export type ExerciseSelectionPreferenceListId = "avoidedExercises" | "preferredExercises";
 export type ExerciseSelectionPreferences = {
   avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
   equipmentPreset: EquipmentPresetId;
   preferredExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
   strategy: ExerciseSelectionStrategyId;
 };
+export type ExerciseSelectionPendingInputId = "avoidedExercise" | "preferredExercise";
+export type ExerciseSelectionPendingInputs = Record<ExerciseSelectionPendingInputId, string>;
+export type ExerciseSelectionPreferenceValidationErrors = Partial<
+  Record<ExerciseSelectionPendingInputId, string>
+>;
 export type IncludedEquipment = {
   id: IncludedEquipmentId;
   label: string;
@@ -156,6 +162,10 @@ const movementPatternSessionBiasBySplit = {
 
 export const defaultExerciseSelectionStrategyId = "balanced" satisfies ExerciseSelectionStrategyId;
 export const defaultEquipmentPresetId = "full_gym" satisfies EquipmentPresetId;
+export const emptyExerciseSelectionPendingInputs = {
+  avoidedExercise: "",
+  preferredExercise: "",
+} as const satisfies ExerciseSelectionPendingInputs;
 
 export const exerciseSelectionStrategies = [
   {
@@ -347,6 +357,98 @@ function normalizeExerciseSelectionPreferenceItems(
   });
 }
 
+export function normalizeExerciseSelectionPreferenceText(rawText: string): string {
+  return rawText.trim().replace(/\s+/g, " ");
+}
+
+export function commitPendingExerciseSelectionPreferences({
+  createId,
+  exerciseSelectionPreferences,
+  pendingInputs,
+}: {
+  createId: () => string;
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+}): {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+  validationErrors: ExerciseSelectionPreferenceValidationErrors;
+} {
+  const validationErrors = getExerciseSelectionPreferenceValidationErrors({
+    exerciseSelectionPreferences,
+    pendingInputs,
+  });
+
+  if (Object.keys(validationErrors).length > 0) {
+    return {
+      exerciseSelectionPreferences,
+      pendingInputs,
+      validationErrors,
+    };
+  }
+
+  let nextExerciseSelectionPreferences = exerciseSelectionPreferences;
+
+  for (const definition of exerciseSelectionPendingInputDefinitions) {
+    const normalizedText = normalizeExerciseSelectionPreferenceText(
+      pendingInputs[definition.inputId],
+    );
+
+    if (!normalizedText) {
+      continue;
+    }
+
+    nextExerciseSelectionPreferences = {
+      ...nextExerciseSelectionPreferences,
+      [definition.listId]: [
+        ...nextExerciseSelectionPreferences[definition.listId],
+        { id: createId(), rawText: normalizedText },
+      ],
+    };
+  }
+
+  return {
+    exerciseSelectionPreferences: nextExerciseSelectionPreferences,
+    pendingInputs: {
+      avoidedExercise: "",
+      preferredExercise: "",
+    },
+    validationErrors: {},
+  };
+}
+
+export function isExerciseSelectionPreferencesConfirmationReady({
+  exerciseSelectionPreferences,
+  pendingInputs,
+}: {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+}): boolean {
+  return (
+    Object.keys(
+      getExerciseSelectionPreferenceValidationErrors({
+        exerciseSelectionPreferences,
+        pendingInputs,
+      }),
+    ).length === 0
+  );
+}
+
+export function removeExerciseSelectionPreferenceItem({
+  exerciseSelectionPreferences,
+  itemId,
+  listId,
+}: {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  itemId: string;
+  listId: ExerciseSelectionPreferenceListId;
+}): ExerciseSelectionPreferences {
+  return {
+    ...exerciseSelectionPreferences,
+    [listId]: exerciseSelectionPreferences[listId].filter((item) => item.id !== itemId),
+  };
+}
+
 function isExerciseSelectionPreferenceItemCandidate(value: unknown): value is {
   id: string;
   matchedExerciseId?: unknown;
@@ -372,4 +474,99 @@ function isVolumeTargetEnabled(
   const weeklyRepTarget = weeklyRepTargets.find((target) => target.muscleGroup === muscleGroup);
 
   return weeklyRepTarget?.isEnabled === true && weeklyRepTarget.target !== null;
+}
+
+const exerciseSelectionPendingInputDefinitions = [
+  {
+    inputId: "preferredExercise",
+    listId: "preferredExercises",
+    oppositeListId: "avoidedExercises",
+  },
+  {
+    inputId: "avoidedExercise",
+    listId: "avoidedExercises",
+    oppositeListId: "preferredExercises",
+  },
+] as const satisfies ReadonlyArray<{
+  inputId: ExerciseSelectionPendingInputId;
+  listId: ExerciseSelectionPreferenceListId;
+  oppositeListId: ExerciseSelectionPreferenceListId;
+}>;
+
+const exerciseSelectionPreferenceListLabels = {
+  avoidedExercises: "Avoided Exercises",
+  preferredExercises: "Preferred Exercises",
+} as const satisfies Record<ExerciseSelectionPreferenceListId, string>;
+
+function getExerciseSelectionPreferenceValidationErrors({
+  exerciseSelectionPreferences,
+  pendingInputs,
+}: {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  pendingInputs: ExerciseSelectionPendingInputs;
+}): ExerciseSelectionPreferenceValidationErrors {
+  const pendingComparisonKeys = {
+    avoidedExercise: getExerciseSelectionPreferenceComparisonKey(pendingInputs.avoidedExercise),
+    preferredExercise: getExerciseSelectionPreferenceComparisonKey(pendingInputs.preferredExercise),
+  } satisfies Record<ExerciseSelectionPendingInputId, string | null>;
+  const validationErrors: ExerciseSelectionPreferenceValidationErrors = {};
+
+  for (const definition of exerciseSelectionPendingInputDefinitions) {
+    const comparisonKey = pendingComparisonKeys[definition.inputId];
+
+    if (!comparisonKey) {
+      continue;
+    }
+
+    if (
+      listHasExerciseSelectionPreferenceComparisonKey({
+        comparisonKey,
+        items: exerciseSelectionPreferences[definition.listId],
+      })
+    ) {
+      validationErrors[definition.inputId] = `This exercise is already in ${
+        exerciseSelectionPreferenceListLabels[definition.listId]
+      }.`;
+      continue;
+    }
+
+    if (
+      listHasExerciseSelectionPreferenceComparisonKey({
+        comparisonKey,
+        items: exerciseSelectionPreferences[definition.oppositeListId],
+      }) ||
+      pendingComparisonKeys[getOppositeExerciseSelectionPendingInputId(definition.inputId)] ===
+        comparisonKey
+    ) {
+      validationErrors[definition.inputId] = `This exercise is already in ${
+        exerciseSelectionPreferenceListLabels[definition.oppositeListId]
+      }. Remove it there or change this entry.`;
+    }
+  }
+
+  return validationErrors;
+}
+
+function getExerciseSelectionPreferenceComparisonKey(rawText: string): string | null {
+  const normalizedText = normalizeExerciseSelectionPreferenceText(rawText);
+
+  return normalizedText ? normalizedText.toLocaleLowerCase() : null;
+}
+
+function listHasExerciseSelectionPreferenceComparisonKey({
+  comparisonKey,
+  items,
+}: {
+  comparisonKey: string;
+  items: ReadonlyArray<ExerciseSelectionPreferenceItem>;
+}): boolean {
+  return items.some(
+    (item) => getExerciseSelectionPreferenceComparisonKey(item.rawText) === comparisonKey,
+  );
+}
+
+function getOppositeExerciseSelectionPendingInputId(
+  inputId: ExerciseSelectionPendingInputId,
+): ExerciseSelectionPendingInputId {
+  return inputId === "preferredExercise" ? "avoidedExercise" : "preferredExercise";
 }

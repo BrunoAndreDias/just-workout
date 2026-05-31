@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  commitPendingExerciseSelectionPreferences,
   createDefaultExerciseSelectionPreferences,
   deriveAutomaticExerciseSelectionRules,
   deriveMovementPatternCoverage,
   getEquipmentPreset,
+  isExerciseSelectionPreferencesConfirmationReady,
   normalizeExerciseSelectionPreferences,
+  removeExerciseSelectionPreferenceItem,
 } from "./exercise-selection-preferences";
 import {
   createRecommendedTrainingVolumeConfiguration,
@@ -162,6 +165,121 @@ describe("exercise selection preferences", () => {
       sessionBias:
         "Covered when legs sessions come up in the rotation, with accessory work added as needed.",
       title: "Lower body movement patterns",
+    });
+  });
+
+  it("auto-commits valid pending exercise inputs with normalized text and clears the pending draft", () => {
+    const result = commitPendingExerciseSelectionPreferences({
+      createId: (() => {
+        let index = 0;
+
+        return () => `exercise-${++index}`;
+      })(),
+      exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
+      pendingInputs: {
+        avoidedExercise: "  Upright   row  ",
+        preferredExercise: " Incline   dumbbell press ",
+      },
+    });
+
+    expect(result).toEqual({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: "exercise-2", rawText: "Upright row" }],
+        equipmentPreset: "full_gym",
+        preferredExercises: [{ id: "exercise-1", rawText: "Incline dumbbell press" }],
+        strategy: "balanced",
+      },
+      pendingInputs: {
+        avoidedExercise: "",
+        preferredExercise: "",
+      },
+      validationErrors: {},
+    });
+  });
+
+  it("blocks exact duplicates and Preferred/Avoided conflicts after trimming and case-folding", () => {
+    const exerciseSelectionPreferences = normalizeExerciseSelectionPreferences({
+      avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
+      preferredExercises: [{ id: "preferred-1", rawText: "Incline Dumbbell Press" }],
+    });
+
+    expect(
+      commitPendingExerciseSelectionPreferences({
+        createId: () => "unused",
+        exerciseSelectionPreferences,
+        pendingInputs: {
+          avoidedExercise: "",
+          preferredExercise: "  incline dumbbell press ",
+        },
+      }),
+    ).toEqual({
+      exerciseSelectionPreferences,
+      pendingInputs: {
+        avoidedExercise: "",
+        preferredExercise: "  incline dumbbell press ",
+      },
+      validationErrors: {
+        preferredExercise: "This exercise is already in Preferred Exercises.",
+      },
+    });
+
+    expect(
+      commitPendingExerciseSelectionPreferences({
+        createId: () => "unused",
+        exerciseSelectionPreferences,
+        pendingInputs: {
+          avoidedExercise: "  incline dumbbell press ",
+          preferredExercise: "",
+        },
+      }),
+    ).toEqual({
+      exerciseSelectionPreferences,
+      pendingInputs: {
+        avoidedExercise: "  incline dumbbell press ",
+        preferredExercise: "",
+      },
+      validationErrors: {
+        avoidedExercise:
+          "This exercise is already in Preferred Exercises. Remove it there or change this entry.",
+      },
+    });
+  });
+
+  it("reports confirmation readiness from the pending draft state and removes committed items by id", () => {
+    const exerciseSelectionPreferences = normalizeExerciseSelectionPreferences({
+      avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
+      preferredExercises: [{ id: "preferred-1", rawText: "Incline Dumbbell Press" }],
+    });
+
+    expect(
+      isExerciseSelectionPreferencesConfirmationReady({
+        exerciseSelectionPreferences,
+        pendingInputs: {
+          avoidedExercise: "Incline dumbbell press",
+          preferredExercise: "",
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isExerciseSelectionPreferencesConfirmationReady({
+        exerciseSelectionPreferences,
+        pendingInputs: {
+          avoidedExercise: "",
+          preferredExercise: "Chest-supported row",
+        },
+      }),
+    ).toBe(true);
+    expect(
+      removeExerciseSelectionPreferenceItem({
+        exerciseSelectionPreferences,
+        itemId: "preferred-1",
+        listId: "preferredExercises",
+      }),
+    ).toEqual({
+      avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [],
+      strategy: "balanced",
     });
   });
 });
