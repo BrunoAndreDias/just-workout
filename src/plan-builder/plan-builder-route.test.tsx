@@ -738,12 +738,15 @@ describe("PlanBuilderRoute", () => {
       const rowLabel = within(table).getByText(label);
       const row = rowLabel.closest("tr");
 
-      expect(row).not.toBeNull();
-      expect(within(row as HTMLTableRowElement).getByText(reps)).toBeVisible();
-      expect(within(row as HTMLTableRowElement).getByText(sets)).toBeVisible();
-      expect(within(row as HTMLTableRowElement).getByText(status)).toBeVisible();
+      if (!(row instanceof HTMLTableRowElement)) {
+        throw new Error(`Expected ${label} to render inside a table row.`);
+      }
+
+      expect(within(row).getByText(reps)).toBeVisible();
+      expect(within(row).getByText(sets)).toBeVisible();
+      expect(within(row).getByText(status)).toBeVisible();
       expect(
-        within(row as HTMLTableRowElement).getByRole("button", {
+        within(row).getByRole("button", {
           name: new RegExp(`adjust ${label} target`, "i"),
         }),
       ).toBeDisabled();
@@ -751,12 +754,11 @@ describe("PlanBuilderRoute", () => {
 
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
-    expect(blueprint.weeklyRepTargets?.every((target) => !("estimatedSetRange" in target))).toBe(
-      true,
-    );
-    expect(blueprint.weeklyRepTargets?.every((target) => !("estimatedSetsPerWeek" in target))).toBe(
-      true,
-    );
+    expect(blueprint.weeklyRepTargets).not.toBeNull();
+    for (const target of blueprint.weeklyRepTargets ?? []) {
+      expect(target).not.toHaveProperty("estimatedSetRange");
+      expect(target).not.toHaveProperty("estimatedSetsPerWeek");
+    }
   });
 
   it("navigates back from Weekly volume targets to Rep ranges", async () => {

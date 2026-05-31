@@ -60,6 +60,7 @@ import {
   unsupportedTrainingSplitCategories,
 } from "./training-split";
 import {
+  type EstimatedSetRange,
   estimateWeeklySetRangeForTarget,
   isTrainingVolumeConfiguration,
   type VolumeMuscleGroupId,
@@ -228,14 +229,14 @@ type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate";
 
 type WeeklyVolumeTargetRowDefinition = {
   label: string;
-  muscleGroup: VolumeMuscleGroupId;
-  status: string;
-  tone: WeeklyVolumeTargetStatusTone;
+  muscleGroupId: VolumeMuscleGroupId;
+  statusLabel: string;
+  statusTone: WeeklyVolumeTargetStatusTone;
 };
 
 type WeeklyVolumeTargetDisplayRow = WeeklyVolumeTargetRowDefinition & {
   estimatedSetRangeLabel: string;
-  targetLabel: string;
+  weeklyRepTargetLabel: string;
 };
 
 const weeklyVolumeTargetStatusStyles = {
@@ -244,48 +245,51 @@ const weeklyVolumeTargetStatusStyles = {
   moderate: "bg-[#eef3fb] text-[#315d8a]",
 } as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
 
+const weeklyVolumeTargetColumnHeaderClassName =
+  "px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500";
+
 const requiredWeeklyVolumeTargetRowDefinitions = [
   {
     label: "Chest",
-    muscleGroup: "chest",
-    status: "Main target",
-    tone: "main-target",
+    muscleGroupId: "chest",
+    statusLabel: "Main target",
+    statusTone: "main-target",
   },
   {
     label: "Back",
-    muscleGroup: "back",
-    status: "Main target",
-    tone: "main-target",
+    muscleGroupId: "back",
+    statusLabel: "Main target",
+    statusTone: "main-target",
   },
   {
     label: "Shoulders",
-    muscleGroup: "shoulders",
-    status: "Moderate",
-    tone: "moderate",
+    muscleGroupId: "shoulders",
+    statusLabel: "Moderate",
+    statusTone: "moderate",
   },
   {
     label: "Quads",
-    muscleGroup: "quads",
-    status: "Main target",
-    tone: "main-target",
+    muscleGroupId: "quads",
+    statusLabel: "Main target",
+    statusTone: "main-target",
   },
   {
     label: "Hamstrings/Glutes",
-    muscleGroup: "hamstrings",
-    status: "Main target",
-    tone: "main-target",
+    muscleGroupId: "hamstrings",
+    statusLabel: "Main target",
+    statusTone: "main-target",
   },
   {
     label: "Biceps",
-    muscleGroup: "biceps",
-    status: "Accessory",
-    tone: "accessory",
+    muscleGroupId: "biceps",
+    statusLabel: "Accessory",
+    statusTone: "accessory",
   },
   {
     label: "Triceps",
-    muscleGroup: "triceps",
-    status: "Accessory",
-    tone: "accessory",
+    muscleGroupId: "triceps",
+    statusLabel: "Accessory",
+    statusTone: "accessory",
   },
 ] as const satisfies ReadonlyArray<WeeklyVolumeTargetRowDefinition>;
 
@@ -444,6 +448,15 @@ type RepRangeStyleTargetsProps = {
 type WeeklyVolumeTargetsStepProps = {
   repRangeStyle: RepRangeStyle | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
+
+type RequiredWeeklyRepTargetsRowsProps = {
+  rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
+};
+
+type WeeklyVolumeTargetStatusBadgeProps = {
+  label: string;
+  tone: WeeklyVolumeTargetStatusTone;
 };
 
 export function PlanBuilderRoute() {
@@ -1223,91 +1236,7 @@ function WeeklyVolumeTargetsStep({
             title="Weekly targets note"
           />
 
-          <section aria-labelledby="required-weekly-rep-targets-title" className="mt-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h4
-                  className="text-lg font-black text-stone-950 sm:text-xl"
-                  id="required-weekly-rep-targets-title"
-                >
-                  Required weekly rep targets
-                </h4>
-                <p className="mt-1 max-w-2xl text-sm text-stone-600">
-                  Reps/week is the saved Training Volume target. Estimated sets/week is display
-                  context only.
-                </p>
-              </div>
-            </div>
-
-            {requiredWeeklyVolumeTargetRows.length > 0 ? (
-              <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
-                <table
-                  aria-label="Required Weekly Rep Targets"
-                  className="min-w-full border-collapse text-left"
-                >
-                  <thead className="bg-[#f4f0e8]">
-                    <tr>
-                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Muscle group
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Weekly rep target
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Estimated sets/week
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-                        Adjustment
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-900/10 bg-white/88">
-                    {requiredWeeklyVolumeTargetRows.map((row) => (
-                      <tr className="align-top" key={row.muscleGroup}>
-                        <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
-                          {row.label}
-                        </th>
-                        <td className="px-4 py-4 text-sm font-semibold text-stone-900">
-                          {row.targetLabel}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-semibold text-stone-900">
-                          {row.estimatedSetRangeLabel}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={cn(
-                              "inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
-                              weeklyVolumeTargetStatusStyles[row.tone],
-                            )}
-                          >
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <Button
-                            aria-label={`Adjust ${row.label} target`}
-                            className="px-0 text-stone-500 disabled:opacity-100"
-                            disabled
-                            size="sm"
-                            variant="ghost"
-                          >
-                            Adjust
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm font-semibold text-stone-600">
-                Loading weekly rep targets...
-              </p>
-            )}
-          </section>
+          <RequiredWeeklyRepTargetsSection rows={requiredWeeklyVolumeTargetRows} />
 
           <section aria-labelledby="weekly-volume-how-it-works-title" className="mt-5">
             <h4
@@ -1344,6 +1273,96 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
+function RequiredWeeklyRepTargetsSection({ rows }: RequiredWeeklyRepTargetsRowsProps) {
+  return (
+    <section aria-labelledby="required-weekly-rep-targets-title" className="mt-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h4
+            className="text-lg font-black text-stone-950 sm:text-xl"
+            id="required-weekly-rep-targets-title"
+          >
+            Required weekly rep targets
+          </h4>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+            Reps/week is the saved Training Volume target. Estimated sets/week is display context
+            only.
+          </p>
+        </div>
+      </div>
+
+      {rows.length > 0 ? (
+        <RequiredWeeklyRepTargetsTable rows={rows} />
+      ) : (
+        <p className="mt-3 text-sm font-semibold text-stone-600">Loading weekly rep targets...</p>
+      )}
+    </section>
+  );
+}
+
+function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsProps) {
+  return (
+    <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
+      <table
+        aria-label="Required Weekly Rep Targets"
+        className="min-w-full border-collapse text-left"
+      >
+        <thead className="bg-[#f4f0e8]">
+          <tr>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Muscle group</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Weekly rep target</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Estimated sets/week</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Status</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Adjustment</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-stone-900/10 bg-white/88">
+          {rows.map((row) => (
+            <tr className="align-top" key={row.muscleGroupId}>
+              <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
+                {row.label}
+              </th>
+              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                {row.weeklyRepTargetLabel}
+              </td>
+              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                {row.estimatedSetRangeLabel}
+              </td>
+              <td className="px-4 py-4">
+                <WeeklyVolumeTargetStatusBadge label={row.statusLabel} tone={row.statusTone} />
+              </td>
+              <td className="px-4 py-4">
+                <Button
+                  aria-label={`Adjust ${row.label} target`}
+                  className="px-0 text-stone-500 disabled:opacity-100"
+                  disabled
+                  size="sm"
+                  variant="ghost"
+                >
+                  Adjust
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function WeeklyVolumeTargetStatusBadge({ label, tone }: WeeklyVolumeTargetStatusBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+        weeklyVolumeTargetStatusStyles[tone],
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 function getRequiredWeeklyVolumeTargetRows({
   repRangeStyle,
   weeklyRepTargets,
@@ -1352,13 +1371,15 @@ function getRequiredWeeklyVolumeTargetRows({
     return [];
   }
 
-  return requiredWeeklyVolumeTargetRowDefinitions.flatMap((definition) => {
+  const rows: Array<WeeklyVolumeTargetDisplayRow> = [];
+
+  for (const definition of requiredWeeklyVolumeTargetRowDefinitions) {
     const weeklyRepTarget = weeklyRepTargets.find(
-      ({ muscleGroup }) => muscleGroup === definition.muscleGroup,
+      ({ muscleGroup }) => muscleGroup === definition.muscleGroupId,
     );
 
     if (!weeklyRepTarget) {
-      return [];
+      continue;
     }
 
     const row = createWeeklyVolumeTargetDisplayRow({
@@ -1367,8 +1388,12 @@ function getRequiredWeeklyVolumeTargetRows({
       weeklyRepTarget,
     });
 
-    return row ? [row] : [];
-  });
+    if (row) {
+      rows.push(row);
+    }
+  }
+
+  return rows;
 }
 
 function createWeeklyVolumeTargetDisplayRow({
@@ -1380,23 +1405,29 @@ function createWeeklyVolumeTargetDisplayRow({
   repRangeStyle: RepRangeStyle;
   weeklyRepTarget: WeeklyRepTarget;
 }): WeeklyVolumeTargetDisplayRow | null {
+  const weeklyRepTargetValue = weeklyRepTarget.target;
+
+  if (weeklyRepTargetValue === null) {
+    return null;
+  }
+
   const estimatedSetRange = estimateWeeklySetRangeForTarget({
     volumeEstimationRepRange: repRangeStyle.volumeEstimationRepRange,
     weeklyRepTarget,
   });
 
-  if (!estimatedSetRange || weeklyRepTarget.target === null) {
+  if (!estimatedSetRange) {
     return null;
   }
 
   return {
     ...definition,
     estimatedSetRangeLabel: formatEstimatedSetRange(estimatedSetRange),
-    targetLabel: `${weeklyRepTarget.target} reps/week`,
+    weeklyRepTargetLabel: `${weeklyRepTargetValue} reps/week`,
   };
 }
 
-function formatEstimatedSetRange({ max, min }: { max: number; min: number }): string {
+function formatEstimatedSetRange({ max, min }: EstimatedSetRange): string {
   return `${min}-${max} sets/week`;
 }
 
