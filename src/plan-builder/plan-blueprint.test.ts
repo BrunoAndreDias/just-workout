@@ -48,11 +48,14 @@ describe("plan blueprint", () => {
       split: null,
       repRanges: null,
       volumePreset: null,
+      volumePresetSource: null,
+      weeklyRepTargets: null,
       equipment: null,
       confirmedBuilderSteps: {
         frequency: false,
         repRanges: false,
         split: false,
+        volume: false,
       },
     });
   });
@@ -120,6 +123,10 @@ describe("plan blueprint", () => {
       id: "balanced_hypertrophy",
       isRecommended: true,
       title: "Balanced hypertrophy",
+      volumeEstimationRepRange: {
+        max: 12,
+        min: 8,
+      },
     });
   });
 
@@ -129,6 +136,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -168,7 +176,8 @@ describe("plan blueprint", () => {
       equipment: "full-gym",
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-full-body",
-      volumePreset: "standard",
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
     });
 
     expect(
@@ -259,6 +268,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: false,
+        volume: false,
       },
       trainingFrequencyDaysPerWeek: 4,
     });
@@ -268,6 +278,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       split: "upper-lower-4-day",
     });
@@ -280,6 +291,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -301,6 +313,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       repRanges: "balanced_hypertrophy",
     });
@@ -310,6 +323,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: true,
         split: true,
+        volume: false,
       },
       repRanges: "balanced_hypertrophy",
     });
@@ -322,6 +336,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       split: "upper-lower-full-body",
       trainingFrequencyDaysPerWeek: 5,
@@ -331,6 +346,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -341,6 +357,7 @@ describe("plan blueprint", () => {
         frequency: true,
         repRanges: true,
         split: true,
+        volume: false,
       },
       repRanges: "powerbuilding" as never,
       split: "upper-lower-4-day",

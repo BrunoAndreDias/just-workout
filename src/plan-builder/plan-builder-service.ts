@@ -3,6 +3,7 @@ import {
   confirmTrainingFrequency,
   confirmTrainingSplit,
   createDefaultPlanBlueprint,
+  initializeTrainingVolume as initializeTrainingVolumeState,
   normalizePlanBlueprint,
   type RepRangeStyleId,
   selectRepRangeStyle,
@@ -62,6 +63,10 @@ type ConfirmTrainingSplitOptions = {
 
 type ConfirmRepRangeStyleOptions = {
   repRangeStyle: RepRangeStyleId;
+  timestamp?: string;
+};
+
+type InitializeTrainingVolumeOptions = {
   timestamp?: string;
 };
 
@@ -152,11 +157,25 @@ async function confirmSelectedRepRangeStyle({
   );
 }
 
+async function initializeTrainingVolume({
+  timestamp = new Date().toISOString(),
+}: InitializeTrainingVolumeOptions = {}) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    initializeTrainingVolumeState({
+      blueprint,
+      timestamp,
+    }),
+  );
+}
+
 export const planBuilderService = {
   confirmSelectedRepRangeStyle,
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
   getOrCreatePlanBlueprint,
+  initializeTrainingVolume,
   updateRepRangeStyle,
   updateTrainingSplit,
   updateTrainingFrequency,

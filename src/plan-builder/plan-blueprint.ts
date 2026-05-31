@@ -4,6 +4,16 @@ import {
   isTrainingSplitCompatible,
   summarizeTrainingSplit,
 } from "./training-split";
+import {
+  createRecommendedTrainingVolumeConfiguration,
+  getVolumePreset,
+  isVolumePresetId,
+  isVolumePresetSource,
+  type VolumeEstimationRepRange,
+  type VolumePresetId,
+  type VolumePresetSource,
+  type WeeklyRepTarget,
+} from "./training-volume";
 
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
@@ -30,6 +40,7 @@ export type RepRangeStyle = {
     reps: string;
   }>;
   title: string;
+  volumeEstimationRepRange: VolumeEstimationRepRange;
 };
 export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume";
 export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges";
@@ -38,6 +49,7 @@ type PlanBuilderConfirmedSteps = {
   frequency: boolean;
   repRanges: boolean;
   split: boolean;
+  volume: boolean;
 };
 
 export type PlanBlueprint = {
@@ -48,7 +60,9 @@ export type PlanBlueprint = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
   split: TrainingSplitId | null;
   repRanges: RepRangeStyleId | null;
-  volumePreset: string | null;
+  volumePreset: VolumePresetId | null;
+  volumePresetSource: VolumePresetSource | null;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
   equipment: string | null;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
 };
@@ -64,6 +78,7 @@ export type PlanBlueprintSummary = {
   trainingFrequency: string;
   trainingFrequencyStatus: "Completed";
   trainingGoal: string;
+  volumePreset: string;
   weeklyRhythm: string;
 };
 
@@ -129,6 +144,7 @@ const defaultConfirmedBuilderSteps = {
   frequency: false,
   repRanges: false,
   split: false,
+  volume: false,
 } satisfies PlanBuilderConfirmedSteps;
 
 const defaultPlanBlueprintValues = {
@@ -137,6 +153,8 @@ const defaultPlanBlueprintValues = {
   split: null,
   repRanges: null,
   volumePreset: null,
+  volumePresetSource: null,
+  weeklyRepTargets: null,
   equipment: null,
   confirmedBuilderSteps: defaultConfirmedBuilderSteps,
 } satisfies Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt">;
@@ -170,6 +188,10 @@ export const repRangeStyles = [
       { label: "Accessories", reps: "8-12 reps" },
     ],
     title: repRangeStyleLabels.strength_leaning,
+    volumeEstimationRepRange: {
+      max: 10,
+      min: 6,
+    },
   },
   {
     description: "A strong default for building muscle while still progressing on main lifts.",
@@ -187,6 +209,10 @@ export const repRangeStyles = [
       { label: "Accessories", reps: "10-15 reps" },
     ],
     title: repRangeStyleLabels.balanced_hypertrophy,
+    volumeEstimationRepRange: {
+      max: 12,
+      min: 8,
+    },
   },
   {
     description: "Higher reps with slightly lighter loads and more controlled work.",
@@ -204,6 +230,10 @@ export const repRangeStyles = [
       { label: "Accessories", reps: "12-20 reps" },
     ],
     title: repRangeStyleLabels.controlled_higher_reps,
+    volumeEstimationRepRange: {
+      max: 15,
+      min: 10,
+    },
   },
 ] as const satisfies ReadonlyArray<RepRangeStyle>;
 
@@ -232,6 +262,7 @@ const planBlueprintSummaryFallbacks = {
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
   repRanges: "Choose Rep ranges",
   split: "Choose a Training Split",
+  volumePreset: "Not chosen yet",
 } as const;
 
 const trainingFrequencyRecommendations = {
@@ -330,8 +361,23 @@ export function normalizePlanBlueprint(
 ): PlanBlueprint {
   return {
     ...blueprint,
+    volumePreset: isVolumePresetId(blueprint.volumePreset) ? blueprint.volumePreset : null,
+    volumePresetSource: isVolumePresetSource(blueprint.volumePresetSource)
+      ? blueprint.volumePresetSource
+      : null,
+    weeklyRepTargets: Array.isArray(blueprint.weeklyRepTargets) ? blueprint.weeklyRepTargets : null,
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
   };
+}
+
+export function hasTrainingVolumeConfiguration(
+  blueprint: Pick<PlanBlueprint, "volumePreset" | "volumePresetSource" | "weeklyRepTargets">,
+): boolean {
+  return (
+    isVolumePresetId(blueprint.volumePreset) &&
+    isVolumePresetSource(blueprint.volumePresetSource) &&
+    Array.isArray(blueprint.weeklyRepTargets)
+  );
 }
 
 export function isFrequencyStepComplete(
@@ -475,8 +521,33 @@ export function selectRepRangeStyle({
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
       repRanges: isSameRepRangeStyle ? confirmedBuilderSteps.repRanges : false,
+      volume: isSameRepRangeStyle ? confirmedBuilderSteps.volume : false,
     },
     repRanges: repRangeStyle,
+    updatedAt: timestamp,
+  };
+}
+
+type InitializeTrainingVolumeOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+};
+
+export function initializeTrainingVolume({
+  blueprint,
+  timestamp,
+}: InitializeTrainingVolumeOptions): PlanBlueprint {
+  if (hasTrainingVolumeConfiguration(blueprint)) {
+    return blueprint;
+  }
+
+  return {
+    ...blueprint,
+    ...createRecommendedTrainingVolumeConfiguration(),
+    confirmedBuilderSteps: {
+      ...getConfirmedBuilderSteps(blueprint),
+      volume: false,
+    },
     updatedAt: timestamp,
   };
 }
@@ -549,6 +620,9 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
   const hasRepRangeStyle = selectedRepRangeStyleId !== null;
+  const selectedVolumePresetId = isVolumePresetId(blueprint.volumePreset)
+    ? blueprint.volumePreset
+    : null;
 
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
@@ -563,6 +637,9 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     trainingGoal: formatTrainingGoal(blueprint.trainingGoal),
     trainingFrequency: formatTrainingFrequency(blueprint.trainingFrequencyDaysPerWeek),
     trainingFrequencyStatus: "Completed",
+    volumePreset: selectedVolumePresetId
+      ? formatVolumePreset(selectedVolumePresetId)
+      : planBlueprintSummaryFallbacks.volumePreset,
     weeklyRhythm: splitSummary?.weeklyRhythm ?? pendingSplitDetail,
   };
 }
@@ -609,6 +686,10 @@ function formatRepRangeStyle(repRangeStyleId: RepRangeStyleId): string {
   return repRangeStyleLabels[repRangeStyleId];
 }
 
+function formatVolumePreset(volumePresetId: VolumePresetId): string {
+  return getVolumePreset(volumePresetId).title;
+}
+
 function formatTrainingFrequency(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): string {
@@ -642,6 +723,7 @@ function getConfirmedBuilderSteps({
     frequency: confirmedBuilderSteps?.frequency === true,
     repRanges: confirmedBuilderSteps?.repRanges === true,
     split: confirmedBuilderSteps?.split === true,
+    volume: confirmedBuilderSteps?.volume === true,
   };
 }
 

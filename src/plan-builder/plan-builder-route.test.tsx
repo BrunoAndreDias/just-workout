@@ -373,6 +373,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         repRanges: false,
         split: false,
+        volume: false,
       });
     });
   });
@@ -386,6 +387,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         repRanges: false,
         split: false,
+        volume: false,
       },
       trainingFrequencyDaysPerWeek: 6 as TrainingFrequencyDaysPerWeek,
       updatedAt: "2026-05-30T11:35:00.000Z",
@@ -489,6 +491,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       });
     });
   });
@@ -512,6 +515,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         split: true,
         repRanges: true,
+        volume: false,
       });
     });
   });
@@ -525,6 +529,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         repRanges: false,
         split: true,
+        volume: false,
       },
       split: "upper-lower-full-body",
       trainingFrequencyDaysPerWeek: 5,
@@ -567,6 +572,7 @@ describe("PlanBuilderRoute", () => {
         frequency: true,
         repRanges: true,
         split: true,
+        volume: false,
       },
       repRanges: "powerbuilding" as never,
       split: "upper-lower-4-day",
@@ -588,10 +594,52 @@ describe("PlanBuilderRoute", () => {
           frequency: true,
           repRanges: false,
           split: true,
+          volume: false,
         },
         repRanges: "balanced_hypertrophy",
       });
     });
+  });
+
+  it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:00.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    expect(await screen.findByRole("heading", { name: /training volume/i })).toBeVisible();
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: true,
+          volume: false,
+        },
+        volumePreset: "balanced",
+        volumePresetSource: "recommended_default",
+        weeklyRepTargets: [
+          { muscleGroup: "chest", source: "preset", target: 90 },
+          { muscleGroup: "back", source: "preset", target: 90 },
+          { muscleGroup: "quads", source: "preset", target: 90 },
+          { muscleGroup: "hamstrings", source: "preset", target: 90 },
+          { muscleGroup: "shoulders", source: "preset", target: 45 },
+          { muscleGroup: "biceps", source: "preset", target: 45 },
+          { muscleGroup: "triceps", source: "preset", target: 45 },
+          { isEnabled: false, muscleGroup: "calves", source: "preset" },
+          { isEnabled: false, muscleGroup: "abs", source: "preset" },
+        ],
+      });
+    });
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "Balanced",
+      ),
+    ).toBeVisible();
   });
 
   it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {

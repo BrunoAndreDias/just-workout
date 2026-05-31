@@ -32,7 +32,9 @@ import {
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   getValidRepRangeStyleId,
+  hasTrainingVolumeConfiguration,
   hasValidTrainingFrequency,
+  initializeTrainingVolume,
   type PlanBlueprint,
   type PlanBlueprintSummary,
   type RepRangeStyle,
@@ -99,7 +101,7 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     label: "Rep ranges",
   },
   {
-    getValue: () => "Not chosen yet",
+    getValue: (summary) => summary.volumePreset,
     icon: List,
     label: "Volume preset",
   },
@@ -225,6 +227,10 @@ type TrainingSplitMutationVariables = {
 
 type RepRangeStyleMutationVariables = {
   repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
+type TimestampMutationVariables = {
   timestamp: string;
 };
 
@@ -502,7 +508,18 @@ export function PlanBuilderRepRangesRoute() {
 }
 
 export function PlanBuilderVolumeRoute() {
-  const { summary } = usePlanBuilderBlueprint();
+  const { blueprint, summary } = usePlanBuilderBlueprint();
+  const { mutate: initializeDefaultTrainingVolume } = useInitializeTrainingVolumeMutation();
+
+  useEffect(() => {
+    if (!blueprint || hasTrainingVolumeConfiguration(blueprint)) {
+      return;
+    }
+
+    initializeDefaultTrainingVolume({
+      timestamp: new Date().toISOString(),
+    });
+  }, [blueprint, initializeDefaultTrainingVolume]);
 
   return (
     <PlanBuilderPage
@@ -627,6 +644,20 @@ function useUpdateRepRangeStyleMutation() {
       selectRepRangeStyle({
         blueprint,
         repRangeStyle,
+        timestamp,
+      }),
+  });
+}
+
+function useInitializeTrainingVolumeMutation() {
+  return usePlanBlueprintMutation<TimestampMutationVariables>({
+    mutationFn: ({ timestamp }) =>
+      planBuilderService.initializeTrainingVolume({
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { timestamp }) =>
+      initializeTrainingVolume({
+        blueprint,
         timestamp,
       }),
   });

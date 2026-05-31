@@ -49,12 +49,14 @@ describe("planBuilderService", () => {
         frequency: false,
         repRanges: false,
         split: false,
+        volume: false,
       },
     });
     expect(updatedBlueprint.confirmedBuilderSteps).toEqual({
       frequency: false,
       repRanges: false,
       split: false,
+      volume: false,
     });
   });
 
@@ -109,6 +111,89 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
+  it("initializes the recommended default Training Volume once and persists it", async () => {
+    await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:23:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:24:00.000Z",
+    });
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:25:00.000Z",
+    });
+
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-30T10:26:00.000Z",
+    });
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(initializedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(initializedBlueprint.updatedAt).toBe("2026-05-30T10:26:00.000Z");
+    expect(resumedBlueprint).toEqual(initializedBlueprint);
+  });
+
+  it("does not overwrite an existing Training Volume configuration when Volume re-initializes", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const configuredBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:27:00.000Z",
+      volumePreset: "conservative",
+      volumePresetSource: "user_selected",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 30 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(configuredBlueprint);
+
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-30T10:28:00.000Z",
+    });
+
+    expect(initializedBlueprint).toEqual(configuredBlueprint);
+  });
+
   it("clears an incompatible selected Training Split when the training frequency changes", async () => {
     await planBuilderService.updateTrainingSplit({
       timestamp: "2026-05-30T10:20:00.000Z",
@@ -152,21 +237,25 @@ describe("planBuilderService", () => {
       frequency: false,
       repRanges: false,
       split: false,
+      volume: false,
     });
     expect(confirmedFrequencyBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
       repRanges: false,
       split: false,
+      volume: false,
     });
     expect(blueprintWithSplit.confirmedBuilderSteps).toEqual({
       frequency: true,
       repRanges: false,
       split: false,
+      volume: false,
     });
     expect(confirmedSplitBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
       repRanges: false,
       split: true,
+      volume: false,
     });
   });
 
@@ -197,16 +286,19 @@ describe("planBuilderService", () => {
       frequency: true,
       repRanges: false,
       split: true,
+      volume: false,
     });
     expect(confirmedBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
       repRanges: true,
       split: true,
+      volume: false,
     });
     expect(reSavedBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
       repRanges: true,
       split: true,
+      volume: false,
     });
   });
 
