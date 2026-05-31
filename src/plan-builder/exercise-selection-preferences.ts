@@ -544,36 +544,36 @@ function getExerciseSelectionPreferenceValidationErrors({
   } satisfies Record<ExerciseSelectionPendingInputId, string | null>;
   const validationErrors: ExerciseSelectionPreferenceValidationErrors = {};
 
-  for (const definition of exerciseSelectionPendingInputDefinitions) {
-    const comparisonKey = pendingComparisonKeys[definition.inputId];
+  for (const { inputId, listId, oppositeListId } of exerciseSelectionPendingInputDefinitions) {
+    const comparisonKey = pendingComparisonKeys[inputId];
 
     if (!comparisonKey) {
       continue;
     }
 
-    if (
-      listHasExerciseSelectionPreferenceComparisonKey({
-        comparisonKey,
-        items: exerciseSelectionPreferences[definition.listId],
-      })
-    ) {
-      validationErrors[definition.inputId] = `This exercise is already in ${
-        exerciseSelectionPreferenceListLabels[definition.listId]
-      }.`;
+    const listLabel = exerciseSelectionPreferenceListLabels[listId];
+    const hasSameListDuplicate = listHasExerciseSelectionPreferenceComparisonKey({
+      comparisonKey,
+      items: exerciseSelectionPreferences[listId],
+    });
+
+    if (hasSameListDuplicate) {
+      validationErrors[inputId] = `This exercise is already in ${listLabel}.`;
       continue;
     }
 
-    if (
-      listHasExerciseSelectionPreferenceComparisonKey({
-        comparisonKey,
-        items: exerciseSelectionPreferences[definition.oppositeListId],
-      }) ||
-      pendingComparisonKeys[getOppositeExerciseSelectionPendingInputId(definition.inputId)] ===
-        comparisonKey
-    ) {
-      validationErrors[definition.inputId] = `This exercise is already in ${
-        exerciseSelectionPreferenceListLabels[definition.oppositeListId]
-      }. Remove it there or change this entry.`;
+    const oppositeInputId = getOppositeExerciseSelectionPendingInputId(inputId);
+    const oppositeListLabel = exerciseSelectionPreferenceListLabels[oppositeListId];
+    const hasCommittedOppositeListConflict = listHasExerciseSelectionPreferenceComparisonKey({
+      comparisonKey,
+      items: exerciseSelectionPreferences[oppositeListId],
+    });
+    const hasPendingOppositeInputConflict =
+      pendingComparisonKeys[oppositeInputId] === comparisonKey;
+
+    if (hasCommittedOppositeListConflict || hasPendingOppositeInputConflict) {
+      validationErrors[inputId] =
+        `This exercise is already in ${oppositeListLabel}. Remove it there or change this entry.`;
     }
   }
 
