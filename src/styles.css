@@ -24,9 +24,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    linear-gradient(135deg, rgba(214, 70, 47, 0.08), transparent 34rem),
-    radial-gradient(circle at 85% 10%, rgba(55, 126, 91, 0.14), transparent 26rem), #f4f0e8;
+  background: #faf8f4;
 }
 
 button,
@@ -38,30 +36,372 @@ input {
   min-height: 100vh;
 }
 
-@media (min-width: 1280px) {
-  body:has(.plan-builder-page) {
-    overflow: hidden;
+.app-shell-grid {
+  justify-content: stretch;
+}
+
+.plan-blueprint-header__fields {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.plan-blueprint-header,
+.plan-blueprint-header__fields,
+.plan-blueprint-header__field {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.plan-blueprint-header__field dd {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.plan-builder-right-rail {
+  display: none;
+}
+
+.training-frequency-large-screen-warning {
+  display: none;
+}
+
+.app-shell-navigation-link--large-only {
+  display: none;
+}
+
+@media (min-width: 1280px) and (max-width: 1599px) {
+  .app-shell-grid {
+    grid-template-columns: 17rem minmax(0, 1fr);
   }
 
-  .plan-builder-page {
-    height: 100dvh;
-    overflow: hidden;
+  .app-shell-brand-mark {
+    height: 2.75rem;
+    width: 2.75rem;
   }
 
-  .plan-builder-workspace-card {
-    height: 100dvh;
+  .app-shell-brand-icon {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .app-shell-brand-name {
+    font-size: 1.25rem;
   }
 }
 
-@media (min-width: 1280px) and (max-height: 960px) {
+@media (min-width: 1024px) and (max-width: 1279px) {
   .plan-builder-workspace-card {
-    padding-top: 1.75rem;
-    padding-bottom: 0.875rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1rem;
   }
 
   .plan-builder-title {
     font-size: 2.25rem;
-    line-height: 1.14;
+    line-height: 1.12;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.95rem;
+    line-height: 1.3rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.75rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.25rem;
+    width: 2.25rem;
+    font-size: 0.9rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.45rem;
+    font-size: 0.78rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-step-content {
+    margin-top: 0.8rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    padding: 1.25rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.65rem;
+    line-height: 1.16;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.625rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 8.5rem;
+    padding: 0.625rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2.6rem;
+    width: 2.6rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.05rem;
+    font-size: 0.95rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.55rem;
+    font-size: 0.95rem;
+    line-height: 1.15rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.35rem;
+    min-height: 2rem;
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.55rem 0.875rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 2.4rem;
+    width: 2.4rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.9rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.82rem;
+    line-height: 1.08rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.2rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 0.75rem;
+    margin-top: 0.625rem;
+    padding: 0.45rem 0.875rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-action-button {
+    height: 3rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) and (max-height: 650px) {
+  .plan-builder-workspace-card {
+    padding-top: 0.75rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .plan-builder-title {
+    font-size: 1.75rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 0.45rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 0.9rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 1.85rem;
+    width: 1.85rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.25rem;
+    font-size: 0.68rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 0.5rem;
+  }
+
+  .training-frequency-panel {
+    padding: 0.75rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.25rem;
+    line-height: 1.1;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.35rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.72rem;
+    line-height: 0.95rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+  }
+
+  .training-frequency-option {
+    min-height: 5.85rem;
+    padding: 0.35rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 1.9rem;
+    width: 1.9rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 1.8rem;
+    width: 1.8rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.7rem;
+    font-size: 0.68rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    line-height: 0.9rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.15rem;
+    min-height: 1.35rem;
+    font-size: 0.62rem;
+    line-height: 0.75rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 1.8rem;
+    width: 1.8rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.75rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.68rem;
+    line-height: 0.85rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+    padding: 0.32rem 0.55rem;
+  }
+
+  .plan-builder-step-status > span {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.5rem;
+  }
+
+  .training-frequency-action-button {
+    height: 2.35rem;
+    min-height: 2.35rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .plan-builder-page {
+    min-height: 100dvh;
+  }
+
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+  }
+
+  .training-frequency-actions {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 1100px) {
+  .plan-builder-title {
+    font-size: 2.1rem;
+    line-height: 1.12;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.95rem;
+    line-height: 1.25rem;
   }
 
   .plan-builder-stepper {
@@ -69,7 +409,77 @@ input {
   }
 
   .plan-builder-step-content {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .training-frequency-panel {
+    padding-top: 1rem;
+    padding-bottom: 0.875rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.65rem;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.625rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 0.875rem;
+  }
+
+  .training-frequency-option {
+    min-height: 10.75rem;
+    padding: 0.875rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.75rem;
+    font-size: 1.05rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.45rem;
+    min-height: 2.1rem;
+    font-size: 0.86rem;
+    line-height: 1.08rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.86rem;
+    line-height: 1.12rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.5rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.625rem;
+    padding-top: 0.5rem;
+  }
+
+  .training-frequency-action-button {
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 960px) {
+  .plan-builder-workspace-card {
+    padding-top: 1.75rem;
+    padding-bottom: 0.875rem;
   }
 
   .training-frequency-panel {
@@ -140,20 +550,6 @@ input {
     line-height: 1.35rem;
   }
 
-  .plan-builder-step-status {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
-  .training-frequency-actions {
-    margin-top: 0.875rem;
-  }
-
-  .training-frequency-action-button {
-    height: 3rem;
-  }
-
   .plan-builder-right-rail {
     gap: 1rem;
     padding-top: 1rem;
@@ -167,38 +563,30 @@ input {
 
 @media (min-width: 1280px) and (min-height: 900px) and (max-height: 960px) {
   .plan-builder-workspace-card {
-    padding-top: 2rem;
-    padding-bottom: 1rem;
-  }
-
-  .plan-builder-stepper {
-    margin-top: 1.5rem;
-  }
-
-  .plan-builder-step-content {
-    margin-top: 2rem;
+    padding-top: 1.5rem;
+    padding-bottom: 0.875rem;
   }
 
   .training-frequency-panel {
-    padding-top: 1.75rem;
-    padding-bottom: 1.25rem;
+    padding-top: 1rem;
+    padding-bottom: 0.875rem;
   }
 
   .training-frequency-title {
-    font-size: 1.9rem;
+    font-size: 1.7rem;
   }
 
   .training-frequency-copy {
-    margin-top: 1rem;
+    margin-top: 0.625rem;
   }
 
   .training-frequency-options {
-    margin-top: 1.25rem;
+    margin-top: 0.875rem;
   }
 
   .training-frequency-option {
-    min-height: 13.75rem;
-    padding: 1rem;
+    min-height: 10.75rem;
+    padding: 0.875rem;
   }
 
   .training-frequency-option__icon,
@@ -218,22 +606,22 @@ input {
   }
 
   .training-frequency-option__label {
-    margin-top: 1.25rem;
-    font-size: 1.2rem;
-    line-height: 1.45rem;
-  }
-
-  .training-frequency-option__helper {
     margin-top: 0.75rem;
-    min-height: 2.5rem;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     line-height: 1.25rem;
   }
 
+  .training-frequency-option__helper {
+    margin-top: 0.45rem;
+    min-height: 2.1rem;
+    font-size: 0.86rem;
+    line-height: 1.08rem;
+  }
+
   .training-frequency-recommendation {
-    margin-top: 1.25rem;
-    padding-top: 0.85rem;
-    padding-bottom: 0.85rem;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
   }
 
   .training-frequency-recommendation__icon {
@@ -242,17 +630,17 @@ input {
   }
 
   .plan-builder-step-status {
-    margin-top: 0.8rem;
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
+    margin-top: 0.5rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
   }
 
   .training-frequency-actions {
-    margin-top: 1rem;
+    margin-top: 0.625rem;
   }
 
   .training-frequency-action-button {
-    height: 3.25rem;
+    height: 2.75rem;
   }
 }
 
@@ -305,7 +693,8 @@ input {
   }
 }
 
-@media (min-width: 1280px) and (max-width: 1350px) and (max-height: 860px) {
+@media (min-width: 1280px) and (max-width: 1350px) and (max-height: 860px),
+  (min-width: 1280px) and (max-height: 760px) {
   .plan-builder-title + p {
     font-size: 0.9rem;
     line-height: 1.15rem;
@@ -400,8 +789,2839 @@ input {
   }
 }
 
+@media (min-width: 1280px) and (max-height: 1100px) {
+  .plan-builder-page,
+  .plan-builder-workspace-card {
+    min-height: auto;
+  }
+
+  .plan-builder-workspace-card {
+    padding-top: 1.5rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .plan-builder-title {
+    font-size: 1.95rem;
+    line-height: 1.1;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 0.875rem;
+    min-height: 3.05rem;
+    padding: 0.55rem 0.9rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.9rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.4rem;
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.74rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.75rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2rem;
+    width: 2rem;
+    font-size: 0.8rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.38rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.35rem;
+  }
+
+  .training-frequency-panel {
+    padding: 0.25rem 1.25rem 0.5rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.35rem;
+    line-height: 1.08;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.45rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 7.15rem;
+    padding: 0.55rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 2.1rem;
+    width: 2.1rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.8rem;
+    font-size: 0.72rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.45rem;
+    font-size: 0.86rem;
+    line-height: 1rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.22rem;
+    min-height: 1.5rem;
+    font-size: 0.7rem;
+    line-height: 0.85rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    min-height: 3rem;
+    padding: 0.45rem 0.85rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.78rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.72rem;
+    line-height: 0.9rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.1rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 0.75rem;
+    margin-top: 0.55rem;
+    min-height: 2.6rem;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .plan-builder-step-status > span {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.85rem;
+  }
+
+  .training-frequency-action-button {
+    height: 2.85rem;
+    min-height: 2.85rem;
+    font-size: 0.82rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 780px) {
+  .plan-builder-prototype .plan-builder-workspace-card {
+    padding-top: 0.875rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .plan-builder-prototype .plan-builder-title {
+    font-size: 1.55rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-prototype .plan-builder-title + p {
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-prototype .plan-builder-stepper {
+    margin-top: 0.45rem;
+  }
+
+  .plan-builder-prototype .plan-builder-stepper-line {
+    top: 0.85rem;
+  }
+
+  .plan-builder-prototype .plan-builder-stepper-dot {
+    height: 1.75rem;
+    width: 1.75rem;
+    font-size: 0.68rem;
+  }
+
+  .plan-builder-prototype .plan-builder-stepper-label {
+    margin-top: 0.22rem;
+    font-size: 0.64rem;
+  }
+
+  .plan-builder-prototype .plan-builder-step-content {
+    margin-top: 0.5rem;
+  }
+
+  .plan-builder-prototype .training-frequency-title {
+    font-size: 1.2rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-prototype .training-frequency-copy {
+    margin-top: 0.35rem;
+  }
+
+  .plan-builder-prototype .training-frequency-copy,
+  .plan-builder-prototype .training-frequency-copy + p {
+    font-size: 0.72rem;
+    line-height: 0.92rem;
+  }
+
+  .plan-builder-prototype .training-frequency-options {
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option {
+    min-height: 5.75rem;
+    padding: 0.35rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option__icon,
+  .plan-builder-prototype .training-frequency-option__icon-frame {
+    height: 1.9rem;
+    width: 1.9rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option__icon svg {
+    height: 1.8rem;
+    width: 1.8rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option__day {
+    top: 0.74rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option__label {
+    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-prototype .training-frequency-option__helper {
+    margin-top: 0.16rem;
+    min-height: 1.35rem;
+    font-size: 0.66rem;
+    line-height: 0.78rem;
+  }
+
+  .plan-builder-prototype .training-frequency-recommendation {
+    gap: 0.55rem;
+    margin-top: 0.45rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .plan-builder-prototype .training-frequency-recommendation__icon {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .plan-builder-prototype .training-frequency-recommendation h3 {
+    font-size: 0.78rem;
+  }
+
+  .plan-builder-prototype .training-frequency-recommendation p,
+  .plan-builder-prototype .plan-builder-step-status p {
+    font-size: 0.68rem;
+    line-height: 0.86rem;
+  }
+
+  .plan-builder-prototype .training-frequency-recommendation p {
+    margin-top: 0.08rem;
+  }
+
+  .plan-builder-prototype .plan-builder-step-status {
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .plan-builder-prototype .plan-builder-step-status > span {
+    height: 1.35rem;
+    width: 1.35rem;
+  }
+
+  .plan-builder-prototype .training-frequency-actions {
+    margin-top: 0.45rem;
+  }
+
+  .plan-builder-prototype .training-frequency-action-button {
+    height: 2.35rem;
+    min-height: 2.35rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .plan-blueprint-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    overflow: visible;
+  }
+
+  .plan-blueprint-header__title {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .plan-blueprint-header dl {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+    row-gap: 0.5rem;
+    overflow: visible;
+  }
+
+  .plan-blueprint-header__field {
+    border-left: 0;
+    padding-right: 0.5rem;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .plan-blueprint-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .plan-blueprint-header__title {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .plan-blueprint-header__fields {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .plan-blueprint-header__field {
+    border-left: 0;
+    padding-right: 0.5rem;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) and (max-height: 650px) {
+  .plan-builder-workspace-card {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .plan-builder-title {
+    font-size: 1.35rem;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.68rem;
+    line-height: 0.82rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 0.35rem;
+    min-height: 2.15rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.78rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.3rem;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.62rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 0.28rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.18rem;
+    font-size: 0.58rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 0.28rem;
+  }
+
+  .training-frequency-panel {
+    padding: 0.45rem 0.65rem 0.45rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.62rem;
+    line-height: 0.74rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 0.32rem;
+  }
+
+  .training-frequency-option {
+    min-height: 4.8rem;
+    padding: 0.25rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 1.38rem;
+    width: 1.38rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.55rem;
+    font-size: 0.54rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.18rem;
+    font-size: 0.66rem;
+    line-height: 0.78rem;
+  }
+
+  .training-frequency-option__helper {
+    min-height: 1rem;
+    font-size: 0.54rem;
+    line-height: 0.62rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.32rem;
+    padding: 0.22rem 0.5rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.62rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.54rem;
+    line-height: 0.66rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.25rem;
+    padding: 0.18rem 0.5rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.3rem;
+  }
+
+  .training-frequency-action-button {
+    height: 2rem;
+    min-height: 2rem;
+    font-size: 0.66rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 640px) {
+  .app-shell-grid > aside {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .app-shell-brand-mark {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .app-shell-brand-icon {
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .app-shell-brand-name {
+    font-size: 1.1rem;
+  }
+
+  .app-shell-grid nav {
+    margin-top: 2rem;
+  }
+
+  .app-shell-grid nav a {
+    min-height: 3rem;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .app-shell-grid nav svg {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .plan-builder-workspace-card {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .plan-builder-title {
+    font-size: 1.35rem;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.68rem;
+    line-height: 0.82rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 0.35rem;
+    min-height: 2.15rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.78rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.3rem;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.62rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 0.28rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.18rem;
+    font-size: 0.58rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 0.28rem;
+  }
+
+  .training-frequency-panel {
+    padding: 0.45rem 0.65rem 0.45rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.62rem;
+    line-height: 0.74rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 0.32rem;
+  }
+
+  .training-frequency-option {
+    min-height: 4.8rem;
+    padding: 0.25rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 1.38rem;
+    width: 1.38rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.55rem;
+    font-size: 0.54rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.18rem;
+    font-size: 0.66rem;
+    line-height: 0.78rem;
+  }
+
+  .training-frequency-option__helper {
+    min-height: 1rem;
+    font-size: 0.54rem;
+    line-height: 0.62rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.32rem;
+    padding: 0.22rem 0.5rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.62rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.54rem;
+    line-height: 0.66rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.25rem;
+    padding: 0.18rem 0.5rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.3rem;
+  }
+
+  .training-frequency-action-button {
+    height: 2rem;
+    min-height: 2rem;
+    font-size: 0.66rem;
+  }
+}
+
+.plan-blueprint-header__field:last-child dd {
+  overflow-wrap: anywhere;
+}
+
+.training-split-step {
+  display: grid;
+  gap: 1rem;
+}
+
+.training-split-choice {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.training-split-section-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+
+.training-split-section-copy {
+  line-height: 1.45rem;
+}
+
+.training-split-options {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.training-split-option {
+  min-height: 7.25rem;
+  padding: 1rem;
+}
+
+.training-split-option--selected {
+  border-color: #00636a;
+  background: #fbfdfc;
+  color: #112c3a;
+  box-shadow: inset 0 0 0 1px #00636a;
+}
+
+.training-split-option__body {
+  display: flex;
+  gap: 1rem;
+}
+
+.training-split-option__control {
+  display: flex;
+  height: 1.85rem;
+  width: 1.85rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #123047;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.training-split-option--selected .training-split-option__control {
+  border-color: #00636a;
+  background: #00636a;
+}
+
+.training-split-option__title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.12rem;
+  line-height: 1.25;
+}
+
+.training-split-option__copy {
+  margin-top: 0.85rem;
+  max-width: 28rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45rem;
+}
+
+.training-split-details {
+  margin-top: 1rem;
+}
+
+.training-split-details__heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.training-split-details__heading h3,
+.training-split-fit-panel h4,
+.training-split-schedule-panel h4,
+.training-split-unsupported h4 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.training-split-details__content {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.training-split-fit-panel {
+  min-width: 0;
+}
+
+.training-split-schedule-panel {
+  min-width: 0;
+}
+
+.training-split-schedule-days {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.training-split-schedule-day {
+  min-width: 0;
+  border: 1px solid rgba(10, 89, 96, 0.2);
+  border-radius: 0.5rem;
+  background: #f8fcfc;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.training-split-unsupported {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 0.75rem;
+  background: #fffaf4;
+  padding: 1rem 1.25rem;
+}
+
+.training-split-unsupported__row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(8rem, 12rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  font-size: 0.87rem;
+  line-height: 1.25rem;
+}
+
+.training-split-generation-note {
+  margin-top: 0;
+}
+
+.training-split-action-button {
+  min-height: 3.25rem;
+  min-width: min(100%, 15rem);
+}
+
+@media (min-width: 640px) {
+  .training-split-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .training-split-schedule-days {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .training-split-unsupported__row {
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+  }
+
+  .training-split-unsupported__row p:last-child {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  body:has(.plan-builder-page) {
+    overflow-x: hidden;
+  }
+
+  .plan-builder-page {
+    display: grid;
+    max-width: 100%;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+    padding-top: 1.65rem;
+    padding-right: 2rem;
+    padding-bottom: 1.25rem;
+    padding-left: 2rem;
+  }
+
+  .plan-builder-page--split .plan-builder-workspace-card {
+    height: 100dvh;
+    overflow: hidden;
+    padding-top: 1.15rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .plan-builder-page--split .plan-builder-eyebrow {
+    font-size: 0.72rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-page--split .plan-builder-title {
+    font-size: 2.15rem;
+    line-height: 1;
+  }
+
+  .plan-builder-page--split .plan-builder-title + p {
+    font-size: 0.88rem;
+    line-height: 1.18rem;
+  }
+
+  .plan-blueprint-header {
+    display: none;
+  }
+
+  .plan-builder-right-rail {
+    display: grid;
+    gap: 1rem;
+    min-height: calc(100dvh - 2rem);
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.875rem;
+    background: rgba(255, 253, 250, 0.55);
+    align-content: start;
+  }
+
+  .plan-builder-page--split .plan-builder-right-rail {
+    height: 100dvh;
+    min-height: 100dvh;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 1.35rem;
+  }
+
+  .plan-builder-next-card {
+    border-top: 1px solid rgba(28, 25, 23, 0.1);
+  }
+
+  .plan-builder-next-card h2 {
+    font-size: 1.35rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.75rem;
+    font-size: 0.92rem;
+    line-height: 1.45rem;
+  }
+
+  .plan-builder-summary-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .plan-builder-summary-row__icon {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.5rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper-list {
+    column-gap: 0.55rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper-line {
+    top: 0.88rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper-dot {
+    height: 1.75rem;
+    width: 1.75rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper-label {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-page--split .plan-builder-step-content {
+    margin-top: 0.8rem;
+  }
+
+  .plan-builder-page--split .training-split-step {
+    gap: 0.65rem;
+  }
+
+  .plan-builder-page--split .training-split-choice {
+    gap: 0.55rem;
+  }
+
+  .plan-builder-page--split .training-split-section-title {
+    font-size: 1.08rem;
+  }
+
+  .plan-builder-page--split .training-split-section-copy {
+    font-size: 0.78rem;
+    line-height: 1.05rem;
+  }
+
+  .training-split-options {
+    gap: 0.8rem;
+  }
+
+  .training-split-option {
+    min-height: 5.75rem;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .plan-builder-page--split .training-split-option__body {
+    gap: 0.65rem;
+  }
+
+  .plan-builder-page--split .training-split-option__control {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  .plan-builder-page--split .training-split-option__title {
+    font-size: 0.98rem;
+  }
+
+  .plan-builder-page--split .training-split-option__copy {
+    margin-top: 0.42rem;
+    font-size: 0.78rem;
+    line-height: 1.05rem;
+  }
+
+  .training-split-details {
+    margin-top: 0.65rem;
+    padding: 0.72rem 0.95rem;
+  }
+
+  .plan-builder-page--split .training-split-details__heading {
+    gap: 0.65rem;
+  }
+
+  .plan-builder-page--split .training-split-details__check {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .plan-builder-page--split .training-split-details__heading h3 {
+    font-size: 1.08rem;
+  }
+
+  .plan-builder-page--split .training-split-details__copy {
+    margin-top: 0.35rem;
+    font-size: 0.76rem;
+    line-height: 1rem;
+  }
+
+  .training-split-details__content {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.95fr);
+    gap: 0.8rem;
+    margin-top: 0.7rem;
+  }
+
+  .training-split-schedule-panel {
+    border-left: 1px solid rgba(10, 89, 96, 0.22);
+    padding-left: 0.9rem;
+  }
+
+  .plan-builder-page--split .training-split-fit-panel h4,
+  .plan-builder-page--split .training-split-schedule-panel h4,
+  .plan-builder-page--split .training-split-unsupported h4 {
+    font-size: 0.9rem;
+  }
+
+  .plan-builder-page--split .training-split-fit-panel ul {
+    margin-top: 0.45rem;
+    gap: 0.35rem;
+  }
+
+  .plan-builder-page--split .training-split-fit-panel li,
+  .plan-builder-page--split .training-split-schedule-panel p,
+  .plan-builder-page--split .training-split-schedule-day p,
+  .plan-builder-page--split .training-split-unsupported__row {
+    font-size: 0.72rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-page--split .training-split-schedule-days {
+    gap: 0.55rem;
+  }
+
+  .plan-builder-page--split .training-split-schedule-day {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .plan-builder-page--split .training-split-unsupported {
+    margin-top: 0.55rem;
+    padding: 0.42rem 0.8rem;
+  }
+
+  .plan-builder-page--split .training-split-unsupported__row {
+    grid-template-columns: 1rem minmax(8rem, 11rem) minmax(0, 1fr);
+    gap: 0.45rem;
+    padding: 0.28rem 0;
+  }
+
+  .training-split-actions {
+    margin-top: 0.45rem;
+  }
+
+  .plan-builder-page--split .training-split-action-button {
+    min-height: 2.35rem;
+    height: 2.35rem;
+    font-size: 0.82rem;
+  }
+
+  .training-split-generation-note {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1439px) and (min-height: 720px) {
+  .app-shell-grid {
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+  }
+
+  .app-shell-grid > aside {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  main {
+    padding-right: 0.75rem;
+  }
+
+  .plan-builder-page {
+    grid-template-columns: minmax(0, 1fr) 16.5rem;
+    gap: 0.75rem;
+  }
+
+  .plan-builder-workspace-card {
+    padding-right: 1.35rem;
+    padding-left: 1.35rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2rem;
+  }
+
+  .plan-builder-title + p {
+    max-width: 44rem;
+    font-size: 0.92rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 0.9rem;
+  }
+
+  .plan-builder-page--split .plan-builder-stepper {
+    margin-top: 0.6rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-step-content {
+    margin-top: 0.55rem;
+  }
+
+  .training-split-section-title {
+    font-size: 1.08rem;
+  }
+
+  .training-split-section-copy {
+    font-size: 0.82rem;
+    line-height: 1.15rem;
+  }
+
+  .training-split-option {
+    min-height: 5.25rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .training-split-option__body {
+    gap: 0.7rem;
+  }
+
+  .training-split-option__control {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  .training-split-option__title {
+    font-size: 1rem;
+  }
+
+  .training-split-option__copy {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.08rem;
+  }
+
+  .training-split-details {
+    margin-top: 0.55rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .training-split-details__content {
+    gap: 0.7rem;
+    margin-top: 0.6rem;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.9fr);
+  }
+
+  .training-split-unsupported {
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .training-split-unsupported__row {
+    grid-template-columns: 1rem minmax(6rem, 9rem) minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+  }
+
+  .training-split-action-button {
+    min-height: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .training-split-section-title {
+    font-size: 1.15rem;
+  }
+
+  .plan-builder-page--split .plan-builder-step-content {
+    margin-top: 0.75rem;
+  }
+
+  .training-split-option {
+    min-height: 5.85rem;
+    padding: 0.72rem 0.9rem;
+  }
+
+  .training-split-details {
+    margin-top: 0.65rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .training-split-details__content {
+    margin-top: 0.7rem;
+  }
+
+  .training-split-unsupported {
+    margin-top: 0.55rem;
+    padding: 0.42rem 0.8rem;
+  }
+
+  .training-split-unsupported__row {
+    padding: 0.28rem 0;
+  }
+
+  .training-split-actions {
+    margin-top: 0.6rem;
+  }
+}
+
+@media (min-width: 1920px) and (min-height: 900px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    max-width: 96rem;
+    grid-template-columns: minmax(0, 1fr) 23rem;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 1000px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    max-width: 108rem;
+    grid-template-columns: minmax(0, 1fr) 24rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1599px) and (min-height: 760px) and (max-height: 879px) {
+  .plan-builder-page,
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+  }
+
+  .plan-builder-workspace-card {
+    padding-top: 1.55rem;
+    padding-bottom: 1.4rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.05rem;
+    line-height: 1.1;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.92rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 0.85rem;
+    min-height: 3.15rem;
+    padding: 0.55rem 0.95rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.7rem;
+    padding-right: 0.95rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.95rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.7rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.38rem;
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.74rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 0.95rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 0.98rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2rem;
+    width: 2rem;
+    font-size: 0.8rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.38rem;
+    font-size: 0.72rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.25rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  .training-frequency-title {
+    font-size: 1.45rem;
+    line-height: 1.15;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.55rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 0.84rem;
+    line-height: 1.12rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 7.5rem;
+    padding: 0.6rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 2.15rem;
+    width: 2.15rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2.05rem;
+    width: 2.05rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.82rem;
+    font-size: 0.76rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+    line-height: 1rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.25rem;
+    min-height: 1.5rem;
+    font-size: 0.72rem;
+    line-height: 0.88rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    min-height: 3.1rem;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 2.1rem;
+    width: 2.1rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.8rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.12rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.72rem;
+    line-height: 0.9rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 0.75rem;
+    margin-top: 0.55rem;
+    min-height: 2.55rem;
+    padding: 0.32rem 0.85rem;
+  }
+
+  .plan-builder-step-status > span {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.75rem;
+    padding-top: 0;
+  }
+
+  .training-frequency-action-button {
+    height: 2.7rem;
+    min-height: 2.7rem;
+    font-size: 0.82rem;
+  }
+
+  button.training-frequency-action-button {
+    min-width: 8rem;
+  }
+
+  a.training-frequency-action-button {
+    min-width: 14.25rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1599px) and (min-height: 880px) {
+  .plan-builder-page,
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+  }
+
+  .plan-builder-workspace-card {
+    padding-top: 2.25rem;
+    padding-bottom: 2rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.25rem;
+    line-height: 1.12;
+  }
+
+  .plan-builder-title + p {
+    font-size: 1.02rem;
+    line-height: 1.45rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 1.25rem;
+    min-height: 4.125rem;
+    padding: 0.95rem 1.4rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.9rem;
+    padding-right: 1.45rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 1.08rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.42rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.55rem;
+    padding-right: 1.05rem;
+    padding-left: 1.05rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 1.55rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.2rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.4rem;
+    width: 2.4rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 2.35rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  .training-frequency-title {
+    font-size: 1.72rem;
+    line-height: 1.18;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.9rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .training-frequency-options {
+    gap: 1.25rem;
+    margin-top: 1.55rem;
+  }
+
+  .training-frequency-option {
+    min-height: 10.25rem;
+    padding: 1.15rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 2.9rem;
+    width: 2.9rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.1rem;
+    font-size: 0.95rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 1.15rem;
+    font-size: 1.05rem;
+    line-height: 1.3rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.45rem;
+    min-height: 2rem;
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 1.1rem;
+    margin-top: 1.25rem;
+    min-height: 4.8rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 3rem;
+    width: 3rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 1rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.35rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.95rem;
+    line-height: 1.35rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 1rem;
+    margin-top: 1rem;
+    min-height: 3.6rem;
+    padding: 0.6rem 1.25rem;
+  }
+
+  .plan-builder-step-status > span {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1.25rem;
+    padding-top: 0;
+  }
+
+  .training-frequency-action-button {
+    height: 3.5rem;
+    min-height: 3.5rem;
+    font-size: 1rem;
+  }
+
+  button.training-frequency-action-button {
+    min-width: 9rem;
+  }
+
+  a.training-frequency-action-button {
+    min-width: 18.5rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 980px) {
+  .plan-builder-page,
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+  }
+
+  .plan-builder-workspace-card {
+    padding-top: 2.5rem;
+    padding-bottom: 5rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.5rem;
+    line-height: 1.12;
+  }
+
+  .plan-builder-title + p {
+    font-size: 1.05rem;
+    line-height: 1.5rem;
+  }
+
+  .plan-blueprint-header {
+    margin-top: 1.5rem;
+    min-height: 4.375rem;
+    padding: 0.95rem 1.5rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.875rem;
+    padding-right: 1.5rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.42rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.625rem;
+    padding-right: 1.4rem;
+    padding-left: 1.4rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 2.25rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.375rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.75rem;
+    width: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 2.75rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  .training-frequency-title {
+    font-size: 1.625rem;
+    line-height: 1.2;
+  }
+
+  .training-frequency-copy {
+    margin-top: 1.05rem;
+  }
+
+  .training-frequency-copy,
+  .training-frequency-copy + p {
+    font-size: 1.05rem;
+    line-height: 1.6rem;
+  }
+
+  .training-frequency-options {
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .training-frequency-option {
+    min-height: 9.75rem;
+    padding: 0.95rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2.65rem;
+    width: 2.65rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.05rem;
+    font-size: 0.9rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.35rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.35rem;
+    min-height: 2rem;
+    font-size: 0.9rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 1.2rem;
+    margin-top: 1.55rem;
+    min-height: 4.375rem;
+    padding: 0.65rem 1.25rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 3rem;
+    width: 3rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 1rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.35rem;
+  }
+
+  .training-frequency-recommendation p,
+  .plan-builder-step-status p {
+    font-size: 0.95rem;
+    line-height: 1.35rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 1rem;
+    margin-top: 1rem;
+    min-height: 3.25rem;
+    padding: 0.55rem 1.25rem;
+  }
+
+  .plan-builder-step-status > span {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1.9rem;
+    padding-top: 0;
+  }
+
+  .training-frequency-action-button {
+    height: 3.875rem;
+    min-height: 3.875rem;
+    font-size: 1rem;
+  }
+
+  button.training-frequency-action-button {
+    min-width: 9.25rem;
+  }
+
+  a.training-frequency-action-button {
+    min-width: 18.75rem;
+  }
+}
+
 @media (display-mode: standalone) {
   body {
     overscroll-behavior-y: contain;
+  }
+}
+
+@media (min-width: 1024px) {
+  body:has(.plan-builder-page--frequency) {
+    overflow: hidden;
+  }
+
+  .plan-builder-page--frequency,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    max-width: 100%;
+    overflow: clip;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .app-shell-grid {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+
+  .app-shell-grid > aside {
+    padding: 2rem;
+  }
+
+  .app-shell-brand-mark {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .app-shell-brand-icon {
+    height: 1.45rem;
+    width: 1.45rem;
+  }
+
+  .app-shell-brand-name {
+    font-size: 1.25rem;
+  }
+
+  .app-shell-grid nav {
+    margin-top: 4rem;
+  }
+
+  .app-shell-grid nav a {
+    min-height: 4rem;
+    gap: 1.5rem;
+    padding-right: 1rem;
+    padding-left: 0.25rem;
+    font-size: 1rem;
+  }
+
+  .app-shell-navigation-link--large-only {
+    display: flex;
+  }
+
+  .app-shell-grid nav a[aria-current="page"] {
+    width: calc(100% + 1.25rem);
+    margin-left: -1.25rem;
+    padding-left: 1.25rem;
+  }
+
+  .app-shell-grid nav svg {
+    height: 1.55rem;
+    width: 1.55rem;
+  }
+
+  main {
+    padding-right: 1.25rem;
+  }
+
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    display: grid;
+    max-width: 79.875rem;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 56rem) 22.5rem;
+    align-items: start;
+    gap: 1.375rem;
+    overflow: visible;
+  }
+
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    min-height: 100dvh;
+    max-width: none;
+    overflow: visible;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.875rem;
+    background: rgba(255, 253, 250, 0.58);
+    padding: 2.75rem 3.125rem 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .plan-blueprint-header {
+    display: none;
+  }
+
+  .plan-builder-right-rail {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+  }
+
+  .plan-builder-title,
+  .training-frequency-title,
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .plan-builder-title {
+    font-size: 2.5rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-title + p {
+    font-size: 1.05rem;
+    line-height: 1.5rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.75rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.35rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.75rem;
+    width: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 2.25rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .training-frequency-title {
+    font-size: 1.75rem;
+    line-height: 1.12;
+  }
+
+  .training-frequency-copy {
+    margin-top: 1rem;
+    max-width: 42rem;
+    font-size: 1rem;
+    line-height: 1.45rem;
+  }
+
+  .training-frequency-options {
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .training-frequency-option {
+    min-height: 10.25rem;
+    padding: 1.15rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 4rem;
+    width: 4rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 3.75rem;
+    width: 3.75rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.55rem;
+    font-size: 1.35rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 1.15rem;
+    font-size: 1.35rem;
+    line-height: 1.75rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.55rem;
+    min-height: 2rem;
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 1.25rem;
+    margin-top: 1rem;
+    min-height: 4.75rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 3.5rem;
+    width: 3.5rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 1rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.35rem;
+    font-size: 1rem;
+    line-height: 1.35rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 1rem;
+    margin-top: 1rem;
+    min-height: 4rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .plan-builder-step-status p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1rem;
+    padding-top: 0;
+  }
+
+  .training-frequency-action-button {
+    height: 3.75rem;
+    min-height: 3.75rem;
+    font-size: 1rem;
+  }
+
+  button.training-frequency-action-button {
+    min-width: 7.375rem;
+  }
+
+  a.training-frequency-action-button {
+    min-width: 14.25rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) and (max-height: 979px) {
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    padding-top: 2rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.25rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.4rem;
+  }
+
+  .training-frequency-panel {
+    padding: 0;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 1rem;
+  }
+
+  .training-frequency-option {
+    min-height: 9.75rem;
+    padding-top: 1rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.875rem;
+    min-height: 4.25rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.75rem;
+    min-height: 3.25rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1rem;
+  }
+
+  .training-frequency-action-button {
+    height: 3.25rem;
+    min-height: 3.25rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    display: grid;
+    max-width: 79.875rem;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 56rem) 22.5rem;
+    align-items: start;
+    gap: 1.375rem;
+    overflow: visible;
+  }
+
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    min-height: 100dvh;
+    max-width: none;
+    overflow: visible;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.875rem;
+    background: rgba(255, 253, 250, 0.58);
+    padding: 2.75rem 3.125rem 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .plan-blueprint-header {
+    display: none;
+  }
+
+  .plan-builder-right-rail {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: -1.875rem;
+  }
+
+  .training-frequency-panel {
+    margin-right: -1.375rem;
+    margin-left: -1.375rem;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.875rem;
+    background: rgba(255, 253, 250, 0.5);
+    padding: 2rem 2rem 2.1rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 1.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 15.5rem;
+    padding: 2.1rem 1rem 1.25rem;
+  }
+
+  .training-frequency-option__helper {
+    min-height: 3rem;
+    line-height: 1.5rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 1.5rem;
+    min-height: 4.8rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .training-frequency-recommendation p {
+    line-height: 1.35rem;
+  }
+
+  .training-frequency-large-screen-warning {
+    display: flex;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) and (max-height: 979px) {
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    padding-top: 2rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: -1.5rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.6rem;
+  }
+
+  .training-frequency-panel {
+    padding: 1.5rem 1.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 12.5rem;
+    padding-top: 1.25rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 1rem;
+    min-height: 4.35rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    padding-top: 2.15rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.25rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-title + p {
+    font-size: 1rem;
+    line-height: 1.45rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: -1.25rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.125rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.25rem;
+    width: 2.25rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.625rem;
+    font-size: 0.875rem;
+    line-height: 1.2rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.5rem;
+  }
+
+  .training-frequency-panel {
+    padding: 1.5rem 1.75rem 1.55rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.55rem;
+    line-height: 1.12;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.35rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.85rem;
+    margin-top: 1.2rem;
+  }
+
+  .training-frequency-option {
+    min-height: 11rem;
+    padding: 1.15rem 0.85rem 1rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 3.35rem;
+    width: 3.35rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 3.1rem;
+    width: 3.1rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.2rem;
+    font-size: 1.15rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 1rem;
+    font-size: 1.15rem;
+    line-height: 1.45rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.4rem;
+    min-height: 2.4rem;
+    font-size: 0.92rem;
+    line-height: 1.2rem;
+  }
+
+  .training-frequency-recommendation {
+    gap: 1rem;
+    margin-top: 1rem;
+    min-height: 4rem;
+    padding: 0.65rem 1rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 3rem;
+    width: 3rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.95rem;
+  }
+
+  .training-frequency-recommendation p {
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-step-status {
+    gap: 0.85rem;
+    margin-top: 0.8rem;
+    min-height: 3.25rem;
+    padding: 0.55rem 1rem;
+  }
+
+  .plan-builder-step-status p {
+    font-size: 0.92rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.95rem;
+  }
+
+  .training-frequency-action-button {
+    height: 3.25rem;
+    min-height: 3.25rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.65rem;
+    line-height: 1.12;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 1.25rem;
+  }
+
+  .plan-builder-summary-card dl > div {
+    grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+    gap: 0.9rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .plan-builder-summary-card svg {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .plan-builder-summary-card dt,
+  .plan-builder-summary-card dd {
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-summary-card dd > span {
+    max-width: 8.5rem;
+  }
+
+  .plan-builder-summary-card dd .inline-flex {
+    min-height: 2.25rem;
+    padding-right: 0.8rem;
+    padding-left: 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 1.25rem;
+    font-size: 0.98rem;
+    line-height: 1.65rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) and (max-height: 979px) {
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    padding-top: 1.75rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.05rem;
+  }
+
+  .plan-builder-title + p {
+    font-size: 0.95rem;
+    line-height: 1.35rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: -1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2rem;
+    width: 2rem;
+    font-size: 0.85rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    line-height: 1.1rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.1rem;
+  }
+
+  .training-frequency-panel {
+    padding: 1.2rem 1.5rem 1.25rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.42rem;
+  }
+
+  .training-frequency-copy {
+    margin-top: 0.55rem;
+    font-size: 0.9rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-options {
+    margin-top: 0.9rem;
+  }
+
+  .training-frequency-option {
+    min-height: 9.65rem;
+    padding-top: 0.95rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 3rem;
+    width: 3rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.05rem;
+    font-size: 1rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 0.8rem;
+    font-size: 1.05rem;
+    line-height: 1.3rem;
+  }
+
+  .training-frequency-option__helper {
+    min-height: 2.25rem;
+    font-size: 0.86rem;
+    line-height: 1.12rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.8rem;
+    min-height: 3.65rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 2.65rem;
+    width: 2.65rem;
+  }
+
+  .training-frequency-recommendation h3 {
+    font-size: 0.9rem;
+  }
+
+  .training-frequency-recommendation p {
+    font-size: 0.9rem;
+    line-height: 1.18rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.65rem;
+    min-height: 2.9rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .plan-builder-step-status p {
+    font-size: 0.86rem;
+    line-height: 1.15rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-action-button {
+    height: 3rem;
+    min-height: 3rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .training-frequency-panel {
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .training-frequency-recommendation {
+    border: 0;
+    border-left: 3px solid rgba(0, 119, 128, 0.28);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.25rem 0 0.25rem 1rem;
+  }
+
+  .training-frequency-recommendation__icon {
+    height: 2.5rem;
+    width: 2.5rem;
+    border: 0;
+    background: transparent;
+  }
+
+  .plan-builder-step-status {
+    border: 0;
+    border-left: 3px solid rgba(219, 122, 29, 0.45);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.25rem 0 0.25rem 1rem;
+  }
+
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    border-color: rgba(28, 25, 23, 0.07);
+    background: rgba(255, 253, 250, 0.34);
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) and (max-height: 979px) {
+  .training-frequency-panel {
+    padding: 0;
+  }
+}
+
+@media (min-width: 1920px) and (min-height: 980px) {
+  main {
+    padding-right: 0;
+  }
+
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    width: min(100%, clamp(96rem, calc(100vw - 32rem), 104rem));
+    max-width: 104rem;
+    grid-template-columns: minmax(0, 1fr) 26rem;
+    gap: 4rem;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .plan-builder-workspace-card,
+  .plan-builder-page--frequency .plan-builder-workspace-card {
+    padding: 3rem 3.5rem 0;
+  }
+
+  .plan-builder-right-rail {
+    gap: 1.5rem;
+    padding-top: 3rem;
+  }
+
+  .plan-builder-title {
+    font-size: 2.45rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-title + p {
+    font-size: 1.03rem;
+    line-height: 1.45rem;
+  }
+
+  .plan-builder-stepper {
+    margin-top: -0.5rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.35rem;
+    width: 2.35rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.65rem;
+    font-size: 0.9rem;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.75rem;
+  }
+
+  .training-frequency-title {
+    font-size: 1.7rem;
+  }
+
+  .training-frequency-copy {
+    max-width: 48rem;
+    font-size: 0.98rem;
+    line-height: 1.4rem;
+  }
+
+  .training-frequency-options {
+    gap: 1rem;
+    margin-top: 1.35rem;
+  }
+
+  .training-frequency-option {
+    min-height: 12.25rem;
+    padding-top: 1.35rem;
+    padding-bottom: 1.1rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    height: 3.65rem;
+    width: 3.65rem;
+  }
+
+  .training-frequency-option__icon svg {
+    height: 3.35rem;
+    width: 3.35rem;
+  }
+
+  .training-frequency-option__day {
+    top: 1.3rem;
+    font-size: 1.2rem;
+  }
+
+  .training-frequency-option__label {
+    margin-top: 1.05rem;
+    font-size: 1.2rem;
+    line-height: 1.5rem;
+  }
+
+  .training-frequency-option__helper {
+    margin-top: 0.45rem;
+    min-height: 2.5rem;
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 1.05rem;
+  }
+
+  .plan-builder-step-status {
+    margin-top: 0.85rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 2rem 1.65rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.75rem;
+  }
+
+  .plan-builder-summary-card dl > div {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    max-width: min(100%, 90rem);
+    grid-template-columns: minmax(0, 1fr) 22.5rem;
+  }
+}
+
+@media (min-width: 1920px) and (min-height: 900px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    max-width: 96rem;
+    grid-template-columns: minmax(0, 1fr) 23rem;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 1000px) {
+  .plan-builder-page,
+  .plan-builder-page--frequency {
+    max-width: 108rem;
+    grid-template-columns: minmax(0, 1fr) 24rem;
   }
 }

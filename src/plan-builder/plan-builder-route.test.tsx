@@ -3,10 +3,8 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
+import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
-import { db } from "../training/local-database";
-import { createStarterPlan } from "../training/starter-data";
-import { trainingService } from "../training/training-service";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -44,11 +42,6 @@ const repRangeStyleEffectCopy = {
 const repRangeStyleBoundaryCopy =
   "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.";
 
-const frequencyNextStepCopy =
-  "Next, you'll choose the best Training Split for your weekly schedule.";
-const splitNextStepCopy = "Next, you'll choose a Rep Range Style for your Plan Blueprint.";
-const generatedPlanSplitNextStepCopy =
-  "Next, you'll choose Rep ranges that fit your Training Plan.";
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 
 const weeklyVolumeTargetCopyPatterns = [
@@ -171,16 +164,14 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
     expect(await screen.findByText("Build muscle")).toBeVisible();
     expect(await screen.findAllByText("3 days/week")).toHaveLength(2);
-    expect(within(summary).getByText("Goal")).toBeVisible();
-    expect(within(summary).getByText("Experience")).toBeVisible();
-    expect(within(summary).getByText("Intermediate")).toBeVisible();
-    expect(within(summary).getByText("Split")).toBeVisible();
-    expect(within(summary).getByText("Rep ranges")).toBeVisible();
-    expect(within(summary).getByText("Volume preset")).toBeVisible();
-    expect(within(summary).getByText("Equipment")).toBeVisible();
-    expect(within(summary).getAllByText("Not chosen yet")).toHaveLength(3);
-    expect(within(summary).getByText("Not configured yet")).toBeVisible();
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
+    expect(within(summary).getByRole("heading", { name: "Plan blueprint" })).toBeVisible();
+    expect(within(summary).getByText("Draft")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Goal", "Build muscle");
+    expectBlueprintSummaryField(summary, "Frequency", "3 days/week");
+    expectBlueprintSummaryField(summary, "Split", "Pending");
+    expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
+    expect(within(summary).queryByText("Experience")).not.toBeInTheDocument();
+    expect(within(summary).queryByText("Generation status")).not.toBeInTheDocument();
   });
 
   it("renders the Training Frequency step in the blueprint builder layout", async () => {
@@ -210,7 +201,9 @@ describe("PlanBuilderRoute", () => {
     expect(within(frequencyGroup).getByText("Upper/Lower recommended")).toBeVisible();
     expect(within(frequencyGroup).getByText("Advanced Push/Pull/Legs variation")).toBeVisible();
     expect(screen.getByText("Recommended for you")).toBeVisible();
-    expect(screen.getByText(/6-day plans are not available in this first version/i)).toBeVisible();
+    expect(
+      screen.queryByText(/6-day plans are not available in this first version/i),
+    ).not.toBeInTheDocument();
 
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
@@ -219,13 +212,11 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText("Build muscle")).toBeVisible();
     expect(within(summary).getByText("Frequency")).toBeVisible();
     expect(within(summary).getByText("3 days/week")).toBeVisible();
-    expect(within(summary).getByText("Generation status")).toBeVisible();
-    expect(within(summary).getByText("Experience")).toBeVisible();
-    expect(within(summary).getByText("Equipment")).toBeVisible();
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
-
-    expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(screen.getByText(frequencyNextStepCopy)).toBeVisible();
+    expectBlueprintSummaryField(summary, "Split", "Pending");
+    expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
+    expect(screen.getByRole("button", { name: /^back$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /continue to split/i })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "What happens next" })).not.toBeInTheDocument();
   });
 
   it("lets the user select a training frequency, updates the summary, and restores it on return", async () => {
@@ -244,7 +235,9 @@ describe("PlanBuilderRoute", () => {
     expect(
       screen.getByText(/flexible split options, steady recovery, and enough training frequency/i),
     ).toBeVisible();
-    expect(screen.getByText(/6-day plans are not available in this first version/i)).toBeVisible();
+    expect(
+      screen.queryByText(/6-day plans are not available in this first version/i),
+    ).not.toBeInTheDocument();
 
     await user.click(within(frequencyGroup).getByText("5 days/week"));
 
@@ -324,11 +317,6 @@ describe("PlanBuilderRoute", () => {
         "Rotating Push/Pull/Legs",
       ),
     ).toBeVisible();
-    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
-      activePlan: null,
-      exercises: [],
-      recentSessions: [],
-    });
   });
 
   it("shows split-derived summary statuses and updates them when the selected split changes", async () => {
@@ -354,11 +342,8 @@ describe("PlanBuilderRoute", () => {
       expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
     });
 
-    await waitFor(() => {
-      expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
-    });
-    expect(within(summary).getByText("Not ready yet")).toBeVisible();
-    expect(within(summary).getByText("Rep ranges")).toBeVisible();
+    expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
 
     await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
 
@@ -374,15 +359,17 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).queryByText("4-Day Upper/Lower")).not.toBeInTheDocument();
   });
 
-  it("uses Plan Blueprint next-step copy on Split instead of introducing generated-plan wording", async () => {
+  it("keeps the Split step focused on the Plan Blueprint instead of generated-plan wording", async () => {
     await confirmDefaultTrainingFrequency();
-
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
-    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(screen.getByText(splitNextStepCopy)).toBeVisible();
-    expect(screen.queryByText(generatedPlanSplitNextStepCopy)).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /choose your training split/i }),
+    ).toBeVisible();
+    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+    expect(screen.getByText(/choose a compatible training split for the saved plan blueprint/i));
+    expect(screen.queryByText(/generated plan/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
   });
 
   it("redirects direct access to Split back to Frequency when Training Frequency is configured but not confirmed", async () => {
@@ -507,7 +494,9 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.split);
     });
-    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /choose your training split/i }),
+    ).toBeVisible();
     expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
@@ -739,14 +728,6 @@ describe("PlanBuilderRoute", () => {
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(within(summary).getByText("Balanced")).toBeVisible();
-    expect(within(summary).getByText("Not configured yet")).toHaveClass(
-      "bg-[#f8eee6]",
-      "text-[#5c6d73]",
-    );
-    expect(within(summary).getByText("Not ready yet")).toHaveClass(
-      "bg-[#f8eee6]",
-      "text-[#5c6d73]",
-    );
   });
 
   it("continues from Rep ranges into the Weekly volume targets frame with the approved explanatory copy", async () => {
@@ -778,11 +759,6 @@ describe("PlanBuilderRoute", () => {
     for (const excludedContentPattern of weeklyVolumeExcludedContentPatterns) {
       expect(screen.queryByText(excludedContentPattern)).not.toBeInTheDocument();
     }
-    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
-      activePlan: null,
-      exercises: [],
-      recentSessions: [],
-    });
   });
 
   it("renders the required Weekly Rep Target rows with canonical reps, derived set estimates, and quiet adjustment affordances", async () => {
@@ -1034,11 +1010,6 @@ describe("PlanBuilderRoute", () => {
     ).toHaveAttribute("aria-current", "step");
     expect(screen.queryByText(/exercise selection/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
-    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
-      activePlan: null,
-      exercises: [],
-      recentSessions: [],
-    });
 
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -1363,13 +1334,15 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.split);
     });
-    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /choose your training split/i }),
+    ).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("keeps the Plan Blueprint rail on Balanced hypertrophy when the persisted Recommended Default is explicitly reselected", async () => {
+  it("keeps the Plan Blueprint summary on Balanced hypertrophy when the persisted Recommended Default is explicitly reselected", async () => {
     const user = userEvent.setup();
     await saveConfirmedFourDayUpperLowerTrainingSplit();
 
@@ -1378,9 +1351,6 @@ describe("PlanBuilderRoute", () => {
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
-    expect(within(summary).getByText("Experience")).toBeVisible();
-    expect(within(summary).getByText("Equipment")).toBeVisible();
-    expect(within(summary).getByText("Generation status")).toBeVisible();
     expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
 
     await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy));
@@ -1515,8 +1485,8 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("heading", { name: "Boundary for this step" })).toBeVisible();
     expectRepRangeStyleEffects(effectsPanel, repRangeStyleEffectCopy.balancedHypertrophy);
     expect(screen.getByText(repRangeStyleBoundaryCopy)).toBeVisible();
-    expect(screen.getByRole("heading", { name: "What happens next" })).toBeVisible();
-    expect(screen.getByText(repRangeStyleNextStepCopy)).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "What happens next" })).not.toBeInTheDocument();
+    expect(screen.queryByText(repRangeStyleNextStepCopy)).not.toBeInTheDocument();
     expect(
       screen.queryByText("Next, you'll tune the volume preset before choosing exercises."),
     ).not.toBeInTheDocument();
@@ -1563,10 +1533,11 @@ describe("PlanBuilderRoute", () => {
 
     expectTrainingSplitFitExplanation(
       fixedWeekDetails,
-      /just workout recommends 4-day upper\/lower for 4 days\/week as the clearest starting point/i,
+      /recommended fit/i,
+      /four anchored sessions give upper and lower work dedicated space twice each week/i,
     );
     expectFixedWeekScheduleDetails(fixedWeekDetails);
-    expectUnsupportedTrainingSplitGuidance(fixedWeekDetails);
+    expectUnsupportedTrainingSplitGuidance();
 
     await user.click(within(splitGroup).getByText(trainingSplitLabels.rotatingPushPullLegs));
 
@@ -1576,7 +1547,8 @@ describe("PlanBuilderRoute", () => {
 
     expectTrainingSplitFitExplanation(
       rotatingDetails,
-      /rotating push\/pull\/legs still fits 4 days\/week, but it trades the default recommendation for a different weekly rhythm/i,
+      /compatible alternative/i,
+      /a rotating push\/pull\/legs cycle stays flexible when your available weekdays move around/i,
     );
     expectRotatingCycleScheduleDetails(rotatingDetails);
   });
@@ -1754,7 +1726,7 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(summary).queryByText(trainingSplitLabels.rotatingPushPullLegs),
     ).not.toBeInTheDocument();
-    expect(within(summary).getAllByText("Not chosen yet").length).toBeGreaterThan(0);
+    expectBlueprintSummaryField(summary, "Split", "Pending");
 
     const resumedSplitGroup = await continueToSplitStep(user);
 
@@ -1767,41 +1739,6 @@ describe("PlanBuilderRoute", () => {
         trainingSplitLabels.fullBody3Day,
       ),
     ).toBeVisible();
-  });
-
-  it("does not create or mutate an active Training Plan while navigating away from and forward through the Split step", async () => {
-    const user = userEvent.setup();
-    const activePlan = createStarterPlan("Current Active Plan");
-
-    await db.trainingPlans.add(activePlan);
-
-    const initialDashboardSnapshot = await trainingService.getDashboardSnapshot();
-    await confirmDefaultTrainingFrequency();
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    await screen.findByRole("group", { name: /training split/i });
-
-    expect(await trainingService.getDashboardSnapshot()).toEqual(initialDashboardSnapshot);
-
-    await user.click(screen.getByRole("link", { name: /back to frequency/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-
-    await user.click(screen.getByRole("button", { name: /continue to split/i }));
-    await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
-    });
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "Not ready yet",
-      ),
-    ).toBeVisible();
-    expect(await trainingService.getDashboardSnapshot()).toEqual(initialDashboardSnapshot);
   });
 
   it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency, Split, and Rep ranges URLs", async () => {
@@ -1821,7 +1758,9 @@ describe("PlanBuilderRoute", () => {
 
     await user.click(await screen.findByRole("button", { name: /continue to split/i }));
 
-    expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /choose your training split/i }),
+    ).toBeVisible();
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.split);
     });
@@ -1855,9 +1794,8 @@ describe("PlanBuilderRoute", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("renders the split URL directly with the recommended 3-day split selected and without generating a training plan", async () => {
+  it("renders the split URL directly with the recommended 3-day split selected", async () => {
     await confirmDefaultTrainingFrequency();
-
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
@@ -1871,11 +1809,6 @@ describe("PlanBuilderRoute", () => {
         "3-Day Full Body",
       ),
     ).toBeVisible();
-    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
-      activePlan: null,
-      exercises: [],
-      recentSessions: [],
-    });
   });
 });
 
@@ -1929,6 +1862,17 @@ async function expectPlanBlueprintToMatch(expectedBlueprint: object) {
 
 async function expectExercisesStepComingNext() {
   expect(await screen.findByRole("heading", { name: /exercises step coming next/i })).toBeVisible();
+}
+
+function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {
+  const labelNode = within(summary).getByText(label);
+  const fieldNode = labelNode.closest("div");
+
+  if (!fieldNode) {
+    throw new Error(`Plan Blueprint summary field "${label}" was not found.`);
+  }
+
+  expect(within(fieldNode).getByText(value)).toBeVisible();
 }
 
 async function saveFourDayTrainingFrequency() {
@@ -2132,18 +2076,23 @@ function findSelectedTrainingSplitDetails(label: string) {
   return screen.findByRole("region", { name: getLabelMatcher(label) });
 }
 
-function expectTrainingSplitFitExplanation(detailsPanel: HTMLElement, body: RegExp) {
+function expectTrainingSplitFitExplanation(
+  detailsPanel: HTMLElement,
+  title: RegExp,
+  description: RegExp,
+) {
   const details = within(detailsPanel);
 
   expect(details.getByText(/why this split fits/i)).toBeVisible();
-  expect(details.getByText(body)).toBeVisible();
+  expect(details.getByText(title)).toBeVisible();
+  expect(details.getByText(description)).toBeVisible();
 }
 
 function expectFixedWeekScheduleDetails(detailsPanel: HTMLElement) {
   const details = within(detailsPanel);
 
   expect(details.getByText(/suggested weekly layout/i)).toBeVisible();
-  expect(details.getByText("Day 1")).toBeVisible();
+  expect(details.getByText("Mon")).toBeVisible();
   expect(details.getAllByText("Upper")).toHaveLength(2);
 }
 
@@ -2161,14 +2110,10 @@ function expectRotatingCycleScheduleDetails(detailsPanel: HTMLElement) {
   expect(details.queryByText(/suggested weekly layout/i)).not.toBeInTheDocument();
 }
 
-function expectUnsupportedTrainingSplitGuidance(detailsPanel: HTMLElement) {
-  const details = within(detailsPanel);
-
-  expect(details.getByText(/not included in this step/i)).toBeVisible();
+function expectUnsupportedTrainingSplitGuidance() {
+  expect(screen.getByText(/not included in this step/i)).toBeVisible();
   expect(
-    details.getByText(
-      /body-part split weeks usually drop muscle frequency too low for the 2-5 days\/week builder options/i,
-    ),
+    screen.getByText(/too low in frequency for most users on a 2-5 day builder/i),
   ).toBeVisible();
 }
 

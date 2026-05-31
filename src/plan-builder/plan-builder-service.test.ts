@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { db } from "../training/local-database";
-import { createStarterPlan } from "../training/starter-data";
+import { db } from "../app/local-database";
 import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 import { isTrainingVolumeConfiguration } from "./training-volume";
@@ -17,16 +16,6 @@ describe("planBuilderService", () => {
 
     expect(firstBlueprint).toEqual(resumedBlueprint);
     expect(await db.planBlueprints.toArray()).toEqual([firstBlueprint]);
-  });
-
-  it("does not mutate the active training plan while creating a blueprint", async () => {
-    const activePlan = createStarterPlan("Current Active Plan");
-
-    await db.trainingPlans.add(activePlan);
-
-    await planBuilderService.getOrCreatePlanBlueprint();
-
-    expect(await db.trainingPlans.toArray()).toEqual([activePlan]);
   });
 
   it("resumes blueprints saved before confirmed builder progress existed", async () => {
@@ -60,7 +49,6 @@ describe("planBuilderService", () => {
       volume: false,
     });
   });
-
   it("persists a changed training frequency for the next resume", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
@@ -483,18 +471,5 @@ describe("planBuilderService", () => {
       }),
     ).rejects.toThrow('Unknown Rep Range Style "powerbuilding".');
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(savedBlueprint);
-  });
-
-  it("does not mutate the active training plan while selecting a training split", async () => {
-    const activePlan = createStarterPlan("Current Active Plan");
-
-    await db.trainingPlans.add(activePlan);
-
-    await planBuilderService.updateTrainingSplit({
-      timestamp: "2026-05-30T10:20:00.000Z",
-      trainingSplitId: "upper-lower-full-body",
-    });
-
-    expect(await db.trainingPlans.toArray()).toEqual([activePlan]);
   });
 });

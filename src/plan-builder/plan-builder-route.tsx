@@ -3,9 +3,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Calendar,
+  CalendarCheck,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   Clock3,
   Dumbbell,
   Grid2X2,
@@ -17,11 +20,9 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Button } from "../design-system/button";
-import { Card } from "../design-system/card";
 import { cn } from "../design-system/cn";
-import { KeyValueRow } from "../design-system/key-value-row";
 import { Stepper } from "../design-system/stepper";
 import {
   confirmRepRangeStyle,
@@ -75,9 +76,6 @@ import {
   volumePresets,
   type WeeklyRepTarget,
 } from "./training-volume";
-
-type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
-type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
 
 type PlanBlueprintSummaryRowBase = {
   icon: LucideIcon;
@@ -181,9 +179,17 @@ const planBuilderSteps = [
   { id: "volume", label: "Volume" },
   { id: "exercises", label: "Exercises" },
   { id: "review", label: "Review" },
-] as const;
+];
 
 const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
+const planBuilderPrototypeVariants = [
+  { id: "strip", label: "Top strip" },
+  { id: "rail", label: "Mini rail" },
+  { id: "header", label: "Header metadata" },
+  { id: "bottom", label: "Status bar" },
+] as const satisfies ReadonlyArray<{ id: PlanBuilderPrototypeVariant; label: string }>;
+
+const planBuilderLargeScreenQuery = "(min-width: 1280px) and (min-height: 720px)";
 
 type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
 
@@ -439,6 +445,7 @@ type PlanBuilderStepStatusCardProps = {
 };
 
 type PlanBuilderStepStatusCardTitleDisplay = "screen-reader-only" | "visible";
+type PlanBuilderPrototypeVariant = "bottom" | "header" | "rail" | "strip";
 
 type TrainingSplitStepProps = {
   onContinueToRepRanges: () => Promise<void>;
@@ -1069,49 +1076,692 @@ function hasCompatibleSelectedTrainingSplit(
 
 function PlanBuilderPage({ children, currentStep, intro, summary }: PlanBuilderPageProps) {
   const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
+  const prototypeVariant = usePlanBuilderPrototypeVariant();
+  const shouldShowPlanBuilderRail = usePlanBuilderLargeScreenLayout();
+  const pageTitle = getPlanBuilderPageTitle(currentStep);
+
+  if (currentStep === "frequency" && prototypeVariant) {
+    return (
+      <PlanBuilderPrototypePage
+        currentStepIndex={currentStepIndex}
+        intro={intro}
+        summary={summary}
+        variant={prototypeVariant}
+      >
+        {children}
+      </PlanBuilderPrototypePage>
+    );
+  }
 
   return (
-    <section className="plan-builder-page grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[906px_22.5rem] 2xl:gap-[1.625rem]">
-      <section aria-label="Plan Builder workspace" className="min-w-0">
-        <Card className="plan-builder-workspace-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-3 lg:pt-11">
-          <header className="space-y-2">
-            <h1 className="plan-builder-title font-serif text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
-              Build your workout plan
-            </h1>
-            {intro}
-          </header>
+    <section
+      className={cn(
+        "plan-builder-page",
+        `plan-builder-page--${currentStep}`,
+        currentStep === "frequency" ? "plan-builder-page--frequency" : null,
+      )}
+    >
+      <section
+        aria-label="Plan Builder workspace"
+        className="plan-builder-workspace-card min-w-0 p-6 sm:p-8 lg:min-h-screen lg:px-8 lg:pb-3 lg:pt-11 xl:px-[3.125rem]"
+      >
+        <header className="space-y-2">
+          <p className="plan-builder-eyebrow text-sm font-black uppercase tracking-wide text-[#00636a]">
+            Workout Plan Builder
+          </p>
+          <h1 className="plan-builder-title text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
+            {pageTitle}
+          </h1>
+          {intro}
+          <PlanBlueprintHeaderBar summary={summary} />
+        </header>
 
-          <div className="plan-builder-stepper mt-7">
-            <Stepper
-              currentIndex={currentStepIndex}
-              items={planBuilderSteps}
-              label="Plan Builder"
-            />
-          </div>
+        <div className="plan-builder-stepper mt-7">
+          <Stepper currentIndex={currentStepIndex} items={planBuilderSteps} label="Plan Builder" />
+        </div>
 
-          <div className="plan-builder-step-content mt-9">{children}</div>
-        </Card>
+        <div className="plan-builder-step-content mt-9">{children}</div>
       </section>
 
-      <div className="plan-builder-right-rail grid gap-6 self-start xl:pt-6">
-        <PlanBlueprintSummaryCard summary={summary} />
-        <PlanBuilderNextStepCard currentStep={currentStep} />
-      </div>
+      {shouldShowPlanBuilderRail ? (
+        <aside aria-label="Plan blueprint summary" className="plan-builder-right-rail">
+          <PlanBlueprintRailCard summary={summary} />
+          <PlanBuilderNextStepCard currentStep={currentStep} />
+        </aside>
+      ) : null}
     </section>
   );
 }
 
-function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
-  const body = planBuilderNextStepBodyByStep[currentStep];
+function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
+  switch (currentStep) {
+    case "frequency":
+      return "Build your workout plan";
+    case "split":
+      return "Choose your training split";
+    case "rep-ranges":
+      return "Choose your rep ranges";
+    case "volume":
+      return "Set your training volume";
+    case "exercises":
+      return "Choose your exercises";
+    case "review":
+      return "Review your plan blueprint";
+  }
+
+  return "Build your workout plan";
+}
+
+function PlanBlueprintHeaderBar({ summary }: { summary: PlanBlueprintSummary | null }) {
+  const fields = summary ? getPlanBlueprintHeaderFields(summary) : [];
 
   return (
-    <Card className="plan-builder-next-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
-      <h2 className="font-serif text-2xl font-black leading-tight text-[#120f0d]">
-        What happens next
-      </h2>
-      <p className="mt-5 text-base font-medium leading-8 text-[#31505d]">{body}</p>
-    </Card>
+    <aside
+      aria-label="Plan blueprint summary"
+      className="plan-blueprint-header mt-4 flex min-w-0 items-center rounded-lg border border-stone-950/10 bg-white/76 px-4 py-3 shadow-[0_1px_0_rgba(29,26,22,0.04)]"
+    >
+      <div className="plan-blueprint-header__title flex min-w-0 shrink-0 items-center gap-3 pr-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center text-stone-950">
+          <CalendarCheck aria-hidden="true" size={24} strokeWidth={1.7} />
+        </span>
+        <h2 className="truncate text-base font-black leading-none text-stone-950">
+          Plan blueprint
+        </h2>
+        <span className="rounded-full bg-[#007780] px-3 py-1 text-xs font-black leading-none text-white">
+          Draft
+        </span>
+      </div>
+
+      {summary ? (
+        <dl className="plan-blueprint-header__fields min-w-0 flex-1 items-center">
+          {fields.map((field) => (
+            <div
+              className="plan-blueprint-header__field grid min-w-0 grid-cols-1 content-center gap-1 border-l border-stone-950/18 px-5"
+              key={field.label}
+            >
+              <dt className="text-xs font-black leading-none text-[#007780]">{field.label}</dt>
+              <dd
+                className={cn(
+                  "min-w-0 text-sm font-bold leading-tight",
+                  field.isPending ? "text-stone-500" : "text-stone-950",
+                )}
+              >
+                {field.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="min-w-0 truncate border-l border-stone-950/18 pl-5 text-sm font-bold text-stone-600">
+          Loading Plan Blueprint...
+        </p>
+      )}
+    </aside>
   );
+}
+
+function getPlanBlueprintHeaderFields(
+  summary: PlanBlueprintSummary,
+): ReadonlyArray<PlanBlueprintHeaderField> {
+  return [
+    {
+      isPending: false,
+      label: "Goal",
+      value: summary.trainingGoal,
+    },
+    {
+      isPending: false,
+      label: "Frequency",
+      value: summary.trainingFrequency,
+    },
+    {
+      isPending: summary.split === "Choose a Training Split",
+      label: "Split",
+      value: summary.split === "Choose a Training Split" ? "Pending" : summary.split,
+    },
+    {
+      isPending: summary.repRanges === "Choose Rep ranges",
+      label: "Rep ranges",
+      value: summary.repRanges === "Choose Rep ranges" ? "Pending" : summary.repRanges,
+    },
+    {
+      isPending: summary.volumePreset === planBlueprintSummaryNotChosenValue,
+      label: "Volume preset",
+      value:
+        summary.volumePreset === planBlueprintSummaryNotChosenValue
+          ? "Pending"
+          : summary.volumePreset,
+    },
+  ];
+}
+
+function PlanBlueprintRailCard({ summary }: PrototypeBlueprintSummaryProps) {
+  const railRows = summary ? getPlanBlueprintRailRows(summary) : [];
+
+  return (
+    <section className="plan-builder-summary-card rounded-lg border border-stone-950/10 bg-white/60 px-6 py-7">
+      <h2 className="text-2xl font-black leading-tight text-[#120f0d]">Plan blueprint</h2>
+      {summary ? (
+        <dl className="mt-7 divide-y divide-stone-950/8">
+          {railRows.map((row) => {
+            const Icon = row.icon;
+
+            return (
+              <div className="plan-builder-summary-row grid gap-4 py-5 first:pt-0" key={row.label}>
+                <span className="plan-builder-summary-row__icon flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4f2] text-[#0a5960]">
+                  <Icon aria-hidden="true" size={24} strokeWidth={1.65} />
+                </span>
+                <div className="min-w-0">
+                  <dt className="text-base font-black text-[#112c3a]">{row.label}</dt>
+                  <dd className="mt-2 text-sm font-medium leading-6 text-[#244256]">
+                    {row.value}
+                    {row.status ? (
+                      <>
+                        {" "}
+                        <span className="font-black text-[#00636a]">{row.status}</span>
+                      </>
+                    ) : null}
+                  </dd>
+                </div>
+              </div>
+            );
+          })}
+        </dl>
+      ) : (
+        <p className="mt-6 text-sm font-semibold text-[#31505d]">Loading Plan Blueprint...</p>
+      )}
+    </section>
+  );
+}
+
+function getPlanBlueprintRailRows(summary: PlanBlueprintSummary): ReadonlyArray<{
+  icon: LucideIcon;
+  label: string;
+  status?: string | null;
+  value: string;
+}> {
+  return [
+    {
+      icon: Calendar,
+      label: "Frequency:",
+      status: summary.trainingFrequencyStatus,
+      value: summary.trainingFrequency,
+    },
+    {
+      icon: Dumbbell,
+      label: "Split:",
+      status: summary.splitStatus,
+      value: summary.split === "Choose a Training Split" ? "Pending" : summary.split,
+    },
+    {
+      icon: Clock3,
+      label: "Weekly rhythm:",
+      value: summary.weeklyRhythm,
+    },
+    {
+      icon: SlidersHorizontal,
+      label: "Muscle frequency:",
+      value: summary.muscleFrequency,
+    },
+    {
+      icon: CalendarCheck,
+      label: "Recovery:",
+      value: summary.recovery,
+    },
+    {
+      icon: ArrowRight,
+      label: "Next:",
+      value: summary.nextStep,
+    },
+  ];
+}
+
+function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProps) {
+  return (
+    <section className="plan-builder-next-card rounded-lg border border-stone-950/10 bg-white/60 px-6 py-7">
+      <h2 className="text-2xl font-black leading-tight text-[#120f0d]">What happens next</h2>
+      <p className="mt-5 text-base font-medium leading-7 text-[#31505d]">
+        {planBuilderNextStepBodyByStep[currentStep as keyof typeof planBuilderNextStepBodyByStep]}
+      </p>
+    </section>
+  );
+}
+
+type PlanBuilderPrototypePageProps = {
+  children: ReactNode;
+  currentStepIndex: number;
+  intro: ReactNode;
+  summary: PlanBlueprintSummary | null;
+  variant: PlanBuilderPrototypeVariant;
+};
+
+type PrototypeBlueprintSummaryProps = {
+  compact?: boolean;
+  summary: PlanBlueprintSummary | null;
+};
+
+type PrototypeBlueprintField = {
+  isPending: boolean;
+  label: string;
+  value: ReactNode;
+};
+
+type PlanBlueprintHeaderField = {
+  isPending: boolean;
+  label: string;
+  value: string;
+};
+
+// PROTOTYPE: Four Plan Blueprint layout variants, switchable via `?variant=`.
+function PlanBuilderPrototypePage({
+  children,
+  currentStepIndex,
+  intro,
+  summary,
+  variant,
+}: PlanBuilderPrototypePageProps) {
+  if (variant === "rail") {
+    return (
+      <section className="plan-builder-page plan-builder-prototype grid gap-4 xl:grid-cols-[minmax(0,1fr)_15rem] xl:items-start">
+        <section
+          aria-label="Plan Builder workspace"
+          className="plan-builder-workspace-card min-w-0 px-6 pb-4 pt-6 sm:px-8 lg:min-h-screen xl:px-10"
+        >
+          <PlanBuilderPrototypeHeader intro={intro} />
+          <PlanBuilderPrototypeStepper currentStepIndex={currentStepIndex} />
+          <div className="plan-builder-step-content mt-5">{children}</div>
+        </section>
+
+        <aside
+          aria-label="Plan blueprint summary"
+          className="self-start border-l border-stone-950/10 px-4 pt-7"
+        >
+          <p className="text-xs font-black uppercase text-[#b93725]">Plan blueprint</p>
+          <PrototypeBlueprintRows compact summary={summary} />
+          <PlanBuilderNextStepMini currentStep="frequency" />
+        </aside>
+
+        <PlanBuilderPrototypeSwitcher current={variant} />
+      </section>
+    );
+  }
+
+  if (variant === "header") {
+    return (
+      <section className="plan-builder-page plan-builder-prototype">
+        <section
+          aria-label="Plan Builder workspace"
+          className="plan-builder-workspace-card min-w-0 px-6 pb-4 pt-6 sm:px-8 lg:min-h-screen xl:px-12"
+        >
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,32rem)] xl:items-end">
+            <PlanBuilderPrototypeHeader intro={intro} />
+            <aside aria-label="Plan blueprint summary">
+              <PrototypeHeaderBlueprintPanel summary={summary} />
+            </aside>
+          </div>
+          <PlanBuilderPrototypeStepper currentStepIndex={currentStepIndex} />
+          <div className="plan-builder-step-content mt-5">{children}</div>
+        </section>
+
+        <PlanBuilderPrototypeSwitcher current={variant} />
+      </section>
+    );
+  }
+
+  if (variant === "bottom") {
+    return (
+      <section className="plan-builder-page plan-builder-prototype">
+        <section
+          aria-label="Plan Builder workspace"
+          className="plan-builder-workspace-card min-w-0 px-6 pb-4 pt-6 sm:px-8 lg:min-h-screen xl:px-12"
+        >
+          <PlanBuilderPrototypeHeader intro={intro} />
+          <PlanBuilderPrototypeStepper currentStepIndex={currentStepIndex} />
+          <div className="plan-builder-step-content mt-5">{children}</div>
+          <aside
+            aria-label="Plan blueprint summary"
+            className="mt-4 border-t border-stone-950/10 pt-3"
+          >
+            <PrototypeBlueprintPills summary={summary} />
+          </aside>
+        </section>
+
+        <PlanBuilderPrototypeSwitcher current={variant} />
+      </section>
+    );
+  }
+
+  return (
+    <section className="plan-builder-page plan-builder-prototype">
+      <section
+        aria-label="Plan Builder workspace"
+        className="plan-builder-workspace-card min-w-0 px-6 pb-4 pt-6 sm:px-8 lg:min-h-screen xl:px-12"
+      >
+        <PlanBuilderPrototypeHeader intro={intro} />
+        <PlanBuilderPrototypeStepper currentStepIndex={currentStepIndex} />
+        <PrototypeBlueprintStrip summary={summary} />
+        <div className="plan-builder-step-content mt-5">{children}</div>
+      </section>
+
+      <PlanBuilderPrototypeSwitcher current={variant} />
+    </section>
+  );
+}
+
+function PlanBuilderPrototypeHeader({ intro }: Pick<PlanBuilderPrototypePageProps, "intro">) {
+  return (
+    <header className="space-y-1">
+      <p className="text-xs font-black uppercase text-[#b93725]">Prototype layout</p>
+      <h1 className="plan-builder-title text-[2rem] font-black leading-tight text-[#120f0d]">
+        Build your workout plan
+      </h1>
+      {intro}
+    </header>
+  );
+}
+
+function PlanBuilderPrototypeStepper({ currentStepIndex }: { currentStepIndex: number }) {
+  return (
+    <div className="plan-builder-stepper mt-4">
+      <Stepper currentIndex={currentStepIndex} items={planBuilderSteps} label="Plan Builder" />
+    </div>
+  );
+}
+
+function PrototypeBlueprintStrip({ summary }: PrototypeBlueprintSummaryProps) {
+  return (
+    <aside aria-label="Plan blueprint summary" className="mt-4 border-y border-stone-950/10 py-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <p className="text-xs font-black uppercase text-[#b93725]">Plan blueprint</p>
+        <PrototypeBlueprintPills summary={summary} />
+      </div>
+    </aside>
+  );
+}
+
+function PrototypeBlueprintPills({ summary }: PrototypeBlueprintSummaryProps) {
+  if (!summary) {
+    return <p className="text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>;
+  }
+
+  return (
+    <dl className="flex min-w-0 flex-wrap items-center gap-2">
+      {planBlueprintSummaryRows.slice(0, 5).map((row) => {
+        const { value } = getPlanBlueprintSummaryRowContent(row, summary);
+
+        return (
+          <div
+            className="flex min-w-0 items-center gap-2 rounded-full border border-stone-950/10 bg-white/70 px-3 py-1.5"
+            key={row.label}
+          >
+            <dt className="text-[0.7rem] font-black uppercase text-stone-500">{row.label}</dt>
+            <dd className="max-w-48 truncate text-xs font-bold text-stone-950">{value}</dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+}
+
+function PrototypeHeaderBlueprintPanel({ summary }: PrototypeBlueprintSummaryProps) {
+  if (!summary) {
+    return (
+      <div className="border-l border-stone-950/10 pl-5">
+        <p className="text-xs font-black uppercase text-[#b93725]">Plan blueprint</p>
+        <p className="mt-2 text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>
+      </div>
+    );
+  }
+
+  const fields = getPrototypeHeaderBlueprintFields(summary);
+  const completedCount = fields.filter((field) => !field.isPending).length;
+
+  return (
+    <div className="border-l border-stone-950/10 pl-4">
+      <div className="flex items-center gap-3">
+        <div className="shrink-0">
+          <p className="text-xs font-black uppercase text-[#b93725]">Plan blueprint</p>
+          <p className="mt-0.5 text-[0.68rem] font-semibold leading-3 text-[#31505d]">
+            {completedCount} of {fields.length} decisions set
+          </p>
+        </div>
+        <span className="rounded-full bg-[#006f78] px-2 py-0.5 text-[0.6rem] font-black uppercase text-white">
+          Draft
+        </span>
+      </div>
+
+      <dl className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {fields.map((field) => (
+          <div
+            className={cn(
+              "flex min-w-0 items-baseline gap-1.5 border-l pl-2",
+              field.isPending ? "border-stone-950/10" : "border-[#006f78]/60",
+            )}
+            key={field.label}
+          >
+            <dt
+              className={cn(
+                "shrink-0 text-[0.58rem] font-black uppercase",
+                field.isPending ? "text-stone-400" : "text-[#006f78]",
+              )}
+            >
+              {field.label}
+            </dt>
+            <dd
+              className={cn(
+                "max-w-28 truncate text-[0.72rem] font-bold leading-3",
+                field.isPending ? "text-stone-500" : "text-stone-950",
+              )}
+            >
+              {field.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function getPrototypeHeaderBlueprintFields(
+  summary: PlanBlueprintSummary,
+): ReadonlyArray<PrototypeBlueprintField> {
+  return [
+    {
+      isPending: false,
+      label: "Goal",
+      value: summary.trainingGoal,
+    },
+    {
+      isPending: false,
+      label: "Frequency",
+      value: summary.trainingFrequency,
+    },
+    {
+      isPending: summary.split === "Choose a Training Split",
+      label: "Split",
+      value: summary.split === "Choose a Training Split" ? "Pending" : summary.split,
+    },
+    {
+      isPending: summary.repRanges === "Choose Rep ranges",
+      label: "Rep ranges",
+      value: summary.repRanges === "Choose Rep ranges" ? "Pending" : summary.repRanges,
+    },
+  ];
+}
+
+function PrototypeBlueprintRows({ compact = false, summary }: PrototypeBlueprintSummaryProps) {
+  if (!summary) {
+    return <p className="mt-3 text-sm font-semibold text-stone-600">Loading Plan Blueprint...</p>;
+  }
+
+  return (
+    <dl className={cn("mt-4 grid divide-y divide-stone-950/8", compact ? "text-xs" : "text-sm")}>
+      {planBlueprintSummaryRows.map((row) => {
+        const { status, value } = getPlanBlueprintSummaryRowContent(row, summary);
+
+        return (
+          <div className="grid grid-cols-[1rem_minmax(0,1fr)] gap-2 py-2" key={row.label}>
+            <row.icon
+              aria-hidden="true"
+              className="mt-0.5 text-[#006f78]"
+              size={14}
+              strokeWidth={1.8}
+            />
+            <div className="min-w-0">
+              <dt className="font-black uppercase text-stone-500">{row.label}</dt>
+              <dd className="mt-0.5 truncate font-semibold text-stone-950">
+                {status ? <span className="text-[#b93725]">{status}</span> : value}
+              </dd>
+            </div>
+          </div>
+        );
+      })}
+    </dl>
+  );
+}
+
+function PlanBuilderNextStepMini({ currentStep }: PlanBuilderCurrentStepCardProps) {
+  return (
+    <section className="mt-4 border-t border-stone-950/10 pt-4">
+      <h2 className="text-xs font-black uppercase text-stone-500">Next</h2>
+      <p className="mt-1 text-xs font-semibold leading-5 text-[#31505d]">
+        {planBuilderNextStepBodyByStep[currentStep as keyof typeof planBuilderNextStepBodyByStep]}
+      </p>
+    </section>
+  );
+}
+
+function PlanBuilderPrototypeSwitcher({ current }: { current: PlanBuilderPrototypeVariant }) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest("input, textarea, select, button, a, [contenteditable='true']") ||
+        (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      selectPlanBuilderPrototypeVariant(current, event.key === "ArrowLeft" ? -1 : 1);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [current]);
+
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  const currentVariant = planBuilderPrototypeVariants.find((variantOption) => {
+    return variantOption.id === current;
+  });
+
+  return (
+    <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-stone-950/15 bg-stone-950 px-3 py-2 text-sm font-bold text-white shadow-2xl">
+      <button
+        aria-label="Previous prototype variant"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+        onClick={() => selectPlanBuilderPrototypeVariant(current, -1)}
+        type="button"
+      >
+        <ChevronLeft aria-hidden="true" size={18} />
+      </button>
+      <p className="min-w-40 text-center">
+        {current.toUpperCase()} - {currentVariant?.label ?? "Prototype"}
+      </p>
+      <button
+        aria-label="Next prototype variant"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+        onClick={() => selectPlanBuilderPrototypeVariant(current, 1)}
+        type="button"
+      >
+        <ChevronRight aria-hidden="true" size={18} />
+      </button>
+    </div>
+  );
+}
+
+function usePlanBuilderPrototypeVariant(): PlanBuilderPrototypeVariant | null {
+  const [variant, setVariant] = useState(getPlanBuilderPrototypeVariantFromLocation);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    function handleUrlChange() {
+      setVariant(getPlanBuilderPrototypeVariantFromLocation());
+    }
+
+    window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("plan-builder-prototype-change", handleUrlChange);
+    return () => {
+      window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("plan-builder-prototype-change", handleUrlChange);
+    };
+  }, []);
+
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
+  return variant;
+}
+
+function usePlanBuilderLargeScreenLayout() {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+
+    return window.matchMedia(planBuilderLargeScreenQuery).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(planBuilderLargeScreenQuery);
+    const handleChange = () => setMatches(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return matches;
+}
+
+function getPlanBuilderPrototypeVariantFromLocation(): PlanBuilderPrototypeVariant | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const requestedVariant = new URLSearchParams(window.location.search).get("variant");
+  const matchingVariant = planBuilderPrototypeVariants.find((variant) => {
+    return variant.id === requestedVariant;
+  });
+
+  return matchingVariant?.id ?? null;
+}
+
+function selectPlanBuilderPrototypeVariant(
+  current: PlanBuilderPrototypeVariant,
+  direction: -1 | 1,
+) {
+  const currentIndex = planBuilderPrototypeVariants.findIndex((variant) => variant.id === current);
+  const nextIndex =
+    (currentIndex + direction + planBuilderPrototypeVariants.length) %
+    planBuilderPrototypeVariants.length;
+  const nextVariant = planBuilderPrototypeVariants[nextIndex] ?? planBuilderPrototypeVariants[0];
+  const url = new URL(window.location.href);
+
+  url.searchParams.set("variant", nextVariant.id);
+  window.history.replaceState(null, "", url);
+  window.dispatchEvent(new Event("plan-builder-prototype-change"));
 }
 
 function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
@@ -1141,28 +1791,27 @@ function TrainingFrequencyStep({
   const recommendation = getTrainingFrequencyRecommendation(
     selectedTrainingFrequencyDaysPerWeek ?? 3,
   );
+  const shouldShowLargeScreenWarning = usePlanBuilderLargeScreenLayout();
 
   return (
     <section
       aria-labelledby="training-frequency-title"
-      className="training-frequency-panel rounded-lg border border-stone-950/10 bg-white/78 p-6 sm:p-8 lg:-mx-[1.375rem]"
+      className="training-frequency-panel lg:-mx-[1.375rem]"
     >
       <div>
         <h2
-          className="training-frequency-title font-serif text-3xl font-black leading-tight text-[#120f0d]"
+          className="training-frequency-title text-3xl font-black leading-tight text-[#120f0d]"
           id="training-frequency-title"
         >
           Training frequency
         </h2>
         <p className="training-frequency-copy mt-4 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
-          Choose how many days per week you can realistically train.
-        </p>
-        <p className="mt-1 max-w-3xl text-base font-medium leading-6 text-[#31505d]">
-          Just Workout will recommend the best Training Split based on this choice.
+          Choose how many days per week you can realistically train so Just Workout can recommend
+          the right split.
         </p>
       </div>
 
-      <fieldset className="training-frequency-options mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <fieldset className="training-frequency-options mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <legend className="sr-only">Training Frequency</legend>
         {trainingFrequencyOptions.map((option) => (
           <TrainingFrequencyOptionRadio
@@ -1173,14 +1822,14 @@ function TrainingFrequencyStep({
           />
         ))}
       </fieldset>
-
       <TrainingFrequencyRecommendationCard recommendation={recommendation} />
-
-      <PlanBuilderStepStatusCard
-        body="6-day plans are not available in this first version."
-        className="mt-4"
-        title="Unavailable"
-      />
+      {shouldShowLargeScreenWarning ? (
+        <PlanBuilderStepStatusCard
+          body="6-day plans are not available in this first version."
+          className="training-frequency-large-screen-warning"
+          title="Unavailable training frequency"
+        />
+      ) : null}
 
       <div className="training-frequency-actions mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
@@ -1230,20 +1879,23 @@ function TrainingSplitStep({
   });
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-      <div className="min-w-0 space-y-4">
-        <section aria-labelledby="training-split-title" className="space-y-3">
+    <div className="training-split-step">
+      <div className="min-w-0">
+        <section aria-labelledby="training-split-title" className="training-split-choice">
           <div>
-            <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="training-split-title">
-              Select Training Split
+            <h3
+              className="training-split-section-title font-black text-stone-950"
+              id="training-split-title"
+            >
+              Choose a compatible split
             </h3>
-            <p className="mt-1 max-w-2xl text-sm text-stone-600">
-              These options stay compatible with {trainingFrequencyLabel}. The saved Plan Blueprint
-              keeps only the selected split id while weekly rhythm and recovery stay derived.
+            <p className="training-split-section-copy mt-1 max-w-2xl text-sm text-[#244256]">
+              Just Workout recommends the best fit, but you can choose another compatible structure
+              for {trainingFrequencyLabel}.
             </p>
           </div>
 
-          <fieldset className="grid gap-3">
+          <fieldset className="training-split-options">
             <legend className="sr-only">Training Split</legend>
             {compatibleSplits.map((option) => (
               <TrainingSplitOptionRadio
@@ -1262,12 +1914,14 @@ function TrainingSplitStep({
           key={selectedSplit.id}
           split={selectedSplit}
         />
+        <UnsupportedTrainingSplitsPanel />
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button asChild variant="outline">
+        <div className="training-split-actions flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button asChild className="training-split-action-button" variant="outline">
             <Link to={planBuilderPaths.frequency}>Back to Frequency</Link>
           </Button>
           <Button
+            className="training-split-action-button"
             onClick={() => {
               void onContinueToRepRanges();
             }}
@@ -1278,12 +1932,11 @@ function TrainingSplitStep({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <PlanBuilderStepStatusCard
-          body="No Training Plan has been generated yet. Review is still the point where the full Training Plan is created."
-          title="Plan status"
-        />
-      </div>
+      <PlanBuilderStepStatusCard
+        body="Your workout stays in blueprint mode until Review confirms the full plan."
+        className="training-split-generation-note"
+        title="Plan status"
+      />
     </div>
   );
 }
@@ -1993,12 +2646,9 @@ function TrainingFrequencyOptionRadio({
         value={option.daysPerWeek}
       />
       {isSelected ? (
-        <CheckCircle2
-          aria-hidden="true"
-          className="absolute right-4 top-4 text-[#006f78]"
-          size={22}
-          strokeWidth={2}
-        />
+        <span className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-[#007780] text-white">
+          <Check aria-hidden="true" size={19} strokeWidth={2.5} />
+        </span>
       ) : null}
       <span className="training-frequency-option__icon flex h-16 w-16 items-center justify-center text-stone-950">
         <span className="training-frequency-option__icon-frame relative flex h-16 w-16 items-center justify-center">
@@ -2028,7 +2678,13 @@ function TrainingSplitOptionRadio({
   const optionState = getSelectableOptionState(isSelected);
 
   return (
-    <label className={getSelectableOptionCardClassName(optionState)}>
+    <label
+      className={cn(
+        "training-split-option",
+        getSelectableOptionCardClassName(optionState),
+        isSelected ? "training-split-option--selected" : null,
+      )}
+    >
       <input
         checked={isSelected}
         className="sr-only"
@@ -2037,14 +2693,24 @@ function TrainingSplitOptionRadio({
         type="radio"
         value={option.id}
       />
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-lg font-black">{option.label}</p>
-          <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
+      <div className="training-split-option__body">
+        <span className="training-split-option__control" aria-hidden="true">
+          {isSelected ? <Check aria-hidden="true" size={19} strokeWidth={2.8} /> : null}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="training-split-option__title font-black">{option.label}</p>
+            <SelectionBadge isSelected={isSelected}>{badgeLabel}</SelectionBadge>
+          </div>
+          <p
+            className={cn(
+              "training-split-option__copy",
+              isSelected ? "text-[#244256]" : selectableOptionMutedTextStyles[optionState],
+            )}
+          >
             {option.cardDescription}
           </p>
         </div>
-        <SelectionBadge isSelected={isSelected}>{badgeLabel}</SelectionBadge>
       </div>
     </label>
   );
@@ -2150,76 +2816,85 @@ function TrainingSplitDetailsPanel({ fitStatus, split }: TrainingSplitDetailsPan
       aria-labelledby="training-split-details-title"
       aria-atomic="true"
       aria-live="polite"
-      className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4"
+      className="training-split-details rounded-lg border border-[#0b6f78] bg-[#fbfdfc] p-4"
     >
-      <p className="text-sm font-bold uppercase tracking-wide text-[#b93725]">Selected split</p>
-      <h3 className="mt-1 text-xl font-black text-stone-950" id="training-split-details-title">
-        {split.label}
-      </h3>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">{split.cardDescription}</p>
+      <div className="training-split-details__heading">
+        <span className="training-split-details__check flex h-9 w-9 items-center justify-center rounded-full bg-[#00636a] text-white">
+          <Check aria-hidden="true" size={20} strokeWidth={2.6} />
+        </span>
+        <h3 className="text-xl font-black text-stone-950" id="training-split-details-title">
+          {split.label}
+        </h3>
+      </div>
+      <p className="training-split-details__copy mt-2 max-w-3xl text-sm text-[#244256]">
+        {split.cardDescription}
+      </p>
 
-      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-        <SummaryRow label="Weekly rhythm" value={split.weeklyRhythm} />
-        <SummaryRow label="Muscle frequency" value={split.muscleFrequency} />
-        <SummaryRow label="Recovery" value={split.recovery} />
-      </dl>
-
-      <TrainingSplitFitPanel fitStatus={fitStatus} />
-      <TrainingSplitSchedulePanel schedule={split.schedule} />
-      <UnsupportedTrainingSplitsPanel />
+      <div className="training-split-details__content">
+        <TrainingSplitFitPanel fitStatus={fitStatus} />
+        <TrainingSplitSchedulePanel schedule={split.schedule} />
+      </div>
     </section>
   );
 }
 
 function TrainingSplitFitPanel({ fitStatus }: TrainingSplitFitPanelProps) {
   return (
-    <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
-      <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-        Why this split fits
-      </h4>
-      <p className="mt-2 text-sm font-semibold text-stone-900">{fitStatus.title}</p>
-      <p className="mt-2 text-sm text-stone-600">{fitStatus.body}</p>
+    <div className="training-split-fit-panel">
+      <h4 className="text-base font-black text-stone-950">Why this split fits</h4>
+      <ul className="mt-3 grid gap-2 text-sm font-medium leading-5 text-[#112c3a]">
+        <li className="flex gap-2">
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 shrink-0 text-[#00636a]" size={17} />
+          <span>{fitStatus.title}</span>
+        </li>
+        <li className="flex gap-2">
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 shrink-0 text-[#00636a]" size={17} />
+          <span>Muscle frequency and recovery stay balanced.</span>
+        </li>
+        <li className="flex gap-2">
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 shrink-0 text-[#00636a]" size={17} />
+          <span>Easy to recover from and schedule.</span>
+        </li>
+      </ul>
     </div>
   );
 }
 
 function UnsupportedTrainingSplitsPanel() {
   return (
-    <section aria-labelledby="not-recommended-split-title" className="mt-4 space-y-3">
-      <div>
-        <h4
-          className="text-lg font-black text-stone-950 sm:text-xl"
-          id="not-recommended-split-title"
-        >
-          Not included in this step
-        </h4>
-        <p className="mt-1 max-w-2xl text-sm text-stone-600">
-          Common split categories that do not fit this first Plan Builder version stay explanatory
-          only.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
+    <section aria-labelledby="not-recommended-split-title" className="training-split-unsupported">
+      <h4 className="text-base font-black text-stone-950" id="not-recommended-split-title">
+        Not included in this step
+      </h4>
+      <div className="mt-2 divide-y divide-stone-950/10">
         {unsupportedTrainingSplitCategories.map((category) => (
-          <PlanBuilderStepStatusCard
-            body={category.description}
-            key={category.title}
-            title={category.title}
-          />
+          <div className="training-split-unsupported__row" key={category.title}>
+            <Info aria-hidden="true" className="mt-0.5 shrink-0 text-[#0a5960]" size={18} />
+            <p className="font-semibold text-[#112c3a]">{category.title}</p>
+            <p className="text-[#244256]">
+              {getUnsupportedTrainingSplitShortReason(category.title)}
+            </p>
+          </div>
         ))}
       </div>
     </section>
   );
 }
 
+function getUnsupportedTrainingSplitShortReason(title: string): string {
+  if (title === "Body-part split weeks") {
+    return "Too low in frequency for most users on a 2-5 day builder.";
+  }
+
+  return "Less compatible with the selected Training Frequency.";
+}
+
 function TrainingSplitSchedulePanel({ schedule }: TrainingSplitSchedulePanelProps) {
   return (
-    <div className="mt-4 rounded-lg border border-stone-900/10 bg-white/80 p-4">
-      <h4 className="text-sm font-bold uppercase tracking-wide text-stone-500">
+    <div className="training-split-schedule-panel">
+      <h4 className="text-base font-black text-stone-950">
         {getTrainingSplitScheduleHeading(schedule)}
       </h4>
-      <p className="mt-2 text-sm text-stone-600">{schedule.description}</p>
-
       <TrainingSplitScheduleContent schedule={schedule} />
     </div>
   );
@@ -2227,42 +2902,57 @@ function TrainingSplitSchedulePanel({ schedule }: TrainingSplitSchedulePanelProp
 
 function TrainingSplitScheduleContent({ schedule }: TrainingSplitSchedulePanelProps) {
   switch (schedule.kind) {
-    case "fixed-week":
-      return (
-        <ol className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {schedule.week.map((day) => (
-            <li
-              className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
-              key={`${day.dayLabel}-${day.sessionLabel}`}
-            >
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                {day.dayLabel}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-stone-900">{day.sessionLabel}</p>
-            </li>
-          ))}
-        </ol>
+    case "fixed-week": {
+      const trainingDays = schedule.week.filter(
+        (day) => !day.sessionLabel.toLowerCase().includes("rest"),
       );
-    case "rotating-cycle":
+
       return (
-        <div className="mt-4 space-y-3">
-          <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {schedule.cycle.map((session, index) => (
+        <div className="mt-3">
+          <ol className="training-split-schedule-days">
+            {trainingDays.map((day, index) => (
               <li
-                className="rounded-md border border-stone-900/10 bg-[#f4f0e8] px-3 py-3"
-                key={session.id}
+                className="training-split-schedule-day"
+                key={`${day.dayLabel}-${day.sessionLabel}`}
               >
-                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">
-                  Cycle step {index + 1}
+                <p className="text-sm font-bold text-[#244256]">
+                  {getSuggestedTrainingDayLabel(day.dayLabel, index)}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-stone-900">{session.sessionLabel}</p>
+                <p className="mt-1 text-sm font-semibold text-[#00636a]">{day.sessionLabel}</p>
               </li>
             ))}
           </ol>
-          <p className="text-sm font-semibold text-stone-700">{schedule.cadence}</p>
+          <p className="mt-3 text-sm font-medium leading-6 text-[#244256]">
+            {schedule.description}
+          </p>
+        </div>
+      );
+    }
+    case "rotating-cycle":
+      return (
+        <div className="mt-3 space-y-3">
+          <ol className="training-split-schedule-days">
+            {schedule.cycle.map((session, index) => (
+              <li className="training-split-schedule-day" key={session.id}>
+                <p className="text-sm font-bold text-[#244256]">Cycle step {index + 1}</p>
+                <p className="mt-1 text-sm font-semibold text-[#00636a]">{session.sessionLabel}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="text-sm font-medium leading-6 text-[#244256]">{schedule.cadence}</p>
         </div>
       );
   }
+}
+
+function getSuggestedTrainingDayLabel(dayLabel: string, index: number): string {
+  const suggestedWeekdays = ["Mon", "Wed", "Fri", "Sat", "Sun"];
+
+  if (dayLabel.startsWith("Day ")) {
+    return suggestedWeekdays[index] ?? dayLabel;
+  }
+
+  return dayLabel;
 }
 
 function getTrainingSplitScheduleHeading(schedule: TrainingSplitSchedule): string {
@@ -2284,7 +2974,7 @@ function TrainingFrequencyRecommendationCard({
   return (
     <section
       aria-labelledby="training-frequency-recommendation-title"
-      className="training-frequency-recommendation mt-6 flex items-center gap-5 rounded-lg border border-stone-950/8 bg-[#f5f6f4] px-5 py-[17px] text-[#075d63]"
+      className="training-frequency-recommendation mt-6 flex items-center gap-5 rounded-lg border border-[#d9ebed] bg-[#f8fcfc] px-5 py-[17px] text-[#075d63]"
     >
       <span className="training-frequency-recommendation__icon flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#0b8490]/20 bg-white/60">
         <Star aria-hidden="true" size={28} strokeWidth={1.5} />
@@ -2312,7 +3002,7 @@ function PlanBuilderStepStatusCard({
   return (
     <div
       className={cn(
-        "plan-builder-step-status flex gap-4 rounded-lg border border-[#eecba9]/45 bg-[#fff7ee] px-5 py-[14px] text-[#7a512a]",
+        "plan-builder-step-status flex gap-4 rounded-lg border border-[#f0cfad] bg-[#fff8f1] px-5 py-[14px] text-[#8a4a18]",
         hasVisibleTitle ? "items-start" : "items-center",
         className,
       )}
@@ -2330,79 +3020,6 @@ function PlanBuilderStepStatusCard({
           {body}
         </p>
       </div>
-    </div>
-  );
-}
-
-type PlanBlueprintSummaryCardProps = {
-  summary: PlanBlueprintSummary | null;
-};
-
-function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
-  return (
-    <aside aria-label="Plan blueprint summary" className="self-start xl:sticky xl:top-6">
-      <Card className="plan-builder-summary-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
-        <h2
-          className="font-serif text-2xl font-black leading-tight text-[#120f0d]"
-          id="plan-blueprint-summary-title"
-        >
-          Plan blueprint
-        </h2>
-
-        {summary ? (
-          <dl className="mt-6 divide-y divide-stone-950/8">
-            {planBlueprintSummaryRows.map((row) => {
-              const { status, value } = getPlanBlueprintSummaryRowContent(row, summary);
-
-              return (
-                <KeyValueRow
-                  icon={row.icon}
-                  key={row.label}
-                  label={row.label}
-                  status={status}
-                  statusClassName="bg-[#f8eee6]"
-                  value={value}
-                />
-              );
-            })}
-          </dl>
-        ) : (
-          <p className="mt-6 text-base font-medium text-[#526873]">Loading Plan Blueprint...</p>
-        )}
-      </Card>
-    </aside>
-  );
-}
-
-type SummaryRowProps = {
-  label: string;
-  status?: PlanBlueprintSummaryStatus | null;
-  value: string;
-};
-
-const planBlueprintSummaryStatusStyles = {
-  "Also works": "bg-stone-900/10 text-stone-700",
-  Completed: "bg-stone-950 text-stone-50",
-  Recommended: "bg-[#fff3ea] text-[#b93725]",
-} as const satisfies Record<PlanBlueprintSummaryStatus, string>;
-
-function SummaryRow({ label, status = null, value }: SummaryRowProps) {
-  return (
-    <div className="min-w-0 rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-3 py-3">
-      <dt className="flex items-start justify-between gap-3 text-xs font-bold uppercase tracking-wide text-stone-500">
-        <span>{label}</span>
-        {status ? (
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
-              planBlueprintSummaryStatusStyles[status],
-            )}
-          >
-            {status}
-          </span>
-        ) : null}
-      </dt>
-      <dd className="mt-1 break-words text-sm font-semibold text-stone-900">{value}</dd>
     </div>
   );
 }

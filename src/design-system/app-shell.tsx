@@ -21,28 +21,33 @@ type AppShellNavigationItem = {
   href: string;
   icon: LucideIcon;
   label: string;
+  largeScreenOnly?: boolean;
 };
 
 const appShellNavigationItems = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/workout", icon: Dumbbell, label: "Workouts" },
-  { href: "/exercise-library", icon: BookOpen, label: "Exercise Library" },
+  { href: "/", icon: Home, label: "Home", largeScreenOnly: true },
+  { href: "/workout", icon: Dumbbell, label: "Workouts", largeScreenOnly: true },
+  { href: "/exercise-library", icon: BookOpen, label: "Exercise Library", largeScreenOnly: true },
   { href: "/plan-builder", icon: CalendarCheck, label: "Workout Plan Builder" },
-  { href: "/progress", icon: TrendingUp, label: "Progress" },
-  { href: "/history", icon: History, label: "History" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/progress", icon: TrendingUp, label: "Progress", largeScreenOnly: true },
+  { href: "/history", icon: History, label: "History", largeScreenOnly: true },
+  { href: "/settings", icon: Settings, label: "Settings", largeScreenOnly: true },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 
 export function AppShell({ children, currentPathname }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#162325]">
-      <div className="grid min-h-screen w-full max-w-[1600px] lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <aside className="border-stone-950/8 bg-[#fbf8f3]/92 px-4 py-5 lg:min-h-screen lg:border-r lg:px-8 lg:py-8">
-          <Link className="flex min-w-0 items-center gap-3" to="/">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#00636a] text-white">
-              <Dumbbell aria-hidden="true" size={21} strokeWidth={2.4} />
+      <div className="app-shell-grid grid min-h-screen w-full lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside className="border-stone-950/8 bg-[#fbf8f3] px-4 py-5 lg:min-h-screen lg:border-r lg:px-5 lg:py-8">
+          <Link className="flex min-w-0 items-center gap-3" to="/plan-builder">
+            <span className="app-shell-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#00636a] text-white lg:h-11 lg:w-11">
+              <Dumbbell
+                aria-hidden="true"
+                className="app-shell-brand-icon h-5 w-5 lg:h-[1.45rem] lg:w-[1.45rem]"
+                strokeWidth={2.4}
+              />
             </span>
-            <span className="truncate text-[1.2rem] font-black leading-none text-[#075d63]">
+            <span className="app-shell-brand-name truncate text-[1.2rem] font-black leading-none text-[#075d63] lg:text-xl">
               Just Workout
             </span>
           </Link>
@@ -73,7 +78,7 @@ function AppShellNavigationLink({
 }) {
   const isActive =
     item.href === "/plan-builder"
-      ? currentPathname.startsWith("/plan-builder")
+      ? currentPathname.startsWith(item.href)
       : currentPathname === item.href;
   const Icon = item.icon;
 
@@ -81,14 +86,19 @@ function AppShellNavigationLink({
     <Link
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group flex min-h-16 items-center gap-5 rounded-lg px-4 text-base font-medium text-stone-950 transition-colors",
+        "app-shell-navigation-link group flex min-h-14 items-center gap-4 rounded-lg px-3 text-base font-medium text-stone-950 transition-colors lg:min-h-12 lg:gap-3 lg:text-[0.95rem] xl:min-h-16 xl:gap-5 xl:px-4 xl:text-base",
+        item.largeScreenOnly ? "app-shell-navigation-link--large-only" : null,
         isActive
-          ? "border-l-4 border-[#007780] bg-stone-950/6 pl-3 text-[#075d63]"
+          ? "border-l-4 border-[#007780] bg-stone-950/6 pl-2 text-[#075d63] xl:pl-3"
           : "hover:bg-stone-950/5",
       )}
       to={item.href}
     >
-      <Icon aria-hidden="true" className="shrink-0" size={25} strokeWidth={1.8} />
+      <Icon
+        aria-hidden="true"
+        className="h-6 w-6 shrink-0 lg:h-[25px] lg:w-[25px]"
+        strokeWidth={1.8}
+      />
       <span className="min-w-0 truncate">{item.label}</span>
     </Link>
   );

@@ -16,8 +16,11 @@ test.describe("desktop plan builder layout", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "Desktop-only layout assertions");
 
   test("keeps the workspace and summary aligned through the main flow", async ({ page }) => {
+    await page.setViewportSize({ width: 1536, height: 900 });
+
     const locators = await openPlanBuilder(page);
     await expectDesktopPlanBuilderLayout(locators);
+    await expectLocatorWithinViewport(page, locators.summary, "Plan Blueprint Summary");
 
     await selectTrainingFrequency(locators.frequencyGroup, 5);
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
@@ -26,6 +29,125 @@ test.describe("desktop plan builder layout", () => {
 
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+
+  test("fits the frequency step on a 1366 by 768 laptop viewport without scrolling", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+
+    const locators = await openPlanBuilder(page);
+    await selectTrainingFrequency(locators.frequencyGroup, 5);
+
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("button", { name: /back/i }),
+      "Back button",
+    );
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("link", { name: /continue to split/i }),
+      "Continue to Split link",
+    );
+    await expectNoVerticalOverflow(page);
+  });
+
+  test("fits the frequency step on the reference 1440 by 900 laptop viewport without scrolling", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    const locators = await openPlanBuilder(page);
+    await selectTrainingFrequency(locators.frequencyGroup, 5);
+
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("link", { name: /continue to split/i }),
+      "Continue to Split link",
+    );
+    await expectLocatorAboveViewportBottom(
+      page,
+      page.getByRole("link", { name: /continue to split/i }),
+      24,
+      "Continue to Split link",
+    );
+    await expectNoVerticalOverflow(page);
+  });
+
+  test("does not scroll with long saved blueprint values on a laptop viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 2048, height: 1000 });
+
+    const locators = await openPlanBuilder(page);
+    await selectTrainingFrequency(locators.frequencyGroup, 5);
+    await continueToSplit(page, trainingSplitLabels.rotatingPushPullLegs);
+    await page.getByRole("link", { name: /continue to rep ranges/i }).click();
+    await expect(page.getByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    await page.getByText("Strength-leaning").click();
+    await page.getByRole("link", { name: /back to split/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+    await page.getByRole("link", { name: /back to frequency/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
+
+    await expect(locators.summary.getByText("Rotating Push/Pull/Legs")).toBeVisible();
+    await expect(locators.summary.getByText("Strength-leaning")).toBeVisible();
+    await expectBlueprintValueWraps(locators.summary, "Rotating Push/Pull/Legs");
+    await expectBlueprintValueWraps(locators.summary, "Strength-leaning");
+    await expectNoHorizontalOverflow(page);
+    await expectNoVerticalOverflow(page);
+  });
+
+  test("does not scroll on intermediate laptop browser heights", async ({ page }) => {
+    for (const viewport of [
+      { height: 864, width: 1536 },
+      { height: 810, width: 1440 },
+      { height: 600, width: 1280 },
+    ]) {
+      await page.setViewportSize(viewport);
+
+      const locators = await openPlanBuilder(page);
+
+      await expectLocatorWithinViewport(
+        page,
+        page.getByRole("link", { name: /continue to split/i }),
+        "Continue to Split link",
+      );
+      await expectLocatorWithinViewport(
+        page,
+        locators.frequencyGroup,
+        "Training Frequency options",
+      );
+      await expectNoVerticalOverflow(page);
+    }
+  });
+});
+
+test.describe("laptop plan builder layout", () => {
+  test.skip(({ browserName }) => browserName !== "chromium", "Laptop-only layout assertions");
+
+  test("keeps the frequency step compact between tablet and wide desktop", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 504 });
+
+    const locators = await openPlanBuilder(page);
+
+    await expectSummaryPosition(locators.summary, "static");
+    await expectLocatorHeightAtMost(
+      page.locator(".plan-builder-stepper"),
+      70,
+      "Plan Builder stepper",
+    );
+    await expectLocatorWithinViewport(page, locators.frequencyGroup, "Training Frequency options");
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("button", { name: /back/i }),
+      "Back button",
+    );
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("link", { name: /continue to split/i }),
+      "Continue to Split link",
+    );
   });
 });
 
@@ -74,13 +196,15 @@ async function expectPlanBuilderShell(page: Page, locators: PlanBuilderLocators)
 }
 
 async function expectDesktopPlanBuilderLayout({ summary, workspace }: PlanBuilderLocators) {
-  await expectSummaryPosition(summary, "sticky");
+  await expectSummaryPosition(summary, "static");
 
   const workspaceBox = await getRequiredBoundingBox(workspace, "Plan Builder workspace");
   const summaryBox = await getRequiredBoundingBox(summary, "Plan Blueprint Summary");
 
-  expect(summaryBox.x).toBeGreaterThan(workspaceBox.x + workspaceBox.width - 48);
-  expect(Math.abs(summaryBox.y - workspaceBox.y)).toBeLessThan(32);
+  expect(summaryBox.x).toBeGreaterThanOrEqual(workspaceBox.x);
+  expect(summaryBox.x + summaryBox.width).toBeLessThanOrEqual(workspaceBox.x + workspaceBox.width);
+  expect(summaryBox.y).toBeGreaterThan(workspaceBox.y);
+  expect(summaryBox.y).toBeLessThan(workspaceBox.y + 180);
 }
 
 async function expectMobilePlanBuilderLayout({ summary, workspace }: PlanBuilderLocators) {
@@ -89,8 +213,10 @@ async function expectMobilePlanBuilderLayout({ summary, workspace }: PlanBuilder
   const workspaceBox = await getRequiredBoundingBox(workspace, "Plan Builder workspace");
   const summaryBox = await getRequiredBoundingBox(summary, "Plan Blueprint Summary");
 
-  expect(summaryBox.y).toBeGreaterThan(workspaceBox.y + workspaceBox.height - 24);
-  expect(Math.abs(summaryBox.x - workspaceBox.x)).toBeLessThan(24);
+  expect(summaryBox.x).toBeGreaterThanOrEqual(workspaceBox.x);
+  expect(summaryBox.x + summaryBox.width).toBeLessThanOrEqual(workspaceBox.x + workspaceBox.width);
+  expect(summaryBox.y).toBeGreaterThan(workspaceBox.y);
+  expect(summaryBox.y + summaryBox.height).toBeLessThan(workspaceBox.y + workspaceBox.height);
 }
 
 async function expectSummaryPosition(summary: Locator, expectedPosition: "static" | "sticky") {
@@ -109,6 +235,60 @@ async function getRequiredBoundingBox(locator: Locator, label: string) {
   }
 
   return box;
+}
+
+async function expectLocatorWithinViewport(page: Page, locator: Locator, label: string) {
+  const box = await getRequiredBoundingBox(locator, label);
+  const viewport = page.viewportSize();
+
+  expect(viewport, `${label} should be checked against a fixed viewport`).not.toBeNull();
+
+  if (!viewport) {
+    throw new Error(`${label} viewport was not available.`);
+  }
+
+  expect(box.x, `${label} left edge should stay in viewport`).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width, `${label} right edge should stay in viewport`).toBeLessThanOrEqual(
+    viewport.width,
+  );
+  expect(box.y, `${label} top edge should stay in viewport`).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height, `${label} bottom edge should stay in viewport`).toBeLessThanOrEqual(
+    viewport.height,
+  );
+}
+
+async function expectLocatorHeightAtMost(locator: Locator, maxHeight: number, label: string) {
+  const box = await getRequiredBoundingBox(locator, label);
+
+  expect(box.height, `${label} should stay compact`).toBeLessThanOrEqual(maxHeight);
+}
+
+async function expectLocatorAboveViewportBottom(
+  page: Page,
+  locator: Locator,
+  bottomReserve: number,
+  label: string,
+) {
+  const box = await getRequiredBoundingBox(locator, label);
+  const viewport = page.viewportSize();
+
+  expect(viewport, `${label} should be checked against a fixed viewport`).not.toBeNull();
+
+  if (!viewport) {
+    throw new Error(`${label} viewport was not available.`);
+  }
+
+  expect(
+    box.y + box.height,
+    `${label} should leave ${bottomReserve}px of visual bottom reserve`,
+  ).toBeLessThanOrEqual(viewport.height - bottomReserve);
+}
+
+async function expectBlueprintValueWraps(summary: Locator, value: string) {
+  const valueLocator = summary.locator("dd").filter({ hasText: value });
+
+  await expect(valueLocator).toHaveCSS("white-space", "normal");
+  await expect(valueLocator).toHaveCSS("text-overflow", "clip");
 }
 
 async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: number) {
@@ -136,6 +316,16 @@ async function expectNoHorizontalOverflow(page: Page) {
   });
 
   expect(hasHorizontalOverflow).toBe(false);
+}
+
+async function expectNoVerticalOverflow(page: Page) {
+  const hasVerticalOverflow = await page.evaluate(() => {
+    const root = document.documentElement;
+
+    return root.scrollHeight > root.clientHeight;
+  });
+
+  expect(hasVerticalOverflow).toBe(false);
 }
 
 function getLabelMatcher(label: string) {

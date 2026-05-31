@@ -1,4 +1,4 @@
-import { db } from "../training/local-database";
+import { db } from "../app/local-database";
 import type { PlanBlueprint } from "./plan-blueprint";
 
 export async function getCurrentPlanBlueprint(): Promise<PlanBlueprint | null> {

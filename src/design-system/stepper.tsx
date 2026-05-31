@@ -16,7 +16,7 @@ export function Stepper({ currentIndex, items, label }: StepperProps) {
     <nav aria-label={label}>
       <ol
         aria-label={`${label} steps`}
-        className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 xl:grid-cols-6"
+        className="plan-builder-stepper-list grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-6"
       >
         {items.map((item, index) => {
           const status = getStepperStatus(index, currentIndex);
@@ -26,12 +26,12 @@ export function Stepper({ currentIndex, items, label }: StepperProps) {
               {index > 0 ? (
                 <span
                   aria-hidden="true"
-                  className="absolute left-[-50%] top-[1.35rem] hidden h-px w-full bg-stone-950/10 xl:block"
+                  className="plan-builder-stepper-line absolute left-[-50%] top-[1.35rem] hidden h-px w-full bg-stone-950/10 lg:block"
                 />
               ) : null}
               <span
                 className={cn(
-                  "relative z-10 mx-auto flex h-11 w-11 items-center justify-center rounded-full border text-base font-semibold shadow-[0_6px_18px_rgba(0,0,0,0.04)]",
+                  "plan-builder-stepper-dot relative z-10 mx-auto flex h-11 w-11 items-center justify-center rounded-full border text-base font-semibold shadow-[0_6px_18px_rgba(0,0,0,0.04)]",
                   status === "current"
                     ? "border-[#006f78] bg-[#006f78] text-white"
                     : "border-stone-950/10 bg-white text-[#31505d]",
@@ -42,7 +42,7 @@ export function Stepper({ currentIndex, items, label }: StepperProps) {
               <span
                 aria-current={status === "current" ? "step" : undefined}
                 className={cn(
-                  "mt-3 block truncate text-sm font-medium",
+                  "plan-builder-stepper-label mt-3 block truncate text-sm font-medium",
                   status === "current" ? "text-[#00636a]" : "text-stone-950",
                 )}
               >

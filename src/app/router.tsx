@@ -11,7 +11,6 @@ import {
   planBuilderPaths,
   planBuilderService,
 } from "../plan-builder";
-import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
 const rootRoute = createRootRoute({
@@ -19,15 +18,14 @@ const rootRoute = createRootRoute({
 });
 
 const indexRoute = createRoute({
-  component: DashboardRoute,
+  beforeLoad: () => {
+    throw redirect({
+      replace: true,
+      to: planBuilderPaths.frequency,
+    });
+  },
   getParentRoute: () => rootRoute,
   path: "/",
-});
-
-const workoutRoute = createRoute({
-  component: WorkoutRoute,
-  getParentRoute: () => rootRoute,
-  path: "/workout",
 });
 
 const planBuilderEntryRoute = createRoute({
@@ -115,7 +113,6 @@ const planBuilderExercisesRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  workoutRoute,
   planBuilderEntryRoute,
   planBuilderFrequencyRoute,
   planBuilderSplitRoute,
