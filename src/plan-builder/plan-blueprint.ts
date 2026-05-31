@@ -14,6 +14,7 @@ import {
   type OptionalVolumeMuscleGroupId,
   selectTrainingVolumeConfiguration,
   setOptionalWeeklyRepTargetEnabled,
+  type TrainingVolumeConfigurationCandidate,
   type VolumeEstimationRepRange,
   type VolumePresetId,
   type VolumePresetSource,
@@ -385,11 +386,8 @@ type RepRangesStepCompletionCandidate = {
   repRanges: unknown;
 };
 
-type VolumeStepCompletionCandidate = {
+type VolumeStepCompletionCandidate = TrainingVolumeConfigurationCandidate & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
-  volumePreset?: unknown;
-  volumePresetSource?: unknown;
-  weeklyRepTargets?: unknown;
 };
 
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {

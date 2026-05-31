@@ -18,9 +18,8 @@ import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repos
 import type { TrainingSplitId } from "./training-split";
 import type {
   OptionalVolumeMuscleGroupId,
+  TrainingVolumeConfiguration,
   VolumePresetId,
-  VolumePresetSource,
-  WeeklyRepTarget,
 } from "./training-volume";
 
 async function getOrCreatePlanBlueprint() {
@@ -88,9 +87,7 @@ type ConfirmRepRangeStyleOptions = {
 
 type ConfirmTrainingVolumeOptions = {
   timestamp?: string;
-  volumePreset: VolumePresetId;
-  volumePresetSource: VolumePresetSource;
-  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration;
 };
 
 type InitializeTrainingVolumeOptions = {
@@ -218,9 +215,7 @@ async function confirmSelectedRepRangeStyle({
 
 async function confirmSelectedTrainingVolume({
   timestamp = new Date().toISOString(),
-  volumePreset,
-  volumePresetSource,
-  weeklyRepTargets,
+  trainingVolumeConfiguration,
 }: ConfirmTrainingVolumeOptions) {
   const blueprint = await getOrCreatePlanBlueprint();
 
@@ -228,9 +223,7 @@ async function confirmSelectedTrainingVolume({
     confirmTrainingVolume({
       blueprint: {
         ...blueprint,
-        volumePreset,
-        volumePresetSource,
-        weeklyRepTargets,
+        ...trainingVolumeConfiguration,
       },
       timestamp,
     }),

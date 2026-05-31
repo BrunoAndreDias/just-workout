@@ -67,6 +67,7 @@ import {
   estimateWeeklySetRangeForTarget,
   isTrainingVolumeConfiguration,
   type OptionalVolumeMuscleGroupId,
+  type TrainingVolumeConfiguration,
   type VolumeMuscleGroupId,
   type VolumePreset,
   type VolumePresetId,
@@ -416,16 +417,13 @@ type UpdateOptionalVolumeTargetMutationVariables = {
 
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
-  volumePreset: VolumePresetId;
-  volumePresetSource: VolumePresetSource;
-  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration;
 };
 
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
   intro: ReactNode;
-  stepLabel: string;
   summary: PlanBlueprintSummary | null;
 };
 
@@ -595,7 +593,6 @@ export function PlanBuilderRoute() {
           Configure your training blueprint step by step before generating your plan.
         </p>
       }
-      stepLabel="Frequency step"
       summary={summary}
     >
       {blueprint ? (
@@ -661,7 +658,6 @@ export function PlanBuilderSplitRoute() {
           recommend the best fit for this Training Frequency without locking you into one option.
         </p>
       }
-      stepLabel="Split step"
       summary={summary}
     >
       {blueprint && selectedSplit ? (
@@ -730,7 +726,6 @@ export function PlanBuilderRepRangesRoute() {
           Volume into sets and reps. This step stays focused on rep targets only.
         </p>
       }
-      stepLabel="Rep ranges step"
       summary={summary}
     >
       {blueprint && selectedRepRangeStyle ? (
@@ -795,10 +790,8 @@ export function PlanBuilderVolumeRoute() {
     }
 
     await confirmSelectedTrainingVolume({
+      trainingVolumeConfiguration,
       timestamp: new Date().toISOString(),
-      volumePreset: trainingVolumeConfiguration.volumePreset,
-      volumePresetSource: trainingVolumeConfiguration.volumePresetSource,
-      weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets,
     });
     await navigate({ to: planBuilderPaths.exercises });
   }
@@ -812,7 +805,6 @@ export function PlanBuilderVolumeRoute() {
           frames the weekly targets before later exercise choices refine them.
         </p>
       }
-      stepLabel="Volume step"
       summary={summary}
     >
       <WeeklyVolumeTargetsStep
@@ -840,7 +832,6 @@ export function PlanBuilderExercisesRoute() {
           Volume is confirmed. This route stays intentionally minimal until exercise picking lands.
         </p>
       }
-      stepLabel="Exercises step"
       summary={summary}
     >
       <ExercisesPlaceholderStep />
@@ -1009,23 +1000,16 @@ function useUpdateOptionalVolumeTargetMutation() {
 
 function useConfirmTrainingVolumeMutation() {
   return usePlanBlueprintMutation<ConfirmTrainingVolumeMutationVariables>({
-    mutationFn: ({ timestamp, volumePreset, volumePresetSource, weeklyRepTargets }) =>
+    mutationFn: ({ timestamp, trainingVolumeConfiguration }) =>
       planBuilderService.confirmSelectedTrainingVolume({
+        trainingVolumeConfiguration,
         timestamp,
-        volumePreset,
-        volumePresetSource,
-        weeklyRepTargets,
       }),
-    optimisticUpdate: (
-      blueprint,
-      { timestamp, volumePreset, volumePresetSource, weeklyRepTargets },
-    ) =>
+    optimisticUpdate: (blueprint, { timestamp, trainingVolumeConfiguration }) =>
       confirmTrainingVolume({
         blueprint: {
           ...blueprint,
-          volumePreset,
-          volumePresetSource,
-          weeklyRepTargets,
+          ...trainingVolumeConfiguration,
         },
         timestamp,
       }),
@@ -1083,13 +1067,7 @@ function hasCompatibleSelectedTrainingSplit(
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
 }
 
-function PlanBuilderPage({
-  children,
-  currentStep,
-  intro,
-  stepLabel: _stepLabel,
-  summary,
-}: PlanBuilderPageProps) {
+function PlanBuilderPage({ children, currentStep, intro, summary }: PlanBuilderPageProps) {
   const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
 
   return (
@@ -1501,20 +1479,15 @@ function WeeklyVolumeTargetsStep({
             <Button asChild variant="outline">
               <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
             </Button>
-            {canContinueToExercises ? (
-              <Button
-                onClick={() => {
-                  void onContinueToExercises();
-                }}
-                type="button"
-              >
-                Continue to Exercises
-              </Button>
-            ) : (
-              <Button disabled type="button">
-                Continue to Exercises
-              </Button>
-            )}
+            <Button
+              disabled={!canContinueToExercises}
+              onClick={() => {
+                void onContinueToExercises();
+              }}
+              type="button"
+            >
+              Continue to Exercises
+            </Button>
           </div>
         </section>
       </div>

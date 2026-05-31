@@ -3,6 +3,7 @@ import { db } from "../training/local-database";
 import { createStarterPlan } from "../training/starter-data";
 import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
+import { isTrainingVolumeConfiguration } from "./training-volume";
 
 describe("planBuilderService", () => {
   beforeEach(async () => {
@@ -296,11 +297,14 @@ describe("planBuilderService", () => {
     const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
       timestamp: "2026-05-30T10:32:00.000Z",
     });
+
+    if (!isTrainingVolumeConfiguration(initializedBlueprint)) {
+      throw new Error("Expected initialized Training Volume before confirmation.");
+    }
+
     const confirmedBlueprint = await planBuilderService.confirmSelectedTrainingVolume({
+      trainingVolumeConfiguration: initializedBlueprint,
       timestamp: "2026-05-30T10:33:00.000Z",
-      volumePreset: initializedBlueprint.volumePreset!,
-      volumePresetSource: initializedBlueprint.volumePresetSource!,
-      weeklyRepTargets: initializedBlueprint.weeklyRepTargets!,
     });
 
     expect(confirmedBlueprint).toMatchObject({
