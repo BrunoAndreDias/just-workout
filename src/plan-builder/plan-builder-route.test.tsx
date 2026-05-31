@@ -1241,6 +1241,69 @@ describe("PlanBuilderRoute", () => {
     await expectReadOnlyExercisesStep();
   });
 
+  it("preserves Exercise Selection Preferences and blocks Review after Frequency changes until Exercises is reconfirmed", async () => {
+    const user = userEvent.setup();
+    const savedExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [
+        { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+      ],
+      strategy: "balanced",
+    } as const;
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "higher_volume",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences: savedExerciseSelectionPreferences,
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const frequencyView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+    const frequencyGroup = await screen.findByRole("group", {
+      name: /training frequency/i,
+    });
+
+    await user.click(within(frequencyGroup).getByText("5 days/week"));
+    await expectTrainingFrequencyChecked(frequencyGroup, 5);
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: false,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      exerciseSelectionPreferences: savedExerciseSelectionPreferences,
+      repRanges: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 5,
+      volumePreset: "higher_volume",
+      volumePresetSource: "user_selected",
+      weeklyRepTargets: expect.arrayContaining(higherVolumePresetWeeklyRepTargets),
+    });
+
+    const splitGroup = await continueToSplitStep(user);
+
+    expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+    expect(
+      await screen.findByRole("group", { name: /rep range style/i }),
+    ).toBeVisible();
+
+    frequencyView.unmount();
+
+    const reviewView = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+
+    await expectPlanBuilderPath(reviewView.router, planBuilderPaths.exercises);
+    await expectReadOnlyExercisesStep();
+  });
+
   it("preserves saved Rep ranges and Volume data after Split changes and restores guarded Exercises access after reconfirmation", async () => {
     const user = userEvent.setup();
 
