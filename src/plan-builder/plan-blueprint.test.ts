@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
@@ -729,10 +730,10 @@ describe("plan blueprint", () => {
   it("preserves Exercise Selection Preferences and invalidates Exercises when Split changes", () => {
     const exerciseSelectionPreferences = {
       avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-      equipmentPreset: "full_gym" as const,
+      equipmentPreset: "full_gym",
       preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
-      strategy: "balanced" as const,
-    };
+      strategy: "balanced",
+    } satisfies ExerciseSelectionPreferences;
     const blueprint = confirmExerciseSelectionPreferences({
       blueprint: createConfirmedPlanBlueprint({
         exerciseSelectionPreferences,

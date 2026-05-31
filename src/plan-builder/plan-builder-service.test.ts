@@ -239,12 +239,12 @@ describe("planBuilderService", () => {
 
   it("preserves Exercise Selection Preferences and clears confirmed Exercises when the Training Split changes", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-    const exerciseSelectionPreferences: ExerciseSelectionPreferences = {
+    const exerciseSelectionPreferences = {
       avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
       equipmentPreset: "full_gym",
       preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
       strategy: "balanced",
-    };
+    } satisfies ExerciseSelectionPreferences;
     const configuredBlueprint: PlanBlueprint = {
       ...initialBlueprint,
       ...createRecommendedTrainingVolumeConfiguration(),
