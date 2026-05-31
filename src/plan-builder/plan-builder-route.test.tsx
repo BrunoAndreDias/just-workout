@@ -746,6 +746,53 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
+  it("shows the Step 5 automatic rules note with passive rest copy and no rest controls", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByRole("heading", { name: /rules applied automatically/i }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Main work favors stable compound lifts before smaller isolation choices fill gaps.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Isolation exercises can support weekly rep targets when direct muscle work is needed.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Exercise picks stay distributed across key movement patterns instead of overloading one pattern.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Weekly muscle-group targets shape how much direct work each area receives.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Marked avoided exercises stay excluded so painful or unsuitable movements are not silently included later.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Rest times adapt to exercise demand and rep range.")).toBeVisible();
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /rest/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: /rest/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /rest/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/60-90 seconds/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/2-3 minutes/i)).not.toBeInTheDocument();
+  });
+
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
