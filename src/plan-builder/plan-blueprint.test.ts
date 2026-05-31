@@ -763,6 +763,43 @@ describe("plan blueprint", () => {
     ).toBe("volume");
   });
 
+  it("preserves Exercise Selection Preferences while invalidating confirmed Exercises when Rep ranges change", () => {
+    const exerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced",
+    } as const;
+    const blueprint = createConfirmedPlanBlueprint({
+      confirmedBuilderSteps: {
+        exercises: true,
+      },
+      exerciseSelectionPreferences,
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const repRangesChangedBlueprint = selectRepRangeStyle({
+      blueprint,
+      repRangeStyle: "strength_leaning",
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(repRangesChangedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: false,
+        split: true,
+        volume: false,
+      },
+      exerciseSelectionPreferences,
+      repRanges: "strength_leaning",
+    });
+    expect(getPlanBuilderRedirectStep(repRangesChangedBlueprint, "review")).toBe("rep-ranges");
+  });
+
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {
     const blueprintWithIncompatibleSplit = createTestPlanBlueprint({
       confirmedBuilderSteps: {

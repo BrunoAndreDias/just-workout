@@ -782,6 +782,54 @@ describe("PlanBuilderRoute", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
+  it("preserves Exercise Selection Preferences and re-locks Review after Rep ranges change", async () => {
+    const user = userEvent.setup();
+    const savedExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced",
+    } as const;
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences: savedExerciseSelectionPreferences,
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const repRangesView = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    });
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: false,
+        split: true,
+        volume: false,
+      },
+      exerciseSelectionPreferences: savedExerciseSelectionPreferences,
+      repRanges: "controlled_higher_reps",
+    });
+
+    repRangesView.unmount();
+
+    const reviewView = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+
+    await expectPlanBuilderPath(reviewView.router, planBuilderPaths.repRanges);
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+  });
+
   it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
