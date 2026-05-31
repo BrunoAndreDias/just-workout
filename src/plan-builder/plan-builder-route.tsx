@@ -42,6 +42,7 @@ import {
   selectTrainingFrequency,
   selectTrainingSplit,
   selectTrainingVolumePreset,
+  setOptionalVolumeTargetEnabled,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
@@ -64,6 +65,7 @@ import {
   type EstimatedSetRange,
   estimateWeeklySetRangeForTarget,
   isTrainingVolumeConfiguration,
+  type OptionalVolumeMuscleGroupId,
   type VolumeMuscleGroupId,
   type VolumePreset,
   type VolumePresetId,
@@ -237,7 +239,7 @@ const volumePresetDescriptions = {
   higher_volume: "Upper end of the weekly rep range when you can tolerate more direct work.",
 } as const satisfies Record<VolumePresetId, string>;
 
-type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate";
+type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate" | "optional";
 
 type WeeklyVolumeTargetRowDefinition = {
   label: string;
@@ -246,8 +248,20 @@ type WeeklyVolumeTargetRowDefinition = {
   statusTone: WeeklyVolumeTargetStatusTone;
 };
 
+type OptionalWeeklyVolumeTargetRowDefinition = {
+  label: string;
+  muscleGroupId: OptionalVolumeMuscleGroupId;
+};
+
 type WeeklyVolumeTargetDisplayRow = WeeklyVolumeTargetRowDefinition & {
   estimatedSetRangeLabel: string;
+  weeklyRepTargetLabel: string;
+};
+
+type OptionalWeeklyVolumeTargetDisplayRow = OptionalWeeklyVolumeTargetRowDefinition & {
+  actionLabel: "Add" | "Remove";
+  estimatedSetRangeLabel: string;
+  isEnabled: boolean;
   weeklyRepTargetLabel: string;
 };
 
@@ -255,6 +269,7 @@ const weeklyVolumeTargetStatusStyles = {
   accessory: "bg-[#f7efe4] text-[#8a5a2b]",
   "main-target": "bg-[#e8f6f3] text-[#0d6d67]",
   moderate: "bg-[#eef3fb] text-[#315d8a]",
+  optional: "bg-[#f4f0e8] text-[#5c6d73]",
 } as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
 
 const weeklyVolumeTargetColumnHeaderClassName =
@@ -304,6 +319,17 @@ const requiredWeeklyVolumeTargetRowDefinitions = [
     statusTone: "accessory",
   },
 ] as const satisfies ReadonlyArray<WeeklyVolumeTargetRowDefinition>;
+
+const optionalWeeklyVolumeTargetRowDefinitions = [
+  {
+    label: "Calves",
+    muscleGroupId: "calves",
+  },
+  {
+    label: "Abs",
+    muscleGroupId: "abs",
+  },
+] as const satisfies ReadonlyArray<OptionalWeeklyVolumeTargetRowDefinition>;
 
 const repRangeStyleDescriptionStyles = {
   selected: "text-[#31505d]",
@@ -374,6 +400,12 @@ type InitializeTrainingVolumeMutationVariables = {
 type UpdateTrainingVolumePresetMutationVariables = {
   timestamp: string;
   volumePreset: VolumePresetId;
+};
+
+type UpdateOptionalVolumeTargetMutationVariables = {
+  isEnabled: boolean;
+  muscleGroup: OptionalVolumeMuscleGroupId;
+  timestamp: string;
 };
 
 type PlanBuilderPageProps = {
@@ -463,6 +495,10 @@ type RepRangeStyleTargetsProps = {
 };
 
 type WeeklyVolumeTargetsStepProps = {
+  onOptionalVolumeTargetToggle: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   repRangeStyle: RepRangeStyle | null;
   selectedVolumePresetId: VolumePresetId | null;
@@ -487,7 +523,20 @@ type RequiredWeeklyRepTargetsRowsProps = {
   rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
 };
 
+type OptionalWeeklyRepTargetsSectionProps = {
+  onOptionalVolumeTargetToggle: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
+  rows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
+};
+
 type RequiredWeeklyVolumeTargetRowsOptions = {
+  repRangeStyle: RepRangeStyle | null;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
+
+type OptionalWeeklyVolumeTargetRowsOptions = {
   repRangeStyle: RepRangeStyle | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
@@ -688,6 +737,7 @@ export function PlanBuilderVolumeRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
   const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
+  const { mutate: updateOptionalVolumeTarget } = useUpdateOptionalVolumeTargetMutation();
   const selectedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
   const selectedRepRangeStyle = selectedRepRangeStyleId
     ? getRepRangeStyle(selectedRepRangeStyleId)
@@ -710,6 +760,17 @@ export function PlanBuilderVolumeRoute() {
     });
   }
 
+  function handleOptionalVolumeTargetToggle(
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) {
+    updateOptionalVolumeTarget({
+      isEnabled,
+      muscleGroup,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   return (
     <PlanBuilderPage
       currentStep="volume"
@@ -723,6 +784,7 @@ export function PlanBuilderVolumeRoute() {
       summary={summary}
     >
       <WeeklyVolumeTargetsStep
+        onOptionalVolumeTargetToggle={handleOptionalVolumeTargetToggle}
         onVolumePresetChange={handleVolumePresetChange}
         repRangeStyle={selectedRepRangeStyle}
         selectedVolumePresetId={blueprint?.volumePreset ?? null}
@@ -870,6 +932,24 @@ function useUpdateTrainingVolumePresetMutation() {
         blueprint,
         timestamp,
         volumePreset,
+      }),
+  });
+}
+
+function useUpdateOptionalVolumeTargetMutation() {
+  return usePlanBlueprintMutation<UpdateOptionalVolumeTargetMutationVariables>({
+    mutationFn: ({ isEnabled, muscleGroup, timestamp }) =>
+      planBuilderService.updateOptionalVolumeTarget({
+        isEnabled,
+        muscleGroup,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { isEnabled, muscleGroup, timestamp }) =>
+      setOptionalVolumeTargetEnabled({
+        blueprint,
+        isEnabled,
+        muscleGroup,
+        timestamp,
       }),
   });
 }
@@ -1266,6 +1346,7 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
 }
 
 function WeeklyVolumeTargetsStep({
+  onOptionalVolumeTargetToggle,
   onVolumePresetChange,
   repRangeStyle,
   selectedVolumePresetId,
@@ -1273,6 +1354,10 @@ function WeeklyVolumeTargetsStep({
   weeklyRepTargets,
 }: WeeklyVolumeTargetsStepProps) {
   const requiredWeeklyVolumeTargetRows = getRequiredWeeklyVolumeTargetRows({
+    repRangeStyle,
+    weeklyRepTargets,
+  });
+  const optionalWeeklyVolumeTargetRows = getOptionalWeeklyVolumeTargetRows({
     repRangeStyle,
     weeklyRepTargets,
   });
@@ -1311,6 +1396,10 @@ function WeeklyVolumeTargetsStep({
           />
 
           <RequiredWeeklyRepTargetsSection rows={requiredWeeklyVolumeTargetRows} />
+          <OptionalWeeklyRepTargetsSection
+            onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+            rows={optionalWeeklyVolumeTargetRows}
+          />
 
           <section aria-labelledby="weekly-volume-how-it-works-title" className="mt-5">
             <h4
@@ -1458,6 +1547,40 @@ function RequiredWeeklyRepTargetsSection({ rows }: RequiredWeeklyRepTargetsRowsP
   );
 }
 
+function OptionalWeeklyRepTargetsSection({
+  onOptionalVolumeTargetToggle,
+  rows,
+}: OptionalWeeklyRepTargetsSectionProps) {
+  return (
+    <section aria-labelledby="optional-volume-targets-title" className="mt-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h4
+            className="text-lg font-black text-stone-950 sm:text-xl"
+            id="optional-volume-targets-title"
+          >
+            Optional volume targets
+          </h4>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+            Calves and Abs stay out of the saved Training Volume until you add direct work for them.
+          </p>
+        </div>
+      </div>
+
+      {rows.length > 0 ? (
+        <OptionalWeeklyRepTargetsTable
+          onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+          rows={rows}
+        />
+      ) : (
+        <p className="mt-3 text-sm font-semibold text-stone-600">
+          Loading optional volume targets...
+        </p>
+      )}
+    </section>
+  );
+}
+
 function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsProps) {
   return (
     <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
@@ -1498,6 +1621,55 @@ function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsPro
                   variant="ghost"
                 >
                   Adjust
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OptionalWeeklyRepTargetsTable({
+  onOptionalVolumeTargetToggle,
+  rows,
+}: OptionalWeeklyRepTargetsSectionProps) {
+  return (
+    <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
+      <table aria-label="Optional Volume Targets" className="min-w-full border-collapse text-left">
+        <thead className="bg-[#f4f0e8]">
+          <tr>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Muscle group</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Weekly rep target</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Estimated sets/week</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Status</th>
+            <th className={weeklyVolumeTargetColumnHeaderClassName}>Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-stone-900/10 bg-white/88">
+          {rows.map((row) => (
+            <tr className="align-top" key={row.muscleGroupId}>
+              <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
+                {row.label}
+              </th>
+              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                {row.weeklyRepTargetLabel}
+              </td>
+              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                {row.estimatedSetRangeLabel}
+              </td>
+              <td className="px-4 py-4">
+                <WeeklyVolumeTargetStatusBadge label="Optional" tone="optional" />
+              </td>
+              <td className="px-4 py-4">
+                <Button
+                  aria-label={`${row.actionLabel} ${row.label} target`}
+                  onClick={() => onOptionalVolumeTargetToggle(row.muscleGroupId, !row.isEnabled)}
+                  size="sm"
+                  variant={row.isEnabled ? "ghost" : "outline"}
+                >
+                  {row.actionLabel}
                 </Button>
               </td>
             </tr>
@@ -1554,6 +1726,37 @@ function getRequiredWeeklyVolumeTargetRows({
   return rows;
 }
 
+function getOptionalWeeklyVolumeTargetRows({
+  repRangeStyle,
+  weeklyRepTargets,
+}: OptionalWeeklyVolumeTargetRowsOptions): Array<OptionalWeeklyVolumeTargetDisplayRow> {
+  if (!weeklyRepTargets) {
+    return [];
+  }
+
+  const rows: Array<OptionalWeeklyVolumeTargetDisplayRow> = [];
+
+  for (const definition of optionalWeeklyVolumeTargetRowDefinitions) {
+    const weeklyRepTarget = weeklyRepTargets.find(
+      ({ muscleGroup }) => muscleGroup === definition.muscleGroupId,
+    );
+
+    if (!weeklyRepTarget) {
+      continue;
+    }
+
+    rows.push(
+      createOptionalWeeklyVolumeTargetDisplayRow({
+        definition,
+        repRangeStyle,
+        weeklyRepTarget,
+      }),
+    );
+  }
+
+  return rows;
+}
+
 function createWeeklyVolumeTargetDisplayRow({
   definition,
   repRangeStyle,
@@ -1582,6 +1785,38 @@ function createWeeklyVolumeTargetDisplayRow({
     ...definition,
     estimatedSetRangeLabel: formatEstimatedSetRange(estimatedSetRange),
     weeklyRepTargetLabel: `${weeklyRepTargetValue} reps/week`,
+  };
+}
+
+function createOptionalWeeklyVolumeTargetDisplayRow({
+  definition,
+  repRangeStyle,
+  weeklyRepTarget,
+}: {
+  definition: OptionalWeeklyVolumeTargetRowDefinition;
+  repRangeStyle: RepRangeStyle | null;
+  weeklyRepTarget: WeeklyRepTarget;
+}): OptionalWeeklyVolumeTargetDisplayRow {
+  const estimatedSetRange =
+    repRangeStyle && weeklyRepTarget.target !== null
+      ? estimateWeeklySetRangeForTarget({
+          volumeEstimationRepRange: repRangeStyle.volumeEstimationRepRange,
+          weeklyRepTarget,
+        })
+      : null;
+
+  return {
+    ...definition,
+    actionLabel: weeklyRepTarget.isEnabled ? "Remove" : "Add",
+    estimatedSetRangeLabel:
+      weeklyRepTarget.isEnabled && estimatedSetRange
+        ? formatEstimatedSetRange(estimatedSetRange)
+        : "Optional",
+    isEnabled: weeklyRepTarget.isEnabled,
+    weeklyRepTargetLabel:
+      weeklyRepTarget.isEnabled && weeklyRepTarget.target !== null
+        ? `${weeklyRepTarget.target} reps/week`
+        : "Optional",
   };
 }
 

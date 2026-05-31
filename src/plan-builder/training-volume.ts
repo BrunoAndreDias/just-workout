@@ -11,6 +11,7 @@ export type VolumeMuscleGroupId =
   | "triceps"
   | "calves"
   | "abs";
+export type OptionalVolumeMuscleGroupId = "calves" | "abs";
 export type WeeklyRepTarget = {
   isEnabled: boolean;
   muscleGroup: VolumeMuscleGroupId;
@@ -93,6 +94,12 @@ export function isVolumePresetSource(value: unknown): value is VolumePresetSourc
   return value === "recommended_default" || value === "user_selected";
 }
 
+export function isOptionalVolumeMuscleGroupId(
+  value: unknown,
+): value is OptionalVolumeMuscleGroupId {
+  return optionalVolumeMuscleGroupSet.has(value as OptionalVolumeMuscleGroupId);
+}
+
 export function isTrainingVolumeConfiguration(
   value: TrainingVolumeConfigurationCandidate,
 ): value is TrainingVolumeConfiguration {
@@ -171,6 +178,38 @@ export function createRecommendedTrainingVolumeConfiguration(): TrainingVolumeCo
     volumePreset: defaultVolumePresetId,
     volumePresetSource: "recommended_default",
   });
+}
+
+export function setOptionalWeeklyRepTargetEnabled({
+  isEnabled,
+  muscleGroup,
+  trainingVolumeConfiguration,
+}: {
+  isEnabled: boolean;
+  muscleGroup: OptionalVolumeMuscleGroupId;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration;
+}): TrainingVolumeConfiguration {
+  if (!isOptionalVolumeMuscleGroupId(muscleGroup)) {
+    throw new Error(`Unknown Optional Volume Target "${muscleGroup}".`);
+  }
+
+  const preset = getVolumePreset(trainingVolumeConfiguration.volumePreset);
+
+  return {
+    ...trainingVolumeConfiguration,
+    weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets.map((weeklyRepTarget) =>
+      weeklyRepTarget.muscleGroup === muscleGroup
+        ? weeklyRepTarget.isEnabled === isEnabled
+          ? weeklyRepTarget
+          : {
+              ...weeklyRepTarget,
+              isEnabled,
+              source: "preset",
+              target: isEnabled ? preset.smallerMuscleTarget : null,
+            }
+        : weeklyRepTarget,
+    ),
+  };
 }
 
 export function selectTrainingVolumeConfiguration({

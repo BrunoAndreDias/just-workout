@@ -6,6 +6,7 @@ import {
   getVolumePreset,
   isVolumePresetId,
   selectTrainingVolumeConfiguration,
+  setOptionalWeeklyRepTargetEnabled,
   volumePresets,
 } from "./training-volume";
 
@@ -118,5 +119,60 @@ describe("training volume", () => {
         { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
       ],
     });
+  });
+
+  it("enables optional rows from the current preset, keeps them enabled across preset changes, and clears them when removed", () => {
+    const enabledConfiguration = setOptionalWeeklyRepTargetEnabled({
+      isEnabled: true,
+      muscleGroup: "calves",
+      trainingVolumeConfiguration: createRecommendedTrainingVolumeConfiguration(),
+    });
+
+    expect(enabledConfiguration.weeklyRepTargets).toEqual([
+      { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+      { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+      { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+      { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+      { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+      { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+      { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+      { isEnabled: true, muscleGroup: "calves", source: "preset", target: 45 },
+      { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+    ]);
+
+    const presetChangedConfiguration = selectTrainingVolumeConfiguration({
+      trainingVolumeConfiguration: enabledConfiguration,
+      volumePreset: "higher_volume",
+    });
+
+    expect(presetChangedConfiguration.weeklyRepTargets).toEqual([
+      { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "back", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "quads", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
+      { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 60 },
+      { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 60 },
+      { isEnabled: true, muscleGroup: "calves", source: "preset", target: 60 },
+      { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+    ]);
+
+    expect(
+      setOptionalWeeklyRepTargetEnabled({
+        isEnabled: false,
+        muscleGroup: "calves",
+        trainingVolumeConfiguration: presetChangedConfiguration,
+      }).weeklyRepTargets,
+    ).toEqual([
+      { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "back", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "quads", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 120 },
+      { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
+      { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 60 },
+      { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 60 },
+      { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+      { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+    ]);
   });
 });

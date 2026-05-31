@@ -761,6 +761,29 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
+  it("renders Calves and Abs as disabled Optional Volume Targets by default", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:40.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    const table = await screen.findByRole("table", { name: /optional volume targets/i });
+
+    for (const label of ["Calves", "Abs"] as const) {
+      const row = getTableRowByLabel(table, label);
+
+      expect(within(row).getAllByText("Optional")).toHaveLength(3);
+      expect(
+        within(row).getByRole("button", { name: new RegExp(`add ${label} target`, "i") }),
+      ).toBeEnabled();
+      expect(within(row).queryByText(/reps\/week/i)).not.toBeInTheDocument();
+      expect(within(row).queryByText(/sets\/week/i)).not.toBeInTheDocument();
+    }
+  });
+
   it("lets the user switch Volume Presets and updates saved targets, set estimates, summary, and source markers", async () => {
     const user = userEvent.setup();
 
@@ -820,6 +843,89 @@ describe("PlanBuilderRoute", () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
         volumePreset: "higher_volume",
         volumePresetSource: "user_selected",
+      });
+    });
+  });
+
+  it("adds and removes optional Volume Targets while keeping enabled preset-derived rows in sync with preset changes", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:46.000Z",
+    });
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-31T08:07:47.000Z",
+    });
+
+    await db.planBlueprints.put({
+      ...initializedBlueprint,
+      confirmedBuilderSteps: {
+        ...initializedBlueprint.confirmedBuilderSteps,
+        volume: true,
+      },
+      updatedAt: "2026-05-31T08:07:48.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
+    const optionalTable = await screen.findByRole("table", { name: /optional volume targets/i });
+    const calvesRow = getTableRowByLabel(optionalTable, "Calves");
+
+    await user.click(within(calvesRow).getByRole("button", { name: /add calves target/i }));
+
+    await waitFor(() => {
+      expect(within(calvesRow).getByText("45 reps/week")).toBeVisible();
+    });
+    expect(within(calvesRow).getByText("4-6 sets/week")).toBeVisible();
+    expect(within(calvesRow).getByRole("button", { name: /remove calves target/i })).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: true,
+          volume: false,
+        },
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "calves", source: "preset", target: 45 },
+        ]),
+      });
+    });
+
+    await user.click(within(volumePresetGroup).getByText("Higher volume"));
+
+    await waitFor(() => {
+      expect(
+        within(volumePresetGroup).getByRole("radio", { name: /higher volume/i }),
+      ).toBeChecked();
+    });
+    expect(within(calvesRow).getByText("60 reps/week")).toBeVisible();
+    expect(within(calvesRow).getByText("5-8 sets/week")).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "calves", source: "preset", target: 60 },
+        ]),
+      });
+    });
+
+    await user.click(within(calvesRow).getByRole("button", { name: /remove calves target/i }));
+
+    await waitFor(() => {
+      expect(within(calvesRow).getAllByText("Optional")).toHaveLength(3);
+    });
+    expect(within(calvesRow).getByRole("button", { name: /add calves target/i })).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        volumePreset: "higher_volume",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        ]),
       });
     });
   });

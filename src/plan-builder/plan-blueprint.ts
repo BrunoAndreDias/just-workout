@@ -11,7 +11,9 @@ import {
   isTrainingVolumeConfiguration,
   isVolumePresetId,
   normalizeTrainingVolumeConfiguration,
+  type OptionalVolumeMuscleGroupId,
   selectTrainingVolumeConfiguration,
+  setOptionalWeeklyRepTargetEnabled,
   type VolumeEstimationRepRange,
   type VolumePresetId,
   type VolumePresetSource,
@@ -125,6 +127,13 @@ type SelectTrainingVolumePresetOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
   volumePreset: VolumePresetId;
+};
+
+type SetOptionalVolumeTargetEnabledOptions = {
+  blueprint: PlanBlueprint;
+  isEnabled: boolean;
+  muscleGroup: OptionalVolumeMuscleGroupId;
+  timestamp: string;
 };
 
 type ConfirmTrainingFrequencyOptions = {
@@ -578,6 +587,36 @@ export function selectTrainingVolumePreset({
     confirmedBuilderSteps: {
       ...confirmedBuilderSteps,
       volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
+    },
+    updatedAt: timestamp,
+  };
+}
+
+export function setOptionalVolumeTargetEnabled({
+  blueprint,
+  isEnabled,
+  muscleGroup,
+  timestamp,
+}: SetOptionalVolumeTargetEnabledOptions): PlanBlueprint {
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+  const trainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
+    ? blueprint
+    : createRecommendedTrainingVolumeConfiguration();
+  const currentWeeklyRepTarget = trainingVolumeConfiguration.weeklyRepTargets.find(
+    (weeklyRepTarget) => weeklyRepTarget.muscleGroup === muscleGroup,
+  );
+  const hasEnabledStateChanged = currentWeeklyRepTarget?.isEnabled !== isEnabled;
+
+  return {
+    ...blueprint,
+    ...setOptionalWeeklyRepTargetEnabled({
+      isEnabled,
+      muscleGroup,
+      trainingVolumeConfiguration,
+    }),
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
     updatedAt: timestamp,
   };

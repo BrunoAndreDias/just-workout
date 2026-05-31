@@ -10,11 +10,12 @@ import {
   selectTrainingFrequency,
   selectTrainingSplit,
   selectTrainingVolumePreset,
+  setOptionalVolumeTargetEnabled,
   type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
-import type { VolumePresetId } from "./training-volume";
+import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "./training-volume";
 
 async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
@@ -56,6 +57,12 @@ type UpdateRepRangeStyleOptions = {
 type UpdateTrainingVolumePresetOptions = {
   timestamp?: string;
   volumePreset: VolumePresetId;
+};
+
+type UpdateOptionalVolumeTargetOptions = {
+  isEnabled: boolean;
+  muscleGroup: OptionalVolumeMuscleGroupId;
+  timestamp?: string;
 };
 
 type ConfirmTrainingFrequencyOptions = {
@@ -134,6 +141,23 @@ async function updateTrainingVolumePreset({
   );
 }
 
+async function updateOptionalVolumeTarget({
+  isEnabled,
+  muscleGroup,
+  timestamp = new Date().toISOString(),
+}: UpdateOptionalVolumeTargetOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    setOptionalVolumeTargetEnabled({
+      blueprint,
+      isEnabled,
+      muscleGroup,
+      timestamp,
+    }),
+  );
+}
+
 async function confirmSelectedTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
@@ -198,6 +222,7 @@ export const planBuilderService = {
   confirmSelectedTrainingSplit,
   getOrCreatePlanBlueprint,
   initializeTrainingVolume,
+  updateOptionalVolumeTarget,
   updateRepRangeStyle,
   updateTrainingSplit,
   updateTrainingFrequency,

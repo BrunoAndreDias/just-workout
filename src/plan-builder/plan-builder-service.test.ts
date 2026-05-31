@@ -194,6 +194,91 @@ describe("planBuilderService", () => {
     expect(initializedBlueprint).toEqual(configuredBlueprint);
   });
 
+  it("persists optional Volume Target add and remove actions while marking Volume unconfirmed", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const configuredBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:27:30.000Z",
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(configuredBlueprint);
+
+    const enabledBlueprint = await planBuilderService.updateOptionalVolumeTarget({
+      isEnabled: true,
+      muscleGroup: "calves",
+      timestamp: "2026-05-30T10:28:00.000Z",
+    });
+
+    expect(enabledBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "calves", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+
+    expect(
+      await planBuilderService.updateOptionalVolumeTarget({
+        isEnabled: false,
+        muscleGroup: "calves",
+        timestamp: "2026-05-30T10:28:30.000Z",
+      }),
+    ).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+  });
+
   it("clears an incompatible selected Training Split when the training frequency changes", async () => {
     await planBuilderService.updateTrainingSplit({
       timestamp: "2026-05-30T10:20:00.000Z",
