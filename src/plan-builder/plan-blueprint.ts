@@ -1,5 +1,6 @@
 import {
   createDefaultExerciseSelectionPreferences,
+  type ExerciseSelectionPreferenceItem,
   type ExerciseSelectionPreferences,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
@@ -412,7 +413,6 @@ type VolumeStepCompletionCandidate = TrainingVolumeConfigurationCandidate & {
 
 type ExercisesStepCompletionCandidate = {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
 };
 
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {
@@ -883,15 +883,15 @@ function getPlanBlueprintNextStep({
     return "Rep ranges";
   }
 
-  if (isVolumeConfirmed) {
-    if (isExercisesConfirmed) {
-      return "Review";
-    }
+  if (!isVolumeConfirmed) {
+    return "Volume";
+  }
 
+  if (!isExercisesConfirmed) {
     return "Exercises";
   }
 
-  return "Volume";
+  return "Review";
 }
 
 function getPlanBlueprintSplitSummaryDetails(
@@ -977,8 +977,8 @@ function areExerciseSelectionPreferencesEqual(
 }
 
 function areExerciseSelectionPreferenceItemsEqual(
-  left: ExerciseSelectionPreferences["preferredExercises"],
-  right: ExerciseSelectionPreferences["preferredExercises"],
+  left: ReadonlyArray<ExerciseSelectionPreferenceItem>,
+  right: ReadonlyArray<ExerciseSelectionPreferenceItem>,
 ): boolean {
   return (
     left.length === right.length &&

@@ -56,19 +56,25 @@ function createTestPlanBlueprint(overrides: TestPlanBlueprintOverrides = {}): Pl
   };
 }
 
-function createConfirmedPlanBlueprint(overrides: Partial<PlanBlueprint>): PlanBlueprint {
+const confirmedPlanBlueprintSteps = {
+  exercises: false,
+  frequency: true,
+  repRanges: true,
+  split: true,
+  volume: true,
+} satisfies PlanBlueprint["confirmedBuilderSteps"];
+
+function createConfirmedPlanBlueprint(overrides: TestPlanBlueprintOverrides = {}): PlanBlueprint {
   return createTestPlanBlueprint({
     ...createRecommendedTrainingVolumeConfiguration(),
-    confirmedBuilderSteps: {
-      frequency: true,
-      repRanges: true,
-      split: true,
-      volume: true,
-    },
     repRanges: "balanced_hypertrophy",
     split: "upper-lower-4-day",
     trainingFrequencyDaysPerWeek: 4,
     ...overrides,
+    confirmedBuilderSteps: {
+      ...confirmedPlanBlueprintSteps,
+      ...overrides.confirmedBuilderSteps,
+    },
   });
 }
 
@@ -820,10 +826,6 @@ describe("plan blueprint", () => {
     const blueprintWithConfirmedExercises = createConfirmedPlanBlueprint({
       confirmedBuilderSteps: {
         exercises: true,
-        frequency: true,
-        repRanges: true,
-        split: true,
-        volume: true,
       },
     });
 

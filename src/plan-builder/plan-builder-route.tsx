@@ -528,6 +528,10 @@ type WeeklyVolumeTargetsStepProps = {
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
 
+type ExercisesPlaceholderStepProps = {
+  onContinueToReview: () => Promise<void>;
+};
+
 type VolumePresetSelectorProps = {
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   selectedVolumePresetId: VolumePresetId | null;
@@ -2204,11 +2208,7 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ExercisesPlaceholderStep({
-  onContinueToReview,
-}: {
-  onContinueToReview: () => Promise<void>;
-}) {
+function ExercisesPlaceholderStep({ onContinueToReview }: ExercisesPlaceholderStepProps) {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
