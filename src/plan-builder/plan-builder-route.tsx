@@ -20,7 +20,12 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
@@ -57,6 +62,7 @@ import {
   type TrainingFrequencyOption,
   type TrainingFrequencyRecommendation,
   trainingFrequencyOptions,
+  updateExerciseSelectionPreferences,
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -268,10 +274,14 @@ const readOnlyExercisesStatusCards = [
     title: "Plan status",
   },
   {
-    body: "Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here.",
+    body: "Step 5 stays focused on strategy, equipment, and Preferred Exercises only. Day-by-day workouts and final exercise choices do not appear here.",
     title: "Step scope",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
+
+function normalizePreferredExerciseRawText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
 
 const volumePresetDescriptions = {
   balanced:
@@ -454,6 +464,11 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
+type UpdateExerciseSelectionPreferencesMutationVariables = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp: string;
+};
+
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
@@ -562,8 +577,10 @@ type WeeklyVolumeTargetsStepProps = {
 };
 
 type ReadOnlyExercisesStepProps = {
+  onAddPreferredExercise: (preferredExerciseRawText: string) => Promise<void>;
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  onRemovePreferredExercise: (preferredExerciseId: string) => Promise<void>;
 };
 
 type ReadOnlyExercisesHighlightProps = {
@@ -878,11 +895,41 @@ export function PlanBuilderVolumeRoute() {
 
 export function PlanBuilderExercisesRoute() {
   const navigate = useNavigate();
+  const { mutateAsync: saveExerciseSelectionPreferences } =
+    useUpdateExerciseSelectionPreferencesMutation();
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const exerciseSelectionPreferences =
     blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
+
+  async function handleAddPreferredExercise(preferredExerciseRawText: string) {
+    await saveExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        ...exerciseSelectionPreferences,
+        preferredExercises: [
+          ...exerciseSelectionPreferences.preferredExercises,
+          {
+            id: crypto.randomUUID(),
+            rawText: preferredExerciseRawText,
+          },
+        ],
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async function handleRemovePreferredExercise(preferredExerciseId: string) {
+    await saveExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        ...exerciseSelectionPreferences,
+        preferredExercises: exerciseSelectionPreferences.preferredExercises.filter(
+          ({ id }) => id !== preferredExerciseId,
+        ),
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   async function handleContinueToReview() {
     await confirmSelectedExerciseSelectionPreferences({
@@ -897,15 +944,17 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Review the read-only exercise-selection defaults that Just Workout will carry forward in
-          this Plan Blueprint before Review.
+          Review the exercise-selection defaults and add optional Preferred Exercises before this
+          Plan Blueprint moves into Review.
         </p>
       }
       summary={summary}
     >
       <ReadOnlyExercisesStep
         exerciseSelectionPreferences={exerciseSelectionPreferences}
+        onAddPreferredExercise={handleAddPreferredExercise}
         onContinueToReview={handleContinueToReview}
+        onRemovePreferredExercise={handleRemovePreferredExercise}
       />
     </PlanBuilderPage>
   );
@@ -1084,6 +1133,22 @@ function useUpdateOptionalVolumeTargetMutation() {
         blueprint,
         isEnabled,
         muscleGroup,
+        timestamp,
+      }),
+  });
+}
+
+function useUpdateExerciseSelectionPreferencesMutation() {
+  return usePlanBlueprintMutation<UpdateExerciseSelectionPreferencesMutationVariables>({
+    mutationFn: ({ exerciseSelectionPreferences, timestamp }) =>
+      planBuilderService.updateExerciseSelectionPreferences({
+        exerciseSelectionPreferences,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
+      updateExerciseSelectionPreferences({
+        blueprint,
+        exerciseSelectionPreferences,
         timestamp,
       }),
   });
@@ -2258,10 +2323,34 @@ function WeeklyVolumeTargetsStep({
 
 function ReadOnlyExercisesStep({
   exerciseSelectionPreferences,
+  onAddPreferredExercise,
   onContinueToReview,
+  onRemovePreferredExercise,
 }: ReadOnlyExercisesStepProps) {
+  const [pendingPreferredExercise, setPendingPreferredExercise] = useState("");
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
+  const normalizedPendingPreferredExercise =
+    normalizePreferredExerciseRawText(pendingPreferredExercise);
+
+  async function handleAddPreferredExercise() {
+    if (normalizedPendingPreferredExercise.length === 0) {
+      return;
+    }
+
+    await onAddPreferredExercise(normalizedPendingPreferredExercise);
+    setPendingPreferredExercise("");
+  }
+
+  function handlePreferredExerciseKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    void handleAddPreferredExercise();
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
@@ -2357,21 +2446,100 @@ function ReadOnlyExercisesStep({
               </ul>
             </div>
           </div>
+        </section>
 
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button asChild variant="outline">
-              <Link to={planBuilderPaths.volume}>Back to Volume</Link>
-            </Button>
+        <section
+          aria-labelledby="preferred-exercises-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <div>
+            <h3
+              className="text-xl font-black text-stone-950 sm:text-2xl"
+              id="preferred-exercises-title"
+            >
+              Preferred Exercises
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm text-stone-600">
+              Preferred Exercises are soft preferences, not guaranteed inclusions. Just Workout will
+              prioritize them when they fit your Plan Blueprint, equipment context, movement-pattern
+              balance, and Weekly Rep Targets.
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            <div className="min-w-0">
+              <label
+                className="text-xs font-black uppercase tracking-wide text-stone-500"
+                htmlFor="preferred-exercise-input"
+              >
+                Add a Preferred Exercise
+              </label>
+              <input
+                className="mt-2 min-h-11 w-full rounded-md border border-stone-900/12 bg-white px-3 py-2 text-sm text-stone-950 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-950"
+                id="preferred-exercise-input"
+                onChange={(event) => {
+                  setPendingPreferredExercise(event.target.value);
+                }}
+                onKeyDown={handlePreferredExerciseKeyDown}
+                placeholder="e.g. Incline dumbbell press"
+                type="text"
+                value={pendingPreferredExercise}
+              />
+            </div>
             <Button
+              disabled={normalizedPendingPreferredExercise.length === 0}
               onClick={() => {
-                void onContinueToReview();
+                void handleAddPreferredExercise();
               }}
               type="button"
             >
-              Continue to Review
+              Add Preferred Exercise
             </Button>
           </div>
+
+          <div className="mt-5">
+            <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+              Saved preferences
+            </p>
+            {exerciseSelectionPreferences.preferredExercises.length > 0 ? (
+              <ul aria-label="Preferred exercise chips" className="mt-3 flex flex-wrap gap-2.5">
+                {exerciseSelectionPreferences.preferredExercises.map((preferredExercise) => (
+                  <li key={preferredExercise.id}>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#006f78]/12 bg-[#edf8f7] py-1.5 pl-3 pr-1.5 text-sm font-semibold text-[#0a6268] shadow-sm">
+                      <span>{preferredExercise.rawText}</span>
+                      <button
+                        aria-label={`Remove ${preferredExercise.rawText}`}
+                        className="rounded-full bg-white px-2 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#0a6268] transition-colors hover:bg-[#dcefee] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a6268]"
+                        onClick={() => {
+                          void onRemovePreferredExercise(preferredExercise.id);
+                        }}
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-stone-600">No Preferred Exercises added yet.</p>
+            )}
+          </div>
         </section>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button asChild variant="outline">
+            <Link to={planBuilderPaths.volume}>Back to Volume</Link>
+          </Button>
+          <Button
+            onClick={() => {
+              void onContinueToReview();
+            }}
+            type="button"
+          >
+            Continue to Review
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">

@@ -746,6 +746,88 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
+  it("adds and removes Preferred Exercise chips while persisting draft Exercise Selection Preferences", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+
+    expect(
+      screen.getByText(/preferred exercises are soft preferences, not guaranteed inclusions/i),
+    ).toBeVisible();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /add a preferred exercise/i }),
+      "Incline dumbbell press",
+    );
+    await user.click(screen.getByRole("button", { name: /add preferred exercise/i }));
+
+    expect(
+      within(screen.getByRole("list", { name: /preferred exercise chips/i })).getByText(
+        "Incline dumbbell press",
+      ),
+    ).toBeVisible();
+
+    await waitFor(async () => {
+      const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+      const [preferredExercise] = blueprint.exerciseSelectionPreferences.preferredExercises;
+
+      expect(preferredExercise).toMatchObject({
+        rawText: "Incline dumbbell press",
+      });
+      expect(preferredExercise?.id).toEqual(expect.any(String));
+      expect(preferredExercise).not.toHaveProperty("matchedExerciseId");
+    });
+
+    await user.click(screen.getByRole("button", { name: /remove incline dumbbell press/i }));
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        exerciseSelectionPreferences: {
+          preferredExercises: [],
+        },
+      });
+    });
+    expect(
+      screen.queryByRole("button", { name: /remove incline dumbbell press/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders saved Preferred Exercise chips when the Exercises step resumes", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.updateExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [{ id: "preferred-1", rawText: "Chest-supported row" }],
+        strategy: "balanced",
+      },
+      timestamp: "2026-05-31T09:05:30.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+
+    expect(await screen.findByText("Chest-supported row")).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: /remove chest-supported row/i }),
+    ).toBeVisible();
+  });
+
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
