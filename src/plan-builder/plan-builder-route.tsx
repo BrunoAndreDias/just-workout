@@ -23,7 +23,6 @@ import { Card } from "../design-system/card";
 import { cn } from "../design-system/cn";
 import { KeyValueRow } from "../design-system/key-value-row";
 import { Stepper } from "../design-system/stepper";
-import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
   confirmRepRangeStyle,
   confirmTrainingFrequency,
@@ -67,7 +66,7 @@ type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprint
 
 type PlanBlueprintSummaryRow = {
   getStatus?: (summary: PlanBlueprintSummary) => string | null;
-  getValue: (summary: PlanBlueprintSummary) => string;
+  getValue: (summary: PlanBlueprintSummary) => ReactNode;
   icon: LucideIcon;
   label: string;
 };
@@ -96,7 +95,14 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   },
   {
     getValue: (summary) =>
-      summary.repRanges === "Choose Rep ranges" ? "Not chosen yet" : summary.repRanges,
+      summary.repRanges === "Choose Rep ranges" ? (
+        <>
+          <span>Not chosen yet</span>
+          <span className="sr-only">Choose Rep ranges</span>
+        </>
+      ) : (
+        summary.repRanges
+      ),
     icon: SlidersHorizontal,
     label: "Rep ranges",
   },
@@ -135,7 +141,8 @@ const planBuilderNextStepBodyByStep = {
   frequency: "Next, you'll choose the best Training Split for your weekly schedule.",
   split: "Next, you'll choose a Rep Range Style for your Plan Blueprint.",
   "rep-ranges": "Next, you will set weekly volume targets for each muscle group.",
-  volume: "Later builder steps stay pending until weekly volume targets are implemented.",
+  volume:
+    "Exercises come next; this step stays focused on weekly rep targets before specific lifts are chosen.",
   exercises: "Next, you'll review the blueprint before generating the Training Plan.",
   review: "Review the blueprint and generate the Training Plan when everything is ready.",
 } as const satisfies Record<PlanBuilderStep, string>;
@@ -485,7 +492,7 @@ export function PlanBuilderRepRangesRoute() {
     <PlanBuilderPage
       currentStep="rep-ranges"
       intro={
-        <p className="max-w-2xl text-base font-medium leading-7 text-[#31505d]">
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
           Choose the Rep Range Style that should later guide how Just Workout translates Training
           Volume into sets and reps. This step stays focused on rep targets only.
         </p>
@@ -526,14 +533,14 @@ export function PlanBuilderVolumeRoute() {
       currentStep="volume"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Training Volume will set weekly muscle-group targets. This placeholder keeps the route
-          live while the full step stays out of scope for now.
+          Training Volume is configured as weekly reps before exercises are selected. This step
+          frames the weekly targets before later exercise choices refine them.
         </p>
       }
       stepLabel="Volume step"
       summary={summary}
     >
-      <VolumePlaceholderStep />
+      <WeeklyVolumeTargetsStep />
     </PlanBuilderPage>
   );
 }
@@ -728,7 +735,7 @@ function PlanBuilderPage({
       <section aria-label="Plan Builder workspace" className="min-w-0">
         <Card className="plan-builder-workspace-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-8 lg:min-h-screen lg:px-[3.125rem] lg:pb-3 lg:pt-11">
           <header className="space-y-2">
-            <h1 className="font-serif text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
+            <h1 className="plan-builder-title font-serif text-4xl font-black leading-tight text-[#120f0d] sm:text-[2.5rem]">
               Build your workout plan
             </h1>
             {intro}
@@ -746,7 +753,7 @@ function PlanBuilderPage({
         </Card>
       </section>
 
-      <div className="grid gap-6 self-start xl:pt-6">
+      <div className="plan-builder-right-rail grid gap-6 self-start xl:pt-6">
         <PlanBlueprintSummaryCard summary={summary} />
         <PlanBuilderNextStepCard currentStep={currentStep} />
       </div>
@@ -758,7 +765,7 @@ function PlanBuilderNextStepCard({ currentStep }: PlanBuilderCurrentStepCardProp
   const body = planBuilderNextStepBodyByStep[currentStep];
 
   return (
-    <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
+    <Card className="plan-builder-next-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
       <h2 className="font-serif text-2xl font-black leading-tight text-[#120f0d]">
         What happens next
       </h2>
@@ -802,7 +809,7 @@ function TrainingFrequencyStep({
     >
       <div>
         <h2
-          className="font-serif text-3xl font-black leading-tight text-[#120f0d]"
+          className="training-frequency-title font-serif text-3xl font-black leading-tight text-[#120f0d]"
           id="training-frequency-title"
         >
           Training frequency
@@ -1027,43 +1034,6 @@ function RepRangeStyleStep({
   );
 }
 
-function VolumePlaceholderStep() {
-  return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-      <div className="min-w-0 space-y-4">
-        <section
-          aria-labelledby="training-volume-title"
-          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
-        >
-          <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="training-volume-title">
-            Training Volume
-          </h3>
-          <p className="mt-3 max-w-2xl text-sm text-stone-600">
-            Weekly muscle-group targets will be added in a later issue.
-          </p>
-          <p className="mt-2 max-w-2xl text-sm text-stone-600">
-            This route exists so the Plan Builder can move forward cleanly from Rep ranges without
-            expanding the scope of this step.
-          </p>
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button asChild variant="outline">
-              <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
-            </Button>
-          </div>
-        </section>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <PlanBuilderStepStatusCard
-          body="Volume targets are not configurable on this route yet."
-          title="Placeholder status"
-        />
-      </div>
-    </div>
-  );
-}
-
 function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelProps) {
   return (
     <section
@@ -1076,7 +1046,7 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
       <h3 className="mt-1 text-xl font-black text-stone-950" id="rep-range-style-effect-title">
         How this affects your plan
       </h3>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">{repRangeStyle.title}</p>
+      <p className="mt-2 text-sm font-semibold text-stone-900">{repRangeStyle.title}</p>
       <ul className="mt-4 grid gap-3">
         {repRangeStyle.planEffects.map((effect) => (
           <li
@@ -1088,6 +1058,74 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
         ))}
       </ul>
     </section>
+  );
+}
+
+function WeeklyVolumeTargetsStep() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section
+          aria-labelledby="weekly-volume-targets-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <h3
+            className="text-xl font-black text-stone-950 sm:text-2xl"
+            id="weekly-volume-targets-title"
+          >
+            Weekly volume targets
+          </h3>
+          <p className="mt-3 max-w-2xl text-sm text-stone-600">
+            Set weekly rep targets for each muscle group before exercises are selected.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-stone-600">
+            Just Workout will translate those weekly targets into sets and reps across your training
+            days later.
+          </p>
+
+          <PlanBuilderStepStatusCard
+            body="Weekly targets only: these targets describe your full training week, not a single workout."
+            className="mt-5"
+            title="Weekly targets note"
+          />
+
+          <section aria-labelledby="weekly-volume-how-it-works-title" className="mt-5">
+            <h4
+              className="text-lg font-black text-stone-950 sm:text-xl"
+              id="weekly-volume-how-it-works-title"
+            >
+              How this works
+            </h4>
+            <ul className="mt-3 grid gap-3">
+              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
+                Just Workout will distribute your weekly reps across your training days.
+              </li>
+              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
+                Compound and isolation exercises will both count toward the same weekly muscle-group
+                targets.
+              </li>
+              <li className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700">
+                You will refine the exact exercises later, after the weekly targets are in place.
+              </li>
+            </ul>
+          </section>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button asChild variant="outline">
+              <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <PlanBuilderStepStatusCard
+          body="This step frames Training Volume as weekly reps before exercise choices and later builder outputs are introduced."
+          title="Step scope"
+          titleDisplay="visible"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -1510,7 +1548,7 @@ type PlanBlueprintSummaryCardProps = {
 function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
   return (
     <aside aria-label="Plan blueprint summary" className="self-start xl:sticky xl:top-6">
-      <Card className="rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
+      <Card className="plan-builder-summary-card rounded-[0.875rem] bg-white/88 p-6 shadow-none sm:p-7">
         <h2
           className="font-serif text-2xl font-black leading-tight text-[#120f0d]"
           id="plan-blueprint-summary-title"

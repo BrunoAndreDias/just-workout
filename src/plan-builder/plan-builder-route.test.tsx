@@ -610,7 +610,7 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    expect(await screen.findByRole("heading", { name: /training volume/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
 
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -642,7 +642,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {
+  it("continues from Rep ranges into the Weekly volume targets frame with the approved explanatory copy", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedFourDayUpperLowerTrainingSplit();
@@ -656,21 +656,85 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
     });
-    expect(await screen.findByRole("heading", { name: /training volume/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
     expect(
-      screen.getByText(/weekly muscle-group targets will be added in a later issue/i),
+      screen.getByText(
+        /set weekly rep targets for each muscle group before exercises are selected/i,
+      ),
     ).toBeVisible();
+    expect(
+      screen.getByText(
+        /just workout will translate those weekly targets into sets and reps across your training days later/i,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/weekly targets only: these targets describe your full training week/i),
+    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: /how this works/i })).toBeVisible();
+    expect(
+      screen.getByText(/just workout will distribute your weekly reps across your training days/i),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        /compound and isolation exercises will both count toward the same weekly muscle-group targets/i,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        /you will refine the exact exercises later, after the weekly targets are in place/i,
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: /back to rep ranges/i })).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Volume"),
     ).toHaveAttribute("aria-current", "step");
     expect(
       screen.queryByRole("heading", { name: /select rep range style/i }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/strongplan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/exercise selection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/chart/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/analytics/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bRPE\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bRIR\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\b1RM\b/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tempo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/progression rules/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nutrition/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/recovery scores/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/bodyweight tracking/i)).not.toBeInTheDocument();
     expect(await trainingService.getDashboardSnapshot()).toMatchObject({
       activePlan: null,
       exercises: [],
       recentSessions: [],
     });
+  });
+
+  it("navigates back from Weekly volume targets to Rep ranges", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:08:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: /back to rep ranges/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
+        "Rep ranges",
+      ),
+    ).toHaveAttribute("aria-current", "step");
   });
 
   it("navigates back from Rep ranges to Split", async () => {
