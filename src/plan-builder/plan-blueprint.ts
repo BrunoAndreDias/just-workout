@@ -34,6 +34,7 @@ export type RepRangeStyle = {
 
 type PlanBuilderConfirmedSteps = {
   frequency: boolean;
+  repRanges: boolean;
   split: boolean;
 };
 
@@ -112,12 +113,19 @@ type ConfirmTrainingSplitOptions = {
   timestamp: string;
 };
 
+type ConfirmRepRangeStyleOptions = {
+  blueprint: PlanBlueprint;
+  repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
 type PlanBlueprintWithOptionalConfirmedSteps = Omit<PlanBlueprint, "confirmedBuilderSteps"> & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
 };
 
 const defaultConfirmedBuilderSteps = {
   frequency: false,
+  repRanges: false,
   split: false,
 } satisfies PlanBuilderConfirmedSteps;
 
@@ -306,6 +314,11 @@ type SplitStepCompletionCandidate = {
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
 
+type RepRangesStepCompletionCandidate = {
+  confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+  repRanges: unknown;
+};
+
 export function normalizePlanBlueprint(
   blueprint: PlanBlueprintWithOptionalConfirmedSteps,
 ): PlanBlueprint {
@@ -338,10 +351,20 @@ export function isSplitStepComplete(
   );
 }
 
+export function isRepRangesStepComplete(
+  blueprint: RepRangesStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).repRanges && isRepRangeStyleId(blueprint.repRanges);
+}
+
 export function getPlanBuilderRedirectStep(
   blueprint: PlanBlueprint,
   targetStep: "split" | "rep-ranges" | "volume",
-): "frequency" | "split" | null {
+): "frequency" | "split" | "rep-ranges" | null {
   if (!isFrequencyStepComplete(blueprint)) {
     return "frequency";
   }
@@ -350,7 +373,15 @@ export function getPlanBuilderRedirectStep(
     return null;
   }
 
-  return isSplitStepComplete(blueprint) ? null : "split";
+  if (!isSplitStepComplete(blueprint)) {
+    return "split";
+  }
+
+  if (targetStep === "rep-ranges") {
+    return null;
+  }
+
+  return isRepRangesStepComplete(blueprint) ? null : "rep-ranges";
 }
 
 export function selectTrainingFrequency({
@@ -369,6 +400,7 @@ export function selectTrainingFrequency({
 
   if (hasTrainingFrequencyChanged) {
     confirmedBuilderSteps = {
+      ...confirmedBuilderSteps,
       frequency: false,
       split: false,
     };
@@ -425,8 +457,15 @@ export function selectRepRangeStyle({
     throw new Error(`Unknown Rep Range Style "${repRangeStyle}".`);
   }
 
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+  const isSameRepRangeStyle = blueprint.repRanges === repRangeStyle;
+
   return {
     ...blueprint,
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      repRanges: isSameRepRangeStyle ? confirmedBuilderSteps.repRanges : false,
+    },
     repRanges: repRangeStyle,
     updatedAt: timestamp,
   };
@@ -474,11 +513,32 @@ export function confirmTrainingSplit({
   };
 }
 
+export function confirmRepRangeStyle({
+  blueprint,
+  repRangeStyle,
+  timestamp,
+}: ConfirmRepRangeStyleOptions): PlanBlueprint {
+  const updatedBlueprint = selectRepRangeStyle({
+    blueprint,
+    repRangeStyle,
+    timestamp,
+  });
+
+  return {
+    ...updatedBlueprint,
+    confirmedBuilderSteps: {
+      ...updatedBlueprint.confirmedBuilderSteps,
+      repRanges: true,
+    },
+    updatedAt: timestamp,
+  };
+}
+
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = blueprint.repRanges;
-  const hasRepRangeStyle = selectedRepRangeStyleId !== null;
+  const hasRepRangeStyle = isRepRangeStyleId(selectedRepRangeStyleId);
 
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
@@ -570,6 +630,7 @@ function getConfirmedBuilderSteps({
 }): PlanBuilderConfirmedSteps {
   return {
     frequency: confirmedBuilderSteps?.frequency === true,
+    repRanges: confirmedBuilderSteps?.repRanges === true,
     split: confirmedBuilderSteps?.split === true,
   };
 }

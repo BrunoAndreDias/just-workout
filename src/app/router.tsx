@@ -62,8 +62,19 @@ async function requirePlanBuilderStep(step: "split" | "rep-ranges" | "volume") {
 
   throw redirect({
     replace: true,
-    to: planBuilderPaths[redirectStep],
+    to: getPlanBuilderRedirectPath(redirectStep),
   });
+}
+
+function getPlanBuilderRedirectPath(step: "frequency" | "split" | "rep-ranges") {
+  switch (step) {
+    case "frequency":
+      return planBuilderPaths.frequency;
+    case "split":
+      return planBuilderPaths.split;
+    case "rep-ranges":
+      return planBuilderPaths.repRanges;
+  }
 }
 
 async function requireConfirmedTrainingFrequency() {
@@ -74,6 +85,10 @@ async function requireConfirmedTrainingSplit() {
   return requirePlanBuilderStep("rep-ranges");
 }
 
+async function requireConfirmedRepRanges() {
+  return requirePlanBuilderStep("volume");
+}
+
 const planBuilderRepRangesRoute = createRoute({
   beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderRepRangesRoute,
@@ -82,7 +97,7 @@ const planBuilderRepRangesRoute = createRoute({
 });
 
 const planBuilderVolumeRoute = createRoute({
-  beforeLoad: requireConfirmedTrainingSplit,
+  beforeLoad: requireConfirmedRepRanges,
   component: PlanBuilderVolumeRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.volume,

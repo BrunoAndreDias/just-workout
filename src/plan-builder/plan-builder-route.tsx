@@ -25,12 +25,14 @@ import { KeyValueRow } from "../design-system/key-value-row";
 import { Stepper } from "../design-system/stepper";
 import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
+  confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
   defaultRepRangeStyleId,
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   hasValidTrainingFrequency,
+  isRepRangeStyleId,
   type PlanBlueprint,
   type PlanBlueprintSummary,
   type RepRangeStyle,
@@ -232,6 +234,11 @@ type ConfirmTrainingSplitVariables = {
   timestamp: string;
 };
 
+type ConfirmRepRangeStyleVariables = {
+  repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
 type UpdateRepRangeStyleVariables = {
   repRangeStyle: RepRangeStyleId;
   timestamp: string;
@@ -291,6 +298,7 @@ type TrainingSplitSchedulePanelProps = {
 };
 
 type RepRangeStyleStepProps = {
+  onContinueToVolume: () => Promise<void>;
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   savedRepRangeStyleId: RepRangeStyleId | null;
   selectedRepRangeStyle: RepRangeStyle;
@@ -442,16 +450,42 @@ export function PlanBuilderSplitRoute() {
 
 export function PlanBuilderRepRangesRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
+  const { mutateAsync: confirmSelectedRepRangeStyle } = useConfirmRepRangeStyleMutation();
   const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
+  const navigate = useNavigate();
+  const savedRepRangeStyleId = blueprint ? getSavedRepRangeStyleId(blueprint) : null;
   const selectedRepRangeStyle = blueprint
-    ? getRepRangeStyle(blueprint.repRanges ?? defaultRepRangeStyleId)
+    ? getRepRangeStyle(savedRepRangeStyleId ?? defaultRepRangeStyleId)
     : null;
+
+  useEffect(() => {
+    if (!blueprint || savedRepRangeStyleId) {
+      return;
+    }
+
+    updateRepRangeStyle({
+      repRangeStyle: defaultRepRangeStyleId,
+      timestamp: new Date().toISOString(),
+    });
+  }, [blueprint, savedRepRangeStyleId, updateRepRangeStyle]);
 
   function handleRepRangeStyleChange(repRangeStyle: RepRangeStyleId) {
     updateRepRangeStyle({
       repRangeStyle,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  async function handleContinueToVolume() {
+    if (!selectedRepRangeStyle) {
+      return;
+    }
+
+    await confirmSelectedRepRangeStyle({
+      repRangeStyle: selectedRepRangeStyle.id,
+      timestamp: new Date().toISOString(),
+    });
+    await navigate({ to: planBuilderPaths.volume });
   }
 
   return (
@@ -468,8 +502,9 @@ export function PlanBuilderRepRangesRoute() {
     >
       {blueprint && selectedRepRangeStyle ? (
         <RepRangeStyleStep
+          onContinueToVolume={handleContinueToVolume}
           onRepRangeStyleChange={handleRepRangeStyleChange}
-          savedRepRangeStyleId={blueprint.repRanges}
+          savedRepRangeStyleId={savedRepRangeStyleId}
           selectedRepRangeStyle={selectedRepRangeStyle}
         />
       ) : (
@@ -578,6 +613,22 @@ function useConfirmTrainingSplitMutation() {
   });
 }
 
+function useConfirmRepRangeStyleMutation() {
+  return usePlanBlueprintMutation<ConfirmRepRangeStyleVariables>({
+    mutationFn: ({ repRangeStyle, timestamp }) =>
+      planBuilderService.confirmSelectedRepRangeStyle({
+        repRangeStyle,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { repRangeStyle, timestamp }) =>
+      confirmRepRangeStyle({
+        blueprint,
+        repRangeStyle,
+        timestamp,
+      }),
+  });
+}
+
 function useUpdateRepRangeStyleMutation() {
   return usePlanBlueprintMutation<UpdateRepRangeStyleVariables>({
     mutationFn: ({ repRangeStyle, timestamp }) =>
@@ -643,6 +694,10 @@ function hasCompatibleSelectedTrainingSplit(
   split: TrainingSplitId;
 } {
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
+}
+
+function getSavedRepRangeStyleId(blueprint: PlanBlueprint): RepRangeStyleId | null {
+  return isRepRangeStyleId(blueprint.repRanges) ? blueprint.repRanges : null;
 }
 
 function PlanBuilderPage({
@@ -895,6 +950,7 @@ function getTrainingSplitFitStatus({
 }
 
 function RepRangeStyleStep({
+  onContinueToVolume,
   onRepRangeStyleChange,
   savedRepRangeStyleId,
   selectedRepRangeStyle,
@@ -944,8 +1000,13 @@ function RepRangeStyleStep({
         <Button asChild variant="outline">
           <Link to={planBuilderPaths.split}>Back to Split</Link>
         </Button>
-        <Button asChild>
-          <Link to={planBuilderPaths.volume}>Continue to Volume</Link>
+        <Button
+          onClick={() => {
+            void onContinueToVolume();
+          }}
+          type="button"
+        >
+          Continue to Volume
         </Button>
       </div>
     </div>

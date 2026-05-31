@@ -47,11 +47,13 @@ describe("planBuilderService", () => {
       ...legacyBlueprint,
       confirmedBuilderSteps: {
         frequency: false,
+        repRanges: false,
         split: false,
       },
     });
     expect(updatedBlueprint.confirmedBuilderSteps).toEqual({
       frequency: false,
+      repRanges: false,
       split: false,
     });
   });
@@ -148,18 +150,62 @@ describe("planBuilderService", () => {
 
     expect(blueprintWithFrequency.confirmedBuilderSteps).toEqual({
       frequency: false,
+      repRanges: false,
       split: false,
     });
     expect(confirmedFrequencyBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
+      repRanges: false,
       split: false,
     });
     expect(blueprintWithSplit.confirmedBuilderSteps).toEqual({
       frequency: true,
+      repRanges: false,
       split: false,
     });
     expect(confirmedSplitBlueprint.confirmedBuilderSteps).toEqual({
       frequency: true,
+      repRanges: false,
+      split: true,
+    });
+  });
+
+  it("confirms a saved Rep Range Style separately from the selection and preserves that confirmation when the same style is re-saved", async () => {
+    await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:16:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:17:00.000Z",
+    });
+
+    const selectedBlueprint = await planBuilderService.updateRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:18:00.000Z",
+    });
+    const confirmedBlueprint = await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:19:00.000Z",
+    });
+    const reSavedBlueprint = await planBuilderService.updateRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:20:00.000Z",
+    });
+
+    expect(selectedBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      repRanges: false,
+      split: true,
+    });
+    expect(confirmedBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      repRanges: true,
+      split: true,
+    });
+    expect(reSavedBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      repRanges: true,
       split: true,
     });
   });

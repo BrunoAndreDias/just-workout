@@ -371,6 +371,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
         frequency: true,
+        repRanges: false,
         split: false,
       });
     });
@@ -383,6 +384,7 @@ describe("PlanBuilderRoute", () => {
       ...blueprint,
       confirmedBuilderSteps: {
         frequency: true,
+        repRanges: false,
         split: false,
       },
       trainingFrequencyDaysPerWeek: 6 as TrainingFrequencyDaysPerWeek,
@@ -414,7 +416,7 @@ describe("PlanBuilderRoute", () => {
     expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "Choose Rep ranges",
+        repRangeStyleLabels.balancedHypertrophy,
       ),
     ).toBeVisible();
 
@@ -433,6 +435,23 @@ describe("PlanBuilderRoute", () => {
         repRangeStyleLabels.strengthLeaning,
       ),
     ).toBeVisible();
+  });
+
+  it("persists Balanced hypertrophy as the Recommended Default when Rep ranges opens without a saved selection", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        repRanges: "balanced_hypertrophy",
+      });
+    });
+    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
   });
 
   it("redirects direct access to Rep ranges back to Split when no compatible Training Split is saved", async () => {
@@ -468,7 +487,31 @@ describe("PlanBuilderRoute", () => {
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
         frequency: true,
+        repRanges: false,
         split: true,
+      });
+    });
+  });
+
+  it("confirms Rep ranges before navigating from Rep ranges to Volume", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        frequency: true,
+        split: true,
+        repRanges: true,
       });
     });
   });
@@ -480,6 +523,7 @@ describe("PlanBuilderRoute", () => {
       ...blueprint,
       confirmedBuilderSteps: {
         frequency: true,
+        repRanges: false,
         split: true,
       },
       split: "upper-lower-full-body",
@@ -495,6 +539,61 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
   });
 
+  it("redirects direct access to Volume back to Rep ranges when the saved Rep Range Style has not been confirmed", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.updateRepRangeStyle({
+      repRangeStyle: "strength_leaning",
+      timestamp: "2026-05-31T08:05:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expectRepRangeStyleChecked(
+      await screen.findByRole("group", { name: /rep range style/i }),
+      repRangeStyleLabels.strengthLeaning,
+    );
+  });
+
+  it("redirects direct access to Volume back to Rep ranges when a stale confirmed Rep Range Style is invalid", async () => {
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+      },
+      repRanges: "powerbuilding" as never,
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-31T08:06:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: false,
+          split: true,
+        },
+        repRanges: "balanced_hypertrophy",
+      });
+    });
+  });
+
   it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {
     const user = userEvent.setup();
 
@@ -504,7 +603,7 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
 
-    await user.click(screen.getByRole("link", { name: /continue to volume/i }));
+    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
@@ -546,7 +645,7 @@ describe("PlanBuilderRoute", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("updates the Plan Blueprint rail when the default Balanced hypertrophy selection is explicitly saved", async () => {
+  it("keeps the Plan Blueprint rail on Balanced hypertrophy when the persisted Recommended Default is explicitly reselected", async () => {
     const user = userEvent.setup();
     await saveConfirmedFourDayUpperLowerTrainingSplit();
 
@@ -558,9 +657,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText("Experience")).toBeVisible();
     expect(within(summary).getByText("Equipment")).toBeVisible();
     expect(within(summary).getByText("Generation status")).toBeVisible();
-    expect(
-      within(summary).queryByText(repRangeStyleLabels.balancedHypertrophy),
-    ).not.toBeInTheDocument();
+    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
 
     await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy));
 
