@@ -27,6 +27,7 @@ import {
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
+  confirmTrainingVolume,
   defaultRepRangeStyleId,
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
@@ -413,6 +414,13 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
+type ConfirmTrainingVolumeMutationVariables = {
+  timestamp: string;
+  volumePreset: VolumePresetId;
+  volumePresetSource: VolumePresetSource;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
+};
+
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
@@ -500,6 +508,8 @@ type RepRangeStyleTargetsProps = {
 };
 
 type WeeklyVolumeTargetsStepProps = {
+  canContinueToExercises: boolean;
+  onContinueToExercises: () => Promise<void>;
   onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   repRangeStyle: RepRangeStyle | null;
@@ -739,23 +749,27 @@ export function PlanBuilderRepRangesRoute() {
 
 export function PlanBuilderVolumeRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
+  const { mutateAsync: confirmSelectedTrainingVolume } = useConfirmTrainingVolumeMutation();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
   const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
   const { mutate: updateOptionalVolumeTarget } = useUpdateOptionalVolumeTargetMutation();
+  const navigate = useNavigate();
   const selectedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
   const selectedRepRangeStyle = selectedRepRangeStyleId
     ? getRepRangeStyle(selectedRepRangeStyleId)
     : null;
+  const trainingVolumeConfiguration =
+    blueprint && isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
 
   useEffect(() => {
-    if (!blueprint || isTrainingVolumeConfiguration(blueprint)) {
+    if (!blueprint || trainingVolumeConfiguration) {
       return;
     }
 
     initializeTrainingVolumeDefaults({
       timestamp: new Date().toISOString(),
     });
-  }, [blueprint, initializeTrainingVolumeDefaults]);
+  }, [blueprint, initializeTrainingVolumeDefaults, trainingVolumeConfiguration]);
 
   function handleVolumePresetChange(volumePreset: VolumePresetId) {
     updateTrainingVolumePreset({
@@ -775,6 +789,20 @@ export function PlanBuilderVolumeRoute() {
     });
   }
 
+  async function handleContinueToExercises() {
+    if (!trainingVolumeConfiguration) {
+      return;
+    }
+
+    await confirmSelectedTrainingVolume({
+      timestamp: new Date().toISOString(),
+      volumePreset: trainingVolumeConfiguration.volumePreset,
+      volumePresetSource: trainingVolumeConfiguration.volumePresetSource,
+      weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets,
+    });
+    await navigate({ to: planBuilderPaths.exercises });
+  }
+
   return (
     <PlanBuilderPage
       currentStep="volume"
@@ -788,6 +816,8 @@ export function PlanBuilderVolumeRoute() {
       summary={summary}
     >
       <WeeklyVolumeTargetsStep
+        canContinueToExercises={trainingVolumeConfiguration !== null}
+        onContinueToExercises={handleContinueToExercises}
         onOptionalVolumeTargetToggle={handleOptionalVolumeTargetToggle}
         onVolumePresetChange={handleVolumePresetChange}
         repRangeStyle={selectedRepRangeStyle}
@@ -795,6 +825,25 @@ export function PlanBuilderVolumeRoute() {
         volumePresetSource={blueprint?.volumePresetSource ?? null}
         weeklyRepTargets={blueprint?.weeklyRepTargets ?? null}
       />
+    </PlanBuilderPage>
+  );
+}
+
+export function PlanBuilderExercisesRoute() {
+  const { summary } = usePlanBuilderBlueprint();
+
+  return (
+    <PlanBuilderPage
+      currentStep="exercises"
+      intro={
+        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
+          Volume is confirmed. This route stays intentionally minimal until exercise picking lands.
+        </p>
+      }
+      stepLabel="Exercises step"
+      summary={summary}
+    >
+      <ExercisesPlaceholderStep />
     </PlanBuilderPage>
   );
 }
@@ -953,6 +1002,31 @@ function useUpdateOptionalVolumeTargetMutation() {
         blueprint,
         isEnabled,
         muscleGroup,
+        timestamp,
+      }),
+  });
+}
+
+function useConfirmTrainingVolumeMutation() {
+  return usePlanBlueprintMutation<ConfirmTrainingVolumeMutationVariables>({
+    mutationFn: ({ timestamp, volumePreset, volumePresetSource, weeklyRepTargets }) =>
+      planBuilderService.confirmSelectedTrainingVolume({
+        timestamp,
+        volumePreset,
+        volumePresetSource,
+        weeklyRepTargets,
+      }),
+    optimisticUpdate: (
+      blueprint,
+      { timestamp, volumePreset, volumePresetSource, weeklyRepTargets },
+    ) =>
+      confirmTrainingVolume({
+        blueprint: {
+          ...blueprint,
+          volumePreset,
+          volumePresetSource,
+          weeklyRepTargets,
+        },
         timestamp,
       }),
   });
@@ -1350,6 +1424,8 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
 }
 
 function WeeklyVolumeTargetsStep({
+  canContinueToExercises,
+  onContinueToExercises,
   onOptionalVolumeTargetToggle,
   onVolumePresetChange,
   repRangeStyle,
@@ -1425,6 +1501,20 @@ function WeeklyVolumeTargetsStep({
             <Button asChild variant="outline">
               <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
             </Button>
+            {canContinueToExercises ? (
+              <Button
+                onClick={() => {
+                  void onContinueToExercises();
+                }}
+                type="button"
+              >
+                Continue to Exercises
+              </Button>
+            ) : (
+              <Button disabled type="button">
+                Continue to Exercises
+              </Button>
+            )}
           </div>
         </section>
       </div>
@@ -1432,6 +1522,38 @@ function WeeklyVolumeTargetsStep({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <PlanBuilderStepStatusCard
           body="This step frames Training Volume as weekly reps before exercise choices and later builder outputs are introduced."
+          title="Step scope"
+          titleDisplay="visible"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExercisesPlaceholderStep() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
+      <div className="min-w-0 space-y-4">
+        <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
+          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">
+            Exercises step coming next
+          </h3>
+          <p className="mt-3 max-w-2xl text-sm text-stone-600">
+            Volume is confirmed. This placeholder keeps the route real without introducing exercise
+            picking yet.
+          </p>
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button asChild variant="outline">
+              <Link to={planBuilderPaths.volume}>Back to Volume</Link>
+            </Button>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <PlanBuilderStepStatusCard
+          body="This route is a guarded placeholder only. Exercise picking stays out of scope in this slice."
           title="Step scope"
           titleDisplay="visible"
         />

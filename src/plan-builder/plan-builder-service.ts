@@ -2,6 +2,7 @@ import {
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
+  confirmTrainingVolume,
   createDefaultPlanBlueprint,
   initializeTrainingVolume as initializeTrainingVolumeState,
   normalizePlanBlueprint,
@@ -15,7 +16,12 @@ import {
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
-import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "./training-volume";
+import type {
+  OptionalVolumeMuscleGroupId,
+  VolumePresetId,
+  VolumePresetSource,
+  WeeklyRepTarget,
+} from "./training-volume";
 
 async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
@@ -78,6 +84,13 @@ type ConfirmTrainingSplitOptions = {
 type ConfirmRepRangeStyleOptions = {
   repRangeStyle: RepRangeStyleId;
   timestamp?: string;
+};
+
+type ConfirmTrainingVolumeOptions = {
+  timestamp?: string;
+  volumePreset: VolumePresetId;
+  volumePresetSource: VolumePresetSource;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
 };
 
 type InitializeTrainingVolumeOptions = {
@@ -203,6 +216,27 @@ async function confirmSelectedRepRangeStyle({
   );
 }
 
+async function confirmSelectedTrainingVolume({
+  timestamp = new Date().toISOString(),
+  volumePreset,
+  volumePresetSource,
+  weeklyRepTargets,
+}: ConfirmTrainingVolumeOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    confirmTrainingVolume({
+      blueprint: {
+        ...blueprint,
+        volumePreset,
+        volumePresetSource,
+        weeklyRepTargets,
+      },
+      timestamp,
+    }),
+  );
+}
+
 async function initializeTrainingVolume({
   timestamp = new Date().toISOString(),
 }: InitializeTrainingVolumeOptions = {}) {
@@ -220,6 +254,7 @@ export const planBuilderService = {
   confirmSelectedRepRangeStyle,
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
+  confirmSelectedTrainingVolume,
   getOrCreatePlanBlueprint,
   initializeTrainingVolume,
   updateOptionalVolumeTarget,

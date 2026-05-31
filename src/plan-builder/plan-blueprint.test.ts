@@ -3,6 +3,7 @@ import {
   confirmRepRangeStyle,
   confirmTrainingFrequency,
   confirmTrainingSplit,
+  confirmTrainingVolume,
   createDefaultPlanBlueprint,
   defaultRepRangeStyleId,
   getPlanBuilderRedirectStep,
@@ -14,6 +15,7 @@ import {
   isRepRangesStepComplete,
   isSplitStepComplete,
   isTrainingFrequencyDaysPerWeek,
+  isVolumeStepComplete,
   type PlanBlueprint,
   selectRepRangeStyle,
   selectTrainingFrequency,
@@ -333,6 +335,50 @@ describe("plan blueprint", () => {
     expect(isRepRangesStepComplete(confirmedBlueprint)).toBe(true);
   });
 
+  it("stores confirmed Volume progress separately from the configured Weekly Rep Targets", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const confirmedBlueprint = confirmTrainingVolume({
+      blueprint,
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(isVolumeStepComplete(blueprint)).toBe(false);
+    expect(confirmedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(isVolumeStepComplete(confirmedBlueprint)).toBe(true);
+  });
+
   it("marks Volume unconfirmed when a confirmed Volume Preset changes", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),
@@ -484,6 +530,32 @@ describe("plan blueprint", () => {
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
     });
+    const blueprintWithUnconfirmedVolume = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    const blueprintWithInvalidVolume = createTestPlanBlueprint({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: null,
+      volumePresetSource: null,
+      weeklyRepTargets: null,
+    });
 
     expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "split")).toBe("frequency");
     expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "rep-ranges")).toBe("frequency");
@@ -492,6 +564,8 @@ describe("plan blueprint", () => {
       "rep-ranges",
     );
     expect(getPlanBuilderRedirectStep(blueprintWithInvalidRepRanges, "volume")).toBe("rep-ranges");
+    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "exercises")).toBe("volume");
+    expect(getPlanBuilderRedirectStep(blueprintWithInvalidVolume, "exercises")).toBe("volume");
   });
 
   it("describes the default 3-day recommendation", () => {

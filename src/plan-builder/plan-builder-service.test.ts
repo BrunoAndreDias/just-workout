@@ -279,6 +279,55 @@ describe("planBuilderService", () => {
     });
   });
 
+  it("persists Volume confirmation with the current saved Weekly Rep Targets", async () => {
+    await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:29:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:30:00.000Z",
+    });
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-30T10:31:00.000Z",
+    });
+
+    const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-30T10:32:00.000Z",
+    });
+    const confirmedBlueprint = await planBuilderService.confirmSelectedTrainingVolume({
+      timestamp: "2026-05-30T10:33:00.000Z",
+      volumePreset: initializedBlueprint.volumePreset!,
+      volumePresetSource: initializedBlueprint.volumePresetSource!,
+      weeklyRepTargets: initializedBlueprint.weeklyRepTargets!,
+    });
+
+    expect(confirmedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(confirmedBlueprint.updatedAt).toBe("2026-05-30T10:33:00.000Z");
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(confirmedBlueprint);
+  });
+
   it("clears an incompatible selected Training Split when the training frequency changes", async () => {
     await planBuilderService.updateTrainingSplit({
       timestamp: "2026-05-30T10:20:00.000Z",

@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import {
   getPlanBuilderRedirectStep,
+  PlanBuilderExercisesRoute,
   type PlanBuilderGuardedStep,
   type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
@@ -57,6 +58,7 @@ const planBuilderRedirectPaths = {
   frequency: planBuilderPaths.frequency,
   split: planBuilderPaths.split,
   "rep-ranges": planBuilderPaths.repRanges,
+  volume: planBuilderPaths.volume,
 } as const satisfies Record<PlanBuilderRedirectStep, string>;
 
 async function requirePlanBuilderStep(step: PlanBuilderGuardedStep) {
@@ -86,6 +88,10 @@ async function requireConfirmedRepRangeStyle() {
   return requirePlanBuilderStep("volume");
 }
 
+async function requireConfirmedTrainingVolume() {
+  return requirePlanBuilderStep("exercises");
+}
+
 const planBuilderRepRangesRoute = createRoute({
   beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderRepRangesRoute,
@@ -100,6 +106,13 @@ const planBuilderVolumeRoute = createRoute({
   path: planBuilderPaths.volume,
 });
 
+const planBuilderExercisesRoute = createRoute({
+  beforeLoad: requireConfirmedTrainingVolume,
+  component: PlanBuilderExercisesRoute,
+  getParentRoute: () => rootRoute,
+  path: planBuilderPaths.exercises,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   workoutRoute,
@@ -108,6 +121,7 @@ const routeTree = rootRoute.addChildren([
   planBuilderSplitRoute,
   planBuilderRepRangesRoute,
   planBuilderVolumeRoute,
+  planBuilderExercisesRoute,
 ]);
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];

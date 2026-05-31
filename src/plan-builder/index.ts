@@ -6,6 +6,7 @@ export type {
 export { getPlanBuilderRedirectStep } from "./plan-blueprint";
 export { planBuilderPaths } from "./plan-builder-paths";
 export {
+  PlanBuilderExercisesRoute,
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,

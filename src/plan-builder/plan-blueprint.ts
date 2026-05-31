@@ -47,8 +47,8 @@ export type RepRangeStyle = {
   title: string;
   volumeEstimationRepRange: VolumeEstimationRepRange;
 };
-export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume";
-export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges";
+export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume" | "exercises";
+export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges" | "volume";
 
 type PlanBuilderConfirmedSteps = {
   frequency: boolean;
@@ -151,6 +151,11 @@ type ConfirmTrainingSplitOptions = {
 type ConfirmRepRangeStyleOptions = {
   blueprint: PlanBlueprint;
   repRangeStyle: RepRangeStyleId;
+  timestamp: string;
+};
+
+type ConfirmTrainingVolumeOptions = {
+  blueprint: PlanBlueprint;
   timestamp: string;
 };
 
@@ -380,6 +385,13 @@ type RepRangesStepCompletionCandidate = {
   repRanges: unknown;
 };
 
+type VolumeStepCompletionCandidate = {
+  confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+  volumePreset?: unknown;
+  volumePresetSource?: unknown;
+  weeklyRepTargets?: unknown;
+};
+
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {
   return {
     ...blueprint,
@@ -421,6 +433,16 @@ export function isRepRangesStepComplete(
   return getConfirmedBuilderSteps(blueprint).repRanges && isRepRangeStyleId(blueprint.repRanges);
 }
 
+export function isVolumeStepComplete(
+  blueprint: VolumeStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).volume && isTrainingVolumeConfiguration(blueprint);
+}
+
 export function getPlanBuilderRedirectStep(
   blueprint: PlanBlueprint,
   targetStep: PlanBuilderGuardedStep,
@@ -441,11 +463,19 @@ export function getPlanBuilderRedirectStep(
     return null;
   }
 
-  if (isRepRangesStepComplete(blueprint)) {
+  if (!isRepRangesStepComplete(blueprint)) {
+    return "rep-ranges";
+  }
+
+  if (targetStep === "volume") {
     return null;
   }
 
-  return "rep-ranges";
+  if (isVolumeStepComplete(blueprint)) {
+    return null;
+  }
+
+  return "volume";
 }
 
 export function selectTrainingFrequency({
@@ -681,6 +711,24 @@ export function confirmRepRangeStyle({
     confirmedBuilderSteps: {
       ...updatedBlueprint.confirmedBuilderSteps,
       repRanges: true,
+    },
+    updatedAt: timestamp,
+  };
+}
+
+export function confirmTrainingVolume({
+  blueprint,
+  timestamp,
+}: ConfirmTrainingVolumeOptions): PlanBlueprint {
+  if (!isTrainingVolumeConfiguration(blueprint)) {
+    throw new Error("Training Volume must be configured before it can be confirmed.");
+  }
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...blueprint.confirmedBuilderSteps,
+      volume: true,
     },
     updatedAt: timestamp,
   };

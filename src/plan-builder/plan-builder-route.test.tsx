@@ -626,6 +626,64 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("redirects direct access to Exercises back to Volume when Volume has not been confirmed", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:06:30.000Z",
+    });
+    await planBuilderService.initializeTrainingVolume({
+      timestamp: "2026-05-31T08:06:31.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+  });
+
+  it("redirects direct access to Exercises back to Volume when a stale confirmed Volume marker has invalid data", async () => {
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-31T08:06:45.000Z",
+      volumePreset: null,
+      volumePresetSource: null,
+      weeklyRepTargets: null,
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: true,
+          volume: false,
+        },
+        volumePreset: "balanced",
+        volumePresetSource: "recommended_default",
+      });
+    });
+  });
+
   it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
@@ -926,6 +984,65 @@ describe("PlanBuilderRoute", () => {
         weeklyRepTargets: expect.arrayContaining([
           { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
         ]),
+      });
+    });
+  });
+
+  it("confirms Volume before navigating from Volume to Exercises and renders the placeholder route", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:49.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
+    });
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
+        "Exercises",
+      ),
+    ).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByText(/exercise selection/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
+    expect(await trainingService.getDashboardSnapshot()).toMatchObject({
+      activePlan: null,
+      exercises: [],
+      recentSessions: [],
+    });
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: true,
+          volume: true,
+        },
+        volumePreset: "balanced",
+        volumePresetSource: "recommended_default",
+        weeklyRepTargets: [
+          { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+          { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+          { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+          { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+          { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+          { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+          { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+          { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+          { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+        ],
       });
     });
   });
