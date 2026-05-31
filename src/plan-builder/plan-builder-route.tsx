@@ -64,12 +64,25 @@ import { isTrainingVolumeConfiguration } from "./training-volume";
 type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
 type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
 
-type PlanBlueprintSummaryRow = {
-  getStatus?: (summary: PlanBlueprintSummary) => string | null;
-  getValue: (summary: PlanBlueprintSummary) => ReactNode;
+type PlanBlueprintSummaryRowBase = {
   icon: LucideIcon;
   label: string;
 };
+
+type PlanBlueprintSummaryRow = PlanBlueprintSummaryRowBase &
+  (
+    | {
+        getValue: (summary: PlanBlueprintSummary) => ReactNode;
+        valuePresentation?: "text";
+      }
+    | {
+        getValue: (summary: PlanBlueprintSummary) => string;
+        valuePresentation: "status";
+      }
+  );
+
+const planBlueprintSummaryNotChosenValue = "Not chosen yet";
+const planBlueprintEquipmentStatus = "Not configured yet";
 
 const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   {
@@ -89,7 +102,9 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
   },
   {
     getValue: (summary) =>
-      summary.split === "Choose a Training Split" ? "Not chosen yet" : summary.split,
+      summary.split === "Choose a Training Split"
+        ? planBlueprintSummaryNotChosenValue
+        : summary.split,
     icon: Grid2X2,
     label: "Split",
   },
@@ -97,7 +112,7 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     getValue: (summary) =>
       summary.repRanges === "Choose Rep ranges" ? (
         <>
-          <span>Not chosen yet</span>
+          <span>{planBlueprintSummaryNotChosenValue}</span>
           <span className="sr-only">Choose Rep ranges</span>
         </>
       ) : (
@@ -112,18 +127,37 @@ const planBlueprintSummaryRows: ReadonlyArray<PlanBlueprintSummaryRow> = [
     label: "Volume preset",
   },
   {
-    getStatus: () => "Not configured yet",
-    getValue: () => "Not configured yet",
+    getValue: () => planBlueprintEquipmentStatus,
     icon: Dumbbell,
     label: "Equipment",
+    valuePresentation: "status",
   },
   {
-    getStatus: (summary) => summary.generationStatus,
     getValue: (summary) => summary.generationStatus,
     icon: Clock3,
     label: "Generation status",
+    valuePresentation: "status",
   },
 ] as const satisfies ReadonlyArray<PlanBlueprintSummaryRow>;
+
+function getPlanBlueprintSummaryRowContent(
+  row: PlanBlueprintSummaryRow,
+  summary: PlanBlueprintSummary,
+) {
+  if (row.valuePresentation === "status") {
+    const value = row.getValue(summary);
+
+    return {
+      status: value,
+      value,
+    };
+  }
+
+  return {
+    status: null,
+    value: row.getValue(summary),
+  };
+}
 
 const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
@@ -1563,16 +1597,20 @@ function PlanBlueprintSummaryCard({ summary }: PlanBlueprintSummaryCardProps) {
 
         {summary ? (
           <dl className="mt-6 divide-y divide-stone-950/8">
-            {planBlueprintSummaryRows.map(({ getStatus, getValue, icon, label }) => (
-              <KeyValueRow
-                icon={icon}
-                key={label}
-                label={label}
-                status={getStatus?.(summary)}
-                statusClassName="bg-[#f8eee6]"
-                value={getValue(summary)}
-              />
-            ))}
+            {planBlueprintSummaryRows.map((row) => {
+              const { status, value } = getPlanBlueprintSummaryRowContent(row, summary);
+
+              return (
+                <KeyValueRow
+                  icon={row.icon}
+                  key={row.label}
+                  label={row.label}
+                  status={status}
+                  statusClassName="bg-[#f8eee6]"
+                  value={value}
+                />
+              );
+            })}
           </dl>
         ) : (
           <p className="mt-6 text-base font-medium text-[#526873]">Loading Plan Blueprint...</p>
