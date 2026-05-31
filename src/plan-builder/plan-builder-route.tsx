@@ -483,17 +483,17 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
+type UpdateExerciseSelectionPreferencesMutationVariables = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp: string;
+};
+
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
 };
 
 type ConfirmExerciseSelectionPreferencesMutationVariables = {
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  timestamp: string;
-};
-
-type UpdateExerciseSelectionPreferencesMutationVariables = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   timestamp: string;
 };
