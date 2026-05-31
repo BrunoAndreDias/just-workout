@@ -42,6 +42,10 @@ export type PlanBlueprint = {
   repRanges: RepRangeStyleId | null;
   volumePreset: string | null;
   equipment: string | null;
+  confirmedBuilderSteps: {
+    frequency: boolean;
+    split: boolean;
+  };
 };
 
 export type PlanBlueprintSummary = {
@@ -94,6 +98,18 @@ type SelectRepRangeStyleOptions = {
   timestamp: string;
 };
 
+type ConfirmTrainingFrequencyOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+type ConfirmTrainingSplitOptions = {
+  blueprint: PlanBlueprint;
+  split: TrainingSplitId;
+  timestamp: string;
+};
+
 const defaultPlanBlueprintValues = {
   trainingGoal: "build-muscle",
   trainingFrequencyDaysPerWeek: 3,
@@ -101,6 +117,10 @@ const defaultPlanBlueprintValues = {
   repRanges: null,
   volumePreset: null,
   equipment: null,
+  confirmedBuilderSteps: {
+    frequency: false,
+    split: false,
+  },
 } satisfies Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt">;
 
 const trainingGoalLabels = {
@@ -257,10 +277,11 @@ export function getRepRangeStyle(repRangeStyleId: RepRangeStyleId): RepRangeStyl
 }
 
 type FrequencyStepCompletionCandidate = {
+  confirmedBuilderSteps?: PlanBlueprint["confirmedBuilderSteps"];
   trainingFrequencyDaysPerWeek: unknown;
 };
 
-export function isFrequencyStepComplete(
+export function hasValidTrainingFrequency(
   blueprint: FrequencyStepCompletionCandidate | null | undefined,
 ): boolean {
   if (!blueprint) {
@@ -270,17 +291,73 @@ export function isFrequencyStepComplete(
   return isTrainingFrequencyDaysPerWeek(blueprint.trainingFrequencyDaysPerWeek);
 }
 
+type SplitStepCompletionCandidate = {
+  confirmedBuilderSteps?: PlanBlueprint["confirmedBuilderSteps"];
+  split: TrainingSplitId | null;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+export function isFrequencyStepComplete(
+  blueprint: FrequencyStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint || !hasValidTrainingFrequency(blueprint)) {
+    return false;
+  }
+
+  return blueprint.confirmedBuilderSteps?.frequency === true;
+}
+
+export function isSplitStepComplete(
+  blueprint: SplitStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return (
+    blueprint.confirmedBuilderSteps?.split === true &&
+    isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)
+  );
+}
+
+export function getPlanBuilderRedirectStep(
+  blueprint: PlanBlueprint,
+  targetStep: "split" | "rep-ranges" | "volume",
+): "frequency" | "split" | null {
+  if (!isFrequencyStepComplete(blueprint)) {
+    return "frequency";
+  }
+
+  if (targetStep === "split") {
+    return null;
+  }
+
+  return isSplitStepComplete(blueprint) ? null : "split";
+}
+
 export function selectTrainingFrequency({
   blueprint,
   timestamp,
   trainingFrequencyDaysPerWeek,
 }: SelectTrainingFrequencyOptions): PlanBlueprint {
+  const split = getCompatibleSelectedTrainingSplit({
+    selectedTrainingSplit: blueprint.split,
+    trainingFrequencyDaysPerWeek,
+  });
+  const hasTrainingFrequencyChanged =
+    blueprint.trainingFrequencyDaysPerWeek !== trainingFrequencyDaysPerWeek;
+  const hasSplitChanged = blueprint.split !== split;
+
   return {
     ...blueprint,
-    split: getCompatibleSelectedTrainingSplit({
-      selectedTrainingSplit: blueprint.split,
-      trainingFrequencyDaysPerWeek,
-    }),
+    confirmedBuilderSteps: {
+      frequency: hasTrainingFrequencyChanged ? false : blueprint.confirmedBuilderSteps.frequency,
+      split:
+        hasTrainingFrequencyChanged || hasSplitChanged
+          ? false
+          : blueprint.confirmedBuilderSteps.split,
+    },
+    split,
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
@@ -302,6 +379,13 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
 
   return {
     ...options.blueprint,
+    confirmedBuilderSteps: {
+      ...options.blueprint.confirmedBuilderSteps,
+      split:
+        options.blueprint.split === selectedTrainingSplitId
+          ? options.blueprint.confirmedBuilderSteps.split
+          : false,
+    },
     split: selectedTrainingSplitId,
     updatedAt: options.timestamp,
   };
@@ -319,6 +403,48 @@ export function selectRepRangeStyle({
   return {
     ...blueprint,
     repRanges: repRangeStyle,
+    updatedAt: timestamp,
+  };
+}
+
+export function confirmTrainingFrequency({
+  blueprint,
+  timestamp,
+  trainingFrequencyDaysPerWeek,
+}: ConfirmTrainingFrequencyOptions): PlanBlueprint {
+  const updatedBlueprint = selectTrainingFrequency({
+    blueprint,
+    timestamp,
+    trainingFrequencyDaysPerWeek,
+  });
+
+  return {
+    ...updatedBlueprint,
+    confirmedBuilderSteps: {
+      ...updatedBlueprint.confirmedBuilderSteps,
+      frequency: true,
+    },
+    updatedAt: timestamp,
+  };
+}
+
+export function confirmTrainingSplit({
+  blueprint,
+  split,
+  timestamp,
+}: ConfirmTrainingSplitOptions): PlanBlueprint {
+  const updatedBlueprint = selectTrainingSplit({
+    blueprint,
+    split,
+    timestamp,
+  });
+
+  return {
+    ...updatedBlueprint,
+    confirmedBuilderSteps: {
+      ...updatedBlueprint.confirmedBuilderSteps,
+      split: true,
+    },
     updatedAt: timestamp,
   };
 }

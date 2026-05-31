@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Calendar,
@@ -25,10 +25,12 @@ import { KeyValueRow } from "../design-system/key-value-row";
 import { Stepper } from "../design-system/stepper";
 import type { PlanBlueprint, PlanBlueprintSummary } from "./plan-blueprint";
 import {
+  confirmTrainingFrequency,
+  confirmTrainingSplit,
   defaultRepRangeStyleId,
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
-  isFrequencyStepComplete,
+  hasValidTrainingFrequency,
   type PlanBlueprint,
   type PlanBlueprintSummary,
   type RepRangeStyle,
@@ -220,6 +222,16 @@ type UpdateTrainingSplitVariables = {
   timestamp: string;
 };
 
+type ConfirmTrainingFrequencyVariables = {
+  timestamp: string;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+type ConfirmTrainingSplitVariables = {
+  split: TrainingSplitId;
+  timestamp: string;
+};
+
 type UpdateRepRangeStyleVariables = {
   repRangeStyle: RepRangeStyleId;
   timestamp: string;
@@ -247,6 +259,7 @@ type PlanBuilderStepStatusCardProps = {
 type PlanBuilderStepStatusCardTitleDisplay = "screen-reader-only" | "visible";
 
 type TrainingSplitStepProps = {
+  onContinueToRepRanges: () => Promise<void>;
   onTrainingSplitChange: (split: TrainingSplitId) => void;
   selectedSplit: TrainingSplitDefinition;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
@@ -312,6 +325,8 @@ type RepRangeStyleTargetsProps = {
 export function PlanBuilderRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
+  const { mutateAsync: confirmSelectedTrainingFrequency } = useConfirmTrainingFrequencyMutation();
+  const navigate = useNavigate();
 
   function handleTrainingFrequencyChange(
     trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
@@ -320,6 +335,18 @@ export function PlanBuilderRoute() {
       timestamp: new Date().toISOString(),
       trainingFrequencyDaysPerWeek,
     });
+  }
+
+  async function handleContinueToSplit() {
+    if (!blueprint) {
+      return;
+    }
+
+    await confirmSelectedTrainingFrequency({
+      timestamp: new Date().toISOString(),
+      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+    });
+    await navigate({ to: planBuilderPaths.split });
   }
 
   return (
@@ -335,9 +362,12 @@ export function PlanBuilderRoute() {
     >
       {blueprint ? (
         <TrainingFrequencyStep
-          canContinueToSplit={isFrequencyStepComplete(blueprint)}
+          canContinueToSplit={hasValidTrainingFrequency(blueprint)}
+          onContinueToSplit={handleContinueToSplit}
           onTrainingFrequencyChange={handleTrainingFrequencyChange}
-          selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+          selectedTrainingFrequencyDaysPerWeek={
+            hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
+          }
         />
       ) : (
         <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
@@ -349,6 +379,8 @@ export function PlanBuilderRoute() {
 export function PlanBuilderSplitRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
+  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
+  const navigate = useNavigate();
   const selectedSplitId = blueprint ? getVisibleTrainingSplitId(blueprint) : null;
   const selectedSplit = selectedSplitId ? getTrainingSplit(selectedSplitId) : null;
 
@@ -370,6 +402,18 @@ export function PlanBuilderSplitRoute() {
     });
   }
 
+  async function handleContinueToRepRanges() {
+    if (!selectedSplitId) {
+      return;
+    }
+
+    await confirmSelectedTrainingSplit({
+      split: selectedSplitId,
+      timestamp: new Date().toISOString(),
+    });
+    await navigate({ to: planBuilderPaths.repRanges });
+  }
+
   return (
     <PlanBuilderPage
       currentStep="split"
@@ -384,6 +428,7 @@ export function PlanBuilderSplitRoute() {
     >
       {blueprint && selectedSplit ? (
         <TrainingSplitStep
+          onContinueToRepRanges={handleContinueToRepRanges}
           onTrainingSplitChange={handleTrainingSplitChange}
           selectedSplit={selectedSplit}
           trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
@@ -494,6 +539,38 @@ function useUpdateTrainingSplitMutation() {
       }),
     optimisticUpdate: (blueprint, { split, timestamp }) =>
       selectTrainingSplit({
+        blueprint,
+        split,
+        timestamp,
+      }),
+  });
+}
+
+function useConfirmTrainingFrequencyMutation() {
+  return usePlanBlueprintMutation<ConfirmTrainingFrequencyVariables>({
+    mutationFn: ({ timestamp, trainingFrequencyDaysPerWeek }) =>
+      planBuilderService.confirmSelectedTrainingFrequency({
+        timestamp,
+        trainingFrequencyDaysPerWeek,
+      }),
+    optimisticUpdate: (blueprint, { timestamp, trainingFrequencyDaysPerWeek }) =>
+      confirmTrainingFrequency({
+        blueprint,
+        timestamp,
+        trainingFrequencyDaysPerWeek,
+      }),
+  });
+}
+
+function useConfirmTrainingSplitMutation() {
+  return usePlanBlueprintMutation<ConfirmTrainingSplitVariables>({
+    mutationFn: ({ split, timestamp }) =>
+      planBuilderService.confirmSelectedTrainingSplit({
+        split,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { split, timestamp }) =>
+      confirmTrainingSplit({
         blueprint,
         split,
         timestamp,
@@ -634,16 +711,20 @@ function getPlanBuilderStepDetails(currentStep: PlanBuilderStep) {
 
 type TrainingFrequencyStepProps = {
   canContinueToSplit: boolean;
+  onContinueToSplit: () => Promise<void>;
   onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
-  selectedTrainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+  selectedTrainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek | null;
 };
 
 function TrainingFrequencyStep({
   canContinueToSplit,
+  onContinueToSplit,
   onTrainingFrequencyChange,
   selectedTrainingFrequencyDaysPerWeek,
 }: TrainingFrequencyStepProps) {
-  const recommendation = getTrainingFrequencyRecommendation(selectedTrainingFrequencyDaysPerWeek);
+  const recommendation = getTrainingFrequencyRecommendation(
+    selectedTrainingFrequencyDaysPerWeek ?? 3,
+  );
 
   return (
     <section
@@ -697,13 +778,14 @@ function TrainingFrequencyStep({
         </Button>
         {canContinueToSplit ? (
           <Button
-            asChild
             className="training-frequency-action-button h-[3.75rem] min-w-[14.25rem] bg-[#007780] text-base font-medium shadow-[0_12px_26px_rgba(0,119,128,0.18)] hover:bg-[#00666e] focus-visible:outline-[#007780]"
+            onClick={() => {
+              void onContinueToSplit();
+            }}
+            type="button"
           >
-            <Link to={planBuilderPaths.split}>
-              Continue to Split
-              <ArrowRight aria-hidden="true" size={20} />
-            </Link>
+            Continue to Split
+            <ArrowRight aria-hidden="true" size={20} />
           </Button>
         ) : (
           <Button disabled type="button">
@@ -717,6 +799,7 @@ function TrainingFrequencyStep({
 }
 
 function TrainingSplitStep({
+  onContinueToRepRanges,
   onTrainingSplitChange,
   selectedSplit,
   trainingFrequencyDaysPerWeek,
@@ -768,8 +851,13 @@ function TrainingSplitStep({
           <Button asChild variant="outline">
             <Link to={planBuilderPaths.frequency}>Back to Frequency</Link>
           </Button>
-          <Button asChild>
-            <Link to={planBuilderPaths.repRanges}>Continue to Rep ranges</Link>
+          <Button
+            onClick={() => {
+              void onContinueToRepRanges();
+            }}
+            type="button"
+          >
+            Continue to Rep ranges
           </Button>
         </div>
       </div>

@@ -100,6 +100,42 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
+  it("keeps configured Frequency and Split separate from confirmed builder progress", async () => {
+    const blueprintWithFrequency = await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T10:15:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    const confirmedFrequencyBlueprint = await planBuilderService.confirmSelectedTrainingFrequency({
+      timestamp: "2026-05-30T10:16:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    const blueprintWithSplit = await planBuilderService.updateTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:20:00.000Z",
+    });
+    const confirmedSplitBlueprint = await planBuilderService.confirmSelectedTrainingSplit({
+      split: "upper-lower-4-day",
+      timestamp: "2026-05-30T10:21:00.000Z",
+    });
+
+    expect(blueprintWithFrequency.confirmedBuilderSteps).toEqual({
+      frequency: false,
+      split: false,
+    });
+    expect(confirmedFrequencyBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      split: false,
+    });
+    expect(blueprintWithSplit.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      split: false,
+    });
+    expect(confirmedSplitBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: true,
+      split: true,
+    });
+  });
+
   it("preserves a saved Rep Range Style when earlier builder choices change", async () => {
     await planBuilderService.updateRepRangeStyle({
       repRangeStyle: "controlled_higher_reps",
@@ -120,6 +156,10 @@ describe("planBuilderService", () => {
       split: "upper-lower-full-body",
     });
     expect(blueprintWithNewFrequency).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: false,
+        split: false,
+      },
       repRanges: "controlled_higher_reps",
       split: null,
       trainingFrequencyDaysPerWeek: 5,

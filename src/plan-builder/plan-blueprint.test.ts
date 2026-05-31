@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  confirmTrainingFrequency,
+  confirmTrainingSplit,
   createDefaultPlanBlueprint,
   defaultRepRangeStyleId,
+  getPlanBuilderRedirectStep,
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
+  hasValidTrainingFrequency,
   isFrequencyStepComplete,
   isRepRangeStyleId,
+  isSplitStepComplete,
   isTrainingFrequencyDaysPerWeek,
   type PlanBlueprint,
   selectRepRangeStyle,
@@ -42,6 +47,10 @@ describe("plan blueprint", () => {
       repRanges: null,
       volumePreset: null,
       equipment: null,
+      confirmedBuilderSteps: {
+        frequency: false,
+        split: false,
+      },
     });
   });
 
@@ -188,23 +197,86 @@ describe("plan blueprint", () => {
 
     expect(blueprintWithNewSplit.repRanges).toBe("strength_leaning");
     expect(blueprintWithNewFrequency).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: false,
+        split: false,
+      },
       repRanges: "strength_leaning",
       split: null,
       trainingFrequencyDaysPerWeek: 3,
     });
   });
 
-  it("treats the frequency step as complete only when a supported frequency is available", () => {
+  it("keeps a valid training frequency configurable without treating the step as complete until it is confirmed", () => {
     const blueprint = createTestPlanBlueprint();
+    const confirmedBlueprint = confirmTrainingFrequency({
+      blueprint,
+      timestamp: firstUpdateTimestamp,
+      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+    });
 
     const blueprintWithUnsupportedFrequency = {
       ...blueprint,
       trainingFrequencyDaysPerWeek: 6,
     };
 
+    expect(hasValidTrainingFrequency(blueprint)).toBe(true);
     expect(isFrequencyStepComplete(null)).toBe(false);
+    expect(isFrequencyStepComplete(blueprint)).toBe(false);
     expect(isFrequencyStepComplete(blueprintWithUnsupportedFrequency)).toBe(false);
-    expect(isFrequencyStepComplete(blueprint)).toBe(true);
+    expect(isFrequencyStepComplete(confirmedBlueprint)).toBe(true);
+  });
+
+  it("stores confirmed Frequency and Split progress separately from the configured values", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const confirmedFrequencyBlueprint = confirmTrainingFrequency({
+      blueprint,
+      timestamp: firstUpdateTimestamp,
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    const confirmedSplitBlueprint = confirmTrainingSplit({
+      blueprint: {
+        ...confirmedFrequencyBlueprint,
+        split: "upper-lower-4-day",
+      },
+      split: "upper-lower-4-day",
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(confirmedFrequencyBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        split: false,
+      },
+      trainingFrequencyDaysPerWeek: 4,
+    });
+    expect(isSplitStepComplete(confirmedFrequencyBlueprint)).toBe(false);
+    expect(confirmedSplitBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        split: true,
+      },
+      split: "upper-lower-4-day",
+    });
+    expect(isSplitStepComplete(confirmedSplitBlueprint)).toBe(true);
+  });
+
+  it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {
+    const blueprint = createTestPlanBlueprint({
+      confirmedBuilderSteps: {
+        frequency: true,
+        split: true,
+      },
+      split: "upper-lower-full-body",
+      trainingFrequencyDaysPerWeek: 5,
+    });
+
+    expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "split")).toBe("frequency");
+    expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "rep-ranges")).toBe("frequency");
+    expect(getPlanBuilderRedirectStep(blueprint, "rep-ranges")).toBe("split");
   });
 
   it("describes the default 3-day recommendation", () => {

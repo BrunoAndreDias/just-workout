@@ -1,4 +1,6 @@
 import {
+  confirmTrainingFrequency,
+  confirmTrainingSplit,
   createDefaultPlanBlueprint,
   type RepRangeStyleId,
   selectRepRangeStyle,
@@ -46,6 +48,16 @@ type UpdateRepRangeStyleOptions = {
   timestamp?: string;
 };
 
+type ConfirmTrainingFrequencyOptions = {
+  timestamp?: string;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+};
+
+type ConfirmTrainingSplitOptions = {
+  split: TrainingSplitId;
+  timestamp?: string;
+};
+
 async function updateTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
@@ -88,7 +100,39 @@ async function updateRepRangeStyle({
   );
 }
 
+async function confirmSelectedTrainingFrequency({
+  timestamp = new Date().toISOString(),
+  trainingFrequencyDaysPerWeek,
+}: ConfirmTrainingFrequencyOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    confirmTrainingFrequency({
+      blueprint,
+      timestamp,
+      trainingFrequencyDaysPerWeek,
+    }),
+  );
+}
+
+async function confirmSelectedTrainingSplit({
+  split,
+  timestamp = new Date().toISOString(),
+}: ConfirmTrainingSplitOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    confirmTrainingSplit({
+      blueprint,
+      split,
+      timestamp,
+    }),
+  );
+}
+
 export const planBuilderService = {
+  confirmSelectedTrainingFrequency,
+  confirmSelectedTrainingSplit,
   getOrCreatePlanBlueprint,
   updateRepRangeStyle,
   updateTrainingSplit,

@@ -252,7 +252,7 @@ describe("PlanBuilderRoute", () => {
       expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
     });
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+    await user.click(screen.getByRole("button", { name: /continue to split/i }));
 
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
 
@@ -302,7 +302,7 @@ describe("PlanBuilderRoute", () => {
       expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
     });
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
+    await user.click(screen.getByRole("button", { name: /continue to split/i }));
 
     const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
@@ -311,7 +311,9 @@ describe("PlanBuilderRoute", () => {
       expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
     });
 
-    expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
+    await waitFor(() => {
+      expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
+    });
     expect(within(summary).getByText("Not ready yet")).toBeVisible();
     expect(within(summary).getByText("Rep ranges")).toBeVisible();
 
@@ -330,6 +332,8 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("uses Plan Blueprint next-step copy on Split instead of introducing generated-plan wording", async () => {
+    await confirmDefaultTrainingFrequency();
+
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
@@ -338,10 +342,65 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByText(generatedPlanSplitNextStepCopy)).not.toBeInTheDocument();
   });
 
+  it("redirects direct access to Split back to Frequency when Training Frequency is configured but not confirmed", async () => {
+    await saveFourDayTrainingFrequency();
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+    });
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+    expect(
+      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
+        "4 days/week",
+      ),
+    ).toBeVisible();
+  });
+
+  it("confirms Training Frequency before navigating from Frequency to Split", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    await selectTrainingFrequency(user, 4);
+    await user.click(screen.getByRole("button", { name: /continue to split/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        frequency: true,
+        split: false,
+      });
+    });
+  });
+
+  it("redirects direct access to Split back to Frequency when a stale confirmed Frequency marker has invalid data", async () => {
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        split: false,
+      },
+      trainingFrequencyDaysPerWeek: 6 as TrainingFrequencyDaysPerWeek,
+      updatedAt: "2026-05-30T11:35:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+    });
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+  });
+
   it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {
     const user = userEvent.setup();
 
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -377,7 +436,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("redirects direct access to Rep ranges back to Split when no compatible Training Split is saved", async () => {
-    await saveFourDayTrainingFrequency();
+    await saveConfirmedFourDayTrainingFrequency();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -393,10 +452,53 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
+  it("confirms Training Split before navigating from Split to Rep ranges", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    await selectTrainingFrequency(user, 4);
+    const splitGroup = await continueToSplitStep(user);
+
+    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
+        frequency: true,
+        split: true,
+      });
+    });
+  });
+
+  it("redirects direct access to Volume back to Split when a stale confirmed Split marker has incompatible data", async () => {
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      confirmedBuilderSteps: {
+        frequency: true,
+        split: true,
+      },
+      split: "upper-lower-full-body",
+      trainingFrequencyDaysPerWeek: 5,
+      updatedAt: "2026-05-30T11:37:00.000Z",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
+    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+  });
+
   it("continues from Rep ranges into the Volume placeholder route without showing exercise or generated-plan content", async () => {
     const user = userEvent.setup();
 
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -427,7 +529,7 @@ describe("PlanBuilderRoute", () => {
   it("navigates back from Rep ranges to Split", async () => {
     const user = userEvent.setup();
 
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -442,18 +544,11 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
     ).toHaveAttribute("aria-current", "step");
+  });
 
   it("updates the Plan Blueprint rail when the default Balanced hypertrophy selection is explicitly saved", async () => {
     const user = userEvent.setup();
-
-    await planBuilderService.updateTrainingFrequency({
-      timestamp: "2026-05-30T11:32:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-    await planBuilderService.updateTrainingSplit({
-      split: "upper-lower-4-day",
-      timestamp: "2026-05-30T11:33:00.000Z",
-    });
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -480,7 +575,7 @@ describe("PlanBuilderRoute", () => {
   it("shows a single Selected badge on the active Rep Range Style card and moves it when the choice changes", async () => {
     const user = userEvent.setup();
 
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -506,7 +601,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("preserves a saved non-default Rep Range Style when reopening the step", async () => {
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.updateRepRangeStyle({
       repRangeStyle: "controlled_higher_reps",
       timestamp: "2026-05-30T11:42:00.000Z",
@@ -540,7 +635,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("shows data-driven Rep Range Style notes and targets without rendering advanced programming controls", async () => {
-    await saveFourDayUpperLowerTrainingSplit();
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
@@ -579,11 +674,11 @@ describe("PlanBuilderRoute", () => {
   it("updates Rep Range Style explanation bullets and uses the approved boundary and next-step copy", async () => {
     const user = userEvent.setup();
 
-    await planBuilderService.updateTrainingFrequency({
+    await planBuilderService.confirmSelectedTrainingFrequency({
       timestamp: "2026-05-30T11:47:00.000Z",
       trainingFrequencyDaysPerWeek: 4,
     });
-    await planBuilderService.updateTrainingSplit({
+    await planBuilderService.confirmSelectedTrainingSplit({
       split: "upper-lower-4-day",
       timestamp: "2026-05-30T11:48:00.000Z",
     });
@@ -626,7 +721,7 @@ describe("PlanBuilderRoute", () => {
   it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
     const user = userEvent.setup();
 
-    await planBuilderService.updateTrainingFrequency({
+    await planBuilderService.confirmSelectedTrainingFrequency({
       timestamp: "2026-05-30T11:10:00.000Z",
       trainingFrequencyDaysPerWeek: 4,
     });
@@ -672,7 +767,7 @@ describe("PlanBuilderRoute", () => {
     expectedLabels,
     recommendedLabel,
   }) => {
-    await planBuilderService.updateTrainingFrequency({
+    await planBuilderService.confirmSelectedTrainingFrequency({
       timestamp: "2026-05-30T11:00:00.000Z",
       trainingFrequencyDaysPerWeek: daysPerWeek,
     });
@@ -696,7 +791,7 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("auto-selects and persists the recommended split when Split opens without a compatible selection", async () => {
-    await planBuilderService.updateTrainingFrequency({
+    await planBuilderService.confirmSelectedTrainingFrequency({
       timestamp: "2026-05-30T11:05:00.000Z",
       trainingFrequencyDaysPerWeek: 5,
     });
@@ -755,7 +850,7 @@ describe("PlanBuilderRoute", () => {
     expect(splitOptions.getAllByRole("radio")).toHaveLength(1);
     expectTrainingSplitChecked(splitGroup, label);
     expect(screen.getByRole("link", { name: /back to frequency/i })).toBeVisible();
-    expect(screen.getByRole("link", { name: /continue to rep ranges/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
 
     await user.click(screen.getByRole("link", { name: /back to frequency/i }));
 
@@ -771,7 +866,7 @@ describe("PlanBuilderRoute", () => {
     });
     expectTrainingSplitChecked(resumedSplitGroup, label);
 
-    await user.click(screen.getByRole("link", { name: /continue to rep ranges/i }));
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -797,6 +892,7 @@ describe("PlanBuilderRoute", () => {
     await expectPersistedTrainingSplit("rotating-push-pull-legs");
 
     firstView.unmount();
+    await confirmSelectedTrainingFrequencyForTest(4);
     renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
@@ -859,6 +955,7 @@ describe("PlanBuilderRoute", () => {
     await db.trainingPlans.add(activePlan);
 
     const initialDashboardSnapshot = await trainingService.getDashboardSnapshot();
+    await confirmDefaultTrainingFrequency();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     await screen.findByRole("group", { name: /training split/i });
@@ -871,8 +968,8 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-    await user.click(await screen.findByRole("link", { name: /continue to rep ranges/i }));
+    await user.click(screen.getByRole("button", { name: /continue to split/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -901,7 +998,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(stepList).getByText("Review")).toBeVisible();
     expect(await screen.findByRole("button", { name: /^back$/i })).toBeDisabled();
 
-    await user.click(await screen.findByRole("link", { name: /continue to split/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to split/i }));
 
     expect(await screen.findByRole("heading", { name: /select training split/i })).toBeVisible();
     await waitFor(() => {
@@ -919,8 +1016,8 @@ describe("PlanBuilderRoute", () => {
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
 
-    await user.click(screen.getByRole("link", { name: /continue to split/i }));
-    await user.click(await screen.findByRole("link", { name: /continue to rep ranges/i }));
+    await user.click(screen.getByRole("button", { name: /continue to split/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
 
     expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
     expectRepRangeStyleChecked(
@@ -938,6 +1035,8 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("renders the split URL directly with the recommended 3-day split selected and without generating a training plan", async () => {
+    await confirmDefaultTrainingFrequency();
+
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
 
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
@@ -999,11 +1098,29 @@ async function saveFourDayTrainingFrequency() {
   });
 }
 
-async function saveFourDayUpperLowerTrainingSplit() {
-  await saveFourDayTrainingFrequency();
-  await planBuilderService.updateTrainingSplit({
+async function confirmDefaultTrainingFrequency() {
+  await confirmSelectedTrainingFrequencyForTest(3, "2026-05-30T11:24:00.000Z");
+}
+
+async function saveConfirmedFourDayTrainingFrequency() {
+  await confirmSelectedTrainingFrequencyForTest(4, "2026-05-30T11:30:00.000Z");
+}
+
+async function saveConfirmedFourDayUpperLowerTrainingSplit() {
+  await saveConfirmedFourDayTrainingFrequency();
+  await planBuilderService.confirmSelectedTrainingSplit({
     split: "upper-lower-4-day",
     timestamp: "2026-05-30T11:31:00.000Z",
+  });
+}
+
+async function confirmSelectedTrainingFrequencyForTest(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+  timestamp = "2026-05-30T11:29:00.000Z",
+) {
+  await planBuilderService.confirmSelectedTrainingFrequency({
+    timestamp,
+    trainingFrequencyDaysPerWeek,
   });
 }
 
@@ -1035,7 +1152,7 @@ async function expectTrainingFrequencyChecked(
 }
 
 async function continueToSplitStep(user: PlanBuilderTestUser) {
-  await user.click(screen.getByRole("link", { name: /continue to split/i }));
+  await user.click(screen.getByRole("button", { name: /continue to split/i }));
 
   return screen.findByRole("group", { name: /training split/i });
 }

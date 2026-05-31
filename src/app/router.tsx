@@ -7,7 +7,7 @@ import {
   planBuilderPaths,
   planBuilderService,
 } from "../plan-builder";
-import { isTrainingSplitCompatible } from "../plan-builder/training-split";
+import { getPlanBuilderRedirectStep } from "../plan-builder/plan-blueprint";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -45,32 +45,44 @@ const planBuilderFrequencyRoute = createRoute({
 });
 
 const planBuilderSplitRoute = createRoute({
+  beforeLoad: requireConfirmedTrainingFrequency,
   component: PlanBuilderSplitRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.split,
 });
 
-async function requireCompatibleTrainingSplit() {
+async function requirePlanBuilderStep(step: "split" | "rep-ranges" | "volume") {
   const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
-  if (isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
+  const redirectStep = getPlanBuilderRedirectStep(blueprint, step);
+
+  if (!redirectStep) {
     return;
   }
 
   throw redirect({
     replace: true,
-    to: planBuilderPaths.split,
+    to: planBuilderPaths[redirectStep],
   });
 }
 
+async function requireConfirmedTrainingFrequency() {
+  return requirePlanBuilderStep("split");
+}
+
+async function requireConfirmedTrainingSplit() {
+  return requirePlanBuilderStep("rep-ranges");
+}
+
 const planBuilderRepRangesRoute = createRoute({
-  beforeLoad: requireCompatibleTrainingSplit,
+  beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderRepRangesRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.repRanges,
 });
 
 const planBuilderVolumeRoute = createRoute({
+  beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderVolumeRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.volume,
