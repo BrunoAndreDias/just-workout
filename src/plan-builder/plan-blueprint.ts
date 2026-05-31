@@ -1,3 +1,8 @@
+import {
+  createDefaultExerciseSelectionPreferences,
+  type ExerciseSelectionPreferences,
+  normalizeExerciseSelectionPreferences,
+} from "./exercise-selection-preferences";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import {
   getRecommendedTrainingSplitId,
@@ -69,7 +74,7 @@ export type PlanBlueprint = {
   volumePreset: VolumePresetId | null;
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
-  equipment: string | null;
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
 };
 
@@ -162,9 +167,14 @@ type ConfirmTrainingVolumeOptions = {
 
 type StoredPlanBlueprint = Omit<
   PlanBlueprint,
-  "confirmedBuilderSteps" | "volumePreset" | "volumePresetSource" | "weeklyRepTargets"
+  | "confirmedBuilderSteps"
+  | "exerciseSelectionPreferences"
+  | "volumePreset"
+  | "volumePresetSource"
+  | "weeklyRepTargets"
 > & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+  exerciseSelectionPreferences?: unknown;
   volumePreset?: unknown;
   volumePresetSource?: unknown;
   weeklyRepTargets?: unknown;
@@ -176,18 +186,6 @@ const defaultConfirmedBuilderSteps = {
   split: false,
   volume: false,
 } satisfies PlanBuilderConfirmedSteps;
-
-const defaultPlanBlueprintValues = {
-  trainingGoal: "build-muscle",
-  trainingFrequencyDaysPerWeek: 3,
-  split: null,
-  repRanges: null,
-  volumePreset: null,
-  volumePresetSource: null,
-  weeklyRepTargets: null,
-  equipment: null,
-  confirmedBuilderSteps: defaultConfirmedBuilderSteps,
-} satisfies Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt">;
 
 const trainingGoalLabels = {
   "build-muscle": "Build muscle",
@@ -321,6 +319,8 @@ export function createDefaultPlanBlueprint({
   id,
   timestamp,
 }: CreateDefaultPlanBlueprintOptions): PlanBlueprint {
+  const defaultPlanBlueprintValues = getDefaultPlanBlueprintValues();
+
   return {
     id,
     createdAt: timestamp,
@@ -394,6 +394,9 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
   return {
     ...blueprint,
     ...normalizeTrainingVolumeConfiguration(blueprint),
+    exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
+      blueprint.exerciseSelectionPreferences,
+    ),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
   };
 }
@@ -841,6 +844,20 @@ function getConfirmedBuilderSteps({
     repRanges: confirmedBuilderSteps?.repRanges === true,
     split: confirmedBuilderSteps?.split === true,
     volume: confirmedBuilderSteps?.volume === true,
+  };
+}
+
+function getDefaultPlanBlueprintValues(): Omit<PlanBlueprint, "id" | "createdAt" | "updatedAt"> {
+  return {
+    trainingGoal: "build-muscle",
+    trainingFrequencyDaysPerWeek: 3,
+    split: null,
+    repRanges: null,
+    volumePreset: null,
+    volumePresetSource: null,
+    weeklyRepTargets: null,
+    exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
+    confirmedBuilderSteps: defaultConfirmedBuilderSteps,
   };
 }
 

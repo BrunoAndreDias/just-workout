@@ -16,6 +16,7 @@ import {
   isSplitStepComplete,
   isTrainingFrequencyDaysPerWeek,
   isVolumeStepComplete,
+  normalizePlanBlueprint,
   type PlanBlueprint,
   selectRepRangeStyle,
   selectTrainingFrequency,
@@ -59,7 +60,7 @@ function createConfirmedPlanBlueprint(overrides: Partial<PlanBlueprint>): PlanBl
 }
 
 describe("plan blueprint", () => {
-  it("creates a default blueprint with the issue-2 assumptions", () => {
+  it("creates a default blueprint with the issue-2 assumptions plus Exercise Selection Preferences defaults", () => {
     expect(createDefaultPlanBlueprint(testBlueprintOptions)).toEqual({
       id: testBlueprintOptions.id,
       createdAt: testBlueprintOptions.timestamp,
@@ -71,12 +72,71 @@ describe("plan blueprint", () => {
       volumePreset: null,
       volumePresetSource: null,
       weeklyRepTargets: null,
-      equipment: null,
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [],
+        strategy: "balanced",
+      },
       confirmedBuilderSteps: {
         frequency: false,
         repRanges: false,
         split: false,
         volume: false,
+      },
+    });
+  });
+
+  it("normalizes missing or malformed Exercise Selection Preferences to the v1 defaults while preserving valid exercise items", () => {
+    expect(
+      normalizePlanBlueprint({
+        createdAt: testBlueprintOptions.timestamp,
+        id: testBlueprintOptions.id,
+        trainingFrequencyDaysPerWeek: 3,
+        trainingGoal: "build-muscle",
+        repRanges: null,
+        split: null,
+        updatedAt: testBlueprintOptions.timestamp,
+      }),
+    ).toMatchObject({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [],
+        strategy: "balanced",
+      },
+    });
+
+    expect(
+      normalizePlanBlueprint({
+        createdAt: testBlueprintOptions.timestamp,
+        exerciseSelectionPreferences: {
+          avoidedExercises: [
+            { id: "avoided-1", rawText: "Behind-the-neck press" },
+            { rawText: "Missing id" },
+          ],
+          equipmentPreset: "garage_gym",
+          preferredExercises: [
+            { id: "preferred-1", matchedExerciseId: "exercise-42", rawText: "Incline press" },
+            { id: 42, rawText: "Bad item" },
+          ],
+          strategy: "unsupported",
+        },
+        id: testBlueprintOptions.id,
+        trainingFrequencyDaysPerWeek: 3,
+        trainingGoal: "build-muscle",
+        repRanges: null,
+        split: null,
+        updatedAt: testBlueprintOptions.timestamp,
+      } as never),
+    ).toMatchObject({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: "avoided-1", rawText: "Behind-the-neck press" }],
+        equipmentPreset: "full_gym",
+        preferredExercises: [
+          { id: "preferred-1", matchedExerciseId: "exercise-42", rawText: "Incline press" },
+        ],
+        strategy: "balanced",
       },
     });
   });
@@ -194,7 +254,6 @@ describe("plan blueprint", () => {
 
   it("clears incompatible selected splits when training frequency changes without resetting other choices", () => {
     const blueprint: PlanBlueprint = createTestPlanBlueprint({
-      equipment: "full-gym",
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-full-body",
       volumePreset: "balanced",

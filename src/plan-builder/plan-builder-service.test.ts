@@ -49,6 +49,28 @@ describe("planBuilderService", () => {
       volume: false,
     });
   });
+
+  it("resumes blueprints saved before Exercise Selection Preferences existed with the v1 defaults", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint = { ...currentBlueprint } as Partial<PlanBlueprint> & {
+      exerciseSelectionPreferences?: PlanBlueprint["exerciseSelectionPreferences"];
+    };
+
+    delete legacyBlueprint.exerciseSelectionPreferences;
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [],
+        strategy: "balanced",
+      },
+    });
+  });
+
   it("persists a changed training frequency for the next resume", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
