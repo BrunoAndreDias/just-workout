@@ -1153,6 +1153,26 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("returns from Exercises to Volume with the existing footer back action", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+
+    await user.click(screen.getByRole("link", { name: /back to volume/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+  });
+
   it("preserves compatible saved Split, Rep ranges, and Volume data after Frequency changes and restores guarded Exercises access after reconfirmation", async () => {
     const user = userEvent.setup();
 

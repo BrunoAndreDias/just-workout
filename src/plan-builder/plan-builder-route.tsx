@@ -460,6 +460,7 @@ type ConfirmTrainingVolumeMutationVariables = {
 };
 
 type ConfirmExerciseSelectionPreferencesMutationVariables = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
   timestamp: string;
 };
 
@@ -885,6 +886,7 @@ export function PlanBuilderExercisesRoute() {
 
   async function handleContinueToReview() {
     await confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences,
       timestamp: new Date().toISOString(),
     });
     await navigate({ to: planBuilderPaths.review });
@@ -1107,13 +1109,15 @@ function useConfirmTrainingVolumeMutation() {
 
 function useConfirmExerciseSelectionPreferencesMutation() {
   return usePlanBlueprintMutation<ConfirmExerciseSelectionPreferencesMutationVariables>({
-    mutationFn: ({ timestamp }) =>
+    mutationFn: ({ exerciseSelectionPreferences, timestamp }) =>
       planBuilderService.confirmSelectedExerciseSelectionPreferences({
+        exerciseSelectionPreferences,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { timestamp }) =>
+    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
       confirmExerciseSelectionPreferences({
         blueprint,
+        exerciseSelectionPreferences,
         timestamp,
       }),
   });

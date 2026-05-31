@@ -140,6 +140,68 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
+  it("persists the final Step 5 Exercise Selection Preferences when Exercises is confirmed", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const configuredBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:15:30.000Z",
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(configuredBlueprint);
+
+    const finalExerciseSelectionPreferences = {
+      automaticRules: [{ id: "rest_scaling" }],
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      includedEquipment: [{ id: "machines", label: "Machines" }],
+      movementPatternCoverage: [{ id: "lower_body", patterns: [] }],
+      preferredExercises: [
+        { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+      ],
+      strategy: "balanced",
+    } satisfies DraftExerciseSelectionPreferences;
+
+    const confirmedBlueprint = await planBuilderService.confirmSelectedExerciseSelectionPreferences(
+      {
+        exerciseSelectionPreferences: finalExerciseSelectionPreferences,
+        timestamp: "2026-05-30T10:16:00.000Z",
+      },
+    );
+
+    expect(confirmedBlueprint).toEqual({
+      ...configuredBlueprint,
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+        equipmentPreset: "full_gym",
+        preferredExercises: [
+          { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+        ],
+        strategy: "balanced",
+      },
+      updatedAt: "2026-05-30T10:16:00.000Z",
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(confirmedBlueprint);
+  });
+
   it("persists a changed training frequency for the next resume", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 

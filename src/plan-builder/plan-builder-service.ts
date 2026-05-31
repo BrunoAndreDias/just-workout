@@ -99,6 +99,7 @@ type ConfirmTrainingVolumeOptions = {
 };
 
 type ConfirmExerciseSelectionPreferencesOptions = {
+  exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   timestamp?: string;
 };
 
@@ -258,6 +259,7 @@ async function confirmSelectedTrainingVolume({
 }
 
 async function confirmSelectedExerciseSelectionPreferences({
+  exerciseSelectionPreferences,
   timestamp = new Date().toISOString(),
 }: ConfirmExerciseSelectionPreferencesOptions = {}) {
   const blueprint = await getOrCreatePlanBlueprint();
@@ -265,6 +267,7 @@ async function confirmSelectedExerciseSelectionPreferences({
   return savePlanBlueprint(
     confirmExerciseSelectionPreferences({
       blueprint,
+      exerciseSelectionPreferences,
       timestamp,
     }),
   );
