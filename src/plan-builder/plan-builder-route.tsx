@@ -20,15 +20,18 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
   createDefaultExerciseSelectionPreferences,
+  createExerciseSelectionPreferenceItem,
+  type ExerciseSelectionPreferenceItem,
   type ExerciseSelectionPreferences,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
+  normalizeExerciseSelectionPreferenceText,
 } from "./exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
@@ -57,6 +60,7 @@ import {
   type TrainingFrequencyOption,
   type TrainingFrequencyRecommendation,
   trainingFrequencyOptions,
+  updateExerciseSelectionPreferences,
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -454,6 +458,11 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
+type UpdateExerciseSelectionPreferencesMutationVariables = {
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp: string;
+};
+
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
@@ -562,13 +571,22 @@ type WeeklyVolumeTargetsStepProps = {
 };
 
 type ReadOnlyExercisesStepProps = {
+  avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
+  onAddAvoidedExercise: (rawText: string) => Promise<void>;
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  onRemoveAvoidedExercise: (exerciseId: string) => Promise<void>;
 };
 
 type ReadOnlyExercisesHighlightProps = {
   body: string;
   title: string;
+};
+
+type AvoidedExercisesSectionProps = {
+  avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
+  onAddAvoidedExercise: (rawText: string) => Promise<void>;
+  onRemoveAvoidedExercise: (exerciseId: string) => Promise<void>;
 };
 
 type VolumePresetSelectorProps = {
@@ -878,11 +896,41 @@ export function PlanBuilderVolumeRoute() {
 
 export function PlanBuilderExercisesRoute() {
   const navigate = useNavigate();
+  const { mutateAsync: updateExerciseSelectionPreferencesMutation } =
+    useUpdateExerciseSelectionPreferencesMutation();
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const exerciseSelectionPreferences =
     blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
+
+  async function handleAddAvoidedExercise(rawText: string) {
+    await updateExerciseSelectionPreferencesMutation({
+      exerciseSelectionPreferences: {
+        ...exerciseSelectionPreferences,
+        avoidedExercises: [
+          ...exerciseSelectionPreferences.avoidedExercises,
+          createExerciseSelectionPreferenceItem({
+            id: crypto.randomUUID(),
+            rawText,
+          }),
+        ],
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async function handleRemoveAvoidedExercise(exerciseId: string) {
+    await updateExerciseSelectionPreferencesMutation({
+      exerciseSelectionPreferences: {
+        ...exerciseSelectionPreferences,
+        avoidedExercises: exerciseSelectionPreferences.avoidedExercises.filter(
+          ({ id }) => id !== exerciseId,
+        ),
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   async function handleContinueToReview() {
     await confirmSelectedExerciseSelectionPreferences({
@@ -904,8 +952,11 @@ export function PlanBuilderExercisesRoute() {
       summary={summary}
     >
       <ReadOnlyExercisesStep
+        avoidedExercises={exerciseSelectionPreferences.avoidedExercises}
+        onAddAvoidedExercise={handleAddAvoidedExercise}
         exerciseSelectionPreferences={exerciseSelectionPreferences}
         onContinueToReview={handleContinueToReview}
+        onRemoveAvoidedExercise={handleRemoveAvoidedExercise}
       />
     </PlanBuilderPage>
   );
@@ -1102,6 +1153,22 @@ function useConfirmTrainingVolumeMutation() {
           ...blueprint,
           ...trainingVolumeConfiguration,
         },
+        timestamp,
+      }),
+  });
+}
+
+function useUpdateExerciseSelectionPreferencesMutation() {
+  return usePlanBlueprintMutation<UpdateExerciseSelectionPreferencesMutationVariables>({
+    mutationFn: ({ exerciseSelectionPreferences, timestamp }) =>
+      planBuilderService.updateExerciseSelectionPreferences({
+        exerciseSelectionPreferences,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
+      updateExerciseSelectionPreferences({
+        blueprint,
+        exerciseSelectionPreferences,
         timestamp,
       }),
   });
@@ -2257,8 +2324,11 @@ function WeeklyVolumeTargetsStep({
 }
 
 function ReadOnlyExercisesStep({
+  avoidedExercises,
+  onAddAvoidedExercise,
   exerciseSelectionPreferences,
   onContinueToReview,
+  onRemoveAvoidedExercise,
 }: ReadOnlyExercisesStepProps) {
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
@@ -2307,6 +2377,12 @@ function ReadOnlyExercisesStep({
             </div>
           </div>
         </section>
+
+        <AvoidedExercisesSection
+          avoidedExercises={avoidedExercises}
+          onAddAvoidedExercise={onAddAvoidedExercise}
+          onRemoveAvoidedExercise={onRemoveAvoidedExercise}
+        />
 
         <section
           aria-labelledby="equipment-preset-title"
@@ -2385,6 +2461,97 @@ function ReadOnlyExercisesStep({
         ))}
       </div>
     </div>
+  );
+}
+
+function AvoidedExercisesSection({
+  avoidedExercises,
+  onAddAvoidedExercise,
+  onRemoveAvoidedExercise,
+}: AvoidedExercisesSectionProps) {
+  const [pendingValue, setPendingValue] = useState("");
+  const normalizedPendingValue = normalizeExerciseSelectionPreferenceText(pendingValue);
+  const canAddAvoidedExercise = normalizedPendingValue.length > 0;
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canAddAvoidedExercise) {
+      return;
+    }
+
+    await onAddAvoidedExercise(normalizedPendingValue);
+    setPendingValue("");
+  }
+
+  return (
+    <section
+      aria-labelledby="avoided-exercises-title"
+      className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+    >
+      <div>
+        <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="avoided-exercises-title">
+          Avoided Exercises
+        </h3>
+        <p className="mt-2 max-w-2xl text-sm text-stone-600">
+          Hard exclusions keep painful, unavailable, or unsuitable movements out of later Training
+          Plan generation.
+        </p>
+      </div>
+
+      <form className="mt-5" onSubmit={(event) => void handleSubmit(event)}>
+        <label
+          className="text-sm font-bold uppercase tracking-wide text-stone-700"
+          htmlFor="avoided-exercises-input"
+        >
+          Avoided Exercises
+        </label>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+          <input
+            aria-describedby="avoided-exercises-helper"
+            className="min-h-11 flex-1 rounded-md border border-stone-900/15 bg-white px-3 py-2 text-sm text-stone-950 placeholder:text-stone-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-950"
+            id="avoided-exercises-input"
+            onChange={(event) => {
+              setPendingValue(event.target.value);
+            }}
+            placeholder="Add an exercise to exclude later"
+            type="text"
+            value={pendingValue}
+          />
+          <Button disabled={!canAddAvoidedExercise} type="submit">
+            Add avoided exercise
+          </Button>
+        </div>
+        <p className="mt-2 text-sm text-stone-600" id="avoided-exercises-helper">
+          These chips are optional. If an exclusion creates a conflict later, Review will call it
+          out before generation.
+        </p>
+      </form>
+
+      {avoidedExercises.length > 0 ? (
+        <ul aria-label="Avoided exercises" className="mt-4 flex flex-wrap gap-2.5">
+          {avoidedExercises.map((exercise) => (
+            <li key={exercise.id}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#b93725]/20 bg-[#fff2ef] px-3 py-1.5 text-sm font-bold text-[#7c291d] shadow-sm">
+                <span>{exercise.rawText}</span>
+                <button
+                  aria-label={`Remove ${exercise.rawText}`}
+                  className="rounded-full border border-transparent px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[#9d3627] transition-colors hover:bg-[#f8ddd7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9d3627]"
+                  onClick={() => {
+                    void onRemoveAvoidedExercise(exercise.id);
+                  }}
+                  type="button"
+                >
+                  Remove
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-sm text-stone-600">No avoided exercises added yet.</p>
+      )}
+    </section>
   );
 }
 

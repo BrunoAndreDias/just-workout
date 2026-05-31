@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   createDefaultExerciseSelectionPreferences,
+  createExerciseSelectionPreferenceItem,
   deriveAutomaticExerciseSelectionRules,
   deriveMovementPatternCoverage,
   getEquipmentPreset,
   normalizeExerciseSelectionPreferences,
+  normalizeExerciseSelectionPreferenceText,
 } from "./exercise-selection-preferences";
 import {
   createRecommendedTrainingVolumeConfiguration,
@@ -163,5 +165,24 @@ describe("exercise selection preferences", () => {
         "Covered when legs sessions come up in the rotation, with accessory work added as needed.",
       title: "Lower body movement patterns",
     });
+  });
+
+  it("normalizes added exercise text into stable-id preference items and rejects empty entries", () => {
+    expect(normalizeExerciseSelectionPreferenceText("  Upright   row  ")).toBe("Upright row");
+    expect(
+      createExerciseSelectionPreferenceItem({
+        id: "avoided-1",
+        rawText: "  Behind   the neck   press ",
+      }),
+    ).toEqual({
+      id: "avoided-1",
+      rawText: "Behind the neck press",
+    });
+    expect(() =>
+      createExerciseSelectionPreferenceItem({
+        id: "avoided-2",
+        rawText: "   ",
+      }),
+    ).toThrow("Exercise Selection Preference text cannot be empty.");
   });
 });

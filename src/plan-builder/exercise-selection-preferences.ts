@@ -191,6 +191,37 @@ export function createDefaultExerciseSelectionPreferences(): ExerciseSelectionPr
   };
 }
 
+export function normalizeExerciseSelectionPreferenceText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+export function createExerciseSelectionPreferenceItem({
+  id,
+  matchedExerciseId,
+  rawText,
+}: {
+  id: string;
+  matchedExerciseId?: string;
+  rawText: string;
+}): ExerciseSelectionPreferenceItem {
+  const normalizedRawText = normalizeExerciseSelectionPreferenceText(rawText);
+
+  if (normalizedRawText.length === 0) {
+    throw new Error("Exercise Selection Preference text cannot be empty.");
+  }
+
+  return matchedExerciseId
+    ? {
+        id,
+        matchedExerciseId,
+        rawText: normalizedRawText,
+      }
+    : {
+        id,
+        rawText: normalizedRawText,
+      };
+}
+
 export function normalizeExerciseSelectionPreferences(
   candidate: unknown,
 ): ExerciseSelectionPreferences {

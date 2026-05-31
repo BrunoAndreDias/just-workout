@@ -746,6 +746,49 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
+  it("adds and removes Avoided Exercise chips from Step 5 free text while persisting stable-id items", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+
+    expect(screen.getByText(/hard exclusions/i)).toBeVisible();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /avoided exercises/i }),
+      "  Upright   row  ",
+    );
+    await user.click(screen.getByRole("button", { name: /add avoided exercise/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Upright row")).toBeVisible();
+    });
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ id: expect.any(String), rawText: "Upright row" }],
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: /remove upright row/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Upright row")).not.toBeInTheDocument();
+    });
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+      },
+    });
+  });
+
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
