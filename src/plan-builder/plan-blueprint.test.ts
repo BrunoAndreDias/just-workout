@@ -497,6 +497,180 @@ describe("plan blueprint", () => {
     });
   });
 
+  it("preserves compatible configured Split, Rep ranges, and Volume data when Frequency changes while invalidating only dependent confirmations", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const frequencyChangedBlueprint = selectTrainingFrequency({
+      blueprint,
+      timestamp: firstUpdateTimestamp,
+      trainingFrequencyDaysPerWeek: 5,
+    });
+
+    expect(frequencyChangedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: false,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      repRanges: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 5,
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(getPlanBuilderRedirectStep(frequencyChangedBlueprint, "exercises")).toBe("frequency");
+
+    const reconfirmedFrequencyBlueprint = confirmTrainingFrequency({
+      blueprint: frequencyChangedBlueprint,
+      timestamp: secondUpdateTimestamp,
+      trainingFrequencyDaysPerWeek: 5,
+    });
+    const reconfirmedSplitBlueprint = confirmTrainingSplit({
+      blueprint: reconfirmedFrequencyBlueprint,
+      split: "rotating-push-pull-legs",
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(getPlanBuilderRedirectStep(reconfirmedFrequencyBlueprint, "exercises")).toBe("split");
+    expect(getPlanBuilderRedirectStep(reconfirmedSplitBlueprint, "exercises")).toBeNull();
+  });
+
+  it("preserves saved Rep ranges and Volume data when Split changes while invalidating only downstream readiness", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "strength_leaning",
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+    });
+
+    const splitChangedBlueprint = selectTrainingSplit({
+      blueprint,
+      split: "alternating-full-body-a-b",
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(splitChangedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      repRanges: "strength_leaning",
+      split: "alternating-full-body-a-b",
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "exercises")).toBe("split");
+
+    expect(
+      getPlanBuilderRedirectStep(
+        confirmTrainingSplit({
+          blueprint: splitChangedBlueprint,
+          split: "alternating-full-body-a-b",
+          timestamp: secondUpdateTimestamp,
+        }),
+        "exercises",
+      ),
+    ).toBeNull();
+  });
+
+  it("preserves canonical Weekly Rep Targets when Rep ranges change while invalidating Volume confirmation", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const repRangesChangedBlueprint = selectRepRangeStyle({
+      blueprint,
+      repRangeStyle: "strength_leaning",
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(repRangesChangedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: false,
+        split: true,
+        volume: false,
+      },
+      repRanges: "strength_leaning",
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
+    expect(getPlanBuilderRedirectStep(repRangesChangedBlueprint, "exercises")).toBe("rep-ranges");
+
+    expect(
+      getPlanBuilderRedirectStep(
+        confirmRepRangeStyle({
+          blueprint: repRangesChangedBlueprint,
+          repRangeStyle: "strength_leaning",
+          timestamp: secondUpdateTimestamp,
+        }),
+        "exercises",
+      ),
+    ).toBe("volume");
+  });
+
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {
     const blueprintWithIncompatibleSplit = createTestPlanBlueprint({
       confirmedBuilderSteps: {

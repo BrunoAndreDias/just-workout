@@ -7,10 +7,11 @@ import { createAppRouter } from "../app/router";
 import { db } from "../training/local-database";
 import { createStarterPlan } from "../training/starter-data";
 import { trainingService } from "../training/training-service";
-import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
+import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
 import type { TrainingSplitId } from "./training-split";
+import { isTrainingVolumeConfiguration, type VolumePresetId } from "./training-volume";
 
 const trainingSplitLabels = {
   alternatingFullBodyAB: "Alternating Full Body A/B",
@@ -1047,6 +1048,74 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("preserves compatible saved Split, Rep ranges, and Volume data after Frequency changes and restores guarded Exercises access after reconfirmation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "higher_volume",
+    });
+
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+    const frequencyGroup = await screen.findByRole("group", {
+      name: /training frequency/i,
+    });
+
+    await user.click(within(frequencyGroup).getByText("5 days/week"));
+    await expectTrainingFrequencyChecked(frequencyGroup, 5);
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: false,
+          repRanges: true,
+          split: false,
+          volume: true,
+        },
+        repRanges: "controlled_higher_reps",
+        split: "rotating-push-pull-legs",
+        trainingFrequencyDaysPerWeek: 5,
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
+          { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
+        ]),
+      });
+    });
+
+    firstView.unmount();
+
+    const redirectedView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await waitFor(() => {
+      expect(redirectedView.router.state.location.pathname).toBe(planBuilderPaths.frequency);
+    });
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+
+    const splitGroup = await continueToSplitStep(user);
+
+    expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    expect(within(summary).getByText(trainingSplitLabels.rotatingPushPullLegs)).toBeVisible();
+    expect(within(summary).getByText("Higher volume")).toBeVisible();
+
+    redirectedView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+  });
+
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
     const user = userEvent.setup();
 
@@ -1656,6 +1725,51 @@ async function saveConfirmedFourDayUpperLowerTrainingSplit() {
   await planBuilderService.confirmSelectedTrainingSplit({
     split: "upper-lower-4-day",
     timestamp: "2026-05-30T11:31:00.000Z",
+  });
+}
+
+async function saveConfirmedPlanBuilderProgressForTest({
+  repRangeStyle = "balanced_hypertrophy",
+  split = "upper-lower-4-day",
+  trainingFrequencyDaysPerWeek = 4,
+  volumePreset = "balanced",
+}: {
+  repRangeStyle?: RepRangeStyleId;
+  split?: TrainingSplitId;
+  trainingFrequencyDaysPerWeek?: TrainingFrequencyDaysPerWeek;
+  volumePreset?: VolumePresetId;
+}) {
+  await planBuilderService.confirmSelectedTrainingFrequency({
+    timestamp: "2026-05-31T09:00:00.000Z",
+    trainingFrequencyDaysPerWeek,
+  });
+  await planBuilderService.confirmSelectedTrainingSplit({
+    split,
+    timestamp: "2026-05-31T09:01:00.000Z",
+  });
+  await planBuilderService.confirmSelectedRepRangeStyle({
+    repRangeStyle,
+    timestamp: "2026-05-31T09:02:00.000Z",
+  });
+
+  let trainingVolumeBlueprint = await planBuilderService.initializeTrainingVolume({
+    timestamp: "2026-05-31T09:03:00.000Z",
+  });
+
+  if (trainingVolumeBlueprint.volumePreset !== volumePreset) {
+    trainingVolumeBlueprint = await planBuilderService.updateTrainingVolumePreset({
+      timestamp: "2026-05-31T09:04:00.000Z",
+      volumePreset,
+    });
+  }
+
+  if (!isTrainingVolumeConfiguration(trainingVolumeBlueprint)) {
+    throw new Error("Expected a Training Volume configuration before confirmation.");
+  }
+
+  await planBuilderService.confirmSelectedTrainingVolume({
+    timestamp: "2026-05-31T09:05:00.000Z",
+    trainingVolumeConfiguration: trainingVolumeBlueprint,
   });
 }
 
