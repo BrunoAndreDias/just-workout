@@ -25,6 +25,12 @@ import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
+  createDefaultExerciseSelectionPreferences,
+  type ExerciseSelectionPreferences,
+  getEquipmentPreset,
+  getExerciseSelectionStrategy,
+} from "./exercise-selection-preferences";
+import {
   confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
@@ -240,6 +246,32 @@ const weeklyVolumeHowItWorksItems = [
 
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
+
+const readOnlyExercisesHighlights = [
+  {
+    body: "Main work favors productive compound lifts when they fit the Plan Blueprint.",
+    title: "Compound-first bias",
+  },
+  {
+    body: "Isolation work can still support Weekly Rep Targets when more direct work is needed.",
+    title: "Targeted support",
+  },
+  {
+    body: "Painful or unsuitable exercises stay out of the later Training Plan choices.",
+    title: "Safety boundary",
+  },
+] as const satisfies ReadonlyArray<ReadOnlyExercisesHighlightProps>;
+
+const readOnlyExercisesStatusCards = [
+  {
+    body: "This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created.",
+    title: "Plan status",
+  },
+  {
+    body: "Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here.",
+    title: "Step scope",
+  },
+] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
 
 const volumePresetDescriptions = {
   balanced:
@@ -528,8 +560,14 @@ type WeeklyVolumeTargetsStepProps = {
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
 
-type ExercisesPlaceholderStepProps = {
+type ReadOnlyExercisesStepProps = {
   onContinueToReview: () => Promise<void>;
+  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+};
+
+type ReadOnlyExercisesHighlightProps = {
+  body: string;
+  title: string;
 };
 
 type VolumePresetSelectorProps = {
@@ -841,7 +879,9 @@ export function PlanBuilderExercisesRoute() {
   const navigate = useNavigate();
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
-  const { summary } = usePlanBuilderBlueprint();
+  const { blueprint, summary } = usePlanBuilderBlueprint();
+  const exerciseSelectionPreferences =
+    blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
 
   async function handleContinueToReview() {
     await confirmSelectedExerciseSelectionPreferences({
@@ -855,12 +895,16 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Volume is confirmed. This route stays intentionally minimal until exercise picking lands.
+          Review the read-only exercise-selection defaults that Just Workout will carry forward in
+          this Plan Blueprint before Review.
         </p>
       }
       summary={summary}
     >
-      <ExercisesPlaceholderStep onContinueToReview={handleContinueToReview} />
+      <ReadOnlyExercisesStep
+        exerciseSelectionPreferences={exerciseSelectionPreferences}
+        onContinueToReview={handleContinueToReview}
+      />
     </PlanBuilderPage>
   );
 }
@@ -2208,18 +2252,107 @@ function WeeklyVolumeTargetsStep({
   );
 }
 
-function ExercisesPlaceholderStep({ onContinueToReview }: ExercisesPlaceholderStepProps) {
+function ReadOnlyExercisesStep({
+  exerciseSelectionPreferences,
+  onContinueToReview,
+}: ReadOnlyExercisesStepProps) {
+  const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
+  const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
-        <section className="rounded-lg border border-stone-900/10 bg-white/78 p-6">
-          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">
-            Exercises step coming next
-          </h3>
-          <p className="mt-3 max-w-2xl text-sm text-stone-600">
-            Volume is confirmed. This placeholder keeps the route real without introducing exercise
-            picking yet.
-          </p>
+        <section
+          aria-labelledby="exercise-selection-strategy-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <div>
+            <h3
+              className="text-xl font-black text-stone-950 sm:text-2xl"
+              id="exercise-selection-strategy-title"
+            >
+              Exercise selection strategy
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm text-stone-600">
+              Just Workout keeps Step 5 read-only in v1 so your Plan Blueprint can stay focused on
+              strategy and equipment before the later Training Plan is created.
+            </p>
+          </div>
+
+          <div className="mt-5 rounded-lg border border-stone-950 bg-stone-950 p-5 text-stone-50 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-black uppercase tracking-wide text-stone-300">
+                Selected strategy
+              </p>
+              {selectedStrategy.isRecommended ? (
+                <span className="rounded-full bg-[#b93725] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
+                  Recommended default
+                </span>
+              ) : null}
+              <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-stone-100">
+                Read-only in v1
+              </span>
+            </div>
+            <h4 className="mt-3 text-2xl font-black">{selectedStrategy.title}</h4>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-200">
+              {selectedStrategy.description}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {readOnlyExercisesHighlights.map((highlight) => (
+                <ReadOnlyExercisesHighlight key={highlight.title} {...highlight} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="equipment-preset-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <div>
+            <h3
+              className="text-xl font-black text-stone-950 sm:text-2xl"
+              id="equipment-preset-title"
+            >
+              Equipment preset
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm text-stone-600">
+              Full gym is the only v1 preset, and the included equipment chips below are derived
+              from that preset instead of stored separately in the Plan Blueprint.
+            </p>
+          </div>
+
+          <div className="mt-5 rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+                Selected preset
+              </p>
+              <span className="rounded-full bg-[#006f78] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
+                Only v1 preset
+              </span>
+            </div>
+            <h4 className="mt-3 text-2xl font-black text-stone-950">
+              {selectedEquipmentPreset.title}
+            </h4>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-700">
+              Just Workout assumes standard full-gym availability here so later Training Plan
+              generation can pull from the expected equipment pool.
+            </p>
+
+            <div className="mt-5">
+              <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+                Included equipment
+              </p>
+              <ul aria-label="Included equipment" className="mt-3 flex flex-wrap gap-2.5">
+                {selectedEquipmentPreset.includedEquipment.map((equipment) => (
+                  <li key={equipment.id}>
+                    <span className="inline-flex items-center rounded-full border border-stone-900/10 bg-white px-3 py-1.5 text-sm font-bold text-stone-950 shadow-sm">
+                      {equipment.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
 
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button asChild variant="outline">
@@ -2238,11 +2371,14 @@ function ExercisesPlaceholderStep({ onContinueToReview }: ExercisesPlaceholderSt
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <PlanBuilderStepStatusCard
-          body="This route is a guarded placeholder only. Exercise picking stays out of scope in this slice."
-          title="Step scope"
-          titleDisplay="visible"
-        />
+        {readOnlyExercisesStatusCards.map((statusCard) => (
+          <PlanBuilderStepStatusCard
+            body={statusCard.body}
+            key={statusCard.title}
+            title={statusCard.title}
+            titleDisplay="visible"
+          />
+        ))}
       </div>
     </div>
   );
@@ -2274,6 +2410,15 @@ function ReviewPlaceholderStep() {
           titleDisplay="visible"
         />
       </div>
+    </div>
+  );
+}
+
+function ReadOnlyExercisesHighlight({ body, title }: ReadOnlyExercisesHighlightProps) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/8 p-4">
+      <h5 className="text-sm font-black uppercase tracking-wide text-stone-100">{title}</h5>
+      <p className="mt-2 text-sm leading-6 text-stone-200">{body}</p>
     </div>
   );
 }

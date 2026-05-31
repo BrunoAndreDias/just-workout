@@ -69,6 +69,28 @@ const weeklyVolumeExcludedContentPatterns = [
   /bodyweight tracking/i,
 ] as const;
 
+const exercisesStepExcludedContentPatterns = [
+  /upper a/i,
+  /lower a/i,
+  /generated training plan/i,
+  /final exercise list/i,
+  /sets and reps/i,
+  /loads/i,
+  /percentages/i,
+  /nutrition/i,
+  /bodyweight tracking/i,
+  /progress charts?/i,
+] as const;
+
+const defaultExerciseStepIncludedEquipmentLabels = [
+  "Barbell",
+  "Dumbbells",
+  "Machines",
+  "Cables",
+  "Pull-up bar",
+  "Bodyweight",
+] as const;
+
 const conservativePresetWeeklyRepTargets = [
   { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
   { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
@@ -698,7 +720,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("renders the Exercises placeholder on direct access when Volume is confirmed", async () => {
+  it("renders the read-only Step 5 strategy and equipment screen on direct access when Volume is confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -709,9 +731,7 @@ describe("PlanBuilderRoute", () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectPlanBuilderPath(router, planBuilderPaths.exercises);
-    expect(
-      await screen.findByRole("heading", { name: /exercises step coming next/i }),
-    ).toBeVisible();
+    await expectReadOnlyExercisesStep();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Exercises",
@@ -721,7 +741,9 @@ describe("PlanBuilderRoute", () => {
 
     expect(summary).toBeVisible();
     expectBlueprintSummaryField(summary, "Volume preset", "Conservative");
-    expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
+    for (const pattern of exercisesStepExcludedContentPatterns) {
+      expect(screen.queryByText(pattern)).not.toBeInTheDocument();
+    }
   });
 
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
@@ -737,9 +759,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
     });
-    expect(
-      await screen.findByRole("heading", { name: /exercises step coming next/i }),
-    ).toBeVisible();
+    await expectReadOnlyExercisesStep();
   });
 
   it("renders the Review placeholder on direct access when Exercises is confirmed", async () => {
@@ -1053,7 +1073,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("confirms Volume before navigating from Volume to Exercises and renders the placeholder route", async () => {
+  it("confirms Volume before navigating from Volume to Exercises and renders the read-only Step 5 route", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedFourDayUpperLowerTrainingSplit();
@@ -1071,15 +1091,12 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
     });
-    expect(
-      await screen.findByRole("heading", { name: /exercises step coming next/i }),
-    ).toBeVisible();
+    await expectReadOnlyExercisesStep();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Exercises",
       ),
     ).toHaveAttribute("aria-current", "step");
-    expect(screen.queryByText(/exercise selection/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
 
     await waitFor(async () => {
@@ -1119,7 +1136,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await expectExercisesStepComingNext();
+    await expectReadOnlyExercisesStep();
 
     await user.click(screen.getByRole("button", { name: /continue to review/i }));
 
@@ -1201,9 +1218,7 @@ describe("PlanBuilderRoute", () => {
     guardedExercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByRole("heading", { name: /exercises step coming next/i }),
-    ).toBeVisible();
+    await expectReadOnlyExercisesStep();
   });
 
   it("preserves saved Rep ranges and Volume data after Split changes and restores guarded Exercises access after reconfirmation", async () => {
@@ -1261,7 +1276,7 @@ describe("PlanBuilderRoute", () => {
     guardedExercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await expectExercisesStepComingNext();
+    await expectReadOnlyExercisesStep();
   });
 
   it("preserves canonical Weekly Rep Targets after Rep ranges change and restores guarded Exercises access after reconfirmation", async () => {
@@ -1335,7 +1350,7 @@ describe("PlanBuilderRoute", () => {
 
     await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
 
-    await expectExercisesStepComingNext();
+    await expectReadOnlyExercisesStep();
   });
 
   it("marks Volume unconfirmed after Volume changes and restores guarded Exercises access after reconfirmation", async () => {
@@ -1391,7 +1406,7 @@ describe("PlanBuilderRoute", () => {
 
     await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
 
-    await expectExercisesStepComingNext();
+    await expectReadOnlyExercisesStep();
   });
 
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
@@ -1960,8 +1975,18 @@ async function expectPlanBlueprintToMatch(expectedBlueprint: object) {
   });
 }
 
-async function expectExercisesStepComingNext() {
-  expect(await screen.findByRole("heading", { name: /exercises step coming next/i })).toBeVisible();
+async function expectReadOnlyExercisesStep() {
+  expect(
+    await screen.findByRole("heading", { name: /exercise selection strategy/i }),
+  ).toBeVisible();
+  expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
+  expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
+
+  const includedEquipment = screen.getByRole("list", { name: /included equipment/i });
+
+  for (const label of defaultExerciseStepIncludedEquipmentLabels) {
+    expect(within(includedEquipment).getByText(label)).toBeVisible();
+  }
 }
 
 async function expectReviewStepComingNext() {
