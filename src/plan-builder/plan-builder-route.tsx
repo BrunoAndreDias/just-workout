@@ -25,6 +25,7 @@ import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
+  type AutomaticExerciseSelectionRule,
   createDefaultExerciseSelectionPreferences,
   deriveAutomaticExerciseSelectionRules,
   type ExerciseSelectionPreferences,
@@ -565,6 +566,10 @@ type WeeklyVolumeTargetsStepProps = {
 type ReadOnlyExercisesStepProps = {
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+};
+
+type ReadOnlyExercisesAutomaticRulesSectionProps = {
+  rules: ReadonlyArray<AutomaticExerciseSelectionRule>;
 };
 
 type ReadOnlyExercisesHighlightProps = {
@@ -2261,7 +2266,7 @@ function ReadOnlyExercisesStep({
   exerciseSelectionPreferences,
   onContinueToReview,
 }: ReadOnlyExercisesStepProps) {
-  const automaticRules = deriveAutomaticExerciseSelectionRules(
+  const automaticExerciseSelectionRules = deriveAutomaticExerciseSelectionRules(
     exerciseSelectionPreferences.strategy,
   );
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
@@ -2312,38 +2317,7 @@ function ReadOnlyExercisesStep({
           </div>
         </section>
 
-        <section
-          aria-labelledby="automatic-rules-title"
-          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
-        >
-          <div>
-            <h3
-              className="text-xl font-black text-stone-950 sm:text-2xl"
-              id="automatic-rules-title"
-            >
-              Rules applied automatically
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm text-stone-600">
-              Just Workout will apply these during Training Plan generation. This note stays
-              explanatory only, so Step 5 does not add manual rest controls or detailed
-              prescriptions.
-            </p>
-          </div>
-
-          <ul
-            aria-label="Automatic exercise selection rules"
-            className="mt-5 grid gap-3 sm:grid-cols-2"
-          >
-            {automaticRules.map((rule) => (
-              <li key={rule.id}>
-                <article className="h-full rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4">
-                  <p className="text-sm font-black text-stone-950">{rule.label}</p>
-                  <p className="mt-2 text-sm leading-6 text-stone-700">{rule.description}</p>
-                </article>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <ReadOnlyExercisesAutomaticRulesSection rules={automaticExerciseSelectionRules} />
 
         <section
           aria-labelledby="equipment-preset-title"
@@ -2452,6 +2426,41 @@ function ReviewPlaceholderStep() {
         />
       </div>
     </div>
+  );
+}
+
+function ReadOnlyExercisesAutomaticRulesSection({
+  rules,
+}: ReadOnlyExercisesAutomaticRulesSectionProps) {
+  return (
+    <section
+      aria-labelledby="automatic-rules-title"
+      className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+    >
+      <div>
+        <h3 className="text-xl font-black text-stone-950 sm:text-2xl" id="automatic-rules-title">
+          Rules applied automatically
+        </h3>
+        <p className="mt-2 max-w-2xl text-sm text-stone-600">
+          Just Workout will apply these during Training Plan generation. This note stays explanatory
+          only, so Step 5 does not add manual rest controls or detailed prescriptions.
+        </p>
+      </div>
+
+      <ul
+        aria-label="Automatic exercise selection rules"
+        className="mt-5 grid gap-3 sm:grid-cols-2"
+      >
+        {rules.map((rule) => (
+          <li key={rule.id}>
+            <article className="h-full rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4">
+              <p className="text-sm font-black text-stone-950">{rule.label}</p>
+              <p className="mt-2 text-sm leading-6 text-stone-700">{rule.description}</p>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

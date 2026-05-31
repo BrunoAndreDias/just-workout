@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import { deriveAutomaticExerciseSelectionRules } from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -759,38 +760,8 @@ describe("PlanBuilderRoute", () => {
     expect(
       await screen.findByRole("heading", { name: /rules applied automatically/i }),
     ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Main work favors stable compound lifts before smaller isolation choices fill gaps.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Isolation exercises can support weekly rep targets when direct muscle work is needed.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Exercise picks stay distributed across key movement patterns instead of overloading one pattern.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Weekly muscle-group targets shape how much direct work each area receives.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Marked avoided exercises stay excluded so painful or unsuitable movements are not silently included later.",
-      ),
-    ).toBeVisible();
-    expect(screen.getByText("Rest times adapt to exercise demand and rep range.")).toBeVisible();
-    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: /rest/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("spinbutton", { name: /rest/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /rest/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/60-90 seconds/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/2-3 minutes/i)).not.toBeInTheDocument();
+    expectAutomaticExerciseSelectionRulesToBeVisible();
+    expectNoManualRestControls();
   });
 
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
@@ -2054,6 +2025,24 @@ async function expectReadOnlyExercisesStep() {
   for (const label of defaultExerciseStepIncludedEquipmentLabels) {
     expect(within(includedEquipment).getByText(label)).toBeVisible();
   }
+}
+
+function expectAutomaticExerciseSelectionRulesToBeVisible() {
+  const rulesList = screen.getByRole("list", { name: /automatic exercise selection rules/i });
+  const rules = deriveAutomaticExerciseSelectionRules("balanced");
+
+  for (const rule of rules) {
+    expect(within(rulesList).getByText(rule.description)).toBeVisible();
+  }
+}
+
+function expectNoManualRestControls() {
+  expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: /rest/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("spinbutton", { name: /rest/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /rest/i })).not.toBeInTheDocument();
+  expect(screen.queryByText(/60-90 seconds/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/2-3 minutes/i)).not.toBeInTheDocument();
 }
 
 async function expectReviewStepComingNext() {
