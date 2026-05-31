@@ -3,7 +3,16 @@ import { db } from "../app/local-database";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
-import { isTrainingVolumeConfiguration } from "./training-volume";
+import {
+  createRecommendedTrainingVolumeConfiguration,
+  isTrainingVolumeConfiguration,
+} from "./training-volume";
+
+type DraftExerciseSelectionPreferences = ExerciseSelectionPreferences & {
+  automaticRules: ReadonlyArray<{ id: string }>;
+  includedEquipment: ReadonlyArray<{ id: string; label: string }>;
+  movementPatternCoverage: ReadonlyArray<{ id: string; patterns: ReadonlyArray<never> }>;
+};
 
 describe("planBuilderService", () => {
   beforeEach(async () => {
@@ -74,6 +83,7 @@ describe("planBuilderService", () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const configuredBlueprint: PlanBlueprint = {
       ...initialBlueprint,
+      ...createRecommendedTrainingVolumeConfiguration(),
       confirmedBuilderSteps: {
         frequency: true,
         repRanges: true,
@@ -84,19 +94,6 @@ describe("planBuilderService", () => {
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
       updatedAt: "2026-05-30T10:14:30.000Z",
-      volumePreset: "balanced",
-      volumePresetSource: "recommended_default",
-      weeklyRepTargets: [
-        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 90 },
-        { isEnabled: true, muscleGroup: "back", source: "preset", target: 90 },
-        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 90 },
-        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 90 },
-        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 45 },
-        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 45 },
-        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 45 },
-        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
-        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
-      ],
     };
 
     await db.planBlueprints.clear();
@@ -112,10 +109,18 @@ describe("planBuilderService", () => {
         { id: "preferred-1", matchedExerciseId: "exercise-42", rawText: "Incline dumbbell press" },
       ],
       strategy: "balanced",
-    } satisfies ExerciseSelectionPreferences & {
-      automaticRules: Array<{ id: string }>;
-      includedEquipment: Array<{ id: string; label: string }>;
-      movementPatternCoverage: Array<{ id: string; patterns: Array<never> }>;
+    } satisfies DraftExerciseSelectionPreferences;
+    const expectedExerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [
+        {
+          id: "preferred-1",
+          matchedExerciseId: "exercise-42",
+          rawText: "Incline dumbbell press",
+        },
+      ],
+      strategy: "balanced",
     };
 
     const updatedBlueprint = await planBuilderService.updateExerciseSelectionPreferences({
@@ -124,27 +129,11 @@ describe("planBuilderService", () => {
     });
     const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
-    expect(updatedBlueprint).toMatchObject({
-      confirmedBuilderSteps: configuredBlueprint.confirmedBuilderSteps,
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [
-          {
-            id: "preferred-1",
-            matchedExerciseId: "exercise-42",
-            rawText: "Incline dumbbell press",
-          },
-        ],
-        strategy: "balanced",
-      },
+    expect(updatedBlueprint).toEqual({
+      ...configuredBlueprint,
+      exerciseSelectionPreferences: expectedExerciseSelectionPreferences,
       updatedAt: "2026-05-30T10:15:00.000Z",
     });
-    expect(updatedBlueprint.exerciseSelectionPreferences).not.toHaveProperty("automaticRules");
-    expect(updatedBlueprint.exerciseSelectionPreferences).not.toHaveProperty("includedEquipment");
-    expect(updatedBlueprint.exerciseSelectionPreferences).not.toHaveProperty(
-      "movementPatternCoverage",
-    );
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
