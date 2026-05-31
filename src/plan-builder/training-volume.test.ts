@@ -5,6 +5,7 @@ import {
   estimateWeeklySetRangeForTarget,
   getVolumePreset,
   isVolumePresetId,
+  selectTrainingVolumeConfiguration,
   volumePresets,
 } from "./training-volume";
 
@@ -94,5 +95,28 @@ describe("training volume", () => {
         weeklyRepTarget: calvesTarget,
       }),
     ).toBeNull();
+  });
+
+  it("switches preset-derived weekly rep targets to the selected Volume Preset without enabling optional rows", () => {
+    expect(
+      selectTrainingVolumeConfiguration({
+        trainingVolumeConfiguration: createRecommendedTrainingVolumeConfiguration(),
+        volumePreset: "higher_volume",
+      }),
+    ).toEqual({
+      volumePreset: "higher_volume",
+      volumePresetSource: "user_selected",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 120 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 120 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 120 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 60 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
   });
 });

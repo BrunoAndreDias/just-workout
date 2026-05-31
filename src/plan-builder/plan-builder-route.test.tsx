@@ -761,6 +761,69 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
+  it("lets the user switch Volume Presets and updates saved targets, set estimates, summary, and source markers", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:45.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
+    const table = await screen.findByRole("table", { name: /required weekly rep targets/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+    const chestRow = getTableRowByLabel(table, "Chest");
+    const shouldersRow = getTableRowByLabel(table, "Shoulders");
+
+    expect(within(volumePresetGroup).getByRole("radio", { name: /conservative/i })).toBeVisible();
+    expect(within(volumePresetGroup).getByRole("radio", { name: /balanced/i })).toBeChecked();
+    expect(within(volumePresetGroup).getByRole("radio", { name: /higher volume/i })).toBeVisible();
+    expect(within(chestRow).getByText("90 reps/week")).toBeVisible();
+    expect(within(chestRow).getByText("8-12 sets/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("45 reps/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("4-6 sets/week")).toBeVisible();
+    expect(within(summary).getByText("Balanced")).toBeVisible();
+
+    await user.click(within(volumePresetGroup).getByText("Conservative"));
+
+    await waitFor(() => {
+      expect(within(volumePresetGroup).getByRole("radio", { name: /conservative/i })).toBeChecked();
+    });
+    expect(within(chestRow).getByText("60 reps/week")).toBeVisible();
+    expect(within(chestRow).getByText("5-8 sets/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("30 reps/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("3-4 sets/week")).toBeVisible();
+    expect(within(summary).getByText("Conservative")).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        volumePreset: "conservative",
+        volumePresetSource: "user_selected",
+      });
+    });
+
+    await user.click(within(volumePresetGroup).getByText("Higher volume"));
+
+    await waitFor(() => {
+      expect(
+        within(volumePresetGroup).getByRole("radio", { name: /higher volume/i }),
+      ).toBeChecked();
+    });
+    expect(within(chestRow).getByText("120 reps/week")).toBeVisible();
+    expect(within(chestRow).getByText("10-15 sets/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("60 reps/week")).toBeVisible();
+    expect(within(shouldersRow).getByText("5-8 sets/week")).toBeVisible();
+    expect(within(summary).getByText("Higher volume")).toBeVisible();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+      });
+    });
+  });
+
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
     const user = userEvent.setup();
 
@@ -1473,6 +1536,17 @@ function expectOnlyRepRangeStyleCardSelected(
 
 function getRepRangeStyleEffectsPanel() {
   return screen.getByRole("region", { name: /how this affects your plan/i });
+}
+
+function getTableRowByLabel(table: HTMLElement, label: string) {
+  const rowLabel = within(table).getByText(label);
+  const row = rowLabel.closest("tr");
+
+  if (!(row instanceof HTMLTableRowElement)) {
+    throw new Error(`Expected ${label} to render inside a table row.`);
+  }
+
+  return row;
 }
 
 function expectRepRangeStyleEffects(

@@ -166,6 +166,25 @@ export function createRecommendedTrainingVolumeConfiguration(): TrainingVolumeCo
   });
 }
 
+export function selectTrainingVolumeConfiguration({
+  trainingVolumeConfiguration,
+  volumePreset,
+}: {
+  trainingVolumeConfiguration: TrainingVolumeConfiguration;
+  volumePreset: VolumePresetId;
+}): TrainingVolumeConfiguration {
+  return {
+    volumePreset,
+    volumePresetSource: "user_selected",
+    weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets.map((weeklyRepTarget) =>
+      updatePresetWeeklyRepTarget({
+        volumePreset,
+        weeklyRepTarget,
+      }),
+    ),
+  };
+}
+
 export function estimateWeeklySetRange({
   target,
   volumeEstimationRepRange,
@@ -194,4 +213,50 @@ export function estimateWeeklySetRangeForTarget({
     target: weeklyRepTarget.target,
     volumeEstimationRepRange,
   });
+}
+
+function updatePresetWeeklyRepTarget({
+  volumePreset,
+  weeklyRepTarget,
+}: {
+  volumePreset: VolumePresetId;
+  weeklyRepTarget: WeeklyRepTarget;
+}): WeeklyRepTarget {
+  if (weeklyRepTarget.source === "custom") {
+    return weeklyRepTarget;
+  }
+
+  const target = getPresetWeeklyRepTargetValue({
+    volumePreset,
+    weeklyRepTarget,
+  });
+
+  return {
+    ...weeklyRepTarget,
+    target,
+  };
+}
+
+function getPresetWeeklyRepTargetValue({
+  volumePreset,
+  weeklyRepTarget,
+}: {
+  volumePreset: VolumePresetId;
+  weeklyRepTarget: WeeklyRepTarget;
+}): number | null {
+  const preset = getVolumePreset(volumePreset);
+
+  if (largerVolumeTargetMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+    return preset.largerMuscleTarget;
+  }
+
+  if (smallerVolumeTargetMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+    return preset.smallerMuscleTarget;
+  }
+
+  if (optionalVolumeMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+    return weeklyRepTarget.isEnabled ? preset.smallerMuscleTarget : null;
+  }
+
+  return weeklyRepTarget.target;
 }

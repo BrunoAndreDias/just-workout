@@ -6,10 +6,12 @@ import {
 } from "./training-split";
 import {
   createRecommendedTrainingVolumeConfiguration,
+  createTrainingVolumeConfiguration,
   getVolumePreset,
   isTrainingVolumeConfiguration,
   isVolumePresetId,
   normalizeTrainingVolumeConfiguration,
+  selectTrainingVolumeConfiguration,
   type VolumeEstimationRepRange,
   type VolumePresetId,
   type VolumePresetSource,
@@ -117,6 +119,12 @@ type SelectRepRangeStyleOptions = {
   blueprint: PlanBlueprint;
   repRangeStyle: RepRangeStyleId;
   timestamp: string;
+};
+
+type SelectTrainingVolumePresetOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  volumePreset: VolumePresetId;
 };
 
 type ConfirmTrainingFrequencyOptions = {
@@ -538,6 +546,40 @@ export function initializeTrainingVolume({
     confirmedBuilderSteps: {
       ...getConfirmedBuilderSteps(blueprint),
       volume: false,
+    },
+    updatedAt: timestamp,
+  };
+}
+
+export function selectTrainingVolumePreset({
+  blueprint,
+  timestamp,
+  volumePreset,
+}: SelectTrainingVolumePresetOptions): PlanBlueprint {
+  if (!isVolumePresetId(volumePreset)) {
+    throw new Error(`Unknown Volume Preset "${volumePreset}".`);
+  }
+
+  const currentTrainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
+    ? blueprint
+    : createTrainingVolumeConfiguration({
+        volumePreset,
+        volumePresetSource: "user_selected",
+      });
+  const hasVolumePresetChanged = blueprint.volumePreset !== volumePreset;
+  const nextTrainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
+    ? selectTrainingVolumeConfiguration({
+        trainingVolumeConfiguration: currentTrainingVolumeConfiguration,
+        volumePreset,
+      })
+    : currentTrainingVolumeConfiguration;
+
+  return {
+    ...blueprint,
+    ...nextTrainingVolumeConfiguration,
+    confirmedBuilderSteps: {
+      ...getConfirmedBuilderSteps(blueprint),
+      volume: hasVolumePresetChanged ? false : getConfirmedBuilderSteps(blueprint).volume,
     },
     updatedAt: timestamp,
   };

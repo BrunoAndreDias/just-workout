@@ -18,9 +18,11 @@ import {
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
+  selectTrainingVolumePreset,
   summarizePlanBlueprint,
   trainingFrequencyOptions,
 } from "./plan-blueprint";
+import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 
 const testBlueprintOptions = {
   id: "blueprint-1",
@@ -328,6 +330,49 @@ describe("plan blueprint", () => {
       repRanges: "balanced_hypertrophy",
     });
     expect(isRepRangesStepComplete(confirmedBlueprint)).toBe(true);
+  });
+
+  it("marks Volume unconfirmed when a confirmed Volume Preset changes", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    expect(
+      selectTrainingVolumePreset({
+        blueprint,
+        timestamp: secondUpdateTimestamp,
+        volumePreset: "conservative",
+      }),
+    ).toMatchObject({
+      confirmedBuilderSteps: {
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: false,
+      },
+      volumePreset: "conservative",
+      volumePresetSource: "user_selected",
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "back", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 60 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 30 },
+        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 30 },
+        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
+        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
+      ],
+    });
   });
 
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {

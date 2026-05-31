@@ -9,10 +9,12 @@ import {
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
+  selectTrainingVolumePreset,
   type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
+import type { VolumePresetId } from "./training-volume";
 
 async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
@@ -49,6 +51,11 @@ type UpdateTrainingSplitOptions =
 type UpdateRepRangeStyleOptions = {
   repRangeStyle: RepRangeStyleId;
   timestamp?: string;
+};
+
+type UpdateTrainingVolumePresetOptions = {
+  timestamp?: string;
+  volumePreset: VolumePresetId;
 };
 
 type ConfirmTrainingFrequencyOptions = {
@@ -108,6 +115,21 @@ async function updateRepRangeStyle({
       blueprint,
       repRangeStyle,
       timestamp,
+    }),
+  );
+}
+
+async function updateTrainingVolumePreset({
+  timestamp = new Date().toISOString(),
+  volumePreset,
+}: UpdateTrainingVolumePresetOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    selectTrainingVolumePreset({
+      blueprint,
+      timestamp,
+      volumePreset,
     }),
   );
 }
@@ -179,4 +201,5 @@ export const planBuilderService = {
   updateRepRangeStyle,
   updateTrainingSplit,
   updateTrainingFrequency,
+  updateTrainingVolumePreset,
 };

@@ -41,6 +41,7 @@ import {
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
+  selectTrainingVolumePreset,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
@@ -64,6 +65,10 @@ import {
   estimateWeeklySetRangeForTarget,
   isTrainingVolumeConfiguration,
   type VolumeMuscleGroupId,
+  type VolumePreset,
+  type VolumePresetId,
+  type VolumePresetSource,
+  volumePresets,
   type WeeklyRepTarget,
 } from "./training-volume";
 
@@ -225,6 +230,13 @@ const weeklyVolumeHowItWorksItems = [
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
 
+const volumePresetDescriptions = {
+  balanced:
+    "Recommended middle of the source-backed weekly rep range for most muscle-building plans.",
+  conservative: "Lower end of the weekly rep range when you want easier recovery.",
+  higher_volume: "Upper end of the weekly rep range when you can tolerate more direct work.",
+} as const satisfies Record<VolumePresetId, string>;
+
 type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate";
 
 type WeeklyVolumeTargetRowDefinition = {
@@ -359,6 +371,11 @@ type InitializeTrainingVolumeMutationVariables = {
   timestamp: string;
 };
 
+type UpdateTrainingVolumePresetMutationVariables = {
+  timestamp: string;
+  volumePreset: VolumePresetId;
+};
+
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
@@ -446,8 +463,24 @@ type RepRangeStyleTargetsProps = {
 };
 
 type WeeklyVolumeTargetsStepProps = {
+  onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   repRangeStyle: RepRangeStyle | null;
+  selectedVolumePresetId: VolumePresetId | null;
+  volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
+
+type VolumePresetSelectorProps = {
+  onVolumePresetChange: (volumePreset: VolumePresetId) => void;
+  selectedVolumePresetId: VolumePresetId | null;
+  volumePresetSource: VolumePresetSource | null;
+};
+
+type VolumePresetOptionRadioProps = {
+  isExplicitSelection: boolean;
+  isSelected: boolean;
+  onSelect: (volumePreset: VolumePresetId) => void;
+  option: VolumePreset;
 };
 
 type RequiredWeeklyRepTargetsRowsProps = {
@@ -649,6 +682,7 @@ export function PlanBuilderRepRangesRoute() {
 export function PlanBuilderVolumeRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
+  const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
   const selectedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
   const selectedRepRangeStyle = selectedRepRangeStyleId
     ? getRepRangeStyle(selectedRepRangeStyleId)
@@ -664,6 +698,13 @@ export function PlanBuilderVolumeRoute() {
     });
   }, [blueprint, initializeTrainingVolumeDefaults]);
 
+  function handleVolumePresetChange(volumePreset: VolumePresetId) {
+    updateTrainingVolumePreset({
+      timestamp: new Date().toISOString(),
+      volumePreset,
+    });
+  }
+
   return (
     <PlanBuilderPage
       currentStep="volume"
@@ -677,7 +718,10 @@ export function PlanBuilderVolumeRoute() {
       summary={summary}
     >
       <WeeklyVolumeTargetsStep
+        onVolumePresetChange={handleVolumePresetChange}
         repRangeStyle={selectedRepRangeStyle}
+        selectedVolumePresetId={blueprint?.volumePreset ?? null}
+        volumePresetSource={blueprint?.volumePresetSource ?? null}
         weeklyRepTargets={blueprint?.weeklyRepTargets ?? null}
       />
     </PlanBuilderPage>
@@ -805,6 +849,22 @@ function useInitializeTrainingVolumeMutation() {
       initializeTrainingVolume({
         blueprint,
         timestamp,
+      }),
+  });
+}
+
+function useUpdateTrainingVolumePresetMutation() {
+  return usePlanBlueprintMutation<UpdateTrainingVolumePresetMutationVariables>({
+    mutationFn: ({ timestamp, volumePreset }) =>
+      planBuilderService.updateTrainingVolumePreset({
+        timestamp,
+        volumePreset,
+      }),
+    optimisticUpdate: (blueprint, { timestamp, volumePreset }) =>
+      selectTrainingVolumePreset({
+        blueprint,
+        timestamp,
+        volumePreset,
       }),
   });
 }
@@ -1201,7 +1261,10 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
 }
 
 function WeeklyVolumeTargetsStep({
+  onVolumePresetChange,
   repRangeStyle,
+  selectedVolumePresetId,
+  volumePresetSource,
   weeklyRepTargets,
 }: WeeklyVolumeTargetsStepProps) {
   const requiredWeeklyVolumeTargetRows = getRequiredWeeklyVolumeTargetRows({
@@ -1229,6 +1292,12 @@ function WeeklyVolumeTargetsStep({
             Just Workout will translate those weekly targets into sets and reps across your training
             days later.
           </p>
+
+          <VolumePresetSelector
+            onVolumePresetChange={onVolumePresetChange}
+            selectedVolumePresetId={selectedVolumePresetId}
+            volumePresetSource={volumePresetSource}
+          />
 
           <PlanBuilderStepStatusCard
             body="Weekly targets only: these targets describe your full training week, not a single workout."
@@ -1270,6 +1339,90 @@ function WeeklyVolumeTargetsStep({
         />
       </div>
     </div>
+  );
+}
+
+function VolumePresetSelector({
+  onVolumePresetChange,
+  selectedVolumePresetId,
+  volumePresetSource,
+}: VolumePresetSelectorProps) {
+  if (!selectedVolumePresetId || !volumePresetSource) {
+    return <p className="mt-5 text-sm font-semibold text-stone-600">Loading volume presets...</p>;
+  }
+
+  return (
+    <fieldset className="mt-5 grid gap-3">
+      <legend className="sr-only">Volume preset</legend>
+      {volumePresets.map((option) => (
+        <VolumePresetOptionRadio
+          isExplicitSelection={
+            selectedVolumePresetId === option.id && volumePresetSource === "user_selected"
+          }
+          isSelected={selectedVolumePresetId === option.id}
+          key={option.id}
+          onSelect={onVolumePresetChange}
+          option={option}
+        />
+      ))}
+    </fieldset>
+  );
+}
+
+function VolumePresetOptionRadio({
+  isExplicitSelection,
+  isSelected,
+  onSelect,
+  option,
+}: VolumePresetOptionRadioProps) {
+  const optionState = getSelectableOptionState(isSelected);
+
+  function selectOption() {
+    onSelect(option.id);
+  }
+
+  function saveExplicitSelection() {
+    if (isSelected && !isExplicitSelection) {
+      selectOption();
+    }
+  }
+
+  return (
+    <label className={getSelectableOptionCardClassName(optionState)}>
+      <input
+        checked={isSelected}
+        className="sr-only"
+        name="volume-preset"
+        onClick={saveExplicitSelection}
+        onChange={selectOption}
+        type="radio"
+        value={option.id}
+      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-black">{option.title}</p>
+          <p className={cn("mt-2 text-sm", selectableOptionMutedTextStyles[optionState])}>
+            {volumePresetDescriptions[option.id]}
+          </p>
+          <p
+            className={cn(
+              "mt-3 text-xs font-bold uppercase tracking-wide",
+              selectableOptionMutedTextStyles[optionState],
+            )}
+          >
+            {option.largerMuscleTarget} larger-muscle reps/week · {option.smallerMuscleTarget}{" "}
+            smaller-muscle reps/week
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isSelected ? <SelectionBadge isSelected={isSelected}>Selected</SelectionBadge> : null}
+          {option.isRecommended ? (
+            <SelectionBadge isSelected={isSelected}>Recommended</SelectionBadge>
+          ) : null}
+        </div>
+      </div>
+    </label>
   );
 }
 
@@ -1366,7 +1519,10 @@ function WeeklyVolumeTargetStatusBadge({ label, tone }: WeeklyVolumeTargetStatus
 function getRequiredWeeklyVolumeTargetRows({
   repRangeStyle,
   weeklyRepTargets,
-}: WeeklyVolumeTargetsStepProps): Array<WeeklyVolumeTargetDisplayRow> {
+}: Pick<
+  WeeklyVolumeTargetsStepProps,
+  "repRangeStyle" | "weeklyRepTargets"
+>): Array<WeeklyVolumeTargetDisplayRow> {
   if (!repRangeStyle || !weeklyRepTargets) {
     return [];
   }
