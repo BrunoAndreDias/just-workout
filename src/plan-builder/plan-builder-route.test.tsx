@@ -1554,6 +1554,46 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("blocks conflicting Preferred Exercises when the same normalized text exists in Avoided Exercises", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await user.type(await screen.findByLabelText(/avoided exercises/i), "Upright row");
+    await user.keyboard("{Enter}");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ rawText: "Upright row" }],
+        preferredExercises: [],
+      },
+    });
+
+    const preferredInput = screen.getByLabelText(/preferred exercises/i);
+    const preferredForm = getRequiredClosestForm(preferredInput, "Preferred Exercise");
+
+    await user.type(preferredInput, "  upright   ROW ");
+    await user.click(within(preferredForm).getByRole("button", { name: /^add$/i }));
+
+    expect(
+      await screen.findByText(
+        "This exercise is already in Avoided Exercises. Remove it there or change this entry.",
+      ),
+    ).toBeVisible();
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ rawText: "Upright row" }],
+        preferredExercises: [],
+      },
+    });
+  });
+
   it("blocks Continue to Review when pending input is invalid", async () => {
     const user = userEvent.setup();
 

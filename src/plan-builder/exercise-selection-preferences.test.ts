@@ -238,6 +238,18 @@ describe("exercise selection preferences", () => {
           "This exercise is already in Preferred Exercises. Remove it there or change this entry.",
       },
     });
+
+    expectPendingExerciseSelectionPreferencesValidationError({
+      exerciseSelectionPreferences,
+      pendingInputs: {
+        avoidedExercise: "",
+        preferredExercise: "  upright   ROW ",
+      },
+      validationErrors: {
+        preferredExercise:
+          "This exercise is already in Avoided Exercises. Remove it there or change this entry.",
+      },
+    });
   });
 
   it("reports confirmation readiness from the pending draft state and removes committed items by id", () => {
