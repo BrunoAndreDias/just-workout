@@ -291,6 +291,54 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
+  it("preserves Exercise Selection Preferences and clears confirmed Exercises when the Training Split changes", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const exerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced",
+    } satisfies ExerciseSelectionPreferences;
+    const configuredBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences,
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:20:30.000Z",
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(configuredBlueprint);
+
+    const updatedBlueprint = await planBuilderService.updateTrainingSplit({
+      split: "rotating-push-pull-legs",
+      timestamp: "2026-05-30T10:21:00.000Z",
+    });
+
+    expect(updatedBlueprint).toEqual({
+      ...configuredBlueprint,
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      split: "rotating-push-pull-legs",
+      updatedAt: "2026-05-30T10:21:00.000Z",
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(updatedBlueprint);
+  });
+
   it("persists a selected Rep Range Style for the next resume", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
