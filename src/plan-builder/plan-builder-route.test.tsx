@@ -1525,6 +1525,39 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("blocks normalized exact duplicates within Avoided Exercises with inline validation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await user.type(await screen.findByLabelText(/avoided exercises/i), "Upright row");
+    await user.keyboard("{Enter}");
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ rawText: "Upright row" }],
+        preferredExercises: [],
+      },
+    });
+
+    await user.type(screen.getByLabelText(/avoided exercises/i), "  upright   ROW ");
+    await user.keyboard("{Enter}");
+
+    expect(await screen.findByText("This exercise is already in Avoided Exercises.")).toBeVisible();
+    await expectPlanBlueprintToMatch({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [{ rawText: "Upright row" }],
+        preferredExercises: [],
+      },
+    });
+  });
+
   it("blocks Continue to Review when pending input is invalid", async () => {
     const user = userEvent.setup();
 

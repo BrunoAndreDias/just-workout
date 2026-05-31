@@ -196,7 +196,7 @@ describe("exercise selection preferences", () => {
     });
   });
 
-  it("blocks exact duplicates and Preferred/Avoided conflicts after trimming and case-folding", () => {
+  it("blocks exact duplicates within each list and Preferred/Avoided conflicts after trimming and case-folding", () => {
     const exerciseSelectionPreferences = normalizeExerciseSelectionPreferences({
       avoidedExercises: [{ id: "avoided-1", rawText: "Upright row" }],
       preferredExercises: [{ id: "preferred-1", rawText: "Incline Dumbbell Press" }],
@@ -219,6 +219,26 @@ describe("exercise selection preferences", () => {
       },
       validationErrors: {
         preferredExercise: "This exercise is already in Preferred Exercises.",
+      },
+    });
+
+    expect(
+      commitPendingExerciseSelectionPreferences({
+        createId: () => "unused",
+        exerciseSelectionPreferences,
+        pendingInputs: {
+          avoidedExercise: "  upright   ROW ",
+          preferredExercise: "",
+        },
+      }),
+    ).toEqual({
+      exerciseSelectionPreferences,
+      pendingInputs: {
+        avoidedExercise: "  upright   ROW ",
+        preferredExercise: "",
+      },
+      validationErrors: {
+        avoidedExercise: "This exercise is already in Avoided Exercises.",
       },
     });
 
