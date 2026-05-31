@@ -59,7 +59,12 @@ import {
   type TrainingSplitSchedule,
   unsupportedTrainingSplitCategories,
 } from "./training-split";
-import { isTrainingVolumeConfiguration } from "./training-volume";
+import {
+  estimateWeeklySetRangeForTarget,
+  isTrainingVolumeConfiguration,
+  type VolumeMuscleGroupId,
+  type WeeklyRepTarget,
+} from "./training-volume";
 
 type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
 type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
@@ -219,6 +224,71 @@ const weeklyVolumeHowItWorksItems = [
 const weeklyVolumeHowItWorksItemClassName =
   "rounded-lg border border-stone-900/10 bg-[#f9f6ef] px-4 py-3 text-sm text-stone-700";
 
+type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate";
+
+type WeeklyVolumeTargetRowDefinition = {
+  label: string;
+  muscleGroup: VolumeMuscleGroupId;
+  status: string;
+  tone: WeeklyVolumeTargetStatusTone;
+};
+
+type WeeklyVolumeTargetDisplayRow = WeeklyVolumeTargetRowDefinition & {
+  estimatedSetRangeLabel: string;
+  targetLabel: string;
+};
+
+const weeklyVolumeTargetStatusStyles = {
+  accessory: "bg-[#f7efe4] text-[#8a5a2b]",
+  "main-target": "bg-[#e8f6f3] text-[#0d6d67]",
+  moderate: "bg-[#eef3fb] text-[#315d8a]",
+} as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
+
+const requiredWeeklyVolumeTargetRowDefinitions = [
+  {
+    label: "Chest",
+    muscleGroup: "chest",
+    status: "Main target",
+    tone: "main-target",
+  },
+  {
+    label: "Back",
+    muscleGroup: "back",
+    status: "Main target",
+    tone: "main-target",
+  },
+  {
+    label: "Shoulders",
+    muscleGroup: "shoulders",
+    status: "Moderate",
+    tone: "moderate",
+  },
+  {
+    label: "Quads",
+    muscleGroup: "quads",
+    status: "Main target",
+    tone: "main-target",
+  },
+  {
+    label: "Hamstrings/Glutes",
+    muscleGroup: "hamstrings",
+    status: "Main target",
+    tone: "main-target",
+  },
+  {
+    label: "Biceps",
+    muscleGroup: "biceps",
+    status: "Accessory",
+    tone: "accessory",
+  },
+  {
+    label: "Triceps",
+    muscleGroup: "triceps",
+    status: "Accessory",
+    tone: "accessory",
+  },
+] as const satisfies ReadonlyArray<WeeklyVolumeTargetRowDefinition>;
+
 const repRangeStyleDescriptionStyles = {
   selected: "text-[#31505d]",
   unselected: selectableOptionMutedTextStyles.unselected,
@@ -369,6 +439,11 @@ type RepRangeStyleStatusBadgeProps = {
 type RepRangeStyleTargetsProps = {
   isSelected?: boolean;
   targets: RepRangeStyle["targets"];
+};
+
+type WeeklyVolumeTargetsStepProps = {
+  repRangeStyle: RepRangeStyle | null;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
 };
 
 export function PlanBuilderRoute() {
@@ -561,6 +636,10 @@ export function PlanBuilderRepRangesRoute() {
 export function PlanBuilderVolumeRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
+  const selectedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
+  const selectedRepRangeStyle = selectedRepRangeStyleId
+    ? getRepRangeStyle(selectedRepRangeStyleId)
+    : null;
 
   useEffect(() => {
     if (!blueprint || isTrainingVolumeConfiguration(blueprint)) {
@@ -584,7 +663,10 @@ export function PlanBuilderVolumeRoute() {
       stepLabel="Volume step"
       summary={summary}
     >
-      <WeeklyVolumeTargetsStep />
+      <WeeklyVolumeTargetsStep
+        repRangeStyle={selectedRepRangeStyle}
+        weeklyRepTargets={blueprint?.weeklyRepTargets ?? null}
+      />
     </PlanBuilderPage>
   );
 }
@@ -1105,7 +1187,15 @@ function RepRangeStyleEffectsPanel({ repRangeStyle }: RepRangeStyleEffectsPanelP
   );
 }
 
-function WeeklyVolumeTargetsStep() {
+function WeeklyVolumeTargetsStep({
+  repRangeStyle,
+  weeklyRepTargets,
+}: WeeklyVolumeTargetsStepProps) {
+  const requiredWeeklyVolumeTargetRows = getRequiredWeeklyVolumeTargetRows({
+    repRangeStyle,
+    weeklyRepTargets,
+  });
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
@@ -1132,6 +1222,92 @@ function WeeklyVolumeTargetsStep() {
             className="mt-5"
             title="Weekly targets note"
           />
+
+          <section aria-labelledby="required-weekly-rep-targets-title" className="mt-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h4
+                  className="text-lg font-black text-stone-950 sm:text-xl"
+                  id="required-weekly-rep-targets-title"
+                >
+                  Required weekly rep targets
+                </h4>
+                <p className="mt-1 max-w-2xl text-sm text-stone-600">
+                  Reps/week is the saved Training Volume target. Estimated sets/week is display
+                  context only.
+                </p>
+              </div>
+            </div>
+
+            {requiredWeeklyVolumeTargetRows.length > 0 ? (
+              <div className="mt-3 overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
+                <table
+                  aria-label="Required Weekly Rep Targets"
+                  className="min-w-full border-collapse text-left"
+                >
+                  <thead className="bg-[#f4f0e8]">
+                    <tr>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+                        Muscle group
+                      </th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+                        Weekly rep target
+                      </th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+                        Estimated sets/week
+                      </th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500">
+                        Adjustment
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-900/10 bg-white/88">
+                    {requiredWeeklyVolumeTargetRows.map((row) => (
+                      <tr className="align-top" key={row.muscleGroup}>
+                        <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
+                          {row.label}
+                        </th>
+                        <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                          {row.targetLabel}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+                          {row.estimatedSetRangeLabel}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+                              weeklyVolumeTargetStatusStyles[row.tone],
+                            )}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <Button
+                            aria-label={`Adjust ${row.label} target`}
+                            className="px-0 text-stone-500 disabled:opacity-100"
+                            disabled
+                            size="sm"
+                            variant="ghost"
+                          >
+                            Adjust
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm font-semibold text-stone-600">
+                Loading weekly rep targets...
+              </p>
+            )}
+          </section>
 
           <section aria-labelledby="weekly-volume-how-it-works-title" className="mt-5">
             <h4
@@ -1166,6 +1342,62 @@ function WeeklyVolumeTargetsStep() {
       </div>
     </div>
   );
+}
+
+function getRequiredWeeklyVolumeTargetRows({
+  repRangeStyle,
+  weeklyRepTargets,
+}: WeeklyVolumeTargetsStepProps): Array<WeeklyVolumeTargetDisplayRow> {
+  if (!repRangeStyle || !weeklyRepTargets) {
+    return [];
+  }
+
+  return requiredWeeklyVolumeTargetRowDefinitions.flatMap((definition) => {
+    const weeklyRepTarget = weeklyRepTargets.find(
+      ({ muscleGroup }) => muscleGroup === definition.muscleGroup,
+    );
+
+    if (!weeklyRepTarget) {
+      return [];
+    }
+
+    const row = createWeeklyVolumeTargetDisplayRow({
+      definition,
+      repRangeStyle,
+      weeklyRepTarget,
+    });
+
+    return row ? [row] : [];
+  });
+}
+
+function createWeeklyVolumeTargetDisplayRow({
+  definition,
+  repRangeStyle,
+  weeklyRepTarget,
+}: {
+  definition: WeeklyVolumeTargetRowDefinition;
+  repRangeStyle: RepRangeStyle;
+  weeklyRepTarget: WeeklyRepTarget;
+}): WeeklyVolumeTargetDisplayRow | null {
+  const estimatedSetRange = estimateWeeklySetRangeForTarget({
+    volumeEstimationRepRange: repRangeStyle.volumeEstimationRepRange,
+    weeklyRepTarget,
+  });
+
+  if (!estimatedSetRange || weeklyRepTarget.target === null) {
+    return null;
+  }
+
+  return {
+    ...definition,
+    estimatedSetRangeLabel: formatEstimatedSetRange(estimatedSetRange),
+    targetLabel: `${weeklyRepTarget.target} reps/week`,
+  };
+}
+
+function formatEstimatedSetRange({ max, min }: { max: number; min: number }): string {
+  return `${min}-${max} sets/week`;
 }
 
 type TrainingFrequencyOptionRadioProps = {

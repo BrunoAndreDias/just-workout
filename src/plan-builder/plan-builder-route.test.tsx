@@ -709,6 +709,56 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("renders the required Weekly Rep Target rows with canonical reps, derived set estimates, and quiet adjustment affordances", async () => {
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+    await planBuilderService.confirmSelectedRepRangeStyle({
+      repRangeStyle: "balanced_hypertrophy",
+      timestamp: "2026-05-31T08:07:30.000Z",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    const table = await screen.findByRole("table", { name: /required weekly rep targets/i });
+    const rowExpectations = [
+      { label: "Chest", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
+      { label: "Back", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
+      { label: "Shoulders", reps: "45 reps/week", sets: "4-6 sets/week", status: "Moderate" },
+      { label: "Quads", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
+      {
+        label: "Hamstrings/Glutes",
+        reps: "90 reps/week",
+        sets: "8-12 sets/week",
+        status: "Main target",
+      },
+      { label: "Biceps", reps: "45 reps/week", sets: "4-6 sets/week", status: "Accessory" },
+      { label: "Triceps", reps: "45 reps/week", sets: "4-6 sets/week", status: "Accessory" },
+    ] as const;
+
+    for (const { label, reps, sets, status } of rowExpectations) {
+      const rowLabel = within(table).getByText(label);
+      const row = rowLabel.closest("tr");
+
+      expect(row).not.toBeNull();
+      expect(within(row as HTMLTableRowElement).getByText(reps)).toBeVisible();
+      expect(within(row as HTMLTableRowElement).getByText(sets)).toBeVisible();
+      expect(within(row as HTMLTableRowElement).getByText(status)).toBeVisible();
+      expect(
+        within(row as HTMLTableRowElement).getByRole("button", {
+          name: new RegExp(`adjust ${label} target`, "i"),
+        }),
+      ).toBeDisabled();
+    }
+
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    expect(blueprint.weeklyRepTargets?.every((target) => !("estimatedSetRange" in target))).toBe(
+      true,
+    );
+    expect(blueprint.weeklyRepTargets?.every((target) => !("estimatedSetsPerWeek" in target))).toBe(
+      true,
+    );
+  });
+
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
     const user = userEvent.setup();
 
