@@ -225,6 +225,7 @@ const planBuilderNextStepBodyByStep = {
 } as const satisfies Record<PlanBuilderStep, string>;
 
 type SelectableOptionState = "selected" | "unselected";
+type MovementPatternCoverageStatus = "direct" | "indirect";
 type RepRangeStyleStatusBadgeTone = "recommended" | "selected";
 
 const selectableOptionCardBaseClassName =
@@ -282,7 +283,7 @@ const exerciseSelectionStatusCards = [
     title: "Plan status",
   },
   {
-    body: "Step 5 stays focused on preferences only. Day-by-day workouts and final exercise choices do not appear here.",
+    body: "Step 5 stays focused on strategy, equipment, movement coverage, and preferences only. Day-by-day workouts and final exercise choices do not appear here.",
     title: "Step scope",
   },
   {
@@ -290,6 +291,16 @@ const exerciseSelectionStatusCards = [
     title: "Preference rules",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
+
+const movementPatternCoverageStatusStyles = {
+  direct: "border-[#c7ebdf] bg-[#eff9f3] text-[#0f6d54]",
+  indirect: "border-[#e7dcc8] bg-[#f9f3e8] text-[#8a5a2b]",
+} as const;
+
+const movementPatternCoverageStatusLabels = {
+  direct: "Direct Weekly Rep Target",
+  indirect: "Indirect support only",
+} as const satisfies Record<MovementPatternCoverageStatus, string>;
 
 const volumePresetDescriptions = {
   balanced:
@@ -592,6 +603,18 @@ type ExerciseSelectionPreferencesStepProps = {
     exerciseSelectionPreferences: ExerciseSelectionPreferences,
   ) => Promise<void>;
   rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
+};
+
+type MovementPatternCoverageSectionProps = {
+  coverageGroups: ReadonlyArray<MovementPatternCoverageGroup>;
+};
+
+type MovementPatternCoverageGroupCardProps = {
+  group: MovementPatternCoverageGroup;
+};
+
+type MovementPatternCoverageStatusBadgeProps = {
+  isDirectlyTargeted: boolean;
 };
 
 type ExerciseSelectionHighlightProps = {
@@ -971,8 +994,9 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Set Exercise Selection Preferences before Review so Just Workout can carry the right
-          strategy, equipment, and exercise-fit notes forward into later Training Plan generation.
+          Set Exercise Selection Preferences and review the derived movement coverage before Review
+          so Just Workout can carry the right strategy, equipment, and exercise-fit notes forward
+          into later Training Plan generation.
         </p>
       }
       summary={summary}
@@ -2493,6 +2517,8 @@ function ExerciseSelectionPreferencesStep({
           </div>
         </section>
 
+        <MovementPatternCoverageSection coverageGroups={movementPatternCoverage} />
+
         <div className="grid gap-4 lg:grid-cols-2">
           <section
             aria-labelledby="equipment-preset-title"
@@ -2612,9 +2638,6 @@ function ExerciseSelectionPreferencesStep({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <ExerciseSelectionMovementPatternCoveragePanel
-          movementPatternCoverage={movementPatternCoverage}
-        />
         <ExerciseSelectionAutomaticRulesPanel
           rulesAppliedAutomatically={rulesAppliedAutomatically}
         />
@@ -2629,6 +2652,94 @@ function ExerciseSelectionPreferencesStep({
       </div>
     </div>
   );
+}
+
+function MovementPatternCoverageSection({ coverageGroups }: MovementPatternCoverageSectionProps) {
+  return (
+    <section
+      aria-label="Movement pattern coverage"
+      className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3
+            className="text-xl font-black text-stone-950 sm:text-2xl"
+            id="movement-pattern-coverage-title"
+          >
+            Movement-pattern coverage
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm text-stone-600">
+            Derived from the current Training Split, strategy, and Weekly Rep Targets. This view
+            stays read-only in v1 and does not promise final exercise slots.
+          </p>
+        </div>
+        <span className="rounded-full border border-stone-900/10 bg-[#f4f0e8] px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-stone-700">
+          Read-only in v1
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {coverageGroups.map((group) => (
+          <MovementPatternCoverageGroupCard group={group} key={group.id} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MovementPatternCoverageGroupCard({ group }: MovementPatternCoverageGroupCardProps) {
+  const titleId = `${group.id}-movement-patterns-title`;
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-5"
+    >
+      <h4 className="text-lg font-black text-stone-950" id={titleId}>
+        {group.title}
+      </h4>
+      <p className="mt-2 text-sm leading-6 text-stone-700">{group.sessionBias}</p>
+
+      <ul aria-label={group.title} className="mt-4 grid gap-3">
+        {group.patterns.map((pattern) => (
+          <li
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-900/10 bg-white px-4 py-3"
+            key={pattern.id}
+          >
+            <span className="text-sm font-bold text-stone-950">{pattern.label}</span>
+            <MovementPatternCoverageStatusBadge isDirectlyTargeted={pattern.isDirectlyTargeted} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function MovementPatternCoverageStatusBadge({
+  isDirectlyTargeted,
+}: MovementPatternCoverageStatusBadgeProps) {
+  const status = getMovementPatternCoverageStatus(isDirectlyTargeted);
+
+  return (
+    <span
+      className={cn(
+        "rounded-full border px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide",
+        movementPatternCoverageStatusStyles[status],
+      )}
+    >
+      {movementPatternCoverageStatusLabels[status]}
+    </span>
+  );
+}
+
+function getMovementPatternCoverageStatus(
+  isDirectlyTargeted: boolean,
+): MovementPatternCoverageStatus {
+  if (isDirectlyTargeted) {
+    return "direct";
+  }
+
+  return "indirect";
 }
 
 function ReviewPlaceholderStep() {
@@ -2750,56 +2861,6 @@ function ExerciseSelectionPreferencesEditor({
           </li>
         )}
       </ul>
-    </section>
-  );
-}
-
-function ExerciseSelectionMovementPatternCoveragePanel({
-  movementPatternCoverage,
-}: {
-  movementPatternCoverage: ReadonlyArray<MovementPatternCoverageGroup>;
-}) {
-  return (
-    <section className="rounded-lg border border-stone-900/10 bg-white/78 p-5">
-      <h3 className="text-lg font-black text-stone-950">Movement-pattern coverage</h3>
-      <p className="mt-2 text-sm leading-6 text-stone-600">
-        Derived from the saved Training Split, the Balanced strategy, and your current Weekly Rep
-        Targets.
-      </p>
-
-      <div className="mt-4 grid gap-3">
-        {movementPatternCoverage.map((group) => (
-          <article
-            className="rounded-lg border border-stone-900/10 bg-[#fcfaf6] p-4"
-            key={group.id}
-          >
-            <h4 className="text-sm font-black uppercase tracking-wide text-stone-950">
-              {group.title}
-            </h4>
-            <p className="mt-2 text-sm leading-6 text-stone-600">{group.sessionBias}</p>
-            <ul aria-label={group.title} className="mt-3 grid gap-2">
-              {group.patterns.map((pattern) => (
-                <li
-                  className="flex items-start justify-between gap-3 rounded-lg border border-stone-900/8 bg-white px-3 py-2"
-                  key={pattern.id}
-                >
-                  <span className="text-sm font-semibold text-stone-950">{pattern.label}</span>
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide",
-                      pattern.isDirectlyTargeted
-                        ? "bg-[#e8f6f3] text-[#0d6d67]"
-                        : "bg-[#f4f0e8] text-[#5c6d73]",
-                    )}
-                  >
-                    {pattern.isDirectlyTargeted ? "Direct target" : "Accessory support"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }

@@ -741,7 +741,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("renders the read-only Step 5 strategy and equipment screen on direct access when Volume is confirmed", async () => {
+  it("renders the read-only Step 5 strategy, movement coverage, and equipment screen on direct access when Volume is confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -765,6 +765,58 @@ describe("PlanBuilderRoute", () => {
     for (const pattern of exercisesStepExcludedContentPatterns) {
       expect(screen.queryByText(pattern)).not.toBeInTheDocument();
     }
+  });
+
+  it("shows derived movement-pattern coverage on Step 5 without implying final exercise slots", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    const coverageSection = await screen.findByRole("region", {
+      name: /movement pattern coverage/i,
+    });
+    const coverage = within(coverageSection);
+
+    expect(
+      coverage.getByText(/read-only in v1 and does not promise final exercise slots/i),
+    ).toBeVisible();
+    expect(
+      coverage.getByText(
+        /derived from the current training split, strategy, and weekly rep targets/i,
+      ),
+    ).toBeVisible();
+    expect(
+      coverage.getByText(
+        /covered across the split's upper sessions while lower days stay focused/i,
+      ),
+    ).toBeVisible();
+    expect(
+      coverage.getByText(
+        /covered across the split's lower sessions with room for direct accessory work/i,
+      ),
+    ).toBeVisible();
+
+    for (const patternLabel of [
+      "Horizontal push",
+      "Horizontal pull",
+      "Vertical push",
+      "Vertical pull",
+      "Elbow flexion",
+      "Elbow extension",
+      "Quad dominant",
+      "Hip/hamstring dominant",
+      "Calves/accessories",
+    ]) {
+      expect(coverage.getByText(patternLabel)).toBeVisible();
+    }
+
+    expect(coverage.getAllByText("Direct Weekly Rep Target")).toHaveLength(8);
+    expect(coverage.getByText("Indirect support only")).toBeVisible();
   });
 
   it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
