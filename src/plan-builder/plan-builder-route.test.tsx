@@ -304,8 +304,8 @@ describe("PlanBuilderRoute", () => {
 
     await user.click(screen.getByRole("button", { name: /continue to split/i }));
 
-    const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
     const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     await waitFor(() => {
       expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();

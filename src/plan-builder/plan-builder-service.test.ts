@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../training/local-database";
 import { createStarterPlan } from "../training/starter-data";
-import type { RepRangeStyleId } from "./plan-blueprint";
+import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 
 describe("planBuilderService", () => {
@@ -26,6 +26,34 @@ describe("planBuilderService", () => {
     await planBuilderService.getOrCreatePlanBlueprint();
 
     expect(await db.trainingPlans.toArray()).toEqual([activePlan]);
+  });
+
+  it("resumes blueprints saved before confirmed builder progress existed", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.confirmedBuilderSteps;
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+
+    const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T10:14:00.000Z",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    expect(resumedBlueprint).toEqual({
+      ...legacyBlueprint,
+      confirmedBuilderSteps: {
+        frequency: false,
+        split: false,
+      },
+    });
+    expect(updatedBlueprint.confirmedBuilderSteps).toEqual({
+      frequency: false,
+      split: false,
+    });
   });
 
   it("persists a changed training frequency for the next resume", async () => {

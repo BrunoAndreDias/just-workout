@@ -2,6 +2,7 @@ import {
   confirmTrainingFrequency,
   confirmTrainingSplit,
   createDefaultPlanBlueprint,
+  normalizePlanBlueprint,
   type RepRangeStyleId,
   selectRepRangeStyle,
   selectTrainingFrequency,
@@ -15,7 +16,7 @@ async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
 
   if (existingBlueprint) {
-    return existingBlueprint;
+    return normalizePlanBlueprint(existingBlueprint);
   }
 
   const blueprint = createDefaultPlanBlueprint({
