@@ -2871,14 +2871,19 @@ function ExerciseSelectionAutomaticRulesPanel({
   rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
 }) {
   return (
-    <section className="rounded-lg border border-stone-900/10 bg-white/78 p-5">
-      <h3 className="text-lg font-black text-stone-950">Rules applied automatically</h3>
+    <section
+      aria-labelledby="automatic-rules-title"
+      className="rounded-lg border border-stone-900/10 bg-white/78 p-5"
+    >
+      <h3 className="text-lg font-black text-stone-950" id="automatic-rules-title">
+        Rules applied automatically
+      </h3>
       <p className="mt-2 text-sm leading-6 text-stone-600">
-        These guide later Training Plan generation. Rest times adapt to exercise demand and the
-        selected Rep Range Style.
+        Just Workout will apply these during Training Plan generation. This note stays explanatory
+        only, so Step 5 does not add manual rest controls or detailed prescriptions.
       </p>
 
-      <ul className="mt-4 grid gap-2.5">
+      <ul aria-label="Automatic exercise selection rules" className="mt-4 grid gap-2.5">
         {rulesAppliedAutomatically.map((rule) => (
           <li
             className="rounded-lg border border-stone-900/10 bg-[#fcfaf6] px-4 py-3"

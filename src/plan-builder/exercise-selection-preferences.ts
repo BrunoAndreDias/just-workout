@@ -286,13 +286,12 @@ export function deriveAutomaticExerciseSelectionRules(
     },
     {
       description:
-        "Marked avoided exercises stay excluded so painful or unsuitable movements are not included later.",
+        "Marked avoided exercises stay excluded so painful or unsuitable movements are not silently included later.",
       id: "hard_avoid_exclusions",
       label: "Respect avoided exercises as hard exclusions",
     },
     {
-      description:
-        "Rest times adapt later based on exercise demand and the selected Rep Range Style.",
+      description: "Rest times adapt to exercise demand and rep range.",
       id: "adaptive_rest_timing",
       label: "Apply rest timing automatically",
     },
