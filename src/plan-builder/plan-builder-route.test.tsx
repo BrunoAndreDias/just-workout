@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -789,7 +790,7 @@ describe("PlanBuilderRoute", () => {
       equipmentPreset: "full_gym",
       preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
       strategy: "balanced",
-    } as const;
+    } satisfies ExerciseSelectionPreferences;
 
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",

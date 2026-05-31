@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
@@ -769,7 +770,7 @@ describe("plan blueprint", () => {
       equipmentPreset: "full_gym",
       preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
       strategy: "balanced",
-    } as const;
+    } satisfies ExerciseSelectionPreferences;
     const blueprint = createConfirmedPlanBlueprint({
       confirmedBuilderSteps: {
         exercises: true,
