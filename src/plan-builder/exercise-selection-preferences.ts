@@ -82,6 +82,12 @@ export type MovementPatternCoverageGroup = {
   title: string;
 };
 
+type CreateExerciseSelectionPreferenceItemOptions = {
+  id: string;
+  matchedExerciseId?: string;
+  rawText: string;
+};
+
 type MovementPatternCoverageDefinition = {
   id: MovementPatternId;
   label: string;
@@ -204,6 +210,33 @@ export function createDefaultExerciseSelectionPreferences(): ExerciseSelectionPr
     preferredExercises: [],
     strategy: defaultExerciseSelectionStrategyId,
   };
+}
+
+export function normalizeExerciseSelectionPreferenceText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+export function createExerciseSelectionPreferenceItem({
+  id,
+  matchedExerciseId,
+  rawText,
+}: CreateExerciseSelectionPreferenceItemOptions): ExerciseSelectionPreferenceItem {
+  const normalizedRawText = normalizeExerciseSelectionPreferenceText(rawText);
+
+  if (normalizedRawText.length === 0) {
+    throw new Error("Exercise Selection Preference text cannot be empty.");
+  }
+
+  const preferenceItem: ExerciseSelectionPreferenceItem = {
+    id,
+    rawText: normalizedRawText,
+  };
+
+  if (matchedExerciseId) {
+    preferenceItem.matchedExerciseId = matchedExerciseId;
+  }
+
+  return preferenceItem;
 }
 
 export function normalizeExerciseSelectionPreferences(
@@ -359,10 +392,6 @@ function normalizeExerciseSelectionPreferenceItems(
 
     return normalizedItem;
   });
-}
-
-export function normalizeExerciseSelectionPreferenceText(rawText: string): string {
-  return rawText.trim().replace(/\s+/g, " ");
 }
 
 export function commitPendingExerciseSelectionPreferences({
