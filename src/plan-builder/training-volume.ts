@@ -51,6 +51,13 @@ export type EstimatedSetRange = {
 const largerVolumeTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
 const smallerVolumeTargetMuscleGroups = ["shoulders", "biceps", "triceps"] as const;
 const optionalVolumeMuscleGroups = ["calves", "abs"] as const;
+const largerVolumeTargetMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> =
+  new Set<VolumeMuscleGroupId>(largerVolumeTargetMuscleGroups);
+const smallerVolumeTargetMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> =
+  new Set<VolumeMuscleGroupId>(smallerVolumeTargetMuscleGroups);
+const optionalVolumeMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> = new Set<VolumeMuscleGroupId>(
+  optionalVolumeMuscleGroups,
+);
 
 export const defaultVolumePresetId = "balanced" satisfies VolumePresetId;
 
@@ -246,15 +253,15 @@ function getPresetWeeklyRepTargetValue({
 }): number | null {
   const preset = getVolumePreset(volumePreset);
 
-  if (largerVolumeTargetMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+  if (largerVolumeTargetMuscleGroupSet.has(weeklyRepTarget.muscleGroup)) {
     return preset.largerMuscleTarget;
   }
 
-  if (smallerVolumeTargetMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+  if (smallerVolumeTargetMuscleGroupSet.has(weeklyRepTarget.muscleGroup)) {
     return preset.smallerMuscleTarget;
   }
 
-  if (optionalVolumeMuscleGroups.includes(weeklyRepTarget.muscleGroup as never)) {
+  if (optionalVolumeMuscleGroupSet.has(weeklyRepTarget.muscleGroup)) {
     return weeklyRepTarget.isEnabled ? preset.smallerMuscleTarget : null;
   }
 

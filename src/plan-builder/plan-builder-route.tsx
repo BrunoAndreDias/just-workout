@@ -487,6 +487,11 @@ type RequiredWeeklyRepTargetsRowsProps = {
   rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
 };
 
+type RequiredWeeklyVolumeTargetRowsOptions = {
+  repRangeStyle: RepRangeStyle | null;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
+
 type WeeklyVolumeTargetStatusBadgeProps = {
   label: string;
   tone: WeeklyVolumeTargetStatusTone;
@@ -1519,10 +1524,7 @@ function WeeklyVolumeTargetStatusBadge({ label, tone }: WeeklyVolumeTargetStatus
 function getRequiredWeeklyVolumeTargetRows({
   repRangeStyle,
   weeklyRepTargets,
-}: Pick<
-  WeeklyVolumeTargetsStepProps,
-  "repRangeStyle" | "weeklyRepTargets"
->): Array<WeeklyVolumeTargetDisplayRow> {
+}: RequiredWeeklyVolumeTargetRowsOptions): Array<WeeklyVolumeTargetDisplayRow> {
   if (!repRangeStyle || !weeklyRepTargets) {
     return [];
   }

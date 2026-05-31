@@ -560,26 +560,24 @@ export function selectTrainingVolumePreset({
     throw new Error(`Unknown Volume Preset "${volumePreset}".`);
   }
 
-  const currentTrainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
-    ? blueprint
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+  const hasVolumePresetChanged = blueprint.volumePreset !== volumePreset;
+  const nextTrainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
+    ? selectTrainingVolumeConfiguration({
+        trainingVolumeConfiguration: blueprint,
+        volumePreset,
+      })
     : createTrainingVolumeConfiguration({
         volumePreset,
         volumePresetSource: "user_selected",
       });
-  const hasVolumePresetChanged = blueprint.volumePreset !== volumePreset;
-  const nextTrainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint)
-    ? selectTrainingVolumeConfiguration({
-        trainingVolumeConfiguration: currentTrainingVolumeConfiguration,
-        volumePreset,
-      })
-    : currentTrainingVolumeConfiguration;
 
   return {
     ...blueprint,
     ...nextTrainingVolumeConfiguration,
     confirmedBuilderSteps: {
-      ...getConfirmedBuilderSteps(blueprint),
-      volume: hasVolumePresetChanged ? false : getConfirmedBuilderSteps(blueprint).volume,
+      ...confirmedBuilderSteps,
+      volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
     },
     updatedAt: timestamp,
   };
