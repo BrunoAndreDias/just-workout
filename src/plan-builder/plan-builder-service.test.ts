@@ -5,6 +5,7 @@ import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 import {
   createRecommendedTrainingVolumeConfiguration,
+  createTrainingVolumeConfiguration,
   isTrainingVolumeConfiguration,
 } from "./training-volume";
 
@@ -205,9 +206,20 @@ describe("planBuilderService", () => {
 
   it("preserves Exercise Selection Preferences while marking Exercises unconfirmed when Training Frequency changes", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const exerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [
+        { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+      ],
+      strategy: "balanced",
+    };
     const configuredBlueprint: PlanBlueprint = {
       ...initialBlueprint,
-      ...createRecommendedTrainingVolumeConfiguration(),
+      ...createTrainingVolumeConfiguration({
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+      }),
       confirmedBuilderSteps: {
         exercises: true,
         frequency: true,
@@ -215,31 +227,11 @@ describe("planBuilderService", () => {
         split: true,
         volume: true,
       },
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [
-          { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
-        ],
-        strategy: "balanced",
-      },
+      exerciseSelectionPreferences,
       repRanges: "controlled_higher_reps",
       split: "rotating-push-pull-legs",
       trainingFrequencyDaysPerWeek: 4,
       updatedAt: "2026-05-30T10:16:30.000Z",
-      volumePreset: "higher_volume",
-      volumePresetSource: "user_selected",
-      weeklyRepTargets: [
-        { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
-        { isEnabled: true, muscleGroup: "back", source: "preset", target: 120 },
-        { isEnabled: true, muscleGroup: "quads", source: "preset", target: 120 },
-        { isEnabled: true, muscleGroup: "hamstrings", source: "preset", target: 120 },
-        { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
-        { isEnabled: true, muscleGroup: "biceps", source: "preset", target: 60 },
-        { isEnabled: true, muscleGroup: "triceps", source: "preset", target: 60 },
-        { isEnabled: false, muscleGroup: "calves", source: "preset", target: null },
-        { isEnabled: false, muscleGroup: "abs", source: "preset", target: null },
-      ],
     };
 
     await db.planBlueprints.clear();

@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
@@ -1243,14 +1244,14 @@ describe("PlanBuilderRoute", () => {
 
   it("preserves Exercise Selection Preferences and blocks Review after Frequency changes until Exercises is reconfirmed", async () => {
     const user = userEvent.setup();
-    const savedExerciseSelectionPreferences = {
+    const savedExerciseSelectionPreferences: ExerciseSelectionPreferences = {
       avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
       equipmentPreset: "full_gym",
       preferredExercises: [
         { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
       ],
       strategy: "balanced",
-    } as const;
+    };
 
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "controlled_higher_reps",
@@ -1292,9 +1293,7 @@ describe("PlanBuilderRoute", () => {
     expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
 
     await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
-    expect(
-      await screen.findByRole("group", { name: /rep range style/i }),
-    ).toBeVisible();
+    expect(await screen.findByRole("group", { name: /rep range style/i })).toBeVisible();
 
     frequencyView.unmount();
 
