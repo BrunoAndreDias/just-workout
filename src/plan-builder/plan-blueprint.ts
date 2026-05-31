@@ -816,22 +816,24 @@ export function confirmExerciseSelectionPreferences({
   exerciseSelectionPreferences,
   timestamp,
 }: ConfirmExerciseSelectionPreferencesOptions): PlanBlueprint {
-  const updatedBlueprint = exerciseSelectionPreferences
-    ? updateExerciseSelectionPreferences({
-        blueprint,
-        exerciseSelectionPreferences,
-        timestamp,
-      })
-    : blueprint;
+  let blueprintToConfirm = blueprint;
 
-  if (!isVolumeStepComplete(updatedBlueprint)) {
+  if (exerciseSelectionPreferences !== undefined) {
+    blueprintToConfirm = updateExerciseSelectionPreferences({
+      blueprint,
+      exerciseSelectionPreferences,
+      timestamp,
+    });
+  }
+
+  if (!isVolumeStepComplete(blueprintToConfirm)) {
     throw new Error("Exercises cannot be confirmed before Training Volume is confirmed.");
   }
 
   return {
-    ...updatedBlueprint,
+    ...blueprintToConfirm,
     confirmedBuilderSteps: {
-      ...updatedBlueprint.confirmedBuilderSteps,
+      ...blueprintToConfirm.confirmedBuilderSteps,
       exercises: true,
     },
     updatedAt: timestamp,

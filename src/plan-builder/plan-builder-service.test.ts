@@ -172,6 +172,14 @@ describe("planBuilderService", () => {
       ],
       strategy: "balanced",
     } satisfies DraftExerciseSelectionPreferences;
+    const expectedExerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [
+        { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+      ],
+      strategy: "balanced",
+    };
 
     const confirmedBlueprint = await planBuilderService.confirmSelectedExerciseSelectionPreferences(
       {
@@ -189,14 +197,7 @@ describe("planBuilderService", () => {
         split: true,
         volume: true,
       },
-      exerciseSelectionPreferences: {
-        avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
-        equipmentPreset: "full_gym",
-        preferredExercises: [
-          { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
-        ],
-        strategy: "balanced",
-      },
+      exerciseSelectionPreferences: expectedExerciseSelectionPreferences,
       updatedAt: "2026-05-30T10:16:00.000Z",
     });
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(confirmedBlueprint);
