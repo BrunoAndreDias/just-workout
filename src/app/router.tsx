@@ -1,5 +1,8 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import {
+  getPlanBuilderRedirectStep,
+  type PlanBuilderGuardedStep,
+  type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
   PlanBuilderSplitRoute,
@@ -7,7 +10,6 @@ import {
   planBuilderPaths,
   planBuilderService,
 } from "../plan-builder";
-import { getPlanBuilderRedirectStep } from "../plan-builder/plan-blueprint";
 import { DashboardRoute, WorkoutRoute } from "../training";
 import { RootLayout } from "./root-layout";
 
@@ -51,7 +53,13 @@ const planBuilderSplitRoute = createRoute({
   path: planBuilderPaths.split,
 });
 
-async function requirePlanBuilderStep(step: "split" | "rep-ranges" | "volume") {
+const planBuilderRedirectPaths = {
+  frequency: planBuilderPaths.frequency,
+  split: planBuilderPaths.split,
+  "rep-ranges": planBuilderPaths.repRanges,
+} as const satisfies Record<PlanBuilderRedirectStep, string>;
+
+async function requirePlanBuilderStep(step: PlanBuilderGuardedStep) {
   const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
   const redirectStep = getPlanBuilderRedirectStep(blueprint, step);
@@ -62,19 +70,8 @@ async function requirePlanBuilderStep(step: "split" | "rep-ranges" | "volume") {
 
   throw redirect({
     replace: true,
-    to: getPlanBuilderRedirectPath(redirectStep),
+    to: planBuilderRedirectPaths[redirectStep],
   });
-}
-
-function getPlanBuilderRedirectPath(step: "frequency" | "split" | "rep-ranges") {
-  switch (step) {
-    case "frequency":
-      return planBuilderPaths.frequency;
-    case "split":
-      return planBuilderPaths.split;
-    case "rep-ranges":
-      return planBuilderPaths.repRanges;
-  }
 }
 
 async function requireConfirmedTrainingFrequency() {
@@ -85,7 +82,7 @@ async function requireConfirmedTrainingSplit() {
   return requirePlanBuilderStep("rep-ranges");
 }
 
-async function requireConfirmedRepRanges() {
+async function requireConfirmedRepRangeStyle() {
   return requirePlanBuilderStep("volume");
 }
 
@@ -97,7 +94,7 @@ const planBuilderRepRangesRoute = createRoute({
 });
 
 const planBuilderVolumeRoute = createRoute({
-  beforeLoad: requireConfirmedRepRanges,
+  beforeLoad: requireConfirmedRepRangeStyle,
   component: PlanBuilderVolumeRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.volume,

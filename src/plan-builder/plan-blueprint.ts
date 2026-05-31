@@ -31,6 +31,8 @@ export type RepRangeStyle = {
   }>;
   title: string;
 };
+export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume";
+export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges";
 
 type PlanBuilderConfirmedSteps = {
   frequency: boolean;
@@ -283,6 +285,10 @@ export function isRepRangeStyleId(value: unknown): value is RepRangeStyleId {
   return repRangeStyles.some((style) => style.id === value);
 }
 
+export function getValidRepRangeStyleId(value: unknown): RepRangeStyleId | null {
+  return isRepRangeStyleId(value) ? value : null;
+}
+
 export function getRepRangeStyle(repRangeStyleId: RepRangeStyleId): RepRangeStyle {
   const style = repRangeStyles.find(({ id }) => id === repRangeStyleId);
 
@@ -363,8 +369,8 @@ export function isRepRangesStepComplete(
 
 export function getPlanBuilderRedirectStep(
   blueprint: PlanBlueprint,
-  targetStep: "split" | "rep-ranges" | "volume",
-): "frequency" | "split" | "rep-ranges" | null {
+  targetStep: PlanBuilderGuardedStep,
+): PlanBuilderRedirectStep | null {
   if (!isFrequencyStepComplete(blueprint)) {
     return "frequency";
   }
@@ -381,7 +387,11 @@ export function getPlanBuilderRedirectStep(
     return null;
   }
 
-  return isRepRangesStepComplete(blueprint) ? null : "rep-ranges";
+  if (isRepRangesStepComplete(blueprint)) {
+    return null;
+  }
+
+  return "rep-ranges";
 }
 
 export function selectTrainingFrequency({
@@ -537,8 +547,8 @@ export function confirmRepRangeStyle({
 export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintSummary {
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
-  const selectedRepRangeStyleId = blueprint.repRanges;
-  const hasRepRangeStyle = isRepRangeStyleId(selectedRepRangeStyleId);
+  const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
+  const hasRepRangeStyle = selectedRepRangeStyleId !== null;
 
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,

@@ -31,8 +31,8 @@ import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
+  getValidRepRangeStyleId,
   hasValidTrainingFrequency,
-  isRepRangeStyleId,
   type PlanBlueprint,
   type PlanBlueprintSummary,
   type RepRangeStyle,
@@ -204,8 +204,7 @@ const repRangeStyleDetailStyles = {
     targetValueClassName: string;
   }
 >;
-
-type UpdateTrainingFrequencyVariables = {
+type TrainingFrequencyMutationVariables = {
   timestamp: string;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
 };
@@ -219,27 +218,12 @@ type PlanBlueprintMutationConfig<TVariables> = {
   optimisticUpdate: (blueprint: PlanBlueprint, variables: TVariables) => PlanBlueprint;
 };
 
-type UpdateTrainingSplitVariables = {
+type TrainingSplitMutationVariables = {
   split: TrainingSplitId;
   timestamp: string;
 };
 
-type ConfirmTrainingFrequencyVariables = {
-  timestamp: string;
-  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-};
-
-type ConfirmTrainingSplitVariables = {
-  split: TrainingSplitId;
-  timestamp: string;
-};
-
-type ConfirmRepRangeStyleVariables = {
-  repRangeStyle: RepRangeStyleId;
-  timestamp: string;
-};
-
-type UpdateRepRangeStyleVariables = {
+type RepRangeStyleMutationVariables = {
   repRangeStyle: RepRangeStyleId;
   timestamp: string;
 };
@@ -453,9 +437,12 @@ export function PlanBuilderRepRangesRoute() {
   const { mutateAsync: confirmSelectedRepRangeStyle } = useConfirmRepRangeStyleMutation();
   const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
   const navigate = useNavigate();
-  const savedRepRangeStyleId = blueprint ? getSavedRepRangeStyleId(blueprint) : null;
-  const selectedRepRangeStyle = blueprint
-    ? getRepRangeStyle(savedRepRangeStyleId ?? defaultRepRangeStyleId)
+  const savedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
+  const selectedRepRangeStyleId = blueprint
+    ? (savedRepRangeStyleId ?? defaultRepRangeStyleId)
+    : null;
+  const selectedRepRangeStyle = selectedRepRangeStyleId
+    ? getRepRangeStyle(selectedRepRangeStyleId)
     : null;
 
   useEffect(() => {
@@ -477,12 +464,12 @@ export function PlanBuilderRepRangesRoute() {
   }
 
   async function handleContinueToVolume() {
-    if (!selectedRepRangeStyle) {
+    if (!selectedRepRangeStyleId) {
       return;
     }
 
     await confirmSelectedRepRangeStyle({
-      repRangeStyle: selectedRepRangeStyle.id,
+      repRangeStyle: selectedRepRangeStyleId,
       timestamp: new Date().toISOString(),
     });
     await navigate({ to: planBuilderPaths.volume });
@@ -550,7 +537,7 @@ function usePlanBuilderBlueprint() {
 }
 
 function useUpdateTrainingFrequencyMutation() {
-  return usePlanBlueprintMutation<UpdateTrainingFrequencyVariables>({
+  return usePlanBlueprintMutation<TrainingFrequencyMutationVariables>({
     mutationFn: ({ timestamp, trainingFrequencyDaysPerWeek }) =>
       planBuilderService.updateTrainingFrequency({
         timestamp,
@@ -566,7 +553,7 @@ function useUpdateTrainingFrequencyMutation() {
 }
 
 function useUpdateTrainingSplitMutation() {
-  return usePlanBlueprintMutation<UpdateTrainingSplitVariables>({
+  return usePlanBlueprintMutation<TrainingSplitMutationVariables>({
     mutationFn: ({ split, timestamp }) =>
       planBuilderService.updateTrainingSplit({
         split,
@@ -582,7 +569,7 @@ function useUpdateTrainingSplitMutation() {
 }
 
 function useConfirmTrainingFrequencyMutation() {
-  return usePlanBlueprintMutation<ConfirmTrainingFrequencyVariables>({
+  return usePlanBlueprintMutation<TrainingFrequencyMutationVariables>({
     mutationFn: ({ timestamp, trainingFrequencyDaysPerWeek }) =>
       planBuilderService.confirmSelectedTrainingFrequency({
         timestamp,
@@ -598,7 +585,7 @@ function useConfirmTrainingFrequencyMutation() {
 }
 
 function useConfirmTrainingSplitMutation() {
-  return usePlanBlueprintMutation<ConfirmTrainingSplitVariables>({
+  return usePlanBlueprintMutation<TrainingSplitMutationVariables>({
     mutationFn: ({ split, timestamp }) =>
       planBuilderService.confirmSelectedTrainingSplit({
         split,
@@ -614,7 +601,7 @@ function useConfirmTrainingSplitMutation() {
 }
 
 function useConfirmRepRangeStyleMutation() {
-  return usePlanBlueprintMutation<ConfirmRepRangeStyleVariables>({
+  return usePlanBlueprintMutation<RepRangeStyleMutationVariables>({
     mutationFn: ({ repRangeStyle, timestamp }) =>
       planBuilderService.confirmSelectedRepRangeStyle({
         repRangeStyle,
@@ -630,7 +617,7 @@ function useConfirmRepRangeStyleMutation() {
 }
 
 function useUpdateRepRangeStyleMutation() {
-  return usePlanBlueprintMutation<UpdateRepRangeStyleVariables>({
+  return usePlanBlueprintMutation<RepRangeStyleMutationVariables>({
     mutationFn: ({ repRangeStyle, timestamp }) =>
       planBuilderService.updateRepRangeStyle({
         repRangeStyle,
@@ -694,10 +681,6 @@ function hasCompatibleSelectedTrainingSplit(
   split: TrainingSplitId;
 } {
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
-}
-
-function getSavedRepRangeStyleId(blueprint: PlanBlueprint): RepRangeStyleId | null {
-  return isRepRangeStyleId(blueprint.repRanges) ? blueprint.repRanges : null;
 }
 
 function PlanBuilderPage({

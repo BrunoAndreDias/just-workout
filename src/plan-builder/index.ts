@@ -1,4 +1,9 @@
-export type { PlanBlueprint } from "./plan-blueprint";
+export type {
+  PlanBlueprint,
+  PlanBuilderGuardedStep,
+  PlanBuilderRedirectStep,
+} from "./plan-blueprint";
+export { getPlanBuilderRedirectStep } from "./plan-blueprint";
 export { planBuilderPaths } from "./plan-builder-paths";
 export {
   PlanBuilderRepRangesRoute,
