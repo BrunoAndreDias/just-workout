@@ -1351,14 +1351,15 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByText("Chest-supported row")).toBeVisible();
 
-    await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
-    const preferredAddButton = screen.getAllByRole("button", { name: /^add$/i })[0];
+    const preferredExercisesInput = screen.getByLabelText(/preferred exercises/i);
+    const preferredExercisesForm = preferredExercisesInput.closest("form");
 
-    if (!preferredAddButton) {
-      throw new Error("Expected the Preferred Exercise add button.");
+    if (!preferredExercisesForm) {
+      throw new Error("Expected the Preferred Exercises form.");
     }
 
-    await user.click(preferredAddButton);
+    await user.type(preferredExercisesInput, "Incline dumbbell press");
+    await user.click(within(preferredExercisesForm).getByRole("button", { name: /^add$/i }));
 
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
@@ -1380,16 +1381,18 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByText("Chest-supported row")).toBeVisible();
     expect(screen.getByText("Incline dumbbell press")).toBeVisible();
 
-    const preferredExercises = screen.getByRole("list", { name: /preferred exercise entries/i });
-    const existingPreference = within(preferredExercises)
+    const preferredExerciseEntries = screen.getByRole("list", {
+      name: /preferred exercise entries/i,
+    });
+    const chestSupportedRowEntry = within(preferredExerciseEntries)
       .getByText("Chest-supported row")
       .closest("li");
 
-    if (!existingPreference) {
+    if (!chestSupportedRowEntry) {
       throw new Error('Expected the "Chest-supported row" Preferred Exercise chip.');
     }
 
-    await user.click(within(existingPreference).getByRole("button", { name: /^remove$/i }));
+    await user.click(within(chestSupportedRowEntry).getByRole("button", { name: /^remove$/i }));
 
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {

@@ -143,6 +143,14 @@ describe("planBuilderService", () => {
 
   it("persists committed Preferred Exercise draft add/remove changes while clearing confirmed Exercises", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const initialPreferredExercises = [{ id: "preferred-1", rawText: "Chest-supported row" }];
+    const preferredExercisesAfterAdd = [
+      ...initialPreferredExercises,
+      { id: "preferred-2", rawText: "Incline dumbbell press" },
+    ];
+    const preferredExercisesAfterRemove = preferredExercisesAfterAdd.filter(
+      (exercise) => exercise.id !== "preferred-1",
+    );
     const confirmedBlueprint: PlanBlueprint = {
       ...initialBlueprint,
       ...createRecommendedTrainingVolumeConfiguration(),
@@ -155,7 +163,7 @@ describe("planBuilderService", () => {
       },
       exerciseSelectionPreferences: {
         ...initialBlueprint.exerciseSelectionPreferences,
-        preferredExercises: [{ id: "preferred-1", rawText: "Chest-supported row" }],
+        preferredExercises: initialPreferredExercises,
       },
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -170,54 +178,44 @@ describe("planBuilderService", () => {
       await planBuilderService.updateExerciseSelectionPreferences({
         exerciseSelectionPreferences: {
           ...confirmedBlueprint.exerciseSelectionPreferences,
-          preferredExercises: [
-            ...confirmedBlueprint.exerciseSelectionPreferences.preferredExercises,
-            { id: "preferred-2", rawText: "Incline dumbbell press" },
-          ],
+          preferredExercises: preferredExercisesAfterAdd,
         },
         timestamp: "2026-05-30T10:16:00.000Z",
       });
-
-    expect(addedPreferredExerciseBlueprint).toMatchObject({
-      confirmedBuilderSteps: {
-        exercises: false,
-        frequency: true,
-        repRanges: true,
-        split: true,
-        volume: true,
-      },
+    const expectedConfirmedBuilderStepsAfterDraftChange = {
+      ...confirmedBlueprint.confirmedBuilderSteps,
+      exercises: false,
+    };
+    const expectedAddedPreferredExerciseBlueprint: PlanBlueprint = {
+      ...confirmedBlueprint,
+      confirmedBuilderSteps: expectedConfirmedBuilderStepsAfterDraftChange,
       exerciseSelectionPreferences: {
-        preferredExercises: [
-          { id: "preferred-1", rawText: "Chest-supported row" },
-          { id: "preferred-2", rawText: "Incline dumbbell press" },
-        ],
+        ...confirmedBlueprint.exerciseSelectionPreferences,
+        preferredExercises: preferredExercisesAfterAdd,
       },
-    });
+      updatedAt: "2026-05-30T10:16:00.000Z",
+    };
+
+    expect(addedPreferredExerciseBlueprint).toEqual(expectedAddedPreferredExerciseBlueprint);
 
     const removedPreferredExerciseBlueprint =
       await planBuilderService.updateExerciseSelectionPreferences({
         exerciseSelectionPreferences: {
           ...addedPreferredExerciseBlueprint.exerciseSelectionPreferences,
-          preferredExercises:
-            addedPreferredExerciseBlueprint.exerciseSelectionPreferences.preferredExercises.filter(
-              (exercise) => exercise.id !== "preferred-1",
-            ),
+          preferredExercises: preferredExercisesAfterRemove,
         },
         timestamp: "2026-05-30T10:16:30.000Z",
       });
-
-    expect(removedPreferredExerciseBlueprint).toMatchObject({
-      confirmedBuilderSteps: {
-        exercises: false,
-        frequency: true,
-        repRanges: true,
-        split: true,
-        volume: true,
-      },
+    const expectedRemovedPreferredExerciseBlueprint: PlanBlueprint = {
+      ...expectedAddedPreferredExerciseBlueprint,
       exerciseSelectionPreferences: {
-        preferredExercises: [{ id: "preferred-2", rawText: "Incline dumbbell press" }],
+        ...expectedAddedPreferredExerciseBlueprint.exerciseSelectionPreferences,
+        preferredExercises: preferredExercisesAfterRemove,
       },
-    });
+      updatedAt: "2026-05-30T10:16:30.000Z",
+    };
+
+    expect(removedPreferredExerciseBlueprint).toEqual(expectedRemovedPreferredExerciseBlueprint);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(
       removedPreferredExerciseBlueprint,
     );
