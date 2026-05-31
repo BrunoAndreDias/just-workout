@@ -454,6 +454,17 @@ describe("plan blueprint", () => {
     expect(isVolumeStepComplete(confirmedBlueprint)).toBe(true);
   });
 
+  it("summarizes Exercises as the next step once Volume is confirmed", () => {
+    const blueprint = createConfirmedPlanBlueprint({});
+
+    expect(summarizePlanBlueprint(blueprint)).toMatchObject({
+      nextStep: "Exercises",
+      repRanges: "Balanced hypertrophy",
+      split: "4-Day Upper/Lower",
+      volumePreset: "Balanced",
+    });
+  });
+
   it("marks Volume unconfirmed when a confirmed Volume Preset changes", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),

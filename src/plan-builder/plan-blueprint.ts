@@ -774,7 +774,11 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   return {
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
-    nextStep: getPlanBlueprintNextStep({ hasRepRangeStyle, splitSummary }),
+    nextStep: getPlanBlueprintNextStep({
+      hasRepRangeStyle,
+      isVolumeConfirmed: isVolumeStepComplete(blueprint),
+      splitSummary,
+    }),
     repRanges: hasRepRangeStyle
       ? formatRepRangeStyle(selectedRepRangeStyleId)
       : planBlueprintSummaryFallbacks.repRanges,
@@ -793,16 +797,22 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
 
 function getPlanBlueprintNextStep({
   hasRepRangeStyle,
+  isVolumeConfirmed,
   splitSummary,
 }: {
   hasRepRangeStyle: boolean;
+  isVolumeConfirmed: boolean;
   splitSummary: TrainingSplitSummary | null;
 }): string {
   if (!splitSummary) {
     return planBlueprintSummaryFallbacks.nextStep;
   }
 
-  return hasRepRangeStyle ? "Volume" : "Rep ranges";
+  if (!hasRepRangeStyle) {
+    return "Rep ranges";
+  }
+
+  return isVolumeConfirmed ? "Exercises" : "Volume";
 }
 
 function getPlanBlueprintSplitSummaryDetails(

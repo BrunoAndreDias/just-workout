@@ -691,6 +691,32 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("renders the Exercises placeholder on direct access when Volume is confirmed", async () => {
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "conservative",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectPlanBuilderPath(router, planBuilderPaths.exercises);
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+    expect(
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
+        "Exercises",
+      ),
+    ).toHaveAttribute("aria-current", "step");
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expect(summary).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Conservative");
+    expect(screen.queryByText(/generated training plan/i)).not.toBeInTheDocument();
+  });
+
   it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
