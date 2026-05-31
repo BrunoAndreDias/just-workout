@@ -26,9 +26,11 @@ import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
 import {
   createDefaultExerciseSelectionPreferences,
+  deriveMovementPatternCoverage,
   type ExerciseSelectionPreferences,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
+  type MovementPatternCoverageGroup,
 } from "./exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
@@ -268,10 +270,15 @@ const readOnlyExercisesStatusCards = [
     title: "Plan status",
   },
   {
-    body: "Step 5 stays focused on strategy and equipment only. Day-by-day workouts and final exercise choices do not appear here.",
+    body: "Step 5 stays focused on strategy, equipment, and movement coverage only. Day-by-day workouts and final exercise choices do not appear here.",
     title: "Step scope",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
+
+const movementPatternCoverageStatusStyles = {
+  direct: "border-[#c7ebdf] bg-[#eff9f3] text-[#0f6d54]",
+  indirect: "border-[#e7dcc8] bg-[#f9f3e8] text-[#8a5a2b]",
+} as const;
 
 const volumePresetDescriptions = {
   balanced:
@@ -562,6 +569,7 @@ type WeeklyVolumeTargetsStepProps = {
 };
 
 type ReadOnlyExercisesStepProps = {
+  movementPatternCoverage: ReadonlyArray<MovementPatternCoverageGroup>;
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
 };
@@ -883,6 +891,16 @@ export function PlanBuilderExercisesRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const exerciseSelectionPreferences =
     blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
+  const trainingVolumeConfiguration =
+    blueprint && isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
+  const movementPatternCoverage =
+    blueprint && trainingVolumeConfiguration
+      ? deriveMovementPatternCoverage({
+          split: getVisibleTrainingSplitId(blueprint),
+          strategy: exerciseSelectionPreferences.strategy,
+          weeklyRepTargets: trainingVolumeConfiguration.weeklyRepTargets,
+        })
+      : [];
 
   async function handleContinueToReview() {
     await confirmSelectedExerciseSelectionPreferences({
@@ -897,16 +915,23 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Review the read-only exercise-selection defaults that Just Workout will carry forward in
-          this Plan Blueprint before Review.
+          Review the read-only exercise-selection defaults and derived movement coverage that Just
+          Workout will use later before Review.
         </p>
       }
       summary={summary}
     >
-      <ReadOnlyExercisesStep
-        exerciseSelectionPreferences={exerciseSelectionPreferences}
-        onContinueToReview={handleContinueToReview}
-      />
+      {blueprint && trainingVolumeConfiguration ? (
+        <ReadOnlyExercisesStep
+          exerciseSelectionPreferences={exerciseSelectionPreferences}
+          movementPatternCoverage={movementPatternCoverage}
+          onContinueToReview={handleContinueToReview}
+        />
+      ) : (
+        <p className="text-sm font-semibold text-stone-600">
+          Loading Exercise Selection Preferences...
+        </p>
+      )}
     </PlanBuilderPage>
   );
 }
@@ -2258,10 +2283,12 @@ function WeeklyVolumeTargetsStep({
 
 function ReadOnlyExercisesStep({
   exerciseSelectionPreferences,
+  movementPatternCoverage,
   onContinueToReview,
 }: ReadOnlyExercisesStepProps) {
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
       <div className="min-w-0 space-y-4">
@@ -2305,6 +2332,70 @@ function ReadOnlyExercisesStep({
                 <ReadOnlyExercisesHighlight key={highlight.title} {...highlight} />
               ))}
             </div>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="movement-pattern-coverage-title"
+          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3
+                className="text-xl font-black text-stone-950 sm:text-2xl"
+                id="movement-pattern-coverage-title"
+              >
+                Movement pattern coverage
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm text-stone-600">
+                Derived from the current Training Split, strategy, and Weekly Rep Targets. This view
+                stays read-only in v1 and does not promise final exercise slots.
+              </p>
+            </div>
+            <span className="rounded-full border border-stone-900/10 bg-[#f4f0e8] px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-stone-700">
+              Read-only in v1
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {movementPatternCoverage.map((group) => (
+              <section
+                aria-labelledby={`${group.id}-movement-patterns-title`}
+                className="rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-5"
+                key={group.id}
+              >
+                <h4
+                  className="text-lg font-black text-stone-950"
+                  id={`${group.id}-movement-patterns-title`}
+                >
+                  {group.title}
+                </h4>
+                <p className="mt-2 text-sm leading-6 text-stone-700">{group.sessionBias}</p>
+
+                <ul aria-label={group.title} className="mt-4 grid gap-3">
+                  {group.patterns.map((pattern) => (
+                    <li
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-900/10 bg-white px-4 py-3"
+                      key={pattern.id}
+                    >
+                      <span className="text-sm font-bold text-stone-950">{pattern.label}</span>
+                      <span
+                        className={cn(
+                          "rounded-full border px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide",
+                          pattern.isDirectlyTargeted
+                            ? movementPatternCoverageStatusStyles.direct
+                            : movementPatternCoverageStatusStyles.indirect,
+                        )}
+                      >
+                        {pattern.isDirectlyTargeted
+                          ? "Direct Weekly Rep Target"
+                          : "Indirect support only"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         </section>
 
