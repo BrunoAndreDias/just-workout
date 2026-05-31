@@ -726,6 +726,51 @@ describe("plan blueprint", () => {
     ).toBeNull();
   });
 
+  it("preserves Exercise Selection Preferences and invalidates Exercises when Split changes", () => {
+    const exerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym" as const,
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced" as const,
+    };
+    const blueprint = confirmExerciseSelectionPreferences({
+      blueprint: createConfirmedPlanBlueprint({
+        exerciseSelectionPreferences,
+      }),
+      timestamp: firstUpdateTimestamp,
+    });
+
+    const splitChangedBlueprint = selectTrainingSplit({
+      blueprint,
+      split: "rotating-push-pull-legs",
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(splitChangedBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      exerciseSelectionPreferences,
+      split: "rotating-push-pull-legs",
+    });
+    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "review")).toBe("split");
+
+    expect(
+      getPlanBuilderRedirectStep(
+        confirmTrainingSplit({
+          blueprint: splitChangedBlueprint,
+          split: "rotating-push-pull-legs",
+          timestamp: "2026-05-30T10:15:00.000Z",
+        }),
+        "review",
+      ),
+    ).toBe("exercises");
+  });
+
   it("preserves canonical Weekly Rep Targets when Rep ranges change while invalidating Volume confirmation", () => {
     const blueprint = createConfirmedPlanBlueprint({
       repRanges: "balanced_hypertrophy",

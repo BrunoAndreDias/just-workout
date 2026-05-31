@@ -1299,6 +1299,70 @@ describe("PlanBuilderRoute", () => {
     await expectReadOnlyExercisesStep();
   });
 
+  it("preserves Exercise Selection Preferences and keeps Review gated after Split changes", async () => {
+    const user = userEvent.setup();
+    const exerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym" as const,
+      preferredExercises: [{ id: "preferred-1", rawText: "Hack squat" }],
+      strategy: "balanced" as const,
+    };
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences,
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const splitView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      exerciseSelectionPreferences,
+      split: "rotating-push-pull-legs",
+    });
+
+    splitView.unmount();
+
+    const blockedReviewView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.review],
+    });
+
+    await expectPlanBuilderPath(blockedReviewView.router, planBuilderPaths.split);
+
+    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.rotatingPushPullLegs);
+
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+    await expectPlanBuilderPath(blockedReviewView.router, planBuilderPaths.repRanges);
+
+    blockedReviewView.unmount();
+
+    const reviewAfterSplitConfirmationView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.review],
+    });
+
+    await expectPlanBuilderPath(
+      reviewAfterSplitConfirmationView.router,
+      planBuilderPaths.exercises,
+    );
+    await expectReadOnlyExercisesStep();
+  });
+
   it("preserves canonical Weekly Rep Targets after Rep ranges change and restores guarded Exercises access after reconfirmation", async () => {
     const user = userEvent.setup();
 
