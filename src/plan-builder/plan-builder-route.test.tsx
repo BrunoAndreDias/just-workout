@@ -1125,6 +1125,222 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
+  it("preserves saved Rep ranges and Volume data after Split changes and restores guarded Exercises access after reconfirmation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "strength_leaning",
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+      volumePreset: "conservative",
+    });
+
+    const splitView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+
+    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.alternatingFullBodyAB);
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: false,
+          volume: true,
+        },
+        repRanges: "strength_leaning",
+        split: "alternating-full-body-a-b",
+        trainingFrequencyDaysPerWeek: 3,
+        volumePreset: "conservative",
+        volumePresetSource: "user_selected",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
+          { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
+        ]),
+      });
+    });
+
+    splitView.unmount();
+
+    const guardedExercisesView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
+
+    await waitFor(() => {
+      expect(guardedExercisesView.router.state.location.pathname).toBe(planBuilderPaths.split);
+    });
+    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+    expectTrainingSplitChecked(
+      await screen.findByRole("group", { name: /training split/i }),
+      trainingSplitLabels.alternatingFullBodyAB,
+    );
+
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.strengthLeaning);
+    expect(within(summary).getByText(trainingSplitLabels.alternatingFullBodyAB)).toBeVisible();
+    expect(within(summary).getByText("Conservative")).toBeVisible();
+
+    guardedExercisesView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+  });
+
+  it("preserves canonical Weekly Rep Targets after Rep ranges change and restores guarded Exercises access after reconfirmation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "higher_volume",
+    });
+
+    const repRangesView = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    });
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: false,
+          split: true,
+          volume: false,
+        },
+        repRanges: "controlled_higher_reps",
+        split: "upper-lower-4-day",
+        trainingFrequencyDaysPerWeek: 4,
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "chest", source: "preset", target: 120 },
+          { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 60 },
+        ]),
+      });
+    });
+
+    repRangesView.unmount();
+
+    const guardedExercisesView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
+
+    await waitFor(() => {
+      expect(guardedExercisesView.router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    expect(await screen.findByRole("group", { name: /rep range style/i })).toBeVisible();
+    expectRepRangeStyleChecked(
+      await screen.findByRole("group", { name: /rep range style/i }),
+      repRangeStyleLabels.controlledHigherReps,
+    );
+
+    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
+
+    const volumeView = await screen.findByRole("heading", { name: /weekly volume targets/i });
+    const requiredTargetsTable = await screen.findByRole("table", {
+      name: /required weekly rep targets/i,
+    });
+    const chestRow = getTableRowByLabel(requiredTargetsTable, "Chest");
+    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
+
+    expect(volumeView).toBeVisible();
+    expect(within(chestRow).getByText("120 reps/week")).toBeVisible();
+    expect(within(chestRow).getByText("8-12 sets/week")).toBeVisible();
+    expect(within(summary).getByText("Higher volume")).toBeVisible();
+
+    guardedExercisesView.unmount();
+
+    const guardedVolumeView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
+
+    await waitFor(() => {
+      expect(guardedVolumeView.router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+  });
+
+  it("marks Volume unconfirmed after Volume changes and restores guarded Exercises access after reconfirmation", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const volumeView = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+    const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
+    const requiredTargetsTable = await screen.findByRole("table", {
+      name: /required weekly rep targets/i,
+    });
+    const chestRow = getTableRowByLabel(requiredTargetsTable, "Chest");
+
+    await user.click(within(volumePresetGroup).getByText("Conservative"));
+
+    await waitFor(() => {
+      expect(within(volumePresetGroup).getByRole("radio", { name: /conservative/i })).toBeChecked();
+    });
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          frequency: true,
+          repRanges: true,
+          split: true,
+          volume: false,
+        },
+        volumePreset: "conservative",
+        volumePresetSource: "user_selected",
+        weeklyRepTargets: expect.arrayContaining([
+          { isEnabled: true, muscleGroup: "chest", source: "preset", target: 60 },
+          { isEnabled: true, muscleGroup: "shoulders", source: "preset", target: 30 },
+        ]),
+      });
+    });
+    expect(within(chestRow).getByText("60 reps/week")).toBeVisible();
+    expect(within(chestRow).getByText("5-8 sets/week")).toBeVisible();
+
+    volumeView.unmount();
+
+    const guardedExercisesView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
+
+    await waitFor(() => {
+      expect(guardedExercisesView.router.state.location.pathname).toBe(planBuilderPaths.volume);
+    });
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+    expect(
+      within(await screen.findByRole("group", { name: /volume preset/i })).getByRole("radio", {
+        name: /conservative/i,
+      }),
+    ).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /exercises step coming next/i }),
+    ).toBeVisible();
+  });
+
   it("navigates back from Weekly volume targets to Rep ranges", async () => {
     const user = userEvent.setup();
 
