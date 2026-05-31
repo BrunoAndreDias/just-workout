@@ -767,6 +767,7 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
   const hasRepRangeStyle = selectedRepRangeStyleId !== null;
+  const isVolumeConfirmed = isVolumeStepComplete(blueprint);
   const selectedVolumePresetId = isVolumePresetId(blueprint.volumePreset)
     ? blueprint.volumePreset
     : null;
@@ -775,9 +776,9 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     generationStatus: planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: getPlanBlueprintNextStep({
+      hasCompatibleSplit: splitSummary !== null,
       hasRepRangeStyle,
-      isVolumeConfirmed: isVolumeStepComplete(blueprint),
-      splitSummary,
+      isVolumeConfirmed,
     }),
     repRanges: hasRepRangeStyle
       ? formatRepRangeStyle(selectedRepRangeStyleId)
@@ -796,15 +797,15 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
 }
 
 function getPlanBlueprintNextStep({
+  hasCompatibleSplit,
   hasRepRangeStyle,
   isVolumeConfirmed,
-  splitSummary,
 }: {
+  hasCompatibleSplit: boolean;
   hasRepRangeStyle: boolean;
   isVolumeConfirmed: boolean;
-  splitSummary: TrainingSplitSummary | null;
 }): string {
-  if (!splitSummary) {
+  if (!hasCompatibleSplit) {
     return planBlueprintSummaryFallbacks.nextStep;
   }
 
@@ -812,7 +813,11 @@ function getPlanBlueprintNextStep({
     return "Rep ranges";
   }
 
-  return isVolumeConfirmed ? "Exercises" : "Volume";
+  if (isVolumeConfirmed) {
+    return "Exercises";
+  }
+
+  return "Volume";
 }
 
 function getPlanBlueprintSplitSummaryDetails(
