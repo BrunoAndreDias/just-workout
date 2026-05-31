@@ -29,6 +29,16 @@ export type TrainingVolumeConfiguration = {
   volumePresetSource: VolumePresetSource;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
 };
+export type TrainingVolumeConfigurationCandidate = {
+  volumePreset?: unknown;
+  volumePresetSource?: unknown;
+  weeklyRepTargets?: unknown;
+};
+export type NullableTrainingVolumeConfiguration = {
+  volumePreset: VolumePresetId | null;
+  volumePresetSource: VolumePresetSource | null;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+};
 export type VolumeEstimationRepRange = {
   max: number;
   min: number;
@@ -38,8 +48,8 @@ export type EstimatedSetRange = {
   min: number;
 };
 
-const largerDirectVolumeMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
-const smallerDirectVolumeMuscleGroups = ["shoulders", "biceps", "triceps"] as const;
+const largerVolumeTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
+const smallerVolumeTargetMuscleGroups = ["shoulders", "biceps", "triceps"] as const;
 const optionalVolumeMuscleGroups = ["calves", "abs"] as const;
 
 export const defaultVolumePresetId = "balanced" satisfies VolumePresetId;
@@ -76,6 +86,28 @@ export function isVolumePresetSource(value: unknown): value is VolumePresetSourc
   return value === "recommended_default" || value === "user_selected";
 }
 
+export function isTrainingVolumeConfiguration(
+  value: TrainingVolumeConfigurationCandidate,
+): value is TrainingVolumeConfiguration {
+  return (
+    isVolumePresetId(value.volumePreset) &&
+    isVolumePresetSource(value.volumePresetSource) &&
+    Array.isArray(value.weeklyRepTargets)
+  );
+}
+
+export function normalizeTrainingVolumeConfiguration({
+  volumePreset,
+  volumePresetSource,
+  weeklyRepTargets,
+}: TrainingVolumeConfigurationCandidate): NullableTrainingVolumeConfiguration {
+  return {
+    volumePreset: isVolumePresetId(volumePreset) ? volumePreset : null,
+    volumePresetSource: isVolumePresetSource(volumePresetSource) ? volumePresetSource : null,
+    weeklyRepTargets: Array.isArray(weeklyRepTargets) ? weeklyRepTargets : null,
+  };
+}
+
 export function getVolumePreset(volumePresetId: VolumePresetId): VolumePreset {
   const preset = volumePresets.find(({ id }) => id === volumePresetId);
 
@@ -92,13 +124,13 @@ export function createPresetWeeklyRepTargets(
   const preset = getVolumePreset(volumePresetId);
 
   return [
-    ...largerDirectVolumeMuscleGroups.map((muscleGroup) => ({
+    ...largerVolumeTargetMuscleGroups.map((muscleGroup) => ({
       isEnabled: true,
       muscleGroup,
       source: "preset" as const,
       target: preset.largerMuscleTarget,
     })),
-    ...smallerDirectVolumeMuscleGroups.map((muscleGroup) => ({
+    ...smallerVolumeTargetMuscleGroups.map((muscleGroup) => ({
       isEnabled: true,
       muscleGroup,
       source: "preset" as const,

@@ -7,8 +7,9 @@ import {
 import {
   createRecommendedTrainingVolumeConfiguration,
   getVolumePreset,
+  isTrainingVolumeConfiguration,
   isVolumePresetId,
-  isVolumePresetSource,
+  normalizeTrainingVolumeConfiguration,
   type VolumeEstimationRepRange,
   type VolumePresetId,
   type VolumePresetSource,
@@ -136,8 +137,14 @@ type ConfirmRepRangeStyleOptions = {
   timestamp: string;
 };
 
-type PlanBlueprintWithOptionalConfirmedSteps = Omit<PlanBlueprint, "confirmedBuilderSteps"> & {
+type StoredPlanBlueprint = Omit<
+  PlanBlueprint,
+  "confirmedBuilderSteps" | "volumePreset" | "volumePresetSource" | "weeklyRepTargets"
+> & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+  volumePreset?: unknown;
+  volumePresetSource?: unknown;
+  weeklyRepTargets?: unknown;
 };
 
 const defaultConfirmedBuilderSteps = {
@@ -356,28 +363,12 @@ type RepRangesStepCompletionCandidate = {
   repRanges: unknown;
 };
 
-export function normalizePlanBlueprint(
-  blueprint: PlanBlueprintWithOptionalConfirmedSteps,
-): PlanBlueprint {
+export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {
   return {
     ...blueprint,
-    volumePreset: isVolumePresetId(blueprint.volumePreset) ? blueprint.volumePreset : null,
-    volumePresetSource: isVolumePresetSource(blueprint.volumePresetSource)
-      ? blueprint.volumePresetSource
-      : null,
-    weeklyRepTargets: Array.isArray(blueprint.weeklyRepTargets) ? blueprint.weeklyRepTargets : null,
+    ...normalizeTrainingVolumeConfiguration(blueprint),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
   };
-}
-
-export function hasTrainingVolumeConfiguration(
-  blueprint: Pick<PlanBlueprint, "volumePreset" | "volumePresetSource" | "weeklyRepTargets">,
-): boolean {
-  return (
-    isVolumePresetId(blueprint.volumePreset) &&
-    isVolumePresetSource(blueprint.volumePresetSource) &&
-    Array.isArray(blueprint.weeklyRepTargets)
-  );
 }
 
 export function isFrequencyStepComplete(
@@ -537,7 +528,7 @@ export function initializeTrainingVolume({
   blueprint,
   timestamp,
 }: InitializeTrainingVolumeOptions): PlanBlueprint {
-  if (hasTrainingVolumeConfiguration(blueprint)) {
+  if (isTrainingVolumeConfiguration(blueprint)) {
     return blueprint;
   }
 

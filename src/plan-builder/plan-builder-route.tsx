@@ -32,7 +32,6 @@ import {
   getRepRangeStyle,
   getTrainingFrequencyRecommendation,
   getValidRepRangeStyleId,
-  hasTrainingVolumeConfiguration,
   hasValidTrainingFrequency,
   initializeTrainingVolume,
   type PlanBlueprint,
@@ -61,6 +60,7 @@ import {
   type TrainingSplitSchedule,
   unsupportedTrainingSplitCategories,
 } from "./training-split";
+import { isTrainingVolumeConfiguration } from "./training-volume";
 
 type PlanBlueprintSummaryStatusKey = "splitStatus" | "trainingFrequencyStatus";
 type PlanBlueprintSummaryStatus = NonNullable<PlanBlueprintSummary[PlanBlueprintSummaryStatusKey]>;
@@ -230,7 +230,7 @@ type RepRangeStyleMutationVariables = {
   timestamp: string;
 };
 
-type TimestampMutationVariables = {
+type InitializeTrainingVolumeMutationVariables = {
   timestamp: string;
 };
 
@@ -509,17 +509,17 @@ export function PlanBuilderRepRangesRoute() {
 
 export function PlanBuilderVolumeRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
-  const { mutate: initializeDefaultTrainingVolume } = useInitializeTrainingVolumeMutation();
+  const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
 
   useEffect(() => {
-    if (!blueprint || hasTrainingVolumeConfiguration(blueprint)) {
+    if (!blueprint || isTrainingVolumeConfiguration(blueprint)) {
       return;
     }
 
-    initializeDefaultTrainingVolume({
+    initializeTrainingVolumeDefaults({
       timestamp: new Date().toISOString(),
     });
-  }, [blueprint, initializeDefaultTrainingVolume]);
+  }, [blueprint, initializeTrainingVolumeDefaults]);
 
   return (
     <PlanBuilderPage
@@ -650,7 +650,7 @@ function useUpdateRepRangeStyleMutation() {
 }
 
 function useInitializeTrainingVolumeMutation() {
-  return usePlanBlueprintMutation<TimestampMutationVariables>({
+  return usePlanBlueprintMutation<InitializeTrainingVolumeMutationVariables>({
     mutationFn: ({ timestamp }) =>
       planBuilderService.initializeTrainingVolume({
         timestamp,
