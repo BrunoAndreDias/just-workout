@@ -20,12 +20,7 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
-import {
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import { type FormEvent as ReactFormEvent, type ReactNode, useEffect, useState } from "react";
 import { Button } from "../design-system/button";
 import { cn } from "../design-system/cn";
 import { Stepper } from "../design-system/stepper";
@@ -283,6 +278,13 @@ function normalizePreferredExerciseRawText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function createPreferredExercise(rawText: string): PreferredExercise {
+  return {
+    id: crypto.randomUUID(),
+    rawText,
+  };
+}
+
 const volumePresetDescriptions = {
   balanced:
     "Recommended middle of the source-backed weekly rep range for most muscle-building plans.",
@@ -464,6 +466,9 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
+type PreferredExercises = ExerciseSelectionPreferences["preferredExercises"];
+type PreferredExercise = PreferredExercises[number];
+
 type UpdateExerciseSelectionPreferencesMutationVariables = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   timestamp: string;
@@ -581,6 +586,12 @@ type ReadOnlyExercisesStepProps = {
   onContinueToReview: () => Promise<void>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   onRemovePreferredExercise: (preferredExerciseId: string) => Promise<void>;
+};
+
+type PreferredExercisesSectionProps = {
+  onAddPreferredExercise: (preferredExerciseRawText: string) => Promise<void>;
+  onRemovePreferredExercise: (preferredExerciseId: string) => Promise<void>;
+  preferredExercises: PreferredExercises;
 };
 
 type ReadOnlyExercisesHighlightProps = {
@@ -903,32 +914,29 @@ export function PlanBuilderExercisesRoute() {
   const exerciseSelectionPreferences =
     blueprint?.exerciseSelectionPreferences ?? createDefaultExerciseSelectionPreferences();
 
-  async function handleAddPreferredExercise(preferredExerciseRawText: string) {
+  async function savePreferredExercises(preferredExercises: PreferredExercises) {
     await saveExerciseSelectionPreferences({
       exerciseSelectionPreferences: {
         ...exerciseSelectionPreferences,
-        preferredExercises: [
-          ...exerciseSelectionPreferences.preferredExercises,
-          {
-            id: crypto.randomUUID(),
-            rawText: preferredExerciseRawText,
-          },
-        ],
+        preferredExercises,
       },
       timestamp: new Date().toISOString(),
     });
   }
 
+  async function handleAddPreferredExercise(preferredExerciseRawText: string) {
+    await savePreferredExercises([
+      ...exerciseSelectionPreferences.preferredExercises,
+      createPreferredExercise(preferredExerciseRawText),
+    ]);
+  }
+
   async function handleRemovePreferredExercise(preferredExerciseId: string) {
-    await saveExerciseSelectionPreferences({
-      exerciseSelectionPreferences: {
-        ...exerciseSelectionPreferences,
-        preferredExercises: exerciseSelectionPreferences.preferredExercises.filter(
-          ({ id }) => id !== preferredExerciseId,
-        ),
-      },
-      timestamp: new Date().toISOString(),
-    });
+    await savePreferredExercises(
+      exerciseSelectionPreferences.preferredExercises.filter(
+        ({ id }) => id !== preferredExerciseId,
+      ),
+    );
   }
 
   async function handleContinueToReview() {
@@ -2327,29 +2335,8 @@ function ReadOnlyExercisesStep({
   onContinueToReview,
   onRemovePreferredExercise,
 }: ReadOnlyExercisesStepProps) {
-  const [pendingPreferredExercise, setPendingPreferredExercise] = useState("");
   const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
   const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
-  const normalizedPendingPreferredExercise =
-    normalizePreferredExerciseRawText(pendingPreferredExercise);
-
-  async function handleAddPreferredExercise() {
-    if (normalizedPendingPreferredExercise.length === 0) {
-      return;
-    }
-
-    await onAddPreferredExercise(normalizedPendingPreferredExercise);
-    setPendingPreferredExercise("");
-  }
-
-  function handlePreferredExerciseKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") {
-      return;
-    }
-
-    event.preventDefault();
-    void handleAddPreferredExercise();
-  }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
@@ -2448,84 +2435,11 @@ function ReadOnlyExercisesStep({
           </div>
         </section>
 
-        <section
-          aria-labelledby="preferred-exercises-title"
-          className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
-        >
-          <div>
-            <h3
-              className="text-xl font-black text-stone-950 sm:text-2xl"
-              id="preferred-exercises-title"
-            >
-              Preferred Exercises
-            </h3>
-            <p className="mt-2 max-w-2xl text-sm text-stone-600">
-              Preferred Exercises are soft preferences, not guaranteed inclusions. Just Workout will
-              prioritize them when they fit your Plan Blueprint, equipment context, movement-pattern
-              balance, and Weekly Rep Targets.
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <div className="min-w-0">
-              <label
-                className="text-xs font-black uppercase tracking-wide text-stone-500"
-                htmlFor="preferred-exercise-input"
-              >
-                Add a Preferred Exercise
-              </label>
-              <input
-                className="mt-2 min-h-11 w-full rounded-md border border-stone-900/12 bg-white px-3 py-2 text-sm text-stone-950 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-950"
-                id="preferred-exercise-input"
-                onChange={(event) => {
-                  setPendingPreferredExercise(event.target.value);
-                }}
-                onKeyDown={handlePreferredExerciseKeyDown}
-                placeholder="e.g. Incline dumbbell press"
-                type="text"
-                value={pendingPreferredExercise}
-              />
-            </div>
-            <Button
-              disabled={normalizedPendingPreferredExercise.length === 0}
-              onClick={() => {
-                void handleAddPreferredExercise();
-              }}
-              type="button"
-            >
-              Add Preferred Exercise
-            </Button>
-          </div>
-
-          <div className="mt-5">
-            <p className="text-xs font-black uppercase tracking-wide text-stone-500">
-              Saved preferences
-            </p>
-            {exerciseSelectionPreferences.preferredExercises.length > 0 ? (
-              <ul aria-label="Preferred exercise chips" className="mt-3 flex flex-wrap gap-2.5">
-                {exerciseSelectionPreferences.preferredExercises.map((preferredExercise) => (
-                  <li key={preferredExercise.id}>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-[#006f78]/12 bg-[#edf8f7] py-1.5 pl-3 pr-1.5 text-sm font-semibold text-[#0a6268] shadow-sm">
-                      <span>{preferredExercise.rawText}</span>
-                      <button
-                        aria-label={`Remove ${preferredExercise.rawText}`}
-                        className="rounded-full bg-white px-2 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#0a6268] transition-colors hover:bg-[#dcefee] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a6268]"
-                        onClick={() => {
-                          void onRemovePreferredExercise(preferredExercise.id);
-                        }}
-                        type="button"
-                      >
-                        Remove
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-stone-600">No Preferred Exercises added yet.</p>
-            )}
-          </div>
-        </section>
+        <PreferredExercisesSection
+          onAddPreferredExercise={onAddPreferredExercise}
+          onRemovePreferredExercise={onRemovePreferredExercise}
+          preferredExercises={exerciseSelectionPreferences.preferredExercises}
+        />
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button asChild variant="outline">
@@ -2553,6 +2467,106 @@ function ReadOnlyExercisesStep({
         ))}
       </div>
     </div>
+  );
+}
+
+function PreferredExercisesSection({
+  onAddPreferredExercise,
+  onRemovePreferredExercise,
+  preferredExercises,
+}: PreferredExercisesSectionProps) {
+  const [pendingPreferredExercise, setPendingPreferredExercise] = useState("");
+  const normalizedPendingPreferredExercise =
+    normalizePreferredExerciseRawText(pendingPreferredExercise);
+
+  async function handlePreferredExerciseSubmit(event: ReactFormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (normalizedPendingPreferredExercise.length === 0) {
+      return;
+    }
+
+    await onAddPreferredExercise(normalizedPendingPreferredExercise);
+    setPendingPreferredExercise("");
+  }
+
+  return (
+    <section
+      aria-labelledby="preferred-exercises-title"
+      className="rounded-lg border border-stone-900/10 bg-white/78 p-6"
+    >
+      <div>
+        <h3
+          className="text-xl font-black text-stone-950 sm:text-2xl"
+          id="preferred-exercises-title"
+        >
+          Preferred Exercises
+        </h3>
+        <p className="mt-2 max-w-2xl text-sm text-stone-600">
+          Preferred Exercises are soft preferences, not guaranteed inclusions. Just Workout will
+          prioritize them when they fit your Plan Blueprint, equipment context, movement-pattern
+          balance, and Weekly Rep Targets.
+        </p>
+      </div>
+
+      <form
+        className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
+        onSubmit={(event) => {
+          void handlePreferredExerciseSubmit(event);
+        }}
+      >
+        <div className="min-w-0">
+          <label
+            className="text-xs font-black uppercase tracking-wide text-stone-500"
+            htmlFor="preferred-exercise-input"
+          >
+            Add a Preferred Exercise
+          </label>
+          <input
+            className="mt-2 min-h-11 w-full rounded-md border border-stone-900/12 bg-white px-3 py-2 text-sm text-stone-950 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-950"
+            id="preferred-exercise-input"
+            onChange={(event) => {
+              setPendingPreferredExercise(event.target.value);
+            }}
+            placeholder="e.g. Incline dumbbell press"
+            type="text"
+            value={pendingPreferredExercise}
+          />
+        </div>
+        <Button disabled={normalizedPendingPreferredExercise.length === 0} type="submit">
+          Add Preferred Exercise
+        </Button>
+      </form>
+
+      <div className="mt-5">
+        <p className="text-xs font-black uppercase tracking-wide text-stone-500">
+          Saved preferences
+        </p>
+        {preferredExercises.length > 0 ? (
+          <ul aria-label="Preferred exercise chips" className="mt-3 flex flex-wrap gap-2.5">
+            {preferredExercises.map((preferredExercise) => (
+              <li key={preferredExercise.id}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#006f78]/12 bg-[#edf8f7] py-1.5 pl-3 pr-1.5 text-sm font-semibold text-[#0a6268] shadow-sm">
+                  <span>{preferredExercise.rawText}</span>
+                  <button
+                    aria-label={`Remove ${preferredExercise.rawText}`}
+                    className="rounded-full bg-white px-2 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#0a6268] transition-colors hover:bg-[#dcefee] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0a6268]"
+                    onClick={() => {
+                      void onRemovePreferredExercise(preferredExercise.id);
+                    }}
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-stone-600">No Preferred Exercises added yet.</p>
+        )}
+      </div>
+    </section>
   );
 }
 
