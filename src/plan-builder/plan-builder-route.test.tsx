@@ -126,6 +126,13 @@ const singleSelectableTrainingSplitCases = [
 
 type PlanBuilderTestUser = ReturnType<typeof userEvent.setup>;
 
+type ConfirmedPlanBuilderProgressForTest = {
+  repRangeStyle: RepRangeStyleId;
+  split: TrainingSplitId;
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+  volumePreset: VolumePresetId;
+};
+
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
     await db.delete();
@@ -1058,7 +1065,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "higher_volume",
     });
 
-    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+    const frequencyView = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
     const frequencyGroup = await screen.findByRole("group", {
       name: /training frequency/i,
     });
@@ -1086,12 +1093,14 @@ describe("PlanBuilderRoute", () => {
       });
     });
 
-    firstView.unmount();
+    frequencyView.unmount();
 
-    const redirectedView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    const guardedExercisesView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
 
     await waitFor(() => {
-      expect(redirectedView.router.state.location.pathname).toBe(planBuilderPaths.frequency);
+      expect(guardedExercisesView.router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
 
@@ -1108,7 +1117,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText(trainingSplitLabels.rotatingPushPullLegs)).toBeVisible();
     expect(within(summary).getByText("Higher volume")).toBeVisible();
 
-    redirectedView.unmount();
+    guardedExercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     expect(
@@ -1729,16 +1738,11 @@ async function saveConfirmedFourDayUpperLowerTrainingSplit() {
 }
 
 async function saveConfirmedPlanBuilderProgressForTest({
-  repRangeStyle = "balanced_hypertrophy",
-  split = "upper-lower-4-day",
-  trainingFrequencyDaysPerWeek = 4,
-  volumePreset = "balanced",
-}: {
-  repRangeStyle?: RepRangeStyleId;
-  split?: TrainingSplitId;
-  trainingFrequencyDaysPerWeek?: TrainingFrequencyDaysPerWeek;
-  volumePreset?: VolumePresetId;
-}) {
+  repRangeStyle,
+  split,
+  trainingFrequencyDaysPerWeek,
+  volumePreset,
+}: ConfirmedPlanBuilderProgressForTest) {
   await planBuilderService.confirmSelectedTrainingFrequency({
     timestamp: "2026-05-31T09:00:00.000Z",
     trainingFrequencyDaysPerWeek,
