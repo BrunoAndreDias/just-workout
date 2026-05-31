@@ -5,6 +5,7 @@ import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 import {
   createRecommendedTrainingVolumeConfiguration,
+  createTrainingVolumeConfiguration,
   isTrainingVolumeConfiguration,
 } from "./training-volume";
 
@@ -201,6 +202,59 @@ describe("planBuilderService", () => {
       updatedAt: "2026-05-30T10:16:00.000Z",
     });
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(confirmedBlueprint);
+  });
+
+  it("preserves Exercise Selection Preferences while marking Exercises unconfirmed when Training Frequency changes", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const exerciseSelectionPreferences: ExerciseSelectionPreferences = {
+      avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [
+        { id: "preferred-1", matchedExerciseId: "exercise-7", rawText: "Hack squat" },
+      ],
+      strategy: "balanced",
+    };
+    const configuredBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      ...createTrainingVolumeConfiguration({
+        volumePreset: "higher_volume",
+        volumePresetSource: "user_selected",
+      }),
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences,
+      repRanges: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:16:30.000Z",
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(configuredBlueprint);
+
+    const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
+      timestamp: "2026-05-30T10:17:00.000Z",
+      trainingFrequencyDaysPerWeek: 5,
+    });
+
+    expect(updatedBlueprint).toEqual({
+      ...configuredBlueprint,
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: false,
+        repRanges: true,
+        split: false,
+        volume: true,
+      },
+      trainingFrequencyDaysPerWeek: 5,
+      updatedAt: "2026-05-30T10:17:00.000Z",
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(updatedBlueprint);
   });
 
   it("persists a changed training frequency for the next resume", async () => {
