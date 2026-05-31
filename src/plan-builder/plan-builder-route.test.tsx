@@ -1328,6 +1328,79 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
+  it("persists committed Preferred Exercise chip edits as draft state and re-gates Review after Exercises was confirmed", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await planBuilderService.confirmSelectedExerciseSelectionPreferences({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [{ id: "preferred-1", rawText: "Chest-supported row" }],
+        strategy: "balanced",
+      },
+      timestamp: "2026-05-31T09:06:00.000Z",
+    });
+
+    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(await screen.findByText("Chest-supported row")).toBeVisible();
+
+    await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    const preferredAddButton = screen.getAllByRole("button", { name: /^add$/i })[0];
+
+    if (!preferredAddButton) {
+      throw new Error("Expected the Preferred Exercise add button.");
+    }
+
+    await user.click(preferredAddButton);
+
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [
+          { rawText: "Chest-supported row" },
+          { rawText: "Incline dumbbell press" },
+        ],
+      },
+    });
+
+    firstView.unmount();
+
+    const reviewView = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+
+    await expectPlanBuilderPath(reviewView.router, planBuilderPaths.exercises);
+    expect(await screen.findByText("Chest-supported row")).toBeVisible();
+    expect(screen.getByText("Incline dumbbell press")).toBeVisible();
+
+    const preferredExercises = screen.getByRole("list", { name: /preferred exercise entries/i });
+    const existingPreference = within(preferredExercises)
+      .getByText("Chest-supported row")
+      .closest("li");
+
+    if (!existingPreference) {
+      throw new Error('Expected the "Chest-supported row" Preferred Exercise chip.');
+    }
+
+    await user.click(within(existingPreference).getByRole("button", { name: /^remove$/i }));
+
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
+  });
+
   it("blocks duplicate and conflicting exercise entries with inline validation", async () => {
     const user = userEvent.setup();
 

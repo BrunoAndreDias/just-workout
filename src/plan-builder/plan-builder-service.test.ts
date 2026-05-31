@@ -141,6 +141,88 @@ describe("planBuilderService", () => {
     expect(resumedBlueprint).toEqual(updatedBlueprint);
   });
 
+  it("persists committed Preferred Exercise draft add/remove changes while clearing confirmed Exercises", async () => {
+    const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const confirmedBlueprint: PlanBlueprint = {
+      ...initialBlueprint,
+      ...createRecommendedTrainingVolumeConfiguration(),
+      confirmedBuilderSteps: {
+        exercises: true,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        ...initialBlueprint.exerciseSelectionPreferences,
+        preferredExercises: [{ id: "preferred-1", rawText: "Chest-supported row" }],
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      updatedAt: "2026-05-30T10:15:30.000Z",
+    };
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(confirmedBlueprint);
+
+    const addedPreferredExerciseBlueprint =
+      await planBuilderService.updateExerciseSelectionPreferences({
+        exerciseSelectionPreferences: {
+          ...confirmedBlueprint.exerciseSelectionPreferences,
+          preferredExercises: [
+            ...confirmedBlueprint.exerciseSelectionPreferences.preferredExercises,
+            { id: "preferred-2", rawText: "Incline dumbbell press" },
+          ],
+        },
+        timestamp: "2026-05-30T10:16:00.000Z",
+      });
+
+    expect(addedPreferredExerciseBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [
+          { id: "preferred-1", rawText: "Chest-supported row" },
+          { id: "preferred-2", rawText: "Incline dumbbell press" },
+        ],
+      },
+    });
+
+    const removedPreferredExerciseBlueprint =
+      await planBuilderService.updateExerciseSelectionPreferences({
+        exerciseSelectionPreferences: {
+          ...addedPreferredExerciseBlueprint.exerciseSelectionPreferences,
+          preferredExercises:
+            addedPreferredExerciseBlueprint.exerciseSelectionPreferences.preferredExercises.filter(
+              (exercise) => exercise.id !== "preferred-1",
+            ),
+        },
+        timestamp: "2026-05-30T10:16:30.000Z",
+      });
+
+    expect(removedPreferredExerciseBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ id: "preferred-2", rawText: "Incline dumbbell press" }],
+      },
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toEqual(
+      removedPreferredExerciseBlueprint,
+    );
+  });
+
   it("persists the final Step 5 Exercise Selection Preferences when Exercises is confirmed", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const configuredBlueprint: PlanBlueprint = {
