@@ -7,6 +7,7 @@ Optional parameters passed to functions should be scrutinised extremely carefull
 ---
 
 Don't export components or variables that are only used within the file.
+Components should be small, if it's too big we should break into smaller components.
 
 ---
 

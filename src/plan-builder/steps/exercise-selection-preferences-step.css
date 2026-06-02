@@ -1,0 +1,11 @@
+.exercise-selection-primary {
+  background: #fffdfa;
+}
+
+.exercise-selection-editor {
+  min-width: 0;
+}
+
+.exercise-selection-support {
+  align-content: start;
+}

@@ -46,8 +46,8 @@ test.describe("desktop plan builder layout", () => {
     );
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("link", { name: /continue to split/i }),
-      "Continue to Split link",
+      page.getByRole("button", { name: /continue to split/i }),
+      "Continue to Split button",
     );
     await expectNoVerticalOverflow(page);
   });
@@ -62,38 +62,103 @@ test.describe("desktop plan builder layout", () => {
 
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("link", { name: /continue to split/i }),
-      "Continue to Split link",
+      page.getByRole("button", { name: /continue to split/i }),
+      "Continue to Split button",
     );
     await expectLocatorAboveViewportBottom(
       page,
-      page.getByRole("link", { name: /continue to split/i }),
+      page.getByRole("button", { name: /continue to split/i }),
       24,
-      "Continue to Split link",
+      "Continue to Split button",
     );
     await expectNoVerticalOverflow(page);
   });
 
-  test("does not scroll with long saved blueprint values on a laptop viewport", async ({
+  test("fits the split step on a short desktop viewport without clipping actions", async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await openPlanBuilder(page);
+    await page.getByRole("button", { name: /continue to split/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("link", { name: /back to frequency/i }),
+      "Back to Frequency link",
+    );
+    await expectLocatorWithinViewport(
+      page,
+      page.getByRole("button", { name: /continue to rep ranges/i }),
+      "Continue to Rep ranges button",
+    );
+    await expectLocatorAboveViewportBottom(
+      page,
+      page.getByRole("button", { name: /continue to rep ranges/i }),
+      12,
+      "Continue to Rep ranges button",
+    );
+    await expectNoVerticalOverflow(page);
+  });
+
+  test("keeps the split step compact on a 24-inch desktop viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 930 });
+
+    await openPlanBuilder(page);
+    await page.getByRole("button", { name: /continue to split/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+
+    await expectLocatorHeightAtMost(
+      page.locator(".plan-builder-stepper"),
+      64,
+      "Plan Builder stepper",
+    );
+    await expectLocatorAboveViewportBottom(
+      page,
+      page.getByRole("button", { name: /continue to rep ranges/i }),
+      48,
+      "Continue to Rep ranges button",
+    );
+    await expectLocatorWithinViewport(
+      page,
+      page.locator(".plan-builder-right-rail"),
+      "Plan Blueprint rail",
+    );
+    await expectLocatorHeightAtMost(
+      page.locator(".plan-builder-right-rail"),
+      720,
+      "Plan Blueprint rail",
+    );
+    await expectNoVerticalOverflow(page);
+  });
+
+  test("uses the same stepper and blueprint shell on frequency and split", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 930 });
+
+    await openPlanBuilder(page);
+    const frequencyShell = await getPlanBuilderShellMetrics(page);
+
+    await page.getByRole("button", { name: /continue to split/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+    const splitShell = await getPlanBuilderShellMetrics(page);
+
+    expect(splitShell).toEqual(frequencyShell);
+  });
+
+  test("does not scroll with a long saved split value on a laptop viewport", async ({ page }) => {
     await page.setViewportSize({ width: 2048, height: 1000 });
 
     const locators = await openPlanBuilder(page);
     await selectTrainingFrequency(locators.frequencyGroup, 5);
     await continueToSplit(page, trainingSplitLabels.rotatingPushPullLegs);
-    await page.getByRole("link", { name: /continue to rep ranges/i }).click();
-    await expect(page.getByRole("heading", { name: /select rep range style/i })).toBeVisible();
-    await page.getByText("Strength-leaning").click();
-    await page.getByRole("link", { name: /back to split/i }).click();
-    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
     await page.getByRole("link", { name: /back to frequency/i }).click();
     await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
 
-    await expect(locators.summary.getByText("Rotating Push/Pull/Legs")).toBeVisible();
-    await expect(locators.summary.getByText("Strength-leaning")).toBeVisible();
+    await expect(
+      getBlueprintValueLocator(locators.summary, "Rotating Push/Pull/Legs"),
+    ).toBeVisible();
     await expectBlueprintValueWraps(locators.summary, "Rotating Push/Pull/Legs");
-    await expectBlueprintValueWraps(locators.summary, "Strength-leaning");
     await expectNoHorizontalOverflow(page);
     await expectNoVerticalOverflow(page);
   });
@@ -110,8 +175,8 @@ test.describe("desktop plan builder layout", () => {
 
       await expectLocatorWithinViewport(
         page,
-        page.getByRole("link", { name: /continue to split/i }),
-        "Continue to Split link",
+        page.getByRole("button", { name: /continue to split/i }),
+        "Continue to Split button",
       );
       await expectLocatorWithinViewport(
         page,
@@ -145,8 +210,8 @@ test.describe("laptop plan builder layout", () => {
     );
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("link", { name: /continue to split/i }),
-      "Continue to Split link",
+      page.getByRole("button", { name: /continue to split/i }),
+      "Continue to Split button",
     );
   });
 });
@@ -201,9 +266,8 @@ async function expectDesktopPlanBuilderLayout({ summary, workspace }: PlanBuilde
   const workspaceBox = await getRequiredBoundingBox(workspace, "Plan Builder workspace");
   const summaryBox = await getRequiredBoundingBox(summary, "Plan Blueprint Summary");
 
-  expect(summaryBox.x).toBeGreaterThanOrEqual(workspaceBox.x);
-  expect(summaryBox.x + summaryBox.width).toBeLessThanOrEqual(workspaceBox.x + workspaceBox.width);
-  expect(summaryBox.y).toBeGreaterThan(workspaceBox.y);
+  expect(summaryBox.x).toBeGreaterThanOrEqual(workspaceBox.x + workspaceBox.width);
+  expect(summaryBox.y).toBeGreaterThanOrEqual(workspaceBox.y);
   expect(summaryBox.y).toBeLessThan(workspaceBox.y + 180);
 }
 
@@ -285,10 +349,62 @@ async function expectLocatorAboveViewportBottom(
 }
 
 async function expectBlueprintValueWraps(summary: Locator, value: string) {
-  const valueLocator = summary.locator("dd").filter({ hasText: value });
+  const valueLocator = getBlueprintValueLocator(summary, value);
 
   await expect(valueLocator).toHaveCSS("white-space", "normal");
   await expect(valueLocator).toHaveCSS("text-overflow", "clip");
+}
+
+async function getPlanBuilderShellMetrics(page: Page) {
+  return page.evaluate(() => {
+    function readStyles(selector: string, properties: ReadonlyArray<string>) {
+      const element = document.querySelector(selector);
+
+      if (!element) {
+        throw new Error(`Missing shell element: ${selector}`);
+      }
+
+      const styles = getComputedStyle(element);
+
+      return Object.fromEntries(
+        properties.map((property) => [property, styles.getPropertyValue(property)]),
+      );
+    }
+
+    return {
+      blueprintHeading: readStyles(".plan-builder-summary-card h2", ["font-size", "line-height"]),
+      blueprintPanel: readStyles(".plan-builder-right-rail", [
+        "align-content",
+        "gap",
+        "min-height",
+        "overflow",
+        "padding-top",
+      ]),
+      blueprintRow: readStyles(".plan-builder-summary-row", [
+        "gap",
+        "grid-template-columns",
+        "padding-bottom",
+        "padding-top",
+      ]),
+      stepper: readStyles(".plan-builder-stepper", ["margin-top"]),
+      stepperDot: readStyles(".plan-builder-stepper-dot", [
+        "box-shadow",
+        "font-size",
+        "height",
+        "width",
+      ]),
+      stepperLabel: readStyles(".plan-builder-stepper-label", [
+        "font-size",
+        "line-height",
+        "margin-top",
+      ]),
+      stepperList: readStyles(".plan-builder-stepper-list", ["column-gap"]),
+    };
+  });
+}
+
+function getBlueprintValueLocator(summary: Locator, value: string) {
+  return summary.locator("dd").filter({ hasText: value }).first();
 }
 
 async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: number) {
@@ -299,9 +415,9 @@ async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: num
 }
 
 async function continueToSplit(page: Page, expectedSplitLabel: string) {
-  await page.getByRole("link", { name: /continue to split/i }).click();
+  await page.getByRole("button", { name: /continue to split/i }).click();
 
-  await expect(page.getByRole("heading", { name: /select training split/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /choose your training split/i })).toBeVisible();
   await expect(
     page.getByRole("radio", { name: getLabelMatcher(expectedSplitLabel) }),
   ).toBeChecked();

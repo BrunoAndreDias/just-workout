@@ -1,0 +1,981 @@
+.plan-blueprint-header__fields {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.plan-blueprint-header,
+.plan-blueprint-header__fields,
+.plan-blueprint-header__field {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.plan-blueprint-header__field dd {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+@media (min-width: 1280px) and (max-height: 960px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1.35rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 860px) {
+  .plan-builder-summary-card dl {
+    margin-top: 0.75rem;
+  }
+
+  .plan-builder-summary-card dl > div {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.35rem;
+  }
+
+  .plan-builder-summary-card dd > span {
+    min-height: 2rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.75rem;
+    line-height: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 1100px) {
+  .plan-blueprint-header {
+    margin-top: 0.875rem;
+    min-height: 3.05rem;
+    padding: 0.55rem 0.9rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.9rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.4rem;
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.74rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .plan-blueprint-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    overflow: visible;
+  }
+
+  .plan-blueprint-header__title {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .plan-blueprint-header dl {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+    row-gap: 0.5rem;
+    overflow: visible;
+  }
+
+  .plan-blueprint-header__field {
+    border-left: 0;
+    padding-right: 0.5rem;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .plan-blueprint-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .plan-blueprint-header__title {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .plan-blueprint-header__fields {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .plan-blueprint-header__field {
+    border-left: 0;
+    padding-right: 0.5rem;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) and (max-height: 650px) {
+  .plan-blueprint-header {
+    margin-top: 0.35rem;
+    min-height: 2.15rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.78rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.3rem;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.62rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 640px) {
+  .plan-blueprint-header {
+    margin-top: 0.35rem;
+    min-height: 2.15rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.78rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.3rem;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.62rem;
+  }
+}
+
+.plan-blueprint-header__field:last-child dd {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-blueprint-header {
+    display: none;
+  }
+
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 1.35rem;
+  }
+
+  .plan-builder-next-card {
+    border-top: 1px solid rgba(28, 25, 23, 0.1);
+  }
+
+  .plan-builder-next-card h2 {
+    font-size: 1.35rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.75rem;
+    font-size: 0.92rem;
+    line-height: 1.45rem;
+  }
+
+  .plan-builder-summary-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .plan-builder-summary-row__icon {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+}
+
+@media (min-width: 1920px) and (min-height: 900px) {
+  .plan-builder-page--exercises .plan-blueprint-header {
+    display: flex;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card,
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card h2,
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card,
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card h2,
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card h2 {
+    font-size: 1.15rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dl {
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-row {
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dt {
+    font-size: 0.78rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    line-height: 0.98rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-next-card p {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.15rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-summary-row {
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.78rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    line-height: 0.98rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.15rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-summary-row {
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.78rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    line-height: 0.98rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 980px) {
+  .plan-builder-page--split .plan-builder-summary-card,
+  .plan-builder-page--split .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card h2,
+  .plan-builder-page--split .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-page--split .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .plan-builder-page--split .plan-builder-summary-card,
+  .plan-builder-page--split .plan-builder-next-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card h2,
+  .plan-builder-page--split .plan-builder-next-card h2 {
+    font-size: 1.15rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dl {
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dt {
+    font-size: 0.78rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-page--split .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    line-height: 0.98rem;
+  }
+
+  .plan-builder-page--split .plan-builder-next-card p {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 900px) {
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card,
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card h2,
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 901px) and (max-height: 1050px) {
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card,
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card {
+    padding: 1.5rem 1.35rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card h2,
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card h2 {
+    font-size: 1.5rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dl {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-row {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    gap: 0.8rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-row__icon {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dt {
+    font-size: 0.9rem;
+    line-height: 1.1rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-summary-card dd {
+    margin-top: 0.28rem;
+    font-size: 0.85rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page:not(.plan-builder-page--split) .plan-builder-next-card p {
+    margin-top: 0.8rem;
+    font-size: 0.9rem;
+    line-height: 1.35rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1599px) and (min-height: 760px) and (max-height: 879px) {
+  .plan-blueprint-header {
+    margin-top: 0.85rem;
+    min-height: 3.15rem;
+    padding: 0.55rem 0.95rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.7rem;
+    padding-right: 0.95rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 0.95rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.7rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.38rem;
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.74rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1599px) and (min-height: 880px) {
+  .plan-blueprint-header {
+    margin-top: 1.25rem;
+    min-height: 4.125rem;
+    padding: 0.95rem 1.4rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.9rem;
+    padding-right: 1.45rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 1.08rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.42rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.55rem;
+    padding-right: 1.05rem;
+    padding-left: 1.05rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 980px) {
+  .plan-blueprint-header {
+    margin-top: 1.5rem;
+    min-height: 4.375rem;
+    padding: 0.95rem 1.5rem;
+  }
+
+  .plan-blueprint-header__title {
+    gap: 0.875rem;
+    padding-right: 1.5rem;
+  }
+
+  .plan-blueprint-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .plan-blueprint-header__title > span:last-child {
+    padding: 0.42rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .plan-blueprint-header__field {
+    gap: 0.625rem;
+    padding-right: 1.4rem;
+    padding-left: 1.4rem;
+  }
+
+  .plan-blueprint-header__field dt,
+  .plan-blueprint-header__field dd {
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-blueprint-header {
+    display: none;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-blueprint-header {
+    display: none;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.65rem;
+    line-height: 1.12;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 1.25rem;
+  }
+
+  .plan-builder-summary-card dl > div {
+    grid-template-columns: 1.35rem minmax(0, 1fr) auto;
+    gap: 0.9rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .plan-builder-summary-card svg {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .plan-builder-summary-card dt,
+  .plan-builder-summary-card dd {
+    font-size: 0.95rem;
+  }
+
+  .plan-builder-summary-card dd > span {
+    max-width: 8.5rem;
+  }
+
+  .plan-builder-summary-card dd .inline-flex {
+    min-height: 2.25rem;
+    padding-right: 0.8rem;
+    padding-left: 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 1.25rem;
+    font-size: 0.98rem;
+    line-height: 1.65rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    border-color: rgba(28, 25, 23, 0.07);
+    background: rgba(255, 253, 250, 0.34);
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 1920px) and (min-height: 980px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 2rem 1.65rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.75rem;
+  }
+
+  .plan-builder-summary-card dl > div {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.25rem;
+    line-height: 1.08;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.85rem;
+  }
+
+  .plan-builder-summary-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-row__icon {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .plan-builder-summary-row__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.76rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .plan-builder-summary-card,
+  .plan-builder-next-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .plan-builder-summary-card h2,
+  .plan-builder-next-card h2 {
+    font-size: 1.15rem;
+    line-height: 1.05;
+  }
+
+  .plan-builder-summary-card dl {
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-summary-row {
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .plan-builder-summary-card dt {
+    font-size: 0.78rem;
+    line-height: 0.95rem;
+  }
+
+  .plan-builder-summary-card dd {
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    line-height: 0.98rem;
+  }
+
+  .plan-builder-next-card p {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page--exercises .plan-blueprint-header {
+    display: flex;
+  }
+}

@@ -1,0 +1,142 @@
+import { isRepRangeStyleId, isTrainingFrequencyDaysPerWeek } from "./plan-blueprint-options";
+import type {
+  ExercisesStepCompletionCandidate,
+  FrequencyStepCompletionCandidate,
+  PlanBlueprint,
+  PlanBuilderConfirmedSteps,
+  PlanBuilderGuardedStep,
+  PlanBuilderRedirectStep,
+  RepRangesStepCompletionCandidate,
+  SplitStepCompletionCandidate,
+  VolumeStepCompletionCandidate,
+} from "./plan-blueprint-types";
+import { isTrainingSplitCompatible } from "./training-split";
+import { isTrainingVolumeConfiguration } from "./training-volume";
+
+export const defaultConfirmedBuilderSteps = {
+  exercises: false,
+  frequency: false,
+  repRanges: false,
+  split: false,
+  volume: false,
+} satisfies PlanBuilderConfirmedSteps;
+
+export function hasValidTrainingFrequency(
+  blueprint: FrequencyStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return isTrainingFrequencyDaysPerWeek(blueprint.trainingFrequencyDaysPerWeek);
+}
+
+export function isFrequencyStepComplete(
+  blueprint: FrequencyStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint || !hasValidTrainingFrequency(blueprint)) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).frequency;
+}
+
+export function isSplitStepComplete(
+  blueprint: SplitStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return (
+    getConfirmedBuilderSteps(blueprint).split &&
+    isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)
+  );
+}
+
+export function isRepRangesStepComplete(
+  blueprint: RepRangesStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).repRanges && isRepRangeStyleId(blueprint.repRanges);
+}
+
+export function isVolumeStepComplete(
+  blueprint: VolumeStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).volume && isTrainingVolumeConfiguration(blueprint);
+}
+
+export function isExercisesStepComplete(
+  blueprint: ExercisesStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return getConfirmedBuilderSteps(blueprint).exercises;
+}
+
+export function getPlanBuilderRedirectStep(
+  blueprint: PlanBlueprint,
+  targetStep: PlanBuilderGuardedStep,
+): PlanBuilderRedirectStep | null {
+  if (!isFrequencyStepComplete(blueprint)) {
+    return "frequency";
+  }
+
+  if (targetStep === "split") {
+    return null;
+  }
+
+  if (!isSplitStepComplete(blueprint)) {
+    return "split";
+  }
+
+  if (targetStep === "rep-ranges") {
+    return null;
+  }
+
+  if (!isRepRangesStepComplete(blueprint)) {
+    return "rep-ranges";
+  }
+
+  if (targetStep === "volume") {
+    return null;
+  }
+
+  if (!isVolumeStepComplete(blueprint)) {
+    return "volume";
+  }
+
+  if (targetStep === "exercises") {
+    return null;
+  }
+
+  if (isExercisesStepComplete(blueprint)) {
+    return null;
+  }
+
+  return "exercises";
+}
+
+export function getConfirmedBuilderSteps({
+  confirmedBuilderSteps,
+}: {
+  confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
+}): PlanBuilderConfirmedSteps {
+  return {
+    exercises: confirmedBuilderSteps?.exercises === true,
+    frequency: confirmedBuilderSteps?.frequency === true,
+    repRanges: confirmedBuilderSteps?.repRanges === true,
+    split: confirmedBuilderSteps?.split === true,
+    volume: confirmedBuilderSteps?.volume === true,
+  };
+}

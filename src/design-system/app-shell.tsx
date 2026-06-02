@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import "./app-shell.css";
 
 type AppShellProps = {
   children: ReactNode;

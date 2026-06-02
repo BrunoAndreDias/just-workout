@@ -80,6 +80,30 @@ _Avoid_: Main target, accessory-only target
 The user-facing **Plan Builder** row for the baseline hamstrings **Weekly Rep Target**. It does not create a separate baseline glutes target; glute specialization would be an optional product-specific override.
 _Avoid_: Glutes baseline target, separate glutes target
 
+**Exercise Selection Preferences**:
+The choices in a **Plan Blueprint** that guide how **Just Workout** should select exercises when generating a **Training Plan**. **Exercise Selection Preferences** describe selection strategy, equipment context, user-preferred exercises, and user-avoided exercises; they are not the generated workout days or final exercise list.
+_Avoid_: Generated exercises, workout exercise list, final routine exercises
+
+**Equipment Preset**:
+The equipment environment a user chooses in the **Plan Blueprint** so **Just Workout** knows which exercise categories can be considered during later **Training Plan** generation.
+_Avoid_: Equipment checklist, gym inventory
+
+**Full Gym Equipment Preset**:
+An **Equipment Preset** indicating broad gym access, including free weights, machines, cables, pull-up options, and bodyweight movements. It expands eligible exercise selection without generating a **Training Plan** by itself.
+_Avoid_: All equipment selected, editable equipment list
+
+**Preferred Exercise**:
+An exercise the user wants **Just Workout** to consider during later **Training Plan** generation. A **Preferred Exercise** is a soft preference and can be used when it fits the **Plan Blueprint**, equipment context, movement-pattern balance, volume targets, safety, and progression.
+_Avoid_: Required exercise, guaranteed exercise
+
+**Avoided Exercise**:
+An exercise the user marks as painful, unavailable, or unsuitable. An **Avoided Exercise** is a hard exclusion; if no safe viable replacement exists during **Training Plan** generation, **Just Workout** should surface an **Exercise Selection Conflict** rather than silently include it.
+_Avoid_: Disliked exercise, low-priority exercise
+
+**Exercise Selection Conflict**:
+A blocker found when **Just Workout** cannot generate a safe viable **Training Plan** from the current **Exercise Selection Preferences**. The user must resolve the conflict by removing an exclusion, adjusting equipment or preferences, or explicitly accepting a lower-quality incomplete **Training Plan**.
+_Avoid_: Warning, validation message, generation error
+
 ## Example Dialogue
 
 Developer: "When the user finishes the Plan Builder, do we save the Plan Blueprint?"

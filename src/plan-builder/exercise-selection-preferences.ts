@@ -1,6 +1,5 @@
 import type { TrainingSplitId } from "./training-split";
 import type { WeeklyRepTarget } from "./training-volume";
-
 export type ExerciseSelectionStrategyId = "balanced";
 export type EquipmentPresetId = "full_gym";
 export type IncludedEquipmentId =
@@ -81,34 +80,28 @@ export type MovementPatternCoverageGroup = {
   sessionBias: string;
   title: string;
 };
-
 type CreateExerciseSelectionPreferenceItemOptions = {
   id: string;
   matchedExerciseId?: string;
   rawText: string;
 };
-
 type MovementPatternCoverageDefinition = {
   id: MovementPatternId;
   label: string;
   volumeTargets: ReadonlyArray<WeeklyRepTarget["muscleGroup"]>;
 };
-
 type MovementPatternCoverageStrategyDefinition = Record<
   MovementPatternCoverageGroupId,
   ReadonlyArray<MovementPatternCoverageDefinition>
 >;
-
 const movementPatternCoverageGroupOrder = [
   "upper_body",
   "lower_body",
 ] as const satisfies ReadonlyArray<MovementPatternCoverageGroupId>;
-
 const movementPatternCoverageGroupTitles = {
   lower_body: "Lower body movement patterns",
   upper_body: "Upper body movement patterns",
 } satisfies Record<MovementPatternCoverageGroupId, string>;
-
 const movementPatternCoverageDefinitionsByStrategy = {
   balanced: {
     lower_body: [
@@ -134,7 +127,6 @@ const movementPatternCoverageDefinitionsByStrategy = {
     ],
   },
 } as const satisfies Record<ExerciseSelectionStrategyId, MovementPatternCoverageStrategyDefinition>;
-
 const movementPatternSessionBiasBySplit = {
   "alternating-full-body-a-b": {
     lower_body:
@@ -170,14 +162,12 @@ const movementPatternSessionBiasBySplit = {
       "Covered across the split's upper and full-body sessions so upper-body work stays balanced.",
   },
 } as const satisfies Record<TrainingSplitId, Record<MovementPatternCoverageGroupId, string>>;
-
 export const defaultExerciseSelectionStrategyId = "balanced" satisfies ExerciseSelectionStrategyId;
 export const defaultEquipmentPresetId = "full_gym" satisfies EquipmentPresetId;
 export const emptyExerciseSelectionPendingInputs = {
   avoidedExercise: "",
   preferredExercise: "",
 } as const satisfies ExerciseSelectionPendingInputs;
-
 export const exerciseSelectionStrategies = [
   {
     description:
