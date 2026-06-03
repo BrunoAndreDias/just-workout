@@ -3,13 +3,114 @@
 :root {
   color: #1d1a16;
   background: #f4f0e8;
-  font-family:
-    "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--jw-font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --jw-font-heading: "Sora", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  --jw-font-body:
+    "Inter", "Manrope", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --jw-heading-tracking: -0.03em;
+  --jw-body-size: 0.875rem;
+  --jw-body-line-height: 1.5rem;
+  --jw-meta-size: 0.75rem;
+  --jw-meta-line-height: 1rem;
+  --jw-card-title-size: 1rem;
+  --jw-card-title-line-height: 1.375rem;
+  --jw-section-title-size: 1.125rem;
+  --jw-section-title-line-height: 1.5rem;
+  --jw-page-title-size: 2rem;
+  --jw-page-title-line-height: 2.375rem;
+  --jw-page-lead-size: 0.875rem;
+  --jw-page-lead-line-height: 1.3125rem;
+  --jw-page-padding-x: 1.75rem;
+  --jw-page-padding-y: 1.25rem;
+  --jw-content-gap: 1.25rem;
+  --jw-section-gap: 1.125rem;
+  --jw-card-padding: 1.125rem;
+  --jw-card-padding-compact: 0.875rem;
+  --jw-panel-padding: 1rem;
+  --jw-button-height-sm: 2.25rem;
+  --jw-button-height-md: 2.625rem;
+  --jw-button-height-lg: 3rem;
+  --jw-button-padding-x-sm: 0.75rem;
+  --jw-button-padding-x-md: 1rem;
+  --jw-button-padding-x-lg: 1.25rem;
+  --jw-chip-height: 1.5rem;
+  --jw-chip-padding-x: 0.5rem;
+  --jw-icon-sm: 1rem;
+  --jw-icon-md: 1.25rem;
+  --jw-icon-lg: 1.75rem;
+  --jw-icon-circle-sm: 2.25rem;
+  --jw-icon-circle-md: 2.75rem;
+  --jw-icon-circle-lg: 3.5rem;
+  --jw-sidebar-width: 14.75rem;
+  --jw-sidebar-nav-height: 3rem;
+  --jw-sidebar-padding-x: 1rem;
+  --jw-sidebar-padding-y: 1.125rem;
+  --jw-builder-page-max-width: 86rem;
+  --jw-builder-rail-width: 18rem;
+  --jw-builder-content-gap: 1.125rem;
+  --jw-builder-section-gap: 0.875rem;
+  --jw-builder-card-padding: 0.875rem;
+  --jw-builder-compact-card-padding: 0.75rem;
+  --jw-builder-page-title-size: 2.375rem;
+  --jw-builder-page-title-line-height: 2.75rem;
+  --jw-builder-section-title-size: 1.75rem;
+  --jw-builder-section-title-line-height: 2.125rem;
+  --jw-builder-body-size: 0.9375rem;
+  --jw-builder-body-line-height: 1.375rem;
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --jw-page-title-size: 2.125rem;
+    --jw-page-title-line-height: 2.5rem;
+    --jw-page-lead-size: 0.9375rem;
+    --jw-page-lead-line-height: 1.4375rem;
+    --jw-page-padding-x: 2rem;
+    --jw-page-padding-y: 1.5rem;
+    --jw-content-gap: 1.5rem;
+    --jw-section-gap: 1.25rem;
+    --jw-card-padding: 1.25rem;
+    --jw-panel-padding: 1.125rem;
+    --jw-sidebar-width: 16rem;
+    --jw-sidebar-nav-height: 3.25rem;
+    --jw-builder-page-max-width: 94rem;
+    --jw-builder-rail-width: 20rem;
+    --jw-builder-content-gap: 1.5rem;
+    --jw-builder-section-gap: 1.125rem;
+    --jw-builder-card-padding: 1rem;
+    --jw-builder-page-title-size: 2.5rem;
+    --jw-builder-page-title-line-height: 2.875rem;
+    --jw-builder-section-title-size: 1.875rem;
+    --jw-builder-section-title-line-height: 2.25rem;
+    --jw-builder-body-size: 1rem;
+    --jw-builder-body-line-height: 1.5rem;
+  }
+}
+
+@media (min-width: 2200px) {
+  :root {
+    --jw-page-title-size: 2.25rem;
+    --jw-page-title-line-height: 2.625rem;
+    --jw-page-lead-size: 1rem;
+    --jw-page-lead-line-height: 1.5rem;
+    --jw-page-padding-x: 2.5rem;
+    --jw-page-padding-y: 1.75rem;
+    --jw-content-gap: 1.75rem;
+    --jw-section-gap: 1.5rem;
+    --jw-card-padding: 1.375rem;
+    --jw-panel-padding: 1.25rem;
+    --jw-sidebar-width: 17rem;
+    --jw-sidebar-nav-height: 3.5rem;
+    --jw-icon-md: 1.375rem;
+    --jw-builder-page-max-width: 104rem;
+    --jw-builder-rail-width: 20rem;
+    --jw-builder-content-gap: 1.75rem;
+    --jw-builder-section-gap: 1.25rem;
+  }
 }
 
 * {
@@ -25,11 +126,40 @@ body {
   min-height: 100vh;
   margin: 0;
   background: #faf8f4;
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+  font-feature-settings: "ss01", "cv11", "calt";
+  font-optical-sizing: auto;
 }
 
 button,
 input {
   font: inherit;
+}
+
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+.jw-heading-font {
+  font-family: var(--jw-font-heading);
+}
+
+.jw-body-font {
+  font-family: var(--jw-font-body);
 }
 
 #root {

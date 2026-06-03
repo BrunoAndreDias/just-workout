@@ -1,7 +1,7 @@
 .training-split-option__control {
   display: flex;
-  height: 1.85rem;
-  width: 1.85rem;
+  height: var(--jw-icon-circle-sm);
+  width: var(--jw-icon-circle-sm);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;

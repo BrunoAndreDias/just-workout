@@ -17,7 +17,10 @@ export function StepPanel({ as = "section", className, ...props }: StepPanelProp
 
   return (
     <Component
-      className={cn("step-panel rounded-lg border border-stone-900/10 bg-white/78 p-6", className)}
+      className={cn(
+        "step-panel rounded-lg border border-stone-900/10 bg-white/78 p-[var(--jw-card-padding)]",
+        className,
+      )}
       {...props}
     />
   );
@@ -27,7 +30,7 @@ export function StepActions({ className, ...props }: React.HTMLAttributes<HTMLDi
   return (
     <div
       className={cn(
-        "step-actions flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "step-actions flex flex-col-reverse gap-[var(--jw-card-padding-compact)] sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
       {...props}
@@ -48,20 +51,20 @@ export function StepNotice({
   return (
     <div
       className={cn(
-        "step-notice flex gap-4 rounded-lg border border-[#f0cfad] bg-[#fff8f1] px-5 py-[14px] text-[#8a4a18]",
+        "step-notice flex gap-3 rounded-lg border border-[#f0cfad] bg-[#fff8f1] px-[var(--jw-card-padding)] py-[var(--jw-card-padding-compact)] text-[#8a4a18]",
         hasVisibleTitle ? "items-start" : "items-center",
         className,
       )}
       {...props}
     >
       {icon ? (
-        <span className="step-notice__icon flex h-8 w-8 shrink-0 items-center justify-center text-[#db7a1d]">
+        <span className="step-notice__icon flex h-[var(--jw-icon-circle-sm)] w-[var(--jw-icon-circle-sm)] shrink-0 items-center justify-center text-[#db7a1d]">
           {icon}
         </span>
       ) : null}
       <div className="min-w-0">
         {hasVisibleTitle ? (
-          <h4 className="step-notice__title text-sm font-bold uppercase tracking-wide text-[#9a612c]">
+          <h4 className="step-notice__title text-[var(--jw-meta-size)] font-bold uppercase leading-[var(--jw-meta-line-height)] tracking-[0.04em] text-[#9a612c]">
             {title}
           </h4>
         ) : (
@@ -69,7 +72,7 @@ export function StepNotice({
         )}
         <p
           className={cn(
-            "step-notice__body text-base font-medium leading-7",
+            "step-notice__body text-[var(--jw-body-size)] font-medium leading-[var(--jw-body-line-height)]",
             hasVisibleTitle ? "mt-1" : null,
           )}
         >

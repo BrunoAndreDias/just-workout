@@ -63,20 +63,25 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
     >
       <section
         aria-label="Plan Builder workspace"
-        className="plan-builder-workspace-card min-w-0 p-6 sm:p-8 lg:min-h-screen lg:px-8 lg:pb-3 lg:pt-11 xl:px-[3.125rem]"
+        className="plan-builder-workspace-card"
       >
-        <header className="space-y-2">
+        <header className="plan-builder-header">
           <PageKicker className="plan-builder-eyebrow">Workout Plan Builder</PageKicker>
-          <PageTitle className="plan-builder-title sm:text-[2.5rem]">{pageTitle}</PageTitle>
+          <PageTitle className="plan-builder-title">{pageTitle}</PageTitle>
           {intro}
-          <PlanBlueprintHeaderBar summary={summary} />
+          {!shouldShowPlanBuilderRail ? <PlanBlueprintHeaderBar summary={summary} /> : null}
         </header>
 
-        <div className="plan-builder-stepper mt-7">
-          <Stepper currentIndex={currentStepIndex} items={planBuilderSteps} label="Plan Builder" />
+        <div className="plan-builder-stepper">
+          <Stepper
+            currentIndex={currentStepIndex}
+            density="compact"
+            items={planBuilderSteps}
+            label="Plan Builder"
+          />
         </div>
 
-        <div className="plan-builder-step-content mt-9">{children}</div>
+        <div className="plan-builder-step-content">{children}</div>
       </section>
 
       {shouldShowPlanBuilderRail ? (

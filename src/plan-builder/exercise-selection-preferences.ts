@@ -33,9 +33,13 @@ export type ExerciseSelectionPreferenceItem = {
 };
 export type ExerciseSelectionPreferenceListId = "avoidedExercises" | "preferredExercises";
 export type ExerciseCatalogMuscleGroupId =
+  | "abs"
   | "back"
   | "biceps"
+  | "calves"
   | "chest"
+  | "forearms"
+  | "glutes"
   | "hamstrings"
   | "quadriceps"
   | "shoulders"
@@ -313,6 +317,26 @@ export const exerciseCatalogMuscleGroups = [
     ],
     id: "triceps",
     title: "Triceps",
+  },
+  {
+    exercises: [],
+    id: "forearms",
+    title: "Forearms",
+  },
+  {
+    exercises: [],
+    id: "abs",
+    title: "Abs",
+  },
+  {
+    exercises: [],
+    id: "glutes",
+    title: "Glutes",
+  },
+  {
+    exercises: [],
+    id: "calves",
+    title: "Calves",
   },
 ] as const satisfies ReadonlyArray<ExerciseCatalogMuscleGroup>;
 

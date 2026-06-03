@@ -76,7 +76,7 @@ const weeklyVolumeExcludedContentPatterns = [
 ] as const;
 
 const exercisesStepExcludedContentPatterns = [
-  /upper a/i,
+  /\bupper a\b/i,
   /lower a/i,
   /generated training plan/i,
   /final exercise list/i,

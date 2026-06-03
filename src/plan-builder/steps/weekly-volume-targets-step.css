@@ -2,6 +2,36 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.training-volume-panel h3,
+.training-volume-panel h4,
+.training-volume-panel h5,
+.training-volume-section-title,
+.volume-preset-option__title {
+  font-family: var(--jw-font-heading);
+  font-weight: 700;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-volume-section-title,
+.training-volume-panel h3 {
+  font-size: var(--jw-section-title-size);
+  line-height: var(--jw-section-title-line-height);
+}
+
+.training-volume-panel h4,
+.volume-preset-option__title {
+  font-size: var(--jw-card-title-size);
+  line-height: var(--jw-card-title-line-height);
+}
+
+.training-volume-section-copy,
+.volume-preset-option__copy,
+.training-volume-table-wrap,
+.training-volume-how li {
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
 .training-volume-panel {
   min-width: 0;
 }

@@ -1,8 +1,20 @@
 import { Link } from "@tanstack/react-router";
+import {
+  AlarmClock,
+  ArrowLeft,
+  ArrowRight,
+  ChartNoAxesColumnIncreasing,
+  Dumbbell,
+  Scale,
+  Shield,
+  Target,
+  TriangleAlert,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
+import { BodyPartSelector } from "../components/BodyPartSelector";
 import {
   PlanBuilderStepStatusCard,
   type PlanBuilderStepStatusCardProps,
@@ -10,8 +22,6 @@ import {
 import {
   type AutomaticExerciseSelectionRule,
   commitPendingExerciseSelectionPreferences,
-  type ExerciseCatalogMuscleGroup,
-  type ExerciseCatalogMuscleGroupId,
   type ExerciseSelectionPendingInputId,
   type ExerciseSelectionPendingInputs,
   type ExerciseSelectionPreferenceItem,
@@ -19,7 +29,6 @@ import {
   type ExerciseSelectionPreferences,
   type ExerciseSelectionPreferenceValidationErrors,
   emptyExerciseSelectionPendingInputs,
-  exerciseCatalogMuscleGroups,
   getEquipmentPreset,
   getExerciseSelectionStrategy,
   hasExerciseSelectionPreferenceValidationErrors,
@@ -29,70 +38,6 @@ import {
 import { planBuilderPaths } from "../plan-builder-paths";
 import { MovementPatternCoverageSection } from "./movement-pattern-coverage";
 import "./exercise-selection-preferences-step.css";
-
-const defaultSelectedCatalogMuscleGroupId = "chest" satisfies ExerciseCatalogMuscleGroupId;
-
-const bodyMuscleHotspots = [
-  {
-    d: "M162 158 C176 146 204 146 218 158 C216 180 209 195 190 198 C171 195 164 180 162 158 Z",
-    id: "chest",
-    targets: [{ height: 64, left: 158, top: 146, width: 64 }],
-    title: "Chest",
-  },
-  {
-    d: "M424 152 C444 139 478 139 498 152 C505 183 503 215 493 244 C474 257 448 257 429 244 C419 215 417 183 424 152 Z",
-    id: "back",
-    targets: [{ height: 108, left: 422, top: 142, width: 82 }],
-    title: "Back",
-  },
-  {
-    d: "M132 149 C143 132 162 132 170 151 C164 164 154 171 140 169 C130 165 126 157 132 149 Z M210 151 C218 132 237 132 248 149 C254 157 250 165 240 169 C226 171 216 164 210 151 Z",
-    id: "shoulders",
-    targets: [{ height: 48, left: 126, top: 128, width: 128 }],
-    title: "Shoulders",
-  },
-  {
-    d: "M157 289 C170 299 183 301 190 294 L190 420 C176 427 159 417 154 396 Z M190 294 C197 301 210 299 223 289 L226 396 C221 417 204 427 190 420 Z",
-    id: "quadriceps",
-    targets: [{ height: 144, left: 150, top: 286, width: 80 }],
-    title: "Quadriceps",
-  },
-  {
-    d: "M428 292 C441 302 455 304 461 296 L461 421 C447 428 430 418 425 397 Z M461 296 C468 304 482 302 495 292 L498 397 C493 418 476 428 461 421 Z",
-    id: "hamstrings",
-    targets: [{ height: 144, left: 421, top: 286, width: 82 }],
-    title: "Hamstrings",
-  },
-  {
-    d: "M120 174 C135 175 144 188 141 207 L131 258 C117 263 106 255 106 240 Z M260 174 C245 175 236 188 239 207 L249 258 C263 263 274 255 274 240 Z",
-    id: "biceps",
-    targets: [
-      { height: 96, label: "left", left: 102, top: 170, width: 45 },
-      { height: 96, label: "right", left: 233, top: 170, width: 45 },
-    ],
-    title: "Biceps",
-  },
-  {
-    d: "M392 174 C407 175 416 188 413 207 L403 258 C389 263 378 255 378 240 Z M530 174 C515 175 506 188 509 207 L519 258 C533 263 544 255 544 240 Z",
-    id: "triceps",
-    targets: [
-      { height: 96, label: "left", left: 374, top: 170, width: 45 },
-      { height: 96, label: "right", left: 505, top: 170, width: 45 },
-    ],
-    title: "Triceps",
-  },
-] as const satisfies ReadonlyArray<{
-  d: string;
-  id: ExerciseCatalogMuscleGroupId;
-  targets: ReadonlyArray<{
-    height: number;
-    label?: "left" | "right";
-    left: number;
-    top: number;
-    width: number;
-  }>;
-  title: string;
-}>;
 
 const exerciseSelectionHighlights = [
   {
@@ -123,6 +68,15 @@ const exerciseSelectionStatusCards = [
     title: "Preference rules",
   },
 ] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
+
+const automaticRuleIcons = {
+  adaptive_rest_timing: AlarmClock,
+  compound_priority: Dumbbell,
+  hard_avoid_exclusions: Shield,
+  movement_pattern_balance: Scale,
+  targeted_isolation_support: Target,
+  weekly_volume_alignment: ChartNoAxesColumnIncreasing,
+} as const satisfies Record<AutomaticExerciseSelectionRule["id"], typeof Dumbbell>;
 
 type ExerciseSelectionPreferencesStepProps = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
@@ -187,13 +141,6 @@ export function ExerciseSelectionPreferencesStep({
   async function handleAdd(listId: ExerciseSelectionPreferenceListId) {
     const inputId = getExerciseSelectionPendingInputId(listId);
     await addExerciseSelectionPreference(listId, pendingInputs[inputId]);
-  }
-
-  async function handleAddCatalogExercise(
-    listId: ExerciseSelectionPreferenceListId,
-    exerciseName: string,
-  ) {
-    await addExerciseSelectionPreference(listId, exerciseName);
   }
 
   async function addExerciseSelectionPreference(
@@ -271,7 +218,7 @@ export function ExerciseSelectionPreferencesStep({
           aria-labelledby="exercise-selection-preferences-title"
           className="exercise-selection-primary"
         >
-          <div>
+          <div className="sr-only">
             <h3
               className="text-2xl font-black leading-tight text-stone-950"
               id="exercise-selection-preferences-title"
@@ -283,6 +230,38 @@ export function ExerciseSelectionPreferencesStep({
               and coverage checks stay visible as guardrails while preferences remain the main task.
             </p>
           </div>
+
+          <div className="exercise-selection-conflict-note">
+            <TriangleAlert aria-hidden="true" size={32} strokeWidth={1.8} />
+            <div>
+              <h4>Before you continue</h4>
+              <p>
+                Avoided Exercises are hard exclusions. If generation later cannot find a safe viable
+                replacement, Review will surface an Exercise Selection Conflict for you to resolve
+                instead of silently keeping the avoided exercise.
+              </p>
+            </div>
+          </div>
+
+          <BodyPartSelector />
+
+          <StepActions className="exercise-selection-actions mt-6">
+            <Button asChild variant="outline">
+              <Link to={planBuilderPaths.volume}>
+                <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
+                Back to Volume
+              </Link>
+            </Button>
+            <Button
+              onClick={() => {
+                void handleContinueToReviewClick();
+              }}
+              type="button"
+            >
+              Continue to Review
+              <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
+            </Button>
+          </StepActions>
 
           <div className="exercise-selection-preference-grid mt-6 grid gap-4 lg:grid-cols-2">
             <ExerciseSelectionPreferencesEditor
@@ -315,31 +294,6 @@ export function ExerciseSelectionPreferencesStep({
               validationError={validationErrors.avoidedExercise}
             />
           </div>
-
-          <div className="exercise-selection-conflict-note mt-5 rounded-lg border border-[#d9c8a7] bg-[#f9f6ef] p-4">
-            <h4 className="text-base font-black text-stone-950">Before you continue</h4>
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Avoided Exercises are hard exclusions. If generation later cannot find a safe viable
-              replacement, Review will surface an Exercise Selection Conflict for you to resolve
-              instead of silently keeping the avoided exercise.
-            </p>
-          </div>
-
-          <ExerciseCatalogPanel onAddExercise={handleAddCatalogExercise} />
-
-          <StepActions className="exercise-selection-actions mt-6">
-            <Button asChild variant="outline">
-              <Link to={planBuilderPaths.volume}>Back to Volume</Link>
-            </Button>
-            <Button
-              onClick={() => {
-                void handleContinueToReviewClick();
-              }}
-              type="button"
-            >
-              Continue to Review
-            </Button>
-          </StepActions>
         </StepPanel>
 
         <div className="exercise-selection-context-grid grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -436,180 +390,6 @@ export function ExerciseSelectionPreferencesStep({
       </aside>
     </div>
   );
-}
-
-function ExerciseCatalogPanel({
-  onAddExercise,
-}: {
-  onAddExercise: (listId: ExerciseSelectionPreferenceListId, exerciseName: string) => Promise<void>;
-}) {
-  const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState<ExerciseCatalogMuscleGroupId>(
-    defaultSelectedCatalogMuscleGroupId,
-  );
-  const selectedMuscleGroup = getExerciseCatalogMuscleGroup(selectedMuscleGroupId);
-
-  return (
-    <section
-      aria-labelledby="exercise-catalog-title"
-      className="exercise-selection-catalog mt-5 rounded-lg border border-stone-900/10 bg-white/80 p-5"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h4 className="text-lg font-black text-stone-950" id="exercise-catalog-title">
-            Body-part exercise finder
-          </h4>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600">
-            Choose a muscle region on the body map. Suggested exercises appear here without adding
-            anything to your Plan Blueprint until you choose Prefer or Avoid.
-          </p>
-        </div>
-        <span className="rounded-full bg-[#006f78] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
-          65 exercises
-        </span>
-      </div>
-
-      <div className="exercise-selection-body-picker mt-5 grid gap-5 lg:grid-cols-[minmax(18rem,0.9fr)_minmax(0,1.1fr)]">
-        <fieldset className="exercise-selection-body-map">
-          <legend className="sr-only">Choose a muscle group on the body map</legend>
-          <svg
-            aria-labelledby="exercise-body-map-title exercise-body-map-description"
-            className="exercise-selection-body-map__figure"
-            viewBox="0 0 620 500"
-          >
-            <title id="exercise-body-map-title">
-              Clickable front and back body muscle selector
-            </title>
-            <desc id="exercise-body-map-description">
-              Select chest, back, shoulders, quadriceps, hamstrings, biceps, or triceps to show
-              exercise suggestions.
-            </desc>
-            <defs>
-              <linearGradient id="exercise-body-surface" x1="0%" x2="100%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#f6eee3" />
-                <stop offset="100%" stopColor="#eadcc9" />
-              </linearGradient>
-              <linearGradient id="exercise-body-muscle" x1="0%" x2="100%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#e75b43" />
-                <stop offset="100%" stopColor="#b93725" />
-              </linearGradient>
-            </defs>
-
-            <g className="exercise-selection-body-map__person">
-              <circle cx="190" cy="72" r="30" />
-              <path d="M144 131 C154 103 226 103 236 131 L223 269 C217 292 204 305 190 305 C176 305 163 292 157 269 Z" />
-              <path d="M138 143 C113 176 103 220 108 271 C111 292 129 292 136 274 L148 202" />
-              <path d="M242 143 C267 176 277 220 272 271 C269 292 251 292 244 274 L232 202" />
-              <path d="M159 292 C172 304 181 309 190 304 L183 448 C167 455 150 444 147 423 Z" />
-              <path d="M190 304 C199 309 208 304 221 292 L233 423 C230 444 213 455 197 448 Z" />
-              <path d="M173 114 C179 128 201 128 207 114" />
-            </g>
-
-            <g className="exercise-selection-body-map__person">
-              <circle cx="461" cy="72" r="30" />
-              <path d="M415 131 C425 103 497 103 507 131 L494 269 C488 292 475 305 461 305 C447 305 434 292 428 269 Z" />
-              <path d="M409 143 C384 176 374 220 379 271 C382 292 400 292 407 274 L419 202" />
-              <path d="M513 143 C538 176 548 220 543 271 C540 292 522 292 515 274 L503 202" />
-              <path d="M430 292 C443 304 452 309 461 304 L454 448 C438 455 421 444 418 423 Z" />
-              <path d="M461 304 C470 309 479 304 492 292 L504 423 C501 444 484 455 468 448 Z" />
-              <path d="M444 114 C450 128 472 128 478 114" />
-            </g>
-
-            {bodyMuscleHotspots.map((hotspot) => (
-              <g className="exercise-selection-body-map__hotspot-control" key={hotspot.id}>
-                <path
-                  className="exercise-selection-body-map__hotspot"
-                  data-selected={selectedMuscleGroupId === hotspot.id}
-                  d={hotspot.d}
-                />
-              </g>
-            ))}
-          </svg>
-
-          {bodyMuscleHotspots.flatMap((hotspot) =>
-            hotspot.targets.map((target) => (
-              <button
-                aria-label={`Show ${
-                  "label" in target ? `${target.label} ${hotspot.title}` : hotspot.title
-                } exercise suggestions`}
-                aria-pressed={selectedMuscleGroupId === hotspot.id}
-                className="exercise-selection-body-map__target"
-                key={`${hotspot.id}-${"label" in target ? target.label : "main"}`}
-                onClick={() => setSelectedMuscleGroupId(hotspot.id)}
-                style={{
-                  height: `${(target.height / 500) * 100}%`,
-                  left: `${(target.left / 620) * 100}%`,
-                  top: `${(target.top / 500) * 100}%`,
-                  width: `${(target.width / 620) * 100}%`,
-                }}
-                type="button"
-              />
-            )),
-          )}
-        </fieldset>
-
-        <div className="exercise-selection-suggestions" aria-live="polite">
-          <div className="exercise-selection-suggestions__header">
-            <div>
-              <h5 className="text-xl font-black leading-tight text-stone-950">
-                {selectedMuscleGroup.title}
-              </h5>
-              <p className="mt-1 text-sm font-semibold text-stone-600">
-                {selectedMuscleGroup.exercises.length} available suggestions
-              </p>
-            </div>
-            <span className="exercise-selection-suggestions__marker" aria-hidden="true" />
-          </div>
-
-          <ul
-            aria-label={`${selectedMuscleGroup.title} exercise suggestions`}
-            className="exercise-selection-suggestions__list mt-4"
-          >
-            {selectedMuscleGroup.exercises.map((exerciseName) => (
-              <li className="exercise-selection-suggestions__item" key={exerciseName}>
-                <span className="text-sm font-semibold leading-5 text-stone-950">
-                  {exerciseName}
-                </span>
-                <span className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => {
-                      void onAddExercise("preferredExercises", exerciseName);
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Prefer
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      void onAddExercise("avoidedExercises", exerciseName);
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    Avoid
-                  </Button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function getExerciseCatalogMuscleGroup(
-  muscleGroupId: ExerciseCatalogMuscleGroupId,
-): ExerciseCatalogMuscleGroup {
-  const muscleGroup = exerciseCatalogMuscleGroups.find(({ id }) => id === muscleGroupId);
-
-  if (!muscleGroup) {
-    throw new Error(`Unknown Exercise Catalog Muscle Group "${muscleGroupId}".`);
-  }
-
-  return muscleGroup;
 }
 
 function ExerciseSelectionPreferencesEditor({
@@ -709,21 +489,31 @@ function ExerciseSelectionAutomaticRulesPanel({
 }) {
   return (
     <StepPanel aria-labelledby="automatic-rules-title" className="exercise-selection-rules-panel">
-      <h3 className="text-lg font-black text-stone-950" id="automatic-rules-title">
-        Rules applied automatically
-      </h3>
-      <p className="mt-2 text-sm leading-6 text-stone-600">
-        Just Workout applies these during Training Plan generation. Step 5 does not add manual rest
-        controls or detailed prescriptions.
-      </p>
+      <div className="exercise-selection-rules-panel__header">
+        <h3 id="automatic-rules-title">Rules applied automatically</h3>
+        <p>Just Workout applies these during Training Plan generation.</p>
+      </div>
 
-      <ul aria-label="Automatic exercise selection rules" className="mt-4 grid gap-2.5">
-        {rulesAppliedAutomatically.map((rule) => (
-          <li className="rounded-lg bg-[#fcfaf6] px-4 py-3" key={rule.id}>
-            <p className="text-sm font-bold text-stone-950">{rule.label}</p>
-            <p className="mt-1 text-sm leading-6 text-stone-600">{rule.description}</p>
-          </li>
-        ))}
+      <ul aria-label="Automatic exercise selection rules" className="exercise-selection-rules-list">
+        {rulesAppliedAutomatically.map((rule, index) => {
+          const RuleIcon = automaticRuleIcons[rule.id];
+
+          return (
+            <li
+              className="exercise-selection-rules-list__item"
+              data-rule-index={index}
+              key={rule.id}
+            >
+              <span className="exercise-selection-rules-list__icon" aria-hidden="true">
+                <RuleIcon size={28} strokeWidth={2.2} />
+              </span>
+              <div>
+                <p className="exercise-selection-rules-list__title">{rule.label}</p>
+                <p className="exercise-selection-rules-list__description">{rule.description}</p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </StepPanel>
   );

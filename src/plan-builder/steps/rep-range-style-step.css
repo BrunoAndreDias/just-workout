@@ -409,7 +409,7 @@
   }
 }
 
-@media (min-width: 1920px) and (min-height: 900px) {
+@media (min-width: 2200px) and (min-height: 900px) {
   .plan-builder-page--rep-ranges {
     max-width: 104rem;
     grid-template-columns: minmax(0, 1fr) 19.5rem;
@@ -437,4 +437,45 @@
     min-height: 19.25rem;
     padding: 1.2rem;
   }
+}
+
+.rep-range-section-title,
+.training-volume-section-title,
+.rep-range-option__title,
+.volume-preset-option__title,
+.rep-range-details h3,
+.rep-range-details h4 {
+  font-family: var(--jw-font-heading);
+  font-weight: 700;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.rep-range-section-title,
+.training-volume-section-title {
+  font-size: var(--jw-section-title-size);
+  line-height: var(--jw-section-title-line-height);
+}
+
+.rep-range-option__title,
+.volume-preset-option__title,
+.rep-range-details h4 {
+  font-size: var(--jw-card-title-size);
+  line-height: var(--jw-card-title-line-height);
+}
+
+.rep-range-section-copy,
+.training-volume-section-copy,
+.rep-range-option__copy,
+.volume-preset-option__copy,
+.rep-range-option__note,
+.rep-range-effects-list li,
+.rep-range-generation-note {
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
+.rep-range-action-button {
+  min-height: var(--jw-button-height-md);
+  height: var(--jw-button-height-md);
+  font-size: var(--jw-body-size);
 }

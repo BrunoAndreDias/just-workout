@@ -558,7 +558,7 @@
   }
 }
 
-@media (min-width: 1920px) and (min-height: 980px) {
+@media (min-width: 2200px) and (min-height: 980px) {
   .plan-builder-stepper {
     margin-top: -0.5rem;
   }
@@ -652,5 +652,157 @@
 
   .plan-builder-page--rep-ranges .plan-builder-stepper {
     margin-top: 0.6rem;
+  }
+}
+
+.plan-builder-stepper {
+  margin-top: var(--jw-section-gap);
+}
+
+.plan-builder-stepper-list {
+  column-gap: 0.75rem;
+  row-gap: 0.875rem;
+}
+
+.plan-builder-stepper-line {
+  top: 1rem;
+}
+
+.plan-builder-stepper-dot {
+  height: 2rem;
+  width: 2rem;
+  box-shadow: none;
+  font-size: var(--jw-meta-size);
+  line-height: var(--jw-meta-line-height);
+}
+
+.plan-builder-stepper-label {
+  margin-top: 0.375rem;
+  font-size: var(--jw-meta-size);
+  line-height: var(--jw-meta-line-height);
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-stepper {
+    margin-top: 0.875rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.625rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 0.875rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 0.875rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.75rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2rem;
+    width: 2rem;
+    font-size: 0.8125rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 980px) {
+  .plan-builder-stepper {
+    margin-top: 1.25rem;
+  }
+
+  .plan-builder-stepper-list {
+    column-gap: 0.875rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1.125rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 2.25rem;
+    width: 2.25rem;
+    font-size: 0.875rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Builder stepper final density: compact navigation, not page content. */
+.plan-builder-stepper {
+  margin-top: 0.875rem;
+}
+
+.plan-builder-stepper-list {
+  column-gap: 0.625rem;
+  row-gap: 0.625rem;
+}
+
+.plan-builder-stepper-line {
+  top: 0.8125rem;
+}
+
+.plan-builder-stepper-dot {
+  height: 1.625rem;
+  width: 1.625rem;
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+.plan-builder-stepper-label {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+}
+
+@media (min-width: 1800px) and (min-height: 720px) {
+  .plan-builder-stepper {
+    margin-top: 1rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 0.9375rem;
+  }
+
+  .plan-builder-stepper-dot {
+    height: 1.875rem;
+    width: 1.875rem;
+    font-size: 0.75rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.3125rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
   }
 }

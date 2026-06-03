@@ -132,8 +132,73 @@
   }
 }
 
-@media (min-width: 1920px) and (min-height: 980px) {
+@media (min-width: 2200px) and (min-height: 980px) {
   main {
     padding-right: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-grid {
+    grid-template-columns: var(--jw-sidebar-width) minmax(0, 1fr);
+  }
+
+  .app-shell-grid > aside {
+    padding: var(--jw-sidebar-padding-y) var(--jw-sidebar-padding-x);
+  }
+
+  .app-shell-brand-mark {
+    height: var(--jw-icon-circle-md);
+    width: var(--jw-icon-circle-md);
+  }
+
+  .app-shell-brand-icon {
+    height: var(--jw-icon-md);
+    width: var(--jw-icon-md);
+  }
+
+  .app-shell-brand-name {
+    font-size: 1.125rem;
+  }
+
+  .app-shell-grid > aside nav {
+    margin-top: 3rem;
+  }
+
+  .app-shell-grid > aside nav a {
+    min-height: var(--jw-sidebar-nav-height);
+    gap: 0.75rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+    font-size: var(--jw-body-size);
+  }
+
+  .app-shell-grid > aside nav svg {
+    height: var(--jw-icon-md);
+    width: var(--jw-icon-md);
+  }
+
+  main {
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .app-shell-grid > aside nav {
+    margin-top: 3.5rem;
+  }
+
+  .app-shell-grid > aside nav a {
+    gap: 0.875rem;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 980px) {
+  .app-shell-grid > aside nav {
+    margin-top: 4rem;
+  }
+
+  .app-shell-grid > aside nav a {
+    gap: 1rem;
   }
 }

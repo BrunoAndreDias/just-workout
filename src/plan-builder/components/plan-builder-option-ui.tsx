@@ -6,7 +6,7 @@ type SelectableOptionState = "selected" | "unselected";
 type RepRangeStyleStatusBadgeTone = "recommended" | "selected";
 
 const selectableOptionCardBaseClassName =
-  "min-w-0 rounded-lg border p-4 text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950";
+  "min-w-0 rounded-lg border p-[var(--jw-card-padding)] text-left transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-stone-950";
 
 const selectableOptionCardStyles = {
   selected: "border-stone-950 bg-stone-950 text-stone-50 shadow-sm",
@@ -93,7 +93,7 @@ export function SelectionBadge({ children, isSelected }: SelectionBadgeProps) {
   return (
     <span
       className={cn(
-        "rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+        "min-h-[var(--jw-chip-height)] rounded-full px-[var(--jw-chip-padding-x)] py-1 text-[var(--jw-meta-size)] font-bold uppercase leading-[var(--jw-meta-line-height)] tracking-[0.04em]",
         selectableOptionBadgeStyles[optionState],
       )}
     >
@@ -106,7 +106,7 @@ export function RepRangeStyleStatusBadge({ children, tone }: RepRangeStyleStatus
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+        "inline-flex min-h-[var(--jw-chip-height)] items-center gap-1.5 rounded-full px-[var(--jw-chip-padding-x)] py-1 text-[var(--jw-meta-size)] font-bold uppercase leading-[var(--jw-meta-line-height)] tracking-[0.04em]",
         repRangeStyleStatusBadgeStyles[tone],
       )}
     >

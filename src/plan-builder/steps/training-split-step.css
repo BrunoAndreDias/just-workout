@@ -3,13 +3,49 @@
   gap: 1rem;
 }
 
+.training-split-section-title,
+.training-split-option__title,
+.training-split-details h3,
+.training-split-details h4 {
+  font-family: var(--jw-font-heading);
+  font-weight: 700;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-split-section-title {
+  font-size: var(--jw-section-title-size);
+  line-height: var(--jw-section-title-line-height);
+}
+
+.training-split-option__title,
+.training-split-details h4 {
+  font-size: var(--jw-card-title-size);
+  line-height: var(--jw-card-title-line-height);
+}
+
+.training-split-section-copy,
+.training-split-option__copy,
+.training-split-details__copy,
+.training-split-fit-panel li,
+.training-split-schedule-panel p,
+.training-split-unsupported__row {
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
+.training-split-action-button {
+  min-height: var(--jw-button-height-md);
+  height: var(--jw-button-height-md);
+  font-size: var(--jw-body-size);
+}
+
 .training-split-choice {
   display: grid;
   gap: 0.9rem;
 }
 
 .training-split-section-title {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--jw-font-heading);
   font-size: 1.25rem;
   line-height: 1.15;
 }
@@ -46,7 +82,7 @@
 }
 
 .training-split-option__title {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--jw-font-heading);
   font-size: 1.12rem;
   line-height: 1.25;
 }
@@ -73,7 +109,7 @@
 .training-split-fit-panel h4,
 .training-split-schedule-panel h4,
 .training-split-unsupported h4 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--jw-font-heading);
 }
 
 .training-split-details__content {
