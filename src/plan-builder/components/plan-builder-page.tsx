@@ -96,7 +96,7 @@ function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
     case "split":
       return "Choose your training split";
     case "rep-ranges":
-      return "Choose your rep ranges";
+      return "Build your workout plan";
     case "volume":
       return "Set your training volume";
     case "exercises":

@@ -46,7 +46,7 @@ const repRangeStyleEffectCopy = {
 } as const;
 
 const repRangeStyleBoundaryCopy =
-  "Volume targets are set next; Just Workout will use this rep range style later when translating volume into sets and reps.";
+  "Rest times and progression rules will be added when the plan is generated.";
 
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 
@@ -522,7 +522,7 @@ describe("PlanBuilderRoute", () => {
 
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
 
-    expect(screen.getByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expect(within(repRangeGroup).getByText(repRangeStyleLabels.strengthLeaning)).toBeVisible();
     expect(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
     expect(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps)).toBeVisible();
@@ -618,7 +618,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /continue to volume/i }));
 
@@ -673,7 +673,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expectRepRangeStyleChecked(
       await screen.findByRole("group", { name: /rep range style/i }),
       repRangeStyleLabels.strengthLeaning,
@@ -989,7 +989,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /continue to volume/i }));
 
@@ -1005,9 +1005,7 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Volume"),
     ).toHaveAttribute("aria-current", "step");
-    expect(
-      screen.queryByRole("heading", { name: /select rep range style/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^rep ranges$/i })).not.toBeInTheDocument();
     for (const excludedContentPattern of weeklyVolumeExcludedContentPatterns) {
       expect(screen.queryByText(excludedContentPattern)).not.toBeInTheDocument();
     }
@@ -1922,7 +1920,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Rep ranges",
@@ -1937,7 +1935,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
 
     await user.click(screen.getByRole("link", { name: /back to split/i }));
 
@@ -1973,7 +1971,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
   });
 
-  it("shows a single Selected badge on the active Rep Range Style card and moves it when the choice changes", async () => {
+  it("shows a single active Rep Range Style card and moves it when the choice changes", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedFourDayUpperLowerTrainingSplit();
@@ -2045,15 +2043,18 @@ describe("PlanBuilderRoute", () => {
 
     expect(options.getByText("Heavier main lifts with slightly lower reps.")).toBeVisible();
     expect(
-      options.getByText(
+      options.queryByText(
         "Biases the week toward lower-rep top work on the main lifts before accessories climb.",
       ),
+    ).not.toBeInTheDocument();
+    expect(
+      options.getByText("Best fit for 4 days/week, Upper/Lower, and a muscle-building goal."),
     ).toBeVisible();
     expect(
-      options.getByText(
+      options.queryByText(
         "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
       ),
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
     expect(options.getAllByText("Main compounds")).toHaveLength(3);
     expect(options.getAllByText("Secondary compounds")).toHaveLength(3);
     expect(options.getAllByText("Accessories")).toHaveLength(3);
@@ -2067,7 +2068,7 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByText(/\bRIR\b/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/\b1RM\b/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/\btempo\b/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/rest time/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/rest time recommendation/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/load recommendation/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/advanced programming controls/i)).not.toBeInTheDocument();
   });
@@ -2092,7 +2093,6 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(effectsPanel).getByRole("heading", { name: /how this affects your plan/i }),
     ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Boundary for this step" })).toBeVisible();
     expectRepRangeStyleEffects(effectsPanel, repRangeStyleEffectCopy.balancedHypertrophy);
     expect(screen.getByText(repRangeStyleBoundaryCopy)).toBeVisible();
     expect(screen.queryByRole("heading", { name: "What happens next" })).not.toBeInTheDocument();
@@ -2274,7 +2274,7 @@ describe("PlanBuilderRoute", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expectRepRangeStyleChecked(
       await screen.findByRole("group", { name: /rep range style/i }),
       repRangeStyleLabels.balancedHypertrophy,
@@ -2389,7 +2389,7 @@ describe("PlanBuilderRoute", () => {
     await user.click(screen.getByRole("button", { name: /continue to split/i }));
     await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
 
-    expect(await screen.findByRole("heading", { name: /select rep range style/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expectRepRangeStyleChecked(
       await screen.findByRole("group", { name: /rep range style/i }),
       repRangeStyleLabels.balancedHypertrophy,
@@ -2766,13 +2766,17 @@ function expectOnlyRepRangeStyleCardSelected(
   selectedLabel: string,
   unselectedLabel: string,
 ) {
-  expect(within(repRangeGroup).getAllByText("Selected")).toHaveLength(1);
+  expect(within(repRangeGroup).queryByText("Selected")).not.toBeInTheDocument();
   expect(
-    within(getRepRangeStyleOptionCard(repRangeGroup, selectedLabel)).getByText("Selected"),
-  ).toBeVisible();
+    within(getRepRangeStyleOptionCard(repRangeGroup, selectedLabel)).getByRole("radio", {
+      name: getLabelMatcher(selectedLabel),
+    }),
+  ).toBeChecked();
   expect(
-    within(getRepRangeStyleOptionCard(repRangeGroup, unselectedLabel)).queryByText("Selected"),
-  ).not.toBeInTheDocument();
+    within(getRepRangeStyleOptionCard(repRangeGroup, unselectedLabel)).getByRole("radio", {
+      name: getLabelMatcher(unselectedLabel),
+    }),
+  ).not.toBeChecked();
 }
 
 function getRepRangeStyleEffectsPanel() {

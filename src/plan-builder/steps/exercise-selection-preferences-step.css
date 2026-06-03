@@ -9,3 +9,132 @@
 .exercise-selection-support {
   align-content: start;
 }
+
+.exercise-selection-body-map {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #111827 12%, transparent);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(0, 111, 120, 0.1), transparent 34%),
+    linear-gradient(145deg, #fcfaf6 0%, #f4eee5 100%);
+  margin: 0;
+  padding: 0;
+}
+
+.exercise-selection-body-map__figure {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.exercise-selection-body-map__person circle,
+.exercise-selection-body-map__person path {
+  fill: url("#exercise-body-surface");
+  stroke: #7c746a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.5;
+}
+
+.exercise-selection-body-map__person path:last-child {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.exercise-selection-body-map__hotspot {
+  fill: rgba(214, 70, 47, 0.22);
+  stroke: rgba(120, 39, 27, 0.58);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition:
+    fill 180ms ease,
+    filter 180ms ease,
+    stroke 180ms ease,
+    transform 180ms ease;
+}
+
+.exercise-selection-body-map__hotspot[data-selected="true"] {
+  fill: url("#exercise-body-muscle");
+  filter: drop-shadow(0 4px 9px rgba(120, 39, 27, 0.34));
+  stroke: #742519;
+}
+
+.exercise-selection-body-map__target {
+  position: absolute;
+  z-index: 2;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.exercise-selection-body-map__target:hover,
+.exercise-selection-body-map__target:focus-visible {
+  outline: 2px solid #742519;
+  outline-offset: 3px;
+}
+
+.exercise-selection-body-map__target[aria-pressed="true"] {
+  cursor: default;
+}
+
+.exercise-selection-suggestions {
+  min-width: 0;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 16px;
+  background: #fffdfa;
+  padding: 1rem;
+}
+
+.exercise-selection-suggestions__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.exercise-selection-suggestions__marker {
+  width: 0.8rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: #d6462f;
+}
+
+.exercise-selection-suggestions__list {
+  display: grid;
+  max-height: 28rem;
+  gap: 0.55rem;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.exercise-selection-suggestions__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 12px;
+  background: #f9f6ef;
+  padding: 0.7rem 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .exercise-selection-suggestions__item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exercise-selection-body-map__hotspot {
+    transition: none;
+  }
+}

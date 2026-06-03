@@ -212,8 +212,8 @@ export function PlanBuilderRepRangesRoute() {
     <PlanBuilderPage
       currentStep="rep-ranges"
       intro={
-        <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Choose the rep target bias for compounds, secondary lifts, and accessories.
+        <PageLead className="text-[1.05rem] leading-6">
+          Configure your training blueprint step by step before generating your plan.
         </PageLead>
       }
       summary={summary}

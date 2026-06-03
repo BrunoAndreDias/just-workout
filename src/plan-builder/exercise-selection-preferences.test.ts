@@ -7,6 +7,7 @@ import {
   type ExerciseSelectionPendingInputs,
   type ExerciseSelectionPreferences,
   type ExerciseSelectionPreferenceValidationErrors,
+  exerciseCatalogMuscleGroups,
   getEquipmentPreset,
   isExerciseSelectionPreferencesConfirmationReady,
   normalizeExerciseSelectionPreferences,
@@ -116,6 +117,29 @@ describe("exercise selection preferences", () => {
         label: "Apply rest timing automatically",
       },
     ]);
+  });
+
+  it("provides the source-backed Step 5 exercise catalog grouped by muscle", () => {
+    expect(exerciseCatalogMuscleGroups).toHaveLength(7);
+    expect(exerciseCatalogMuscleGroups.map((muscleGroup) => muscleGroup.title)).toEqual([
+      "Chest",
+      "Back",
+      "Shoulders",
+      "Quadriceps",
+      "Hamstrings",
+      "Biceps",
+      "Triceps",
+    ]);
+    expect(
+      exerciseCatalogMuscleGroups.reduce(
+        (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
+        0,
+      ),
+    ).toBe(65);
+    expect(exerciseCatalogMuscleGroups[0]?.exercises).toContain(
+      "Flat Barbell or Dumbbell Bench Press",
+    );
+    expect(exerciseCatalogMuscleGroups.at(-1)?.exercises).toContain("Cable Press-Downs");
   });
 
   it("normalizes saved preference items and re-derives calves coverage from the current Weekly Rep Targets", () => {

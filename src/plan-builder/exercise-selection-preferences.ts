@@ -32,6 +32,19 @@ export type ExerciseSelectionPreferenceItem = {
   rawText: string;
 };
 export type ExerciseSelectionPreferenceListId = "avoidedExercises" | "preferredExercises";
+export type ExerciseCatalogMuscleGroupId =
+  | "back"
+  | "biceps"
+  | "chest"
+  | "hamstrings"
+  | "quadriceps"
+  | "shoulders"
+  | "triceps";
+export type ExerciseCatalogMuscleGroup = {
+  exercises: ReadonlyArray<string>;
+  id: ExerciseCatalogMuscleGroupId;
+  title: string;
+};
 export type ExerciseSelectionPreferences = {
   avoidedExercises: ReadonlyArray<ExerciseSelectionPreferenceItem>;
   equipmentPreset: EquipmentPresetId;
@@ -192,6 +205,116 @@ export const equipmentPresets = [
     title: "Full gym",
   },
 ] as const satisfies ReadonlyArray<EquipmentPreset>;
+
+export const exerciseCatalogMuscleGroups = [
+  {
+    exercises: [
+      "Flat Barbell or Dumbbell Bench Press",
+      "Incline Barbell or Dumbbell Bench Press",
+      "Decline Barbell or Dumbbell Bench Press",
+      "Flat Chest Press Machine",
+      "Incline Chest Press Machine",
+      "Decline Chest Press Machine",
+      "Dips (Parallel Bars, Slight Forward Lean)",
+      "Push-Ups",
+      "Flat Dumbbell Flyes",
+      "Incline Dumbbell Flyes",
+      "Decline Dumbbell Flyes",
+      "Pec Deck Machine",
+      "Cable Crossovers/Cable Flyes",
+    ],
+    id: "chest",
+    title: "Chest",
+  },
+  {
+    exercises: [
+      "Pull-Ups",
+      "Chin-Ups",
+      "Lat Pull-Downs",
+      "Bent Over Barbell or Dumbbell Rows",
+      "T-Bar Rows",
+      "Seated Cable Rows",
+      "Chest Supported Barbell or Dumbbell Rows",
+      "Chest Supported Machine Rows",
+      "Inverted Rows",
+      "Barbell, Dumbbell or Machine Shrugs",
+    ],
+    id: "back",
+    title: "Back",
+  },
+  {
+    exercises: [
+      "Seated Overhead Barbell or Dumbbell Press",
+      "Standing Overhead Barbell or Dumbbell Press",
+      "Overhead Machine Press",
+      "Arnold Press",
+      "Barbell, Dumbbell or Machine Upright Rows",
+      "Dumbbell, Cable or Machine Lateral Raises",
+      "Dumbbell, Cable or Machine Front Raises",
+      "Barbell, Dumbbell, or Machine Rear Delt Rows, Raises or Flyes",
+    ],
+    id: "shoulders",
+    title: "Shoulders",
+  },
+  {
+    exercises: [
+      "Barbell or Dumbbell Squats",
+      "Barbell or Dumbbell Front Squats",
+      "Barbell or Dumbbell Split Squats",
+      "Barbell or Dumbbell Lunges",
+      "Barbell or Dumbbell Step-Ups",
+      "Leg Press",
+      "Single Leg Press",
+      "Machine Squat/Hack Squat",
+      "Leg Extensions",
+    ],
+    id: "quadriceps",
+    title: "Quadriceps",
+  },
+  {
+    exercises: [
+      "Barbell or Dumbbell Romanian Deadlifts",
+      "Barbell or Dumbbell Straight Leg Deadlifts",
+      "Barbell or Dumbbell Sumo Deadlifts",
+      "Glute-Ham Raises",
+      "Hyperextensions",
+      "Cable Pull-Throughs",
+      "Good-Mornings",
+      "Leg Curls",
+    ],
+    id: "hamstrings",
+    title: "Hamstrings",
+  },
+  {
+    exercises: [
+      "Standing Barbell or Dumbbell Curls",
+      "Barbell or Dumbbell Preacher Curls",
+      "Seated Dumbbell Curls",
+      "Incline Dumbbell Curls",
+      "Hammer Curls",
+      "Concentration Curls",
+      "Cable Curls",
+      "Biceps Curl Machine",
+    ],
+    id: "biceps",
+    title: "Biceps",
+  },
+  {
+    exercises: [
+      "Dips (Elbows Close, No Forward Lean)",
+      "Flat Close Grip Bench Press",
+      "Decline Close Grip Bench Press",
+      "Close Grip Push-Ups",
+      "Laying Barbell or Dumbbell Triceps Extensions",
+      "Skull Crushers",
+      "Overhead Barbell or Dumbbell Triceps Extensions",
+      "Cable Press-Downs",
+      "Bench Dips",
+    ],
+    id: "triceps",
+    title: "Triceps",
+  },
+] as const satisfies ReadonlyArray<ExerciseCatalogMuscleGroup>;
 
 export function createDefaultExerciseSelectionPreferences(): ExerciseSelectionPreferences {
   return {
