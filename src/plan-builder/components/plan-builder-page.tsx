@@ -102,7 +102,11 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
 
       {shouldShowPlanBuilderRail && !shouldShowWideDesktopBlueprintSummary ? (
         <RailPanel aria-label="Plan blueprint summary" className="plan-builder-right-rail">
-          <PlanBlueprintRailCard currentStep={currentStep} summary={summary} />
+          <PlanBlueprintRailCard
+            currentStep={currentStep}
+            onStepSelect={navigateToGroupedStep}
+            summary={summary}
+          />
         </RailPanel>
       ) : null}
     </section>

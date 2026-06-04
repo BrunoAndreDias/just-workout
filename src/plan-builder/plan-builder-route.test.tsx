@@ -1893,6 +1893,27 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
   });
 
+  it("navigates backward from the large-screen Plan Blueprint rail", async () => {
+    const user = userEvent.setup();
+
+    mockPlanBuilderMediaQueries({ isLargeScreen: true, isWideDesktop: false });
+    await saveConfirmedFourDayUpperLowerTrainingSplit();
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
+
+    expect(await screen.findByText("Step 2 of 4")).toBeVisible();
+
+    await user.click(await screen.findByRole("button", { name: /go to training schedule/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.frequency);
+    expect(await screen.findByRole("heading", { name: /training schedule/i })).toBeVisible();
+
+    await user.click(await screen.findByRole("button", { name: /go to training style/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
+  });
+
   it("keeps the Plan Blueprint summary on Balanced hypertrophy when the persisted Recommended Default is explicitly reselected", async () => {
     const user = userEvent.setup();
     await saveConfirmedFourDayUpperLowerTrainingSplit();

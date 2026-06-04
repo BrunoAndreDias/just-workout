@@ -212,10 +212,14 @@ function getPlanBlueprintHeaderFields(
 
 export function PlanBlueprintRailCard({
   currentStep = "frequency",
+  onStepSelect,
   summary,
-}: PrototypeBlueprintSummaryProps & { currentStep?: PlanBuilderStep }) {
+}: PrototypeBlueprintSummaryProps & {
+  currentStep?: PlanBuilderStep;
+  onStepSelect?: (stepNumber: number) => void;
+}) {
   const currentGroupedStep = getCurrentGroupedPlanBuilderStep(currentStep);
-  const railSteps = summary ? getPlanBlueprintRailSteps(summary, currentGroupedStep) : [];
+  const railSteps = summary ? getPlanBlueprintProgressSteps(summary, currentGroupedStep) : [];
 
   return (
     <RailPanelSection className="plan-builder-summary-card rounded-lg border border-stone-950/10 bg-white/60 px-6 py-7">
@@ -233,11 +237,11 @@ export function PlanBlueprintRailCard({
                 )}
                 key={step.number}
               >
-                <span className="plan-builder-summary-timeline__marker">{step.number}</span>
-                <div className="plan-builder-summary-timeline__copy">
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
+                <PlanBlueprintRailStepControl
+                  isInteractive={Boolean(onStepSelect && !step.isCurrent && !step.isLocked)}
+                  onSelect={() => onStepSelect?.(step.number)}
+                  step={step}
+                />
               </li>
             ))}
           </ol>
@@ -247,6 +251,41 @@ export function PlanBlueprintRailCard({
       )}
     </RailPanelSection>
   );
+}
+
+function PlanBlueprintRailStepControl({
+  isInteractive,
+  onSelect,
+  step,
+}: {
+  isInteractive: boolean;
+  onSelect: () => void;
+  step: PlanBlueprintProgressStep;
+}) {
+  const content = (
+    <>
+      <span className="plan-builder-summary-timeline__marker">{step.number}</span>
+      <span className="plan-builder-summary-timeline__copy">
+        <span>{step.title}</span>
+        <span>{step.body}</span>
+      </span>
+    </>
+  );
+
+  if (isInteractive) {
+    return (
+      <button
+        aria-label={`Go to ${step.title}`}
+        className="plan-builder-summary-timeline__control"
+        onClick={onSelect}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <span className="plan-builder-summary-timeline__control">{content}</span>;
 }
 
 export function PlanBlueprintProgressSummary({
@@ -410,55 +449,6 @@ function getFurthestAvailableGroupedPlanBuilderStep(summary: PlanBlueprintSummar
   }
 
   return 1;
-}
-
-function getPlanBlueprintRailSteps(
-  summary: PlanBlueprintSummary,
-  currentGroupedStep: number,
-): ReadonlyArray<{
-  body: string;
-  isCurrent?: boolean;
-  isLocked?: boolean;
-  number: number;
-  title: string;
-}> {
-  const scheduleSelection = getTrainingScheduleSelection(summary);
-  const trainingStyleSelection = getTrainingStyleSelection(summary);
-
-  return [
-    {
-      body: currentGroupedStep === 1 ? "Current" : scheduleSelection,
-      isCurrent: currentGroupedStep === 1,
-      number: 1,
-      title: "Training schedule",
-    },
-    {
-      body:
-        currentGroupedStep === 2
-          ? "Current"
-          : currentGroupedStep > 2
-            ? trainingStyleSelection
-            : "Locked",
-      isCurrent: currentGroupedStep === 2,
-      isLocked: currentGroupedStep < 2,
-      number: 2,
-      title: "Training style",
-    },
-    {
-      body: currentGroupedStep === 3 ? "Current" : "Locked",
-      isCurrent: currentGroupedStep === 3,
-      isLocked: currentGroupedStep < 3,
-      number: 3,
-      title: "Exercises",
-    },
-    {
-      body: currentGroupedStep === 4 ? "Current" : "Locked",
-      isCurrent: currentGroupedStep === 4,
-      isLocked: currentGroupedStep < 4,
-      number: 4,
-      title: "Review",
-    },
-  ];
 }
 
 function getTrainingScheduleSelection(summary: PlanBlueprintSummary): string {

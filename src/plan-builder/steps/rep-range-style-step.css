@@ -426,3 +426,24 @@
   height: var(--jw-button-height-md);
   font-size: var(--jw-body-size);
 }
+
+@media (max-width: 1023px), (min-width: 1800px) {
+  .plan-builder-page.plan-builder-page--rep-ranges .plan-builder-workspace-card {
+    padding-bottom: 1rem;
+  }
+
+  .plan-builder-page.plan-builder-page--rep-ranges .step-actions.rep-range-actions {
+    position: sticky;
+    right: auto;
+    bottom: 0;
+    left: auto;
+    z-index: 10;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.84), rgba(250, 246, 239, 0.98));
+    padding: 0.75rem 0 0;
+  }
+
+  .plan-builder-page.plan-builder-page--rep-ranges .step-actions.rep-range-actions > * {
+    width: auto;
+  }
+}

@@ -1,13 +1,4 @@
-import {
-  ArrowRight,
-  BarChart3,
-  Bed,
-  Calendar,
-  Check,
-  ChevronLeft,
-  Dumbbell,
-  Repeat2,
-} from "lucide-react";
+import { ArrowRight, Bed, Calendar, Check, ChevronLeft, Dumbbell } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import {
@@ -52,7 +43,7 @@ export function TrainingFrequencyStep({
     <section aria-labelledby="training-frequency-title" className="training-frequency-panel">
       <div className="training-frequency-heading">
         <h2 className="training-frequency-title" id="training-frequency-title">
-          Training frequency
+          Frequency
         </h2>
       </div>
 
@@ -148,16 +139,19 @@ function TrainingFrequencyOptionRadio({
   onSelect,
   option,
 }: TrainingFrequencyOptionRadioProps) {
-  const optionLabel = `${option.daysPerWeek} days/week`;
+  const optionLabel = `${option.daysPerWeek} days`;
+  const accessibleOptionLabel = `${option.daysPerWeek} days per week`;
 
   return (
     <label
+      aria-label={accessibleOptionLabel}
       className={cn(
         "training-frequency-option",
         isSelected ? "training-frequency-option--selected" : null,
       )}
     >
       <input
+        aria-label={accessibleOptionLabel}
         checked={isSelected}
         className="sr-only"
         name="training-frequency-days-per-week"
@@ -202,160 +196,111 @@ function TrainingFrequencyRecommendationCard({
   recommendedSplit,
   selectedSplit,
 }: TrainingFrequencyRecommendationCardProps) {
-  const isRecommendedSelected = selectedSplit.id === recommendedSplit.id;
-  const benefits = getRecommendedSplitBenefits(recommendedSplit);
-  const weeklyLayout = getCompactWeeklyLayout(recommendedSplit);
+  const splitOptions = [recommendedSplit, ...compatibleSplits];
+  const weeklyLayout = getCompactWeeklyLayout(selectedSplit);
 
   return (
     <section aria-labelledby="training-schedule-split-title" className="training-schedule-split">
-      <h2 className="training-schedule-split__section-title">Recommended weekly split</h2>
-      <label
-        className={cn(
-          "training-schedule-split__card",
-          isRecommendedSelected ? "training-schedule-split__card--selected" : null,
-        )}
-      >
-        <input
-          checked={isRecommendedSelected}
-          className="sr-only"
-          name="training-split"
-          onChange={() => onTrainingSplitChange(recommendedSplit.id)}
-          type="radio"
-          value={recommendedSplit.id}
-        />
-        <div className="training-schedule-split__heading">
-          <div>
-            <div className="training-schedule-split__title-row">
-              <h3 id="training-schedule-split-title">{recommendedSplit.label}</h3>
-              <span
-                className={cn(
-                  "training-schedule-split__badge",
-                  isRecommendedSelected ? "training-schedule-split__badge--selected" : null,
-                )}
+      <div className="training-schedule-split__section-heading">
+        <h2 className="training-schedule-split__section-title" id="training-schedule-split-title">
+          Choose your weekly split
+        </h2>
+      </div>
+
+      <div className="training-schedule-split__cards">
+        {splitOptions.map((split) => {
+          const isSelected = selectedSplit.id === split.id;
+          const isRecommended = split.id === recommendedSplit.id;
+          const benefits = getSplitCardBenefits(split);
+
+          return (
+            <label
+              className={cn(
+                "training-schedule-split__card",
+                isSelected ? "training-schedule-split__card--selected" : null,
+              )}
+              key={split.id}
+            >
+              <input
+                checked={isSelected}
+                className="sr-only"
+                name="training-split"
+                onChange={() => onTrainingSplitChange(split.id)}
+                type="radio"
+                value={split.id}
+              />
+              {isSelected ? (
+                <span className="training-schedule-split__selected-check">
+                  <Check aria-hidden="true" size={18} strokeWidth={2.5} />
+                </span>
+              ) : null}
+              <div className="training-schedule-split__heading">
+                <div className="training-schedule-split__title-row">
+                  <h3>{split.label}</h3>
+                  {isRecommended ? (
+                    <span className="training-schedule-split__badge">Best fit</span>
+                  ) : null}
+                </div>
+                <p>{split.cardDescription}</p>
+              </div>
+
+              <ul
+                className="training-schedule-split__benefits"
+                aria-label={`${split.label} benefits`}
               >
-                Best fit
-              </span>
-            </div>
-            <p>{recommendedSplit.cardDescription}</p>
-          </div>
-        </div>
+                {benefits.map((benefit) => (
+                  <li key={benefit}>
+                    <Check aria-hidden="true" size={15} strokeWidth={2.4} />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </label>
+          );
+        })}
+      </div>
 
-        <div className="training-schedule-split__details">
-          <div>
-            <h4>Why this split fits</h4>
-            <ul className="training-schedule-split__benefits" aria-label="Why this split fits">
-              {benefits.map((benefit) => (
-                <li key={benefit}>{benefit}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="training-schedule-split__layout">
-            <h4>Suggested weekly layout</h4>
-            <ol>
-              {weeklyLayout.map((layoutDay) => (
-                <li
-                  className={cn(
-                    "training-schedule-split__layout-day",
-                    layoutDay.isRestDay ? "training-schedule-split__layout-day--rest" : null,
-                  )}
-                  key={`${layoutDay.dayLabel}-${layoutDay.sessionLabel}`}
-                >
-                  <strong>{layoutDay.dayLabel}</strong>
-                  {layoutDay.isRestDay ? (
-                    <Bed aria-hidden="true" size={24} strokeWidth={1.65} />
-                  ) : (
-                    <Dumbbell aria-hidden="true" size={24} strokeWidth={1.8} />
-                  )}
-                  <span>{layoutDay.sessionLabel}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </label>
-
-      {compatibleSplits.length > 0 ? (
-        <div className="training-schedule-split__alternatives">
-          <h3>Other compatible splits</h3>
-          <div>
-            {compatibleSplits.map((split) => {
-              const isSelected = selectedSplit.id === split.id;
-              const SplitIcon = getCompatibleSplitIcon(split);
-
-              return (
-                <label
-                  className={cn(
-                    "training-schedule-split__alternative",
-                    isSelected ? "training-schedule-split__alternative--selected" : null,
-                  )}
-                  key={split.id}
-                >
-                  <input
-                    checked={isSelected}
-                    className="sr-only"
-                    name="training-split"
-                    onChange={() => onTrainingSplitChange(split.id)}
-                    type="radio"
-                    value={split.id}
-                  />
-                  <span className="training-schedule-split__alternative-icon" aria-hidden="true">
-                    <SplitIcon size={24} strokeWidth={1.8} />
-                  </span>
-                  <span className="training-schedule-split__alternative-copy">
-                    <span>{split.label}</span>
-                    <span>{getCompatibleSplitTradeoff(split)}</span>
-                  </span>
-                  <span className="training-schedule-split__alternative-tag">
-                    {getCompatibleSplitTag(split)}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      <div className="training-schedule-split__layout">
+        <h3>Suggested weekly layout</h3>
+        <ol>
+          {weeklyLayout.map((layoutDay) => (
+            <li
+              className={cn(
+                "training-schedule-split__layout-day",
+                layoutDay.isRestDay ? "training-schedule-split__layout-day--rest" : null,
+              )}
+              key={`${layoutDay.dayLabel}-${layoutDay.sessionLabel}`}
+            >
+              <strong>{layoutDay.dayLabel}</strong>
+              {layoutDay.isRestDay ? (
+                <Bed aria-hidden="true" size={24} strokeWidth={1.65} />
+              ) : (
+                <Dumbbell aria-hidden="true" size={24} strokeWidth={1.8} />
+              )}
+              <span>{layoutDay.sessionLabel}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }
 
-function getRecommendedSplitBenefits(split: TrainingSplitDefinition): ReadonlyArray<string> {
-  if (split.id === "upper-lower-4-day") {
-    return ["Best balance", "Muscles trained about twice per week", "Manageable recovery"];
+function getSplitCardBenefits(split: TrainingSplitDefinition): ReadonlyArray<string> {
+  switch (split.id) {
+    case "full-body-2-day":
+      return ["Muscles trained 2x/week", "Simple weekly rhythm", "Long recovery windows"];
+    case "alternating-full-body-a-b":
+      return ["More variety", "Full-body focus", "Slightly more programming variation"];
+    case "upper-lower-full-body":
+      return ["Mixed emphasis", "Slightly more complex", "Good variety across the week"];
+    case "upper-lower-4-day":
+      return ["Upper and lower focus", "Muscles trained 2x/week", "Manageable recovery"];
+    case "rotating-push-pull-legs":
+      return ["Flexible training days", "Push, pull, legs variety", "Best with movable weekdays"];
+    default:
+      return ["Muscles trained 3x/week", "Best balance", "Manageable recovery"];
   }
-
-  if (split.id === "full-body-3-day" || split.id === "alternating-full-body-a-b") {
-    return ["Best fit", "Muscles trained 3x/week", "Manageable recovery"];
-  }
-
-  return ["Best fit", split.muscleFrequency, "Manageable recovery"];
-}
-
-function getCompatibleSplitTradeoff(split: TrainingSplitDefinition): string {
-  if (split.id === "rotating-push-pull-legs") {
-    return "Can work for 4 days/week, but Upper/Lower is easier to keep consistent across fixed weekdays.";
-  }
-
-  return split.weeklyRhythm;
-}
-
-function getCompatibleSplitIcon(split: TrainingSplitDefinition) {
-  if (split.id === "alternating-full-body-a-b") {
-    return Repeat2;
-  }
-
-  return BarChart3;
-}
-
-function getCompatibleSplitTag(split: TrainingSplitDefinition): string {
-  if (split.id === "alternating-full-body-a-b") {
-    return "More variety";
-  }
-
-  if (split.id === "upper-lower-full-body") {
-    return "More complex";
-  }
-
-  return "Compatible";
 }
 
 function getCompactWeeklyLayout(

@@ -194,9 +194,6 @@
 
 .plan-builder-summary-timeline__item {
   position: relative;
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.75rem;
   padding-bottom: 1.35rem;
 }
 
@@ -235,6 +232,47 @@
   line-height: 1;
 }
 
+.plan-builder-summary-timeline__control {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.plan-builder-summary-timeline__control {
+  cursor: pointer;
+}
+
+button.plan-builder-summary-timeline__control:hover .plan-builder-summary-timeline__marker,
+button.plan-builder-summary-timeline__control:focus-visible .plan-builder-summary-timeline__marker {
+  border-color: rgba(0, 119, 128, 0.55);
+  background: #f0fbfb;
+  color: #00636a;
+}
+
+button.plan-builder-summary-timeline__control:hover
+  .plan-builder-summary-timeline__copy
+  span:first-child,
+button.plan-builder-summary-timeline__control:focus-visible
+  .plan-builder-summary-timeline__copy
+  span:first-child {
+  color: #00636a;
+}
+
+button.plan-builder-summary-timeline__control:focus-visible {
+  border-radius: 0.5rem;
+  outline: 2px solid #007780;
+  outline-offset: 0.25rem;
+}
+
 .plan-builder-summary-timeline__item--current::before {
   background: #007780;
 }
@@ -254,11 +292,13 @@
 }
 
 .plan-builder-summary-timeline__copy {
+  display: grid;
+  gap: 0.35rem;
   min-width: 0;
   padding-top: 0.2rem;
 }
 
-.plan-builder-summary-timeline__copy h3 {
+.plan-builder-summary-timeline__copy span:first-child {
   margin: 0;
   color: #112c3a;
   font-size: 0.96rem;
@@ -266,15 +306,15 @@
   line-height: 1.25rem;
 }
 
-.plan-builder-summary-timeline__copy p {
-  margin: 0.35rem 0 0;
+.plan-builder-summary-timeline__copy span:last-child {
+  margin: 0;
   color: #244256;
   font-size: 0.86rem;
   font-weight: 500;
   line-height: 1.35rem;
 }
 
-.plan-builder-summary-timeline__item--locked .plan-builder-summary-timeline__copy p {
+.plan-builder-summary-timeline__item--locked .plan-builder-summary-timeline__copy span:last-child {
   color: #526873;
 }
 

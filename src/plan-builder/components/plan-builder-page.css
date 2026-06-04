@@ -1316,6 +1316,12 @@
   }
 }
 
+@media (min-width: 1280px) and (max-width: 2199px) and (min-height: 720px) {
+  body:has(.plan-builder-page) {
+    --jw-builder-rail-width: 16rem;
+  }
+}
+
 @media (min-width: 2200px) and (min-height: 900px) {
   .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
     padding-top: 1.5rem;
