@@ -1,6 +1,7 @@
 import { ArrowRight, Bed, Calendar, Check, ChevronLeft, Dumbbell } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
+import { StepActions } from "../../design-system/step-screen";
 import {
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
@@ -65,38 +66,30 @@ export function TrainingFrequencyStep({
         selectedSplit={selectedSplit}
       />
 
-      <div className="training-frequency-actions">
-        <Button
-          className="training-frequency-action-button training-frequency-action-button--back"
-          disabled
-          type="button"
-          variant="outline"
-        >
+      <StepActions className="training-frequency-actions">
+        <Button disabled size="step" type="button" variant="outline">
           <ChevronLeft aria-hidden="true" size={20} />
           Back
         </Button>
         {canContinueToTrainingStyle ? (
           <Button
-            className="training-frequency-action-button training-frequency-action-button--continue"
             onClick={() => {
               void onContinueToTrainingStyle();
             }}
+            size="step"
             type="button"
+            variant="builderPrimary"
           >
             Continue to Training style
             <ArrowRight aria-hidden="true" size={20} />
           </Button>
         ) : (
-          <Button
-            className="training-frequency-action-button training-frequency-action-button--continue"
-            disabled
-            type="button"
-          >
+          <Button disabled size="step" type="button" variant="builderPrimary">
             Continue to Training style
             <ArrowRight aria-hidden="true" size={20} />
           </Button>
         )}
-      </div>
+      </StepActions>
     </section>
   );
 }

@@ -1,15 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
-import { StepActions, StepPanel } from "../../design-system/step-screen";
+import { StepActions } from "../../design-system/step-screen";
 import {
-  getSelectableOptionCardClassName,
+  getRepRangeStyleOptionCardClassName,
   getSelectableOptionState,
   RepRangeStyleStatusBadge,
-  selectableOptionMutedTextStyles,
+  repRangeStyleDescriptionStyles,
+  repRangeStyleDetailStyles,
 } from "../components/plan-builder-option-ui";
-import { PlanBuilderStepStatusCard } from "../components/plan-builder-page";
 import type { RepRangeStyle } from "../plan-blueprint";
 import { planBuilderPaths } from "../plan-builder-paths";
 import {
@@ -28,14 +28,6 @@ import {
 } from "./weekly-volume-target-rows";
 import "./weekly-volume-targets-step.css";
 
-const weeklyVolumeHowItWorksItems = [
-  "Just Workout will distribute your weekly reps across your training days.",
-  "Compound and isolation exercises will both count toward the same weekly muscle-group targets.",
-  "You will refine the exact exercises later, after the weekly targets are in place.",
-] as const;
-
-const weeklyVolumeHowItWorksItemClassName =
-  "rounded-md border border-stone-900/10 bg-[#fcfaf6] px-3 py-2 text-sm text-stone-700";
 const volumePresetDescriptions = {
   balanced: "Middle of the backed weekly rep range.",
   conservative: "Lower weekly reps for easier recovery.",
@@ -82,6 +74,11 @@ type VolumePresetOptionRadioProps = {
   option: VolumePreset;
 };
 
+type VolumePresetTargetsProps = {
+  isSelected: boolean;
+  option: VolumePreset;
+};
+
 type RequiredWeeklyRepTargetsRowsProps = {
   rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
 };
@@ -123,21 +120,7 @@ export function WeeklyVolumeTargetsStep({
   return (
     <div className="training-volume-step">
       <div className="min-w-0 space-y-4">
-        <StepPanel aria-labelledby="weekly-volume-targets-title" className="training-volume-panel">
-          <h3
-            className="training-volume-section-title text-xl font-black text-stone-950 sm:text-2xl"
-            id="weekly-volume-targets-title"
-          >
-            Weekly volume targets
-          </h3>
-          <p className="training-volume-section-copy mt-2 max-w-2xl text-sm text-[#244256]">
-            Set weekly rep targets for each muscle group before exercises are selected.
-          </p>
-          <p className="training-volume-section-copy mt-2 max-w-2xl text-sm text-[#244256]">
-            Just Workout will translate those weekly targets into sets and reps across your training
-            days later.
-          </p>
-
+        <section aria-label="Training volume options" className="training-volume-panel">
           <VolumePresetSelector
             onVolumePresetChange={onVolumePresetChange}
             selectedVolumePresetId={selectedVolumePresetId}
@@ -152,49 +135,28 @@ export function WeeklyVolumeTargetsStep({
             />
           </div>
 
-          <section
-            aria-labelledby="weekly-volume-how-it-works-title"
-            className="training-volume-how"
-          >
-            <h4
-              className="text-lg font-black text-stone-950 sm:text-xl"
-              id="weekly-volume-how-it-works-title"
-            >
-              How this works
-            </h4>
-            <ul className="mt-3 grid gap-3">
-              {weeklyVolumeHowItWorksItems.map((item) => (
-                <li className={weeklyVolumeHowItWorksItemClassName} key={item}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-
           <StepActions className="training-volume-actions">
-            <Button asChild className="training-volume-action-button" variant="outline">
-              <Link to={planBuilderPaths.repRanges}>Back to Rep ranges</Link>
+            <Button asChild size="step" variant="outline">
+              <Link to={planBuilderPaths.repRanges}>
+                <ChevronLeft aria-hidden="true" size={20} />
+                Back to Rep ranges
+              </Link>
             </Button>
             <Button
-              className="training-volume-action-button"
               disabled={!canContinueToExercises}
               onClick={() => {
                 void onContinueToExercises();
               }}
+              size="step"
               type="button"
+              variant="builderPrimary"
             >
               Continue to Exercises
+              <ArrowRight aria-hidden="true" size={20} />
             </Button>
           </StepActions>
-        </StepPanel>
+        </section>
       </div>
-
-      <PlanBuilderStepStatusCard
-        body="Weekly targets only: these targets describe your full training week, not a single workout."
-        className="training-volume-scope-note"
-        title="Weekly targets note"
-        titleDisplay="visible"
-      />
     </div>
   );
 }
@@ -247,7 +209,7 @@ function VolumePresetOptionRadio({
     <label
       className={cn(
         "volume-preset-option",
-        getSelectableOptionCardClassName(optionState),
+        getRepRangeStyleOptionCardClassName(optionState),
         isSelected ? "volume-preset-option--selected" : null,
       )}
     >
@@ -261,41 +223,58 @@ function VolumePresetOptionRadio({
         value={option.id}
       />
       <div className="volume-preset-option__body">
-        <span className="training-split-option__control" aria-hidden="true">
-          {isSelected ? <Check aria-hidden="true" size={19} strokeWidth={2.8} /> : null}
-        </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="volume-preset-option__title font-black">{option.title}</p>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {isSelected ? (
-                <RepRangeStyleStatusBadge tone="selected">Selected</RepRangeStyleStatusBadge>
-              ) : null}
+          <div className="rep-range-option__header">
+            <div className="rep-range-option__title-row">
+              <p className="volume-preset-option__title font-black">{option.title}</p>
               {option.isRecommended ? (
                 <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
               ) : null}
             </div>
+            {isSelected ? (
+              <span className="rep-range-option__selected-check" aria-hidden="true">
+                <Check aria-hidden="true" size={14} strokeWidth={3} />
+              </span>
+            ) : null}
           </div>
           <p
             className={cn(
               "volume-preset-option__copy",
-              isSelected ? "text-[#244256]" : selectableOptionMutedTextStyles[optionState],
+              repRangeStyleDescriptionStyles[optionState],
             )}
           >
             {volumePresetDescriptions[option.id]}
           </p>
-          <p
-            className={cn(
-              "volume-preset-option__targets",
-              isSelected ? "text-[#244256]" : selectableOptionMutedTextStyles[optionState],
-            )}
-          >
-            {option.largerMuscleTarget} larger-muscle reps/week · {option.smallerMuscleTarget}{" "}
-            smaller-muscle reps/week
-          </p>
+          <VolumePresetTargets isSelected={isSelected} option={option} />
         </div>
       </div>
     </label>
+  );
+}
+
+function VolumePresetTargets({ isSelected, option }: VolumePresetTargetsProps) {
+  const optionState = getSelectableOptionState(isSelected);
+  const styles = repRangeStyleDetailStyles[optionState];
+
+  return (
+    <dl className="rep-range-targets">
+      <div className="rep-range-target min-w-0">
+        <dt className={cn("rep-range-target__label", styles.targetLabelClassName)}>
+          Larger muscle groups
+        </dt>
+        <dd className={cn("rep-range-target__value", styles.targetValueClassName)}>
+          {option.largerMuscleTarget} reps/week
+        </dd>
+      </div>
+      <div className="rep-range-target min-w-0">
+        <dt className={cn("rep-range-target__label", styles.targetLabelClassName)}>
+          Smaller muscle groups
+        </dt>
+        <dd className={cn("rep-range-target__value", styles.targetValueClassName)}>
+          {option.smallerMuscleTarget} reps/week
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -313,10 +292,6 @@ function RequiredWeeklyRepTargetsSection({ rows }: RequiredWeeklyRepTargetsRowsP
           >
             Required weekly rep targets
           </h4>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Reps/week is the saved Training Volume target. Estimated sets/week is display context
-            only.
-          </p>
         </div>
       </div>
 
@@ -346,9 +321,6 @@ function OptionalWeeklyRepTargetsSection({
           >
             Optional volume targets
           </h4>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Calves and Abs stay out of the saved Training Volume until you add direct work for them.
-          </p>
         </div>
       </div>
 

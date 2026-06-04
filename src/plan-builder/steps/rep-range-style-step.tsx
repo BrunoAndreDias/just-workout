@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, CheckCircle2, Info } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, ChevronLeft, Info } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions } from "../../design-system/step-screen";
@@ -65,15 +65,19 @@ export function RepRangeStyleStep({
       </div>
 
       <StepActions className="rep-range-actions">
-        <Button asChild className="rep-range-action-button" variant="outline">
-          <Link to={planBuilderPaths.frequency}>Back to Training schedule</Link>
+        <Button asChild size="step" variant="outline">
+          <Link to={planBuilderPaths.frequency}>
+            <ChevronLeft aria-hidden="true" size={20} />
+            Back to Training schedule
+          </Link>
         </Button>
         <Button
-          className="rep-range-action-button rep-range-action-button--primary"
           onClick={() => {
             void onContinueToVolume();
           }}
+          size="step"
           type="button"
+          variant="builderPrimary"
         >
           Continue to Volume
           <ArrowRight aria-hidden="true" size={20} strokeWidth={2.4} />

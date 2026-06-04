@@ -195,21 +195,6 @@
   margin-top: 0;
 }
 
-.rep-range-action-button,
-.training-volume-action-button {
-  min-height: 2.8rem;
-  min-width: min(100%, 12rem);
-}
-
-.rep-range-action-button--primary {
-  min-width: min(100%, 17.5rem);
-  background: #00636a;
-}
-
-.rep-range-action-button--primary:hover {
-  background: #075d63;
-}
-
 @media (min-width: 760px) {
   .rep-range-options {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -343,10 +328,6 @@
     font-size: 0.76rem;
     line-height: 1rem;
   }
-
-  .rep-range-action-button {
-    min-height: 2.4rem;
-  }
 }
 
 @media (min-width: 1440px) and (min-height: 720px) {
@@ -419,12 +400,6 @@
 .rep-range-generation-note {
   font-size: var(--jw-body-size);
   line-height: var(--jw-body-line-height);
-}
-
-.rep-range-action-button {
-  min-height: var(--jw-button-height-md);
-  height: var(--jw-button-height-md);
-  font-size: var(--jw-body-size);
 }
 
 @media (max-width: 1023px), (min-width: 1800px) {

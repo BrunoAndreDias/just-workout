@@ -970,45 +970,6 @@
   }
 }
 
-.plan-builder-page--exercises.plan-builder-page {
-  width: 100%;
-  max-width: none;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.plan-builder-page--exercises.plan-builder-page .plan-builder-workspace-card {
-  padding: 0;
-}
-
-.plan-builder-page--exercises .plan-builder-workspace-card > header,
-.plan-builder-page--exercises .plan-builder-stepper {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.plan-builder-page--exercises .plan-builder-step-content {
-  margin-top: 0;
-}
-
-@media (min-width: 1280px) {
-  body:has(.plan-builder-page--exercises) .app-shell-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  body:has(.plan-builder-page--exercises) .app-shell-grid > aside {
-    display: none;
-  }
-
-  body:has(.plan-builder-page--exercises) main {
-    padding: 0.5rem;
-  }
-}
-
 /* Implementation density pass: keep the current step dominant and the blueprint supporting. */
 .plan-builder-page {
   min-width: 0;

@@ -2,7 +2,6 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.training-volume-panel h3,
 .training-volume-panel h4,
 .training-volume-panel h5,
 .training-volume-section-title,
@@ -13,12 +12,11 @@
 }
 
 .training-volume-section-title,
-.training-volume-panel h3 {
+.training-volume-panel h4 {
   font-size: var(--jw-section-title-size);
   line-height: var(--jw-section-title-line-height);
 }
 
-.training-volume-panel h4,
 .volume-preset-option__title {
   font-size: var(--jw-card-title-size);
   line-height: var(--jw-card-title-line-height);
@@ -26,8 +24,7 @@
 
 .training-volume-section-copy,
 .volume-preset-option__copy,
-.training-volume-table-wrap,
-.training-volume-how li {
+.training-volume-table-wrap {
   font-size: var(--jw-body-size);
   line-height: var(--jw-body-line-height);
 }
@@ -39,12 +36,12 @@
 .volume-preset-options {
   display: grid;
   gap: 0.85rem;
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
 .volume-preset-option {
-  position: relative;
-  min-height: 7.25rem;
+  display: block;
+  min-height: 12.5rem;
   padding: 1rem;
 }
 
@@ -55,32 +52,24 @@
   box-shadow: inset 0 0 0 1px #00636a;
 }
 
-.volume-preset-option--selected .training-split-option__control {
-  border-color: #00636a;
-  background: #00636a;
-}
-
 .volume-preset-option__body {
-  display: block;
+  display: flex;
+  height: 100%;
+  gap: 0.95rem;
 }
 
-.volume-preset-option .training-split-option__control {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+.volume-preset-option__body > .min-w-0 {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
 }
 
-.volume-preset-option .min-w-0 {
-  padding-right: 2.75rem;
+.volume-preset-option .rep-range-targets {
+  padding-top: 0.9rem;
 }
 
-.volume-preset-option__targets {
-  margin-top: 0.85rem;
-  font-size: 0.76rem;
-  font-weight: 800;
-  line-height: 1.05rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.volume-preset-option .rep-range-target {
+  padding: 0.58rem 0;
 }
 
 .training-volume-targets-grid {
@@ -97,19 +86,16 @@
   margin-top: 0.75rem;
 }
 
-.training-volume-how {
+.training-volume-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
   margin-top: 1.25rem;
 }
 
-.training-volume-actions {
-  margin-top: 1.5rem;
-}
-
-.training-volume-scope-note {
-  margin-top: 0;
-}
-
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .volume-preset-options {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -117,17 +103,17 @@
 
 @media (min-width: 1280px) and (min-height: 720px) {
   .training-volume-panel {
-    padding: 0.7rem 0.9rem;
+    padding: 0;
   }
 
   .training-volume-targets-grid {
     grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.55fr);
     gap: 0.75rem;
-    margin-top: 0.65rem;
+    margin-top: 0.85rem;
   }
 
   .training-volume-target-section h4,
-  .training-volume-how h4 {
+  .training-volume-section-title {
     font-size: 0.9rem;
     line-height: 1rem;
   }
@@ -166,25 +152,33 @@
     font-size: 0.66rem;
   }
 
-  .training-volume-how {
-    margin-top: 0.65rem;
+  .training-volume-actions {
+    margin-top: 0.75rem;
   }
 
-  .plan-builder-page--volume .training-volume-how ul {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin-top: 0.45rem;
+  .volume-preset-option {
+    min-height: 11.25rem;
+    padding: 0.82rem;
   }
 
-  .plan-builder-page--volume .training-volume-how li {
-    font-size: 0.66rem;
-    line-height: 0.85rem;
+  .volume-preset-option__copy {
+    margin-top: 0.55rem;
+    font-size: 0.81rem;
+    line-height: 1.18rem;
+  }
+
+  .volume-preset-option .rep-range-targets {
+    padding-top: 0.65rem;
+  }
+
+  .volume-preset-option .rep-range-target {
+    padding: 0.42rem 0;
   }
 }
 
 @media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
   .training-volume-panel {
-    padding: 0.55rem 0.75rem;
+    padding: 0;
   }
 
   .training-volume-targets-grid {
@@ -203,14 +197,25 @@
     font-size: 0.54rem;
     line-height: 0.68rem;
   }
+}
 
-  .training-volume-how {
-    margin-top: 0.5rem;
+@media (max-width: 1023px), (min-width: 1800px) {
+  .plan-builder-page.plan-builder-page--volume .plan-builder-workspace-card {
+    padding-bottom: 1rem;
   }
 
-  .plan-builder-page--volume .training-volume-how li {
-    padding: 0.32rem 0.5rem;
-    font-size: 0.6rem;
-    line-height: 0.78rem;
+  .plan-builder-page.plan-builder-page--volume .step-actions.training-volume-actions {
+    position: sticky;
+    right: auto;
+    bottom: 0;
+    left: auto;
+    z-index: 10;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.84), rgba(250, 246, 239, 0.98));
+    padding: 0.75rem 0 0;
+  }
+
+  .plan-builder-page.plan-builder-page--volume .step-actions.training-volume-actions > * {
+    width: auto;
   }
 }

@@ -43,8 +43,8 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
   const shouldShowPlanBuilderRail = usePlanBuilderLargeScreenLayout();
   const shouldShowWideDesktopBlueprintSummary = usePlanBuilderWideDesktopLayout();
   const pageTitle = getPlanBuilderPageTitle(currentStep);
-  const navigateToGroupedStep = (stepNumber: number) => {
-    void navigate({ to: getPlanBuilderPathByGroupedStep(stepNumber) });
+  const navigateToPlanBuilderStep = (step: PlanBuilderStep) => {
+    void navigate({ to: getPlanBuilderPathByStep(step) });
   };
 
   if (currentStep === "frequency" && prototypeVariant) {
@@ -75,7 +75,7 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
           {shouldShowWideDesktopBlueprintSummary ? (
             <PlanBlueprintProgressSummary
               currentStep={currentStep}
-              onStepSelect={navigateToGroupedStep}
+              onStepSelect={navigateToPlanBuilderStep}
               summary={summary}
             />
           ) : !shouldShowPlanBuilderRail ? (
@@ -104,7 +104,7 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
         <RailPanel aria-label="Plan blueprint summary" className="plan-builder-right-rail">
           <PlanBlueprintRailCard
             currentStep={currentStep}
-            onStepSelect={navigateToGroupedStep}
+            onStepSelect={navigateToPlanBuilderStep}
             summary={summary}
           />
         </RailPanel>
@@ -128,21 +128,6 @@ function getPlanBuilderPathByStep(step: string) {
   }
 
   throw new Error(`Unknown Plan Builder step "${step}".`);
-}
-
-function getPlanBuilderPathByGroupedStep(stepNumber: number) {
-  switch (stepNumber) {
-    case 1:
-      return planBuilderPaths.frequency;
-    case 2:
-      return planBuilderPaths.repRanges;
-    case 3:
-      return planBuilderPaths.exercises;
-    case 4:
-      return planBuilderPaths.review;
-  }
-
-  throw new Error(`Unknown Plan Builder grouped step "${stepNumber}".`);
 }
 
 function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {

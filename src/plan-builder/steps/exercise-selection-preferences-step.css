@@ -1,15 +1,17 @@
 .exercise-selection-layout {
-  gap: 1rem;
+  min-width: 0;
 }
 
 .exercise-selection-main {
   min-width: 0;
+  display: grid;
+  gap: 1rem;
 }
 
 .exercise-selection-primary {
-  border-color: rgba(28, 25, 23, 0.08);
-  background: #fffdfa;
-  padding: 1rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .exercise-selection-conflict-note {
@@ -17,6 +19,7 @@
   align-items: center;
   gap: 1.35rem;
   min-height: 6.15rem;
+  margin-top: 1rem;
   border: 1px solid #f3e2cc;
   border-radius: 0.625rem;
   background: linear-gradient(90deg, #fff8f0 0%, #fffdf9 62%);
@@ -47,35 +50,23 @@
   margin-top: 1rem;
 }
 
-.exercise-selection-actions a,
-.exercise-selection-actions button {
-  min-width: 12.7rem;
-  min-height: 3.45rem;
-  border-radius: 0.5rem;
-  font-size: 0.98rem;
-  font-weight: 720;
-}
-
-.exercise-selection-actions > button:last-child {
-  color: #fffefa;
-}
-
 .exercise-selection-preference-grid,
 .exercise-selection-context-grid,
 .movement-pattern-coverage {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .exercise-selection-editor {
   min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
-.exercise-selection-support {
-  align-content: start;
-}
-
-.exercise-selection-support .plan-builder-step-status {
-  display: none;
+.exercise-selection-summary-panel {
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .exercise-selection-layout h3,
@@ -103,9 +94,10 @@
 }
 
 .exercise-selection-rules-panel {
-  border-color: rgba(28, 25, 23, 0.08);
-  background: #fffefd;
-  padding: 2.15rem 2rem 2rem;
+  border: 0;
+  border-radius: 0;
+  background: #f4eee5;
+  padding: 1.15rem 1.25rem;
 }
 
 .exercise-selection-rules-panel__header h3 {
@@ -119,7 +111,7 @@
 }
 
 .exercise-selection-rules-panel__header p {
-  margin: 0.78rem 0 0;
+  margin: 0.35rem 0 0;
   color: #29241f;
   font-size: 0.9rem;
   font-weight: 520;
@@ -128,16 +120,16 @@
 
 .exercise-selection-rules-list {
   display: grid;
-  gap: 2.05rem;
-  margin: 2.35rem 0 0;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
   padding: 0;
   list-style: none;
 }
 
 .exercise-selection-rules-list__item {
   display: grid;
-  grid-template-columns: 3.35rem minmax(0, 1fr);
-  gap: 1.08rem;
+  grid-template-columns: 2.45rem minmax(0, 1fr);
+  gap: 0.75rem;
   align-items: start;
 }
 
@@ -145,10 +137,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.35rem;
-  height: 3.35rem;
+  width: 2.45rem;
+  height: 2.45rem;
   border-radius: 999px;
-  background: #f7ede3;
+  background: #fff9f0;
   color: #00848a;
 }
 
@@ -178,7 +170,7 @@
 }
 
 .exercise-selection-rules-list__description {
-  margin: 0.28rem 0 0;
+  margin: 0.18rem 0 0;
   color: #332e29;
   font-size: 0.84rem;
   font-weight: 520;
@@ -186,29 +178,12 @@
 }
 
 @media (min-width: 1280px) {
-  .exercise-selection-layout {
-    grid-template-columns: minmax(0, 1fr) 30rem;
-  }
-
-  .exercise-selection-primary {
-    min-height: calc(100dvh - 1.4rem);
-  }
-
-  .exercise-selection-support {
-    position: sticky;
-    top: 0.5rem;
-  }
-
-  .exercise-selection-rules-panel {
-    min-height: calc(100dvh - 1rem);
+  .exercise-selection-rules-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1279px) {
-  .exercise-selection-support {
-    grid-template-columns: 1fr;
-  }
-
   .exercise-selection-rules-panel {
     padding: 1.5rem;
   }
@@ -221,10 +196,5 @@
 
   .exercise-selection-conflict-note {
     padding: 1rem;
-  }
-
-  .exercise-selection-actions a,
-  .exercise-selection-actions button {
-    width: 100%;
   }
 }

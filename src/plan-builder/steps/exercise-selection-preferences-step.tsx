@@ -16,10 +16,6 @@ import { cn } from "../../design-system/cn";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
 import { BodyPartSelector } from "../components/BodyPartSelector";
 import {
-  PlanBuilderStepStatusCard,
-  type PlanBuilderStepStatusCardProps,
-} from "../components/plan-builder-page";
-import {
   type AutomaticExerciseSelectionRule,
   commitPendingExerciseSelectionPreferences,
   type ExerciseSelectionPendingInputId,
@@ -53,21 +49,6 @@ const exerciseSelectionHighlights = [
     title: "Safety boundary",
   },
 ] as const satisfies ReadonlyArray<ExerciseSelectionHighlightProps>;
-
-const exerciseSelectionStatusCards = [
-  {
-    body: "This is still your Plan Blueprint. Just Workout waits until Review before the later Training Plan is created.",
-    title: "Plan status",
-  },
-  {
-    body: "Step 5 saves Exercise Selection Preferences only. Day-by-day workouts and final exercise choices do not appear here.",
-    title: "Step scope",
-  },
-  {
-    body: "Preferred Exercises stay soft preferences, while Avoided Exercises remain hard exclusions. Review will surface an Exercise Selection Conflict if a later replacement is unsafe.",
-    title: "Preference rules",
-  },
-] as const satisfies ReadonlyArray<Pick<PlanBuilderStepStatusCardProps, "body" | "title">>;
 
 const automaticRuleIcons = {
   adaptive_rest_timing: AlarmClock,
@@ -212,8 +193,8 @@ export function ExerciseSelectionPreferencesStep({
   }
 
   return (
-    <div className="exercise-selection-layout grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-      <div className="exercise-selection-main min-w-0 space-y-5">
+    <div className="exercise-selection-layout">
+      <div className="exercise-selection-main">
         <StepPanel
           aria-labelledby="exercise-selection-preferences-title"
           className="exercise-selection-primary"
@@ -231,6 +212,8 @@ export function ExerciseSelectionPreferencesStep({
             </p>
           </div>
 
+          <BodyPartSelector />
+
           <div className="exercise-selection-conflict-note">
             <TriangleAlert aria-hidden="true" size={32} strokeWidth={1.8} />
             <div>
@@ -243,10 +226,8 @@ export function ExerciseSelectionPreferencesStep({
             </div>
           </div>
 
-          <BodyPartSelector />
-
-          <StepActions className="exercise-selection-actions mt-6">
-            <Button asChild variant="outline">
+          <StepActions className="exercise-selection-actions">
+            <Button asChild size="step" variant="outline">
               <Link to={planBuilderPaths.volume}>
                 <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
                 Back to Volume
@@ -256,7 +237,9 @@ export function ExerciseSelectionPreferencesStep({
               onClick={() => {
                 void handleContinueToReviewClick();
               }}
+              size="step"
               type="button"
+              variant="builderPrimary"
             >
               Continue to Review
               <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
@@ -295,6 +278,10 @@ export function ExerciseSelectionPreferencesStep({
             />
           </div>
         </StepPanel>
+
+        <ExerciseSelectionAutomaticRulesPanel
+          rulesAppliedAutomatically={rulesAppliedAutomatically}
+        />
 
         <div className="exercise-selection-context-grid grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <StepPanel
@@ -374,20 +361,6 @@ export function ExerciseSelectionPreferencesStep({
 
         <MovementPatternCoverageSection coverageGroups={movementPatternCoverage} />
       </div>
-
-      <aside className="exercise-selection-support grid gap-3 sm:grid-cols-2 xl:sticky xl:top-4 xl:grid-cols-1">
-        <ExerciseSelectionAutomaticRulesPanel
-          rulesAppliedAutomatically={rulesAppliedAutomatically}
-        />
-        {exerciseSelectionStatusCards.map((statusCard) => (
-          <PlanBuilderStepStatusCard
-            body={statusCard.body}
-            key={statusCard.title}
-            title={statusCard.title}
-            titleDisplay="visible"
-          />
-        ))}
-      </aside>
     </div>
   );
 }

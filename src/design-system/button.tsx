@@ -15,8 +15,11 @@ const buttonVariants = cva(
         default: "h-[var(--jw-button-height-md)]",
         icon: "h-[var(--jw-button-height-md)] w-[var(--jw-button-height-md)] p-0",
         sm: "h-[var(--jw-button-height-sm)] px-[var(--jw-button-padding-x-sm)] text-xs",
+        step: "h-[var(--jw-button-height-md)] min-h-[var(--jw-button-height-md)] min-w-[min(100%,12rem)]",
       },
       variant: {
+        builderPrimary:
+          "bg-[#007780] text-white shadow-[0_8px_14px_rgba(0,119,128,0.12)] hover:bg-[#00666e] focus-visible:outline-[#007780]",
         ghost: "text-stone-800 hover:bg-stone-900/8 focus-visible:outline-stone-900",
         outline:
           "border border-stone-900/15 bg-white/50 text-stone-900 hover:bg-white focus-visible:outline-stone-900",
