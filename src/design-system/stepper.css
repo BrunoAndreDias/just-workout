@@ -135,39 +135,10 @@
   }
 }
 
-@media (min-width: 1280px) and (min-height: 720px) {
-  .plan-builder-page--split .plan-builder-stepper {
-    margin-top: 0.85rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-list {
-    column-gap: 0.55rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-line {
-    top: 0.88rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-dot {
-    height: 1.75rem;
-    width: 1.75rem;
-    font-size: 0.72rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-label {
-    margin-top: 0.35rem;
-    font-size: 0.72rem;
-  }
-}
-
 @media (min-width: 1280px) and (max-width: 1439px) and (min-height: 720px) {
   .plan-builder-stepper {
     margin-top: 0.9rem;
   }
-
-  .plan-builder-page--split .plan-builder-stepper {
-    margin-top: 0.6rem;
-  }
 }
 
 @media (min-width: 1280px) and (min-height: 720px) {
@@ -341,58 +312,6 @@
   }
 
   .plan-builder-stepper-label {
-    margin-top: 0.18rem;
-    font-size: 0.64rem;
-    line-height: 0.85rem;
-  }
-}
-
-@media (min-width: 1280px) and (min-height: 821px) and (max-height: 980px) {
-  .plan-builder-page--split .plan-builder-stepper {
-    flex: 0 0 auto;
-    margin-top: 0.45rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-line {
-    top: 0.88rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-dot {
-    height: 1.75rem;
-    width: 1.75rem;
-    font-size: 0.72rem;
-    box-shadow: none;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-label {
-    margin-top: 0.28rem;
-    font-size: 0.68rem;
-    line-height: 0.9rem;
-  }
-}
-
-@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
-  .plan-builder-page--split .plan-builder-stepper {
-    flex: 0 0 auto;
-    margin-top: 0.35rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-list {
-    column-gap: 0.45rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-line {
-    top: 0.78rem;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-dot {
-    height: 1.55rem;
-    width: 1.55rem;
-    font-size: 0.66rem;
-    box-shadow: none;
-  }
-
-  .plan-builder-page--split .plan-builder-stepper-label {
     margin-top: 0.18rem;
     font-size: 0.64rem;
     line-height: 0.85rem;
@@ -802,6 +721,162 @@
 
   .plan-builder-stepper-label {
     margin-top: 0.3125rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
+/* Compact structural stepper used by the Plan Builder. */
+.plan-builder-stepper-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-builder-stepper-item {
+  position: relative;
+  min-width: 0;
+  text-align: center;
+}
+
+.plan-builder-stepper-control {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+button.plan-builder-stepper-control {
+  cursor: pointer;
+}
+
+button.plan-builder-stepper-control:hover .plan-builder-stepper-dot,
+button.plan-builder-stepper-control:focus-visible .plan-builder-stepper-dot {
+  border-color: rgba(0, 119, 128, 0.55);
+  background: #f0fbfb;
+  color: #00636a;
+}
+
+button.plan-builder-stepper-control:hover .plan-builder-stepper-label,
+button.plan-builder-stepper-control:focus-visible .plan-builder-stepper-label {
+  color: #00636a;
+}
+
+button.plan-builder-stepper-control:focus-visible {
+  outline: 2px solid #007780;
+  outline-offset: 0.25rem;
+}
+
+.plan-builder-stepper-line {
+  display: none;
+}
+
+.plan-builder-stepper-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: #31505d;
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.plan-builder-stepper-dot--current {
+  border-color: #007780;
+  background: #007780;
+  color: #ffffff;
+}
+
+.plan-builder-stepper-label {
+  display: block;
+  min-width: 0;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  color: #120f0d;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-builder-stepper-label--current {
+  color: #00636a;
+}
+
+@media (min-width: 640px) {
+  .plan-builder-stepper-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .plan-builder-stepper-list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .plan-builder-stepper-item {
+    min-height: 3rem;
+  }
+
+  .plan-builder-stepper-line {
+    position: absolute;
+    top: 0.875rem;
+    left: -50%;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: rgba(28, 25, 23, 0.1);
+  }
+
+  .plan-builder-stepper-dot {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .plan-builder-stepper-label {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 0.875rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .plan-builder-stepper-item {
+    min-height: 3.25rem;
+  }
+
+  .plan-builder-stepper-line {
+    top: 1rem;
+  }
+
+  .plan-builder-stepper-dot {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+
+  .plan-builder-stepper-label {
     font-size: 0.75rem;
     line-height: 1rem;
   }

@@ -13,7 +13,7 @@ export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
 export type TrainingFrequencyOption = {
   daysPerWeek: TrainingFrequencyDaysPerWeek;
-  helperText: string;
+  helperText?: string;
 };
 export type TrainingFrequencyRecommendation = {
   description: string;
@@ -27,7 +27,6 @@ export type RepRangeStyle = {
   description: string;
   id: RepRangeStyleId;
   isRecommended: boolean;
-  note: string;
   planEffects: readonly [string, string, string];
   targets: ReadonlyArray<{
     label: string;
@@ -36,8 +35,8 @@ export type RepRangeStyle = {
   title: string;
   volumeEstimationRepRange: VolumeEstimationRepRange;
 };
-export type PlanBuilderGuardedStep = "split" | "rep-ranges" | "volume" | "exercises" | "review";
-export type PlanBuilderRedirectStep = "frequency" | "split" | "rep-ranges" | "volume" | "exercises";
+export type PlanBuilderGuardedStep = "rep-ranges" | "volume" | "exercises" | "review";
+export type PlanBuilderRedirectStep = "frequency" | "rep-ranges" | "volume" | "exercises";
 
 export type PlanBuilderConfirmedSteps = {
   exercises: boolean;

@@ -7,7 +7,6 @@ import {
   PlanBuilderRepRangesRoute,
   PlanBuilderReviewRoute,
   PlanBuilderRoute,
-  PlanBuilderSplitRoute,
   PlanBuilderVolumeRoute,
   planBuilderPaths,
   planBuilderService,
@@ -46,17 +45,9 @@ const planBuilderFrequencyRoute = createRoute({
   path: planBuilderPaths.frequency,
 });
 
-const planBuilderSplitRoute = createRoute({
-  beforeLoad: requireConfirmedTrainingFrequency,
-  component: PlanBuilderSplitRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.split,
-});
-
 const planBuilderRedirectPaths = {
   exercises: planBuilderPaths.exercises,
   frequency: planBuilderPaths.frequency,
-  split: planBuilderPaths.split,
   "rep-ranges": planBuilderPaths.repRanges,
   volume: planBuilderPaths.volume,
 } as const satisfies Record<PlanBuilderRedirectStep, string>;
@@ -74,10 +65,6 @@ async function requirePlanBuilderStep(step: PlanBuilderGuardedStep) {
     replace: true,
     to: planBuilderRedirectPaths[redirectStep],
   });
-}
-
-async function requireConfirmedTrainingFrequency() {
-  return requirePlanBuilderStep("split");
 }
 
 async function requireConfirmedTrainingSplit() {
@@ -128,7 +115,6 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   planBuilderEntryRoute,
   planBuilderFrequencyRoute,
-  planBuilderSplitRoute,
   planBuilderRepRangesRoute,
   planBuilderVolumeRoute,
   planBuilderExercisesRoute,

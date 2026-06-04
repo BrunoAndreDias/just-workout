@@ -1931,3 +1931,955 @@ button.training-frequency-action-button {
     margin-top: 1.125rem;
   }
 }
+
+/* Structural frequency-step refactor. */
+.training-frequency-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.training-frequency-heading {
+  min-width: 0;
+}
+
+.training-frequency-title {
+  margin: 0;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-size: var(--jw-builder-section-title-size);
+  font-weight: 700;
+  line-height: var(--jw-builder-section-title-line-height);
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-frequency-copy {
+  max-width: 58ch;
+  margin: 0.375rem 0 0;
+  color: #31505d;
+  font-size: var(--jw-builder-body-size);
+  font-weight: 500;
+  line-height: var(--jw-builder-body-line-height);
+}
+
+.training-frequency-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin: 0.875rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.training-frequency-option {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 6.6rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.8rem 0.85rem;
+  text-align: center;
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.training-frequency-option:hover {
+  border-color: rgba(0, 119, 128, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.training-frequency-option:has(input:focus-visible) {
+  outline: 2px solid #007780;
+  outline-offset: 2px;
+}
+
+.training-frequency-option--selected {
+  border-color: #007780;
+  background: rgba(248, 252, 252, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.08);
+}
+
+.training-frequency-option__check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 119, 128, 0.28);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #007780;
+}
+
+.training-frequency-option__check svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.training-frequency-option__icon,
+.training-frequency-option__icon-frame {
+  position: relative;
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  color: #120f0d;
+}
+
+.training-frequency-option__icon svg {
+  width: 1.95rem;
+  height: 1.95rem;
+  stroke-width: 1.6;
+}
+
+.training-frequency-option__day {
+  position: absolute;
+  top: 0.74rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.training-frequency-option__label {
+  display: block;
+  margin-top: 0.45rem;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2rem;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-frequency-option__helper {
+  display: block;
+  min-height: 1.05rem;
+  margin-top: 0.18rem;
+  color: #526873;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 0.98rem;
+}
+
+.training-frequency-recommendation,
+.training-frequency-note-row {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid rgba(0, 119, 128, 0.16);
+  border-radius: 0.5rem;
+  background: rgba(248, 252, 252, 0.58);
+  padding: 0.5rem 0.75rem;
+}
+
+.training-frequency-recommendation {
+  margin-top: 0.75rem;
+  color: #075d63;
+}
+
+.training-frequency-recommendation__icon {
+  display: flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #0a5960;
+}
+
+.training-frequency-recommendation__icon svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.training-frequency-recommendation__copy {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem 0.5rem;
+}
+
+.training-frequency-recommendation h3 {
+  margin: 0;
+  color: #075d63;
+  font-size: 0.875rem;
+  font-weight: 750;
+  line-height: 1.125rem;
+}
+
+.training-frequency-recommendation p {
+  margin: 0;
+  color: #31505d;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.training-frequency-note-row {
+  margin-top: 0.625rem;
+  border-color: rgba(28, 25, 23, 0.1);
+  background: rgba(255, 253, 250, 0.72);
+  color: #9a4b13;
+}
+
+.training-frequency-note-row svg {
+  flex: 0 0 auto;
+}
+
+.training-frequency-note-row p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.training-frequency-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+  padding-top: 0;
+}
+
+.training-frequency-action-button {
+  height: 2.625rem;
+  min-height: 2.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.training-frequency-action-button--back {
+  min-width: 7rem;
+  border-color: rgba(28, 25, 23, 0.1);
+  background: #fbf7f1;
+  color: rgba(28, 25, 23, 0.36);
+}
+
+.training-frequency-action-button--continue {
+  min-width: 12.75rem;
+  background: #007780;
+  box-shadow: 0 8px 14px rgba(0, 119, 128, 0.12);
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.training-frequency-action-button--continue:hover {
+  background: #00666e;
+}
+
+@media (min-width: 640px) {
+  .training-frequency-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 768px) {
+  .training-frequency-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .training-frequency-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .training-frequency-options {
+    margin-top: 0.875rem;
+  }
+
+  .training-frequency-option {
+    min-height: 5.85rem;
+    padding: 0.78rem 0.875rem;
+  }
+
+  .training-frequency-large-screen-warning {
+    display: flex;
+  }
+}
+
+@media (min-width: 1800px) and (min-height: 720px) {
+  .training-frequency-copy {
+    margin-top: 0.375rem;
+  }
+
+  .training-frequency-options {
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .training-frequency-option {
+    min-height: 5.6rem;
+    padding: 0.7rem 0.875rem;
+  }
+
+  .training-frequency-option__icon,
+  .training-frequency-option__icon-frame {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .training-frequency-option__icon svg {
+    width: 2.125rem;
+    height: 2.125rem;
+  }
+
+  .training-frequency-option__day {
+    top: 0.8125rem;
+    font-size: 0.8125rem;
+  }
+
+  .training-frequency-recommendation {
+    margin-top: 0.75rem;
+  }
+}
+
+/* Grouped Training schedule step. */
+.training-frequency-panel {
+  gap: 0;
+}
+
+.training-frequency-title {
+  font-size: 1.15rem;
+  line-height: 1.35rem;
+}
+
+.training-frequency-options {
+  margin-top: 0.9rem;
+}
+
+.training-frequency-option {
+  min-height: 5.75rem;
+}
+
+.training-schedule-split {
+  margin-top: 0.875rem;
+}
+
+.training-schedule-split__section-title,
+.training-schedule-split h3,
+.training-schedule-split h4 {
+  margin: 0;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-weight: 700;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-schedule-split__section-title {
+  font-size: 1.15rem;
+  line-height: 1.35rem;
+}
+
+.training-schedule-split__card {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.58rem;
+  border: 1px solid #007780;
+  border-radius: 0.625rem;
+  background: rgba(251, 253, 252, 0.8);
+  padding: 0.58rem 0.72rem;
+  cursor: pointer;
+}
+
+.training-schedule-split__card:focus-within,
+.training-schedule-split__alternative:focus-within {
+  outline: 2px solid rgba(0, 119, 128, 0.36);
+  outline-offset: 2px;
+}
+
+.training-schedule-split__heading {
+  display: block;
+}
+
+.training-schedule-split__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.training-schedule-split__badge {
+  display: inline-flex;
+  min-height: 1.2rem;
+  align-items: center;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 0.2rem;
+  color: #49656a;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 0.9rem;
+}
+
+.training-schedule-split__badge--selected {
+  background: rgba(0, 119, 128, 0.06);
+  padding-right: 0.42rem;
+  padding-left: 0.42rem;
+  color: #176870;
+}
+
+.training-schedule-split h3 {
+  font-size: 1.05rem;
+  line-height: 1.3rem;
+}
+
+.training-schedule-split__heading p {
+  max-width: none;
+  margin: 0.18rem 0 0;
+  color: #244256;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.18rem;
+}
+
+.training-schedule-split__details {
+  display: grid;
+  gap: 0.56rem;
+  margin-top: 0.5rem;
+}
+
+.training-schedule-split h4 {
+  font-size: 0.86rem;
+  line-height: 1.05rem;
+}
+
+.training-schedule-split ul,
+.training-schedule-split ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-schedule-split__benefits {
+  display: grid;
+  gap: 0.22rem;
+  margin-top: 0.4rem;
+}
+
+.training-schedule-split__benefits li {
+  display: flex;
+  min-height: 1.1rem;
+  align-items: center;
+  gap: 0.38rem;
+  color: #193b45;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1rem;
+}
+
+.training-schedule-split__benefits li::before {
+  width: 0.32rem;
+  height: 0.32rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(0, 119, 128, 0.48);
+  content: "";
+}
+
+.training-schedule-split__layout {
+  padding-top: 0;
+}
+
+.training-schedule-split__layout ol {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.28rem 0.45rem;
+  justify-content: start;
+  margin-top: 0.4rem;
+}
+
+.training-schedule-split__layout li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 0.32rem;
+  justify-self: start;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0.26rem 0.44rem;
+}
+
+.training-schedule-split__layout svg {
+  display: none;
+}
+
+.training-schedule-split__layout strong,
+.training-schedule-split__layout span {
+  display: inline;
+}
+
+.training-schedule-split__layout strong {
+  color: #244256;
+  font-size: 0.72rem;
+  line-height: 0.95rem;
+}
+
+.training-schedule-split__layout span {
+  color: #007780;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1rem;
+}
+
+.training-schedule-split__alternatives {
+  margin-top: 0.62rem;
+}
+
+.training-schedule-split__alternatives h3 {
+  font-size: 0.86rem;
+  line-height: 1.05rem;
+}
+
+.training-schedule-split__alternatives > div {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.training-schedule-split__alternative {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 2.8rem;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.36);
+  padding: 0.45rem 0.58rem;
+  color: #244256;
+  font-size: 0.84rem;
+  line-height: 1.08rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.training-schedule-split__alternative-icon,
+.training-schedule-split__alternative-tag {
+  display: none;
+}
+
+.training-schedule-split__alternative-copy {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.training-schedule-split__alternative-copy > span:first-child {
+  color: #193b45;
+  font-weight: 650;
+}
+
+.training-schedule-split__alternative-copy > span:last-child {
+  color: #55636b;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1rem;
+}
+
+.training-schedule-split__alternative--selected {
+  border-color: rgba(0, 119, 128, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.training-frequency-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin-top: 0.75rem;
+  background: linear-gradient(180deg, rgba(250, 246, 239, 0.84), rgba(250, 246, 239, 0.98));
+  padding: 0.75rem 0 0;
+}
+
+.training-frequency-action-button--back {
+  color: #3f3a35;
+}
+
+@media (max-width: 520px) {
+  .training-schedule-split__alternative {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .training-schedule-split__alternatives > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.62rem;
+  }
+
+  .training-schedule-split__alternative:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .training-schedule-split__alternative {
+    min-height: 3.9rem;
+    padding: 0.62rem 0.78rem;
+  }
+
+  .training-schedule-split__alternative-copy {
+    gap: 0.18rem;
+  }
+
+  .training-schedule-split__alternative-copy > span:first-child {
+    font-size: 0.94rem;
+    line-height: 1.15rem;
+  }
+
+  .training-schedule-split__alternative-copy > span:last-child {
+    font-size: 0.86rem;
+    line-height: 1.12rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .training-schedule-split__heading p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .training-schedule-split__details {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
+    align-items: start;
+  }
+
+  .training-schedule-split__layout {
+    border-top: 0;
+    border-left: 1px solid rgba(28, 25, 23, 0.1);
+    padding-top: 0;
+    padding-left: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .training-frequency-options {
+    gap: 0.85rem;
+  }
+
+  .training-frequency-option {
+    min-height: 5.55rem;
+    padding: 0.64rem 0.8rem;
+  }
+
+  .training-schedule-split__card {
+    padding: 0.62rem 0.78rem;
+  }
+
+  .training-frequency-actions {
+    margin-top: 0.75rem;
+  }
+}
+
+@media (min-width: 1800px) and (min-height: 720px) {
+  .training-schedule-split {
+    margin-top: 1.35rem;
+  }
+
+  .training-schedule-split__section-title {
+    position: relative;
+    padding-bottom: 0.82rem;
+    border-bottom: 1px solid rgba(28, 25, 23, 0.12);
+    font-size: 1.26rem;
+    line-height: 1.5rem;
+  }
+
+  .training-schedule-split__section-title::after {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 10.5rem;
+    height: 0.18rem;
+    background: #007780;
+    content: "";
+  }
+
+  .training-schedule-split__card {
+    margin-top: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 1.45rem 0 1.15rem;
+    cursor: pointer;
+  }
+
+  .training-schedule-split h3 {
+    font-size: 1.28rem;
+    line-height: 1.5rem;
+  }
+
+  .training-schedule-split__badge {
+    min-height: 1.6rem;
+    padding-right: 0.7rem;
+    padding-left: 0.7rem;
+    background: rgba(0, 119, 128, 0.08);
+    color: #176870;
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .training-schedule-split__heading p {
+    margin-top: 0.75rem;
+    overflow: visible;
+    color: #69737c;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.3rem;
+    white-space: normal;
+  }
+
+  .training-schedule-split__details {
+    grid-template-columns: minmax(17rem, 0.68fr) minmax(0, 1.32fr);
+    gap: 1.75rem;
+    align-items: center;
+    margin-top: 1.35rem;
+  }
+
+  .training-schedule-split__layout {
+    border-left-color: rgba(28, 25, 23, 0.14);
+    padding-left: 1.75rem;
+  }
+
+  .training-schedule-split h4 {
+    font-size: 0.96rem;
+    line-height: 1.2rem;
+  }
+
+  .training-schedule-split__benefits {
+    gap: 0.62rem;
+    margin-top: 0.9rem;
+  }
+
+  .training-schedule-split__benefits li {
+    gap: 0.7rem;
+    color: #183844;
+    font-size: 0.98rem;
+    line-height: 1.25rem;
+  }
+
+  .training-schedule-split__benefits li::before {
+    width: 1.42rem;
+    height: 1.42rem;
+    display: grid;
+    place-items: center;
+    background: #287983;
+    color: #ffffff;
+    content: "\2713";
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .training-schedule-split__layout ol {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-top: 1rem;
+  }
+
+  .training-schedule-split__layout li {
+    min-height: 5.95rem;
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 0.34rem;
+    border: 1px solid rgba(28, 25, 23, 0.07);
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.18);
+    padding: 0.65rem 0.32rem;
+  }
+
+  .training-schedule-split__layout-day:not(.training-schedule-split__layout-day--rest) {
+    border-color: rgba(0, 119, 128, 0.22);
+    background: rgba(248, 252, 252, 0.46);
+  }
+
+  .training-schedule-split__layout svg {
+    display: block;
+    color: #287983;
+  }
+
+  .training-schedule-split__layout-day--rest svg,
+  .training-schedule-split__layout-day--rest span {
+    color: #73706b;
+  }
+
+  .training-schedule-split__layout strong {
+    color: #4f5558;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1rem;
+  }
+
+  .training-schedule-split__layout span {
+    color: #007780;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1rem;
+    text-align: center;
+  }
+
+  .training-schedule-split__alternatives {
+    margin-top: 0.45rem;
+    border-top: 1px solid rgba(28, 25, 23, 0.12);
+    padding-top: 1.15rem;
+  }
+
+  .training-schedule-split__alternatives h3 {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .training-schedule-split__alternatives > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: none;
+    margin-top: 0.75rem;
+    border-top: 1px solid rgba(28, 25, 23, 0.1);
+  }
+
+  .training-schedule-split__alternative {
+    min-height: 4.85rem;
+    grid-template-columns: 3.35rem minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.75rem 1rem 0.75rem 0.65rem;
+  }
+
+  .training-schedule-split__alternative:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .training-schedule-split__alternative-icon {
+    display: grid;
+    height: 2.5rem;
+    width: 2.5rem;
+    place-items: center;
+    color: #287983;
+  }
+
+  .training-schedule-split__alternative-copy {
+    gap: 0.25rem;
+  }
+
+  .training-schedule-split__alternative-copy > span:first-child {
+    color: #171513;
+    font-size: 0.98rem;
+    line-height: 1.22rem;
+  }
+
+  .training-schedule-split__alternative-copy > span:last-child {
+    color: #626b73;
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+  }
+
+  .training-schedule-split__alternative-tag {
+    display: inline-flex;
+    min-height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(0, 119, 128, 0.08);
+    padding: 0 0.95rem;
+    color: #176870;
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 900px) {
+  .training-schedule-split {
+    margin-top: 1.5rem;
+  }
+
+  .training-schedule-split__card {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .training-schedule-split__layout ol {
+    grid-template-columns: repeat(7, minmax(6rem, 1fr));
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 760px) {
+  .training-frequency-actions {
+    position: static;
+    padding-bottom: 1rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 5rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: 1rem;
+    bottom: 0;
+    left: calc(var(--jw-sidebar-width) + 1rem);
+    z-index: 40;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.82), #faf6ef 42%);
+    padding: 0.75rem 0 0.875rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1799px) and (min-height: 640px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 5rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: max(
+      1rem,
+      calc(
+        (100vw - var(--jw-sidebar-width) - var(--jw-builder-page-max-width)) /
+        2 +
+        var(--jw-builder-rail-width) +
+        2rem
+      )
+    );
+    bottom: 0;
+    left: max(
+      calc(var(--jw-sidebar-width) + 1.25rem),
+      calc((100vw + var(--jw-sidebar-width) - var(--jw-builder-page-max-width)) / 2 + 1.25rem)
+    );
+    z-index: 40;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.82), #faf6ef 42%);
+    padding: 0.75rem 0 0.875rem;
+  }
+}

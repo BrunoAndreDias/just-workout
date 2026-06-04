@@ -92,12 +92,8 @@ export function getPlanBuilderRedirectStep(
     return "frequency";
   }
 
-  if (targetStep === "split") {
-    return null;
-  }
-
   if (!isSplitStepComplete(blueprint)) {
-    return "split";
+    return "frequency";
   }
 
   if (targetStep === "rep-ranges") {

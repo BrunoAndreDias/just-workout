@@ -23,7 +23,6 @@ export const repRangeStyles = [
     description: "Heavier main lifts with slightly lower reps.",
     id: "strength_leaning",
     isRecommended: false,
-    note: "Biases the week toward lower-rep top work on the main lifts before accessories climb.",
     planEffects: [
       "Main compounds stay in the 4-6 rep range for heavier top work.",
       "Secondary compounds sit in the 6-8 rep range to bridge heavy lifts and accessories.",
@@ -44,7 +43,6 @@ export const repRangeStyles = [
     description: "A strong default for building muscle while still progressing on main lifts.",
     id: "balanced_hypertrophy",
     isRecommended: true,
-    note: "Best fit for 4 days/week, Upper/Lower, and a muscle-building goal.",
     planEffects: [
       "Main compounds stay in the 6-8 rep range for steady progression.",
       "Secondary compounds move to 8-10 reps for productive muscle-building work.",
@@ -65,7 +63,6 @@ export const repRangeStyles = [
     description: "Higher reps with slightly lighter loads and more controlled work.",
     id: "controlled_higher_reps",
     isRecommended: false,
-    note: "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
     planEffects: [
       "Main compounds move up to 8-10 reps for slightly lighter loading.",
       "Secondary compounds sit in the 10-12 rep range for more controlled work.",
@@ -87,19 +84,15 @@ export const repRangeStyles = [
 export const trainingFrequencyOptions = [
   {
     daysPerWeek: 2,
-    helperText: "Full Body A/B only",
   },
   {
     daysPerWeek: 3,
-    helperText: "Full Body recommended",
   },
   {
     daysPerWeek: 4,
-    helperText: "Upper/Lower recommended",
   },
   {
     daysPerWeek: 5,
-    helperText: "Advanced Push/Pull/Legs variation",
   },
 ] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
 

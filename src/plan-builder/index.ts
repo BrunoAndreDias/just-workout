@@ -10,7 +10,6 @@ export {
   PlanBuilderRepRangesRoute,
   PlanBuilderReviewRoute,
   PlanBuilderRoute,
-  PlanBuilderSplitRoute,
   PlanBuilderVolumeRoute,
 } from "./plan-builder-route";
 export { planBuilderService } from "./plan-builder-service";

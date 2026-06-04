@@ -1,6 +1,4 @@
 import {
-  ArrowRight,
-  Calendar,
   CalendarCheck,
   CalendarDays,
   Clock3,
@@ -212,38 +210,38 @@ function getPlanBlueprintHeaderFields(
   ];
 }
 
-export function PlanBlueprintRailCard({ summary }: PrototypeBlueprintSummaryProps) {
-  const railRows = summary ? getPlanBlueprintRailRows(summary) : [];
+export function PlanBlueprintRailCard({
+  currentStep = "frequency",
+  summary,
+}: PrototypeBlueprintSummaryProps & { currentStep?: PlanBuilderStep }) {
+  const currentGroupedStep = getCurrentGroupedPlanBuilderStep(currentStep);
+  const railSteps = summary ? getPlanBlueprintRailSteps(summary, currentGroupedStep) : [];
 
   return (
     <RailPanelSection className="plan-builder-summary-card rounded-lg border border-stone-950/10 bg-white/60 px-6 py-7">
       <h2 className="text-2xl font-black leading-tight text-[#120f0d]">Plan blueprint</h2>
       {summary ? (
-        <dl className="mt-7 divide-y divide-stone-950/8">
-          {railRows.map((row) => {
-            const Icon = row.icon;
-
-            return (
-              <div className="plan-builder-summary-row grid gap-4 py-5 first:pt-0" key={row.label}>
-                <span className="plan-builder-summary-row__icon flex h-12 w-12 items-center justify-center rounded-full bg-[#eef4f2] text-[#0a5960]">
-                  <Icon aria-hidden="true" size={24} strokeWidth={1.65} />
-                </span>
-                <div className="min-w-0">
-                  <dt className="text-base font-black text-[#112c3a]">{row.label}</dt>
-                  <dd className="mt-2 text-sm font-medium leading-6 text-[#244256]">
-                    {row.value}
-                    {row.status ? (
-                      <>
-                        {" "}
-                        <span className="font-black text-[#00636a]">{row.status}</span>
-                      </>
-                    ) : null}
-                  </dd>
+        <>
+          <p className="plan-builder-summary-card__step-count">Step {currentGroupedStep} of 4</p>
+          <ol className="plan-builder-summary-timeline">
+            {railSteps.map((step) => (
+              <li
+                className={cn(
+                  "plan-builder-summary-timeline__item",
+                  step.isCurrent ? "plan-builder-summary-timeline__item--current" : null,
+                  step.isLocked ? "plan-builder-summary-timeline__item--locked" : null,
+                )}
+                key={step.number}
+              >
+                <span className="plan-builder-summary-timeline__marker">{step.number}</span>
+                <div className="plan-builder-summary-timeline__copy">
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
                 </div>
-              </div>
-            );
-          })}
-        </dl>
+              </li>
+            ))}
+          </ol>
+        </>
       ) : (
         <p className="mt-6 text-sm font-semibold text-[#31505d]">Loading Plan Blueprint...</p>
       )}
@@ -251,46 +249,247 @@ export function PlanBlueprintRailCard({ summary }: PrototypeBlueprintSummaryProp
   );
 }
 
-function getPlanBlueprintRailRows(summary: PlanBlueprintSummary): ReadonlyArray<{
-  icon: LucideIcon;
-  label: string;
-  status?: string | null;
-  value: string;
+export function PlanBlueprintProgressSummary({
+  currentStep = "frequency",
+  onStepSelect,
+  summary,
+}: PrototypeBlueprintSummaryProps & {
+  currentStep?: PlanBuilderStep;
+  onStepSelect?: (stepNumber: number) => void;
+}) {
+  const currentGroupedStep = getCurrentGroupedPlanBuilderStep(currentStep);
+  const progressSteps = summary ? getPlanBlueprintProgressSteps(summary, currentGroupedStep) : [];
+
+  return (
+    <aside aria-label="Plan blueprint summary" className="plan-blueprint-progress-summary">
+      <div className="plan-blueprint-progress-summary__header">
+        <div>
+          <h2>Plan blueprint</h2>
+          <p>Step {currentGroupedStep} of 4</p>
+        </div>
+      </div>
+
+      {summary ? (
+        <ol className="plan-blueprint-progress-summary__steps">
+          {progressSteps.map((step) => (
+            <li
+              className={cn(
+                "plan-blueprint-progress-summary__step",
+                step.isCurrent ? "plan-blueprint-progress-summary__step--current" : null,
+                step.isLocked ? "plan-blueprint-progress-summary__step--locked" : null,
+              )}
+              key={step.number}
+            >
+              <PlanBlueprintProgressStepControl
+                isInteractive={Boolean(onStepSelect && !step.isCurrent && !step.isLocked)}
+                onSelect={() => onStepSelect?.(step.number)}
+                step={step}
+              />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="plan-blueprint-progress-summary__loading">Loading Plan Blueprint...</p>
+      )}
+    </aside>
+  );
+}
+
+type PlanBlueprintProgressStep = {
+  body: string;
+  isCurrent?: boolean;
+  isLocked?: boolean;
+  number: number;
+  title: string;
+};
+
+function PlanBlueprintProgressStepControl({
+  isInteractive,
+  onSelect,
+  step,
+}: {
+  isInteractive: boolean;
+  onSelect: () => void;
+  step: PlanBlueprintProgressStep;
+}) {
+  const content = (
+    <>
+      <span className="plan-blueprint-progress-summary__marker">{step.number}</span>
+      <span className="plan-blueprint-progress-summary__copy">
+        <span>{step.title}</span>
+        <span>{step.body}</span>
+      </span>
+    </>
+  );
+
+  if (isInteractive) {
+    return (
+      <button
+        aria-label={`Go to ${step.title}`}
+        className="plan-blueprint-progress-summary__step-control"
+        onClick={onSelect}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <span className="plan-blueprint-progress-summary__step-control">{content}</span>;
+}
+
+function getPlanBlueprintProgressSteps(
+  summary: PlanBlueprintSummary,
+  currentGroupedStep: number,
+): ReadonlyArray<{
+  body: string;
+  isCurrent?: boolean;
+  isLocked?: boolean;
+  number: number;
+  title: string;
 }> {
+  const scheduleSelection = getTrainingScheduleSelection(summary);
+  const trainingStyleSelection = getTrainingStyleSelection(summary);
+  const furthestAvailableGroupedStep = getFurthestAvailableGroupedPlanBuilderStep(summary);
+
   return [
     {
-      icon: Calendar,
-      label: "Frequency:",
-      status: summary.trainingFrequencyStatus,
-      value: summary.trainingFrequency,
+      body: currentGroupedStep === 1 ? "Current" : scheduleSelection,
+      isCurrent: currentGroupedStep === 1,
+      number: 1,
+      title: "Training schedule",
     },
     {
-      icon: Dumbbell,
-      label: "Split:",
-      status: summary.splitStatus,
-      value: summary.split === "Choose a Training Split" ? "Pending" : summary.split,
+      body:
+        currentGroupedStep === 2
+          ? "Current"
+          : currentGroupedStep > 2 || furthestAvailableGroupedStep >= 2
+            ? trainingStyleSelection
+            : "Locked",
+      isCurrent: currentGroupedStep === 2,
+      isLocked: furthestAvailableGroupedStep < 2,
+      number: 2,
+      title: "Training style",
     },
     {
-      icon: Clock3,
-      label: "Weekly rhythm:",
-      value: summary.weeklyRhythm,
+      body:
+        currentGroupedStep === 3
+          ? "Current"
+          : furthestAvailableGroupedStep >= 3
+            ? "Ready"
+            : "Locked",
+      isCurrent: currentGroupedStep === 3,
+      isLocked: furthestAvailableGroupedStep < 3,
+      number: 3,
+      title: "Exercises",
     },
     {
-      icon: SlidersHorizontal,
-      label: "Muscle frequency:",
-      value: summary.muscleFrequency,
-    },
-    {
-      icon: CalendarCheck,
-      label: "Recovery:",
-      value: summary.recovery,
-    },
-    {
-      icon: ArrowRight,
-      label: "Next:",
-      value: summary.nextStep,
+      body:
+        currentGroupedStep === 4
+          ? "Current"
+          : furthestAvailableGroupedStep >= 4
+            ? "Ready"
+            : "Locked",
+      isCurrent: currentGroupedStep === 4,
+      isLocked: furthestAvailableGroupedStep < 4,
+      number: 4,
+      title: "Review",
     },
   ];
+}
+
+function getFurthestAvailableGroupedPlanBuilderStep(summary: PlanBlueprintSummary): number {
+  switch (summary.nextStep) {
+    case "Rep ranges":
+    case "Volume":
+      return 2;
+    case "Exercises":
+      return 3;
+    case "Review":
+      return 4;
+  }
+
+  return 1;
+}
+
+function getPlanBlueprintRailSteps(
+  summary: PlanBlueprintSummary,
+  currentGroupedStep: number,
+): ReadonlyArray<{
+  body: string;
+  isCurrent?: boolean;
+  isLocked?: boolean;
+  number: number;
+  title: string;
+}> {
+  const scheduleSelection = getTrainingScheduleSelection(summary);
+  const trainingStyleSelection = getTrainingStyleSelection(summary);
+
+  return [
+    {
+      body: currentGroupedStep === 1 ? "Current" : scheduleSelection,
+      isCurrent: currentGroupedStep === 1,
+      number: 1,
+      title: "Training schedule",
+    },
+    {
+      body:
+        currentGroupedStep === 2
+          ? "Current"
+          : currentGroupedStep > 2
+            ? trainingStyleSelection
+            : "Locked",
+      isCurrent: currentGroupedStep === 2,
+      isLocked: currentGroupedStep < 2,
+      number: 2,
+      title: "Training style",
+    },
+    {
+      body: currentGroupedStep === 3 ? "Current" : "Locked",
+      isCurrent: currentGroupedStep === 3,
+      isLocked: currentGroupedStep < 3,
+      number: 3,
+      title: "Exercises",
+    },
+    {
+      body: currentGroupedStep === 4 ? "Current" : "Locked",
+      isCurrent: currentGroupedStep === 4,
+      isLocked: currentGroupedStep < 4,
+      number: 4,
+      title: "Review",
+    },
+  ];
+}
+
+function getTrainingScheduleSelection(summary: PlanBlueprintSummary): string {
+  const split = summary.split === "Choose a Training Split" ? "Full Body" : summary.split;
+
+  return `${summary.trainingFrequency} · ${split}`;
+}
+
+function getTrainingStyleSelection(summary: PlanBlueprintSummary): string {
+  const repRanges =
+    summary.repRanges === "Choose Rep ranges" ? "Balanced hypertrophy" : summary.repRanges;
+  const volumePreset =
+    summary.volumePreset === "Not chosen yet" ? "Balanced volume" : summary.volumePreset;
+
+  return `${repRanges} · ${volumePreset}`;
+}
+
+function getCurrentGroupedPlanBuilderStep(currentStep: PlanBuilderStep): number {
+  switch (currentStep) {
+    case "frequency":
+      return 1;
+    case "rep-ranges":
+    case "volume":
+      return 2;
+    case "exercises":
+      return 3;
+    case "review":
+      return 4;
+  }
+
+  return 1;
 }
 
 export function PlanBuilderNextStepCard({ currentStep }: { currentStep: PlanBuilderStep }) {

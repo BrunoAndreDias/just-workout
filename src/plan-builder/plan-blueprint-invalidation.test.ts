@@ -222,7 +222,9 @@ describe("plan blueprint invalidation and redirects", () => {
       timestamp: secondUpdateTimestamp,
     });
 
-    expect(getPlanBuilderRedirectStep(reconfirmedFrequencyBlueprint, "exercises")).toBe("split");
+    expect(getPlanBuilderRedirectStep(reconfirmedFrequencyBlueprint, "exercises")).toBe(
+      "frequency",
+    );
     expect(getPlanBuilderRedirectStep(reconfirmedSplitBlueprint, "exercises")).toBeNull();
   });
 
@@ -250,7 +252,7 @@ describe("plan blueprint invalidation and redirects", () => {
       repRanges: "strength_leaning",
       split: "alternating-full-body-a-b",
     });
-    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "exercises")).toBe("split");
+    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "exercises")).toBe("frequency");
 
     expect(
       getPlanBuilderRedirectStep(
@@ -295,7 +297,7 @@ describe("plan blueprint invalidation and redirects", () => {
       exerciseSelectionPreferences,
       split: "rotating-push-pull-legs",
     });
-    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "review")).toBe("split");
+    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "review")).toBe("frequency");
 
     expect(
       getPlanBuilderRedirectStep(
@@ -449,9 +451,10 @@ describe("plan blueprint invalidation and redirects", () => {
       },
     });
 
-    expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "split")).toBe("frequency");
     expect(getPlanBuilderRedirectStep(createTestPlanBlueprint(), "rep-ranges")).toBe("frequency");
-    expect(getPlanBuilderRedirectStep(blueprintWithIncompatibleSplit, "rep-ranges")).toBe("split");
+    expect(getPlanBuilderRedirectStep(blueprintWithIncompatibleSplit, "rep-ranges")).toBe(
+      "frequency",
+    );
     expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedRepRanges, "volume")).toBe(
       "rep-ranges",
     );

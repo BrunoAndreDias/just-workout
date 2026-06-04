@@ -3,7 +3,6 @@ import { ArrowRight, Check, CheckCircle2, Info } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions } from "../../design-system/step-screen";
-import { SectionDescription, SectionTitle } from "../../design-system/typography";
 import {
   getRepRangeStyleOptionCardClassName,
   getSelectableOptionState,
@@ -44,56 +43,42 @@ export function RepRangeStyleStep({
   selectedRepRangeStyle,
 }: RepRangeStyleStepProps) {
   return (
-    <section aria-labelledby="rep-range-style-title" className="rep-range-step">
-      <div className="rep-range-panel">
-        <div>
-          <SectionTitle
-            className="rep-range-section-title font-black text-stone-950"
-            id="rep-range-style-title"
-          >
-            Rep ranges
-          </SectionTitle>
-          <SectionDescription className="rep-range-section-copy mt-1">
-            Choose the rep range style StrongPlan should use when generating your workouts.
-          </SectionDescription>
-        </div>
+    <section aria-label="Rep Range Style selection" className="rep-range-step">
+      <fieldset className="rep-range-options">
+        <legend className="sr-only">Rep Range Style</legend>
+        {repRangeStyles.map((option) => (
+          <RepRangeStyleOptionRadio
+            isSavedSelection={option.id === savedRepRangeStyleId}
+            isSelected={option.id === selectedRepRangeStyle.id}
+            key={option.id}
+            onSelect={onRepRangeStyleChange}
+            option={option}
+          />
+        ))}
+      </fieldset>
 
-        <fieldset className="rep-range-options">
-          <legend className="sr-only">Rep Range Style</legend>
-          {repRangeStyles.map((option) => (
-            <RepRangeStyleOptionRadio
-              isSavedSelection={option.id === savedRepRangeStyleId}
-              isSelected={option.id === selectedRepRangeStyle.id}
-              key={option.id}
-              onSelect={onRepRangeStyleChange}
-              option={option}
-            />
-          ))}
-        </fieldset>
+      <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
 
-        <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
-
-        <div className="rep-range-generation-note" role="note">
-          <Info aria-hidden="true" size={18} strokeWidth={1.9} />
-          <span>Rest times and progression rules will be added when the plan is generated.</span>
-        </div>
-
-        <StepActions className="rep-range-actions">
-          <Button asChild className="rep-range-action-button" variant="outline">
-            <Link to={planBuilderPaths.split}>Back to Split</Link>
-          </Button>
-          <Button
-            className="rep-range-action-button rep-range-action-button--primary"
-            onClick={() => {
-              void onContinueToVolume();
-            }}
-            type="button"
-          >
-            Continue to Volume
-            <ArrowRight aria-hidden="true" size={20} strokeWidth={2.4} />
-          </Button>
-        </StepActions>
+      <div className="rep-range-generation-note" role="note">
+        <Info aria-hidden="true" size={18} strokeWidth={1.9} />
+        <span>Rest times and progression rules will be added when the plan is generated.</span>
       </div>
+
+      <StepActions className="rep-range-actions">
+        <Button asChild className="rep-range-action-button" variant="outline">
+          <Link to={planBuilderPaths.frequency}>Back to Training schedule</Link>
+        </Button>
+        <Button
+          className="rep-range-action-button rep-range-action-button--primary"
+          onClick={() => {
+            void onContinueToVolume();
+          }}
+          type="button"
+        >
+          Continue to Volume
+          <ArrowRight aria-hidden="true" size={20} strokeWidth={2.4} />
+        </Button>
+      </StepActions>
     </section>
   );
 }
@@ -125,7 +110,6 @@ function RepRangeStyleOptionRadio({
   option,
 }: RepRangeStyleOptionRadioProps) {
   const optionState = getSelectableOptionState(isSelected);
-  const detailStyles = repRangeStyleDetailStyles[optionState];
   function selectOption() {
     onSelect(option.id);
   }
@@ -155,28 +139,24 @@ function RepRangeStyleOptionRadio({
       />
 
       <div className="rep-range-option__body">
-        <span className="training-split-option__control" aria-hidden="true">
-          {isSelected ? <Check aria-hidden="true" size={19} strokeWidth={2.8} /> : null}
-        </span>
         <div className="min-w-0 flex-1">
-          <div className="rep-range-option__header flex flex-wrap items-start justify-between gap-3">
-            <p className="rep-range-option__title font-black">{option.title}</p>
-            <div className="rep-range-option__badges flex flex-wrap items-center justify-end gap-2">
+          <div className="rep-range-option__header">
+            <div className="rep-range-option__title-row">
+              <p className="rep-range-option__title font-black">{option.title}</p>
               {option.isRecommended ? (
                 <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
               ) : null}
             </div>
+            {isSelected ? (
+              <span className="rep-range-option__selected-check" aria-hidden="true">
+                <Check aria-hidden="true" size={14} strokeWidth={3} />
+              </span>
+            ) : null}
           </div>
           <p className={cn("rep-range-option__copy", repRangeStyleDescriptionStyles[optionState])}>
             {option.description}
           </p>
           <RepRangeStyleTargets isSelected={isSelected} targets={option.targets} />
-          {isSelected ? (
-            <p className={cn("rep-range-option__note", detailStyles.noteBodyClassName)}>
-              <Info aria-hidden="true" size={16} strokeWidth={1.9} />
-              <span>{option.note}</span>
-            </p>
-          ) : null}
         </div>
       </div>
     </label>
@@ -190,10 +170,7 @@ function RepRangeStyleTargets({ isSelected = false, targets }: RepRangeStyleTarg
   return (
     <dl className="rep-range-targets">
       {targets.map((target) => (
-        <div
-          className={cn("rep-range-target min-w-0", styles.targetCardClassName)}
-          key={target.label}
-        >
+        <div className="rep-range-target min-w-0" key={target.label}>
           <dt className={cn("rep-range-target__label", styles.targetLabelClassName)}>
             {target.label}
           </dt>

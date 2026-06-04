@@ -1,15 +1,17 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { cn } from "../../design-system/cn";
 import { RailPanel } from "../../design-system/rail-panel";
 import { StepNotice } from "../../design-system/step-screen";
 import { Stepper } from "../../design-system/stepper";
-import { PageKicker, PageTitle } from "../../design-system/typography";
+import { PageTitle } from "../../design-system/typography";
 import type { PlanBlueprintSummary } from "../plan-blueprint";
+import { planBuilderPaths } from "../plan-builder-paths";
 import {
   PlanBlueprintHeaderBar,
+  PlanBlueprintProgressSummary,
   PlanBlueprintRailCard,
-  PlanBuilderNextStepCard,
 } from "./plan-blueprint-summary";
 import {
   type PlanBuilderStep,
@@ -35,10 +37,15 @@ export type PlanBuilderStepStatusCardProps = {
 
 type PlanBuilderStepStatusCardTitleDisplay = "screen-reader-only" | "visible";
 export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanBuilderPageProps) {
+  const navigate = useNavigate();
   const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
   const prototypeVariant = usePlanBuilderPrototypeVariant();
   const shouldShowPlanBuilderRail = usePlanBuilderLargeScreenLayout();
+  const shouldShowWideDesktopBlueprintSummary = usePlanBuilderWideDesktopLayout();
   const pageTitle = getPlanBuilderPageTitle(currentStep);
+  const navigateToGroupedStep = (stepNumber: number) => {
+    void navigate({ to: getPlanBuilderPathByGroupedStep(stepNumber) });
+  };
 
   if (currentStep === "frequency" && prototypeVariant) {
     return (
@@ -61,47 +68,85 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
         currentStep === "frequency" ? "plan-builder-page--frequency" : null,
       )}
     >
-      <section
-        aria-label="Plan Builder workspace"
-        className="plan-builder-workspace-card"
-      >
+      <section aria-label="Plan Builder workspace" className="plan-builder-workspace-card">
         <header className="plan-builder-header">
-          <PageKicker className="plan-builder-eyebrow">Workout Plan Builder</PageKicker>
           <PageTitle className="plan-builder-title">{pageTitle}</PageTitle>
           {intro}
-          {!shouldShowPlanBuilderRail ? <PlanBlueprintHeaderBar summary={summary} /> : null}
+          {shouldShowWideDesktopBlueprintSummary ? (
+            <PlanBlueprintProgressSummary
+              currentStep={currentStep}
+              onStepSelect={navigateToGroupedStep}
+              summary={summary}
+            />
+          ) : !shouldShowPlanBuilderRail ? (
+            <PlanBlueprintHeaderBar summary={summary} />
+          ) : null}
         </header>
 
-        <div className="plan-builder-stepper">
-          <Stepper
-            currentIndex={currentStepIndex}
-            density="compact"
-            items={planBuilderSteps}
-            label="Plan Builder"
-          />
-        </div>
+        {!shouldShowPlanBuilderRail ? (
+          <div className="plan-builder-stepper">
+            <Stepper
+              currentIndex={currentStepIndex}
+              density="compact"
+              items={planBuilderSteps}
+              label="Plan Builder"
+              onItemSelect={(item) => {
+                void navigate({ to: getPlanBuilderPathByStep(item.id) });
+              }}
+            />
+          </div>
+        ) : null}
 
         <div className="plan-builder-step-content">{children}</div>
       </section>
 
-      {shouldShowPlanBuilderRail ? (
+      {shouldShowPlanBuilderRail && !shouldShowWideDesktopBlueprintSummary ? (
         <RailPanel aria-label="Plan blueprint summary" className="plan-builder-right-rail">
-          <PlanBlueprintRailCard summary={summary} />
-          <PlanBuilderNextStepCard currentStep={currentStep} />
+          <PlanBlueprintRailCard currentStep={currentStep} summary={summary} />
         </RailPanel>
       ) : null}
     </section>
   );
 }
 
+function getPlanBuilderPathByStep(step: string) {
+  switch (step) {
+    case "exercises":
+      return planBuilderPaths.exercises;
+    case "frequency":
+      return planBuilderPaths.frequency;
+    case "rep-ranges":
+      return planBuilderPaths.repRanges;
+    case "review":
+      return planBuilderPaths.review;
+    case "volume":
+      return planBuilderPaths.volume;
+  }
+
+  throw new Error(`Unknown Plan Builder step "${step}".`);
+}
+
+function getPlanBuilderPathByGroupedStep(stepNumber: number) {
+  switch (stepNumber) {
+    case 1:
+      return planBuilderPaths.frequency;
+    case 2:
+      return planBuilderPaths.repRanges;
+    case 3:
+      return planBuilderPaths.exercises;
+    case 4:
+      return planBuilderPaths.review;
+  }
+
+  throw new Error(`Unknown Plan Builder grouped step "${stepNumber}".`);
+}
+
 function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
   switch (currentStep) {
     case "frequency":
-      return "Build your workout plan";
-    case "split":
-      return "Choose your training split";
+      return "Training schedule";
     case "rep-ranges":
-      return "Build your workout plan";
+      return "Rep ranges";
     case "volume":
       return "Set your training volume";
     case "exercises":
@@ -113,12 +158,20 @@ function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
   return "Build your workout plan";
 }
 export function usePlanBuilderLargeScreenLayout() {
+  return usePlanBuilderMediaQuery(planBuilderLargeScreenQuery);
+}
+
+function usePlanBuilderWideDesktopLayout() {
+  return usePlanBuilderMediaQuery("(min-width: 2200px) and (min-height: 900px)");
+}
+
+function usePlanBuilderMediaQuery(query: string) {
   const [matches, setMatches] = useState(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
     }
 
-    return window.matchMedia(planBuilderLargeScreenQuery).matches;
+    return window.matchMedia(query).matches;
   });
 
   useEffect(() => {
@@ -126,13 +179,13 @@ export function usePlanBuilderLargeScreenLayout() {
       return;
     }
 
-    const mediaQuery = window.matchMedia(planBuilderLargeScreenQuery);
+    const mediaQuery = window.matchMedia(query);
     const handleChange = () => setMatches(mediaQuery.matches);
 
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
+  }, [query]);
 
   return matches;
 }

@@ -216,16 +216,19 @@ type ConfirmedPlanBuilderProgressForTest = {
   volumePreset: VolumePresetId;
 };
 
+const defaultMatchMedia = window.matchMedia;
+
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
     await db.delete();
     await db.open();
+    restoreDefaultMatchMedia();
   });
 
   it("routes the plan builder entry point into the canonical frequency URL", async () => {
     const { router } = renderPlanBuilder();
 
-    expect(await screen.findByRole("heading", { name: "Build your workout plan" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Training schedule" })).toBeVisible();
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
@@ -239,7 +242,7 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
     const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
 
-    expect(await screen.findByRole("heading", { name: "Build your workout plan" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Training schedule" })).toBeVisible();
     expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
     expect(await screen.findByText("Build muscle")).toBeVisible();
@@ -257,17 +260,16 @@ describe("PlanBuilderRoute", () => {
   it("renders the Training Frequency step in the blueprint builder layout", async () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    expect(await screen.findByRole("heading", { name: "Build your workout plan" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Training schedule" })).toBeVisible();
     expect(
       screen.getByText(
-        "Configure your training blueprint step by step before generating your plan.",
+        "Choose how often you can train and confirm the weekly split Just Workout should use.",
       ),
     ).toBeVisible();
 
     const stepList = screen.getByRole("list", { name: /plan builder steps/i });
 
     expect(within(stepList).getByText("Frequency")).toHaveAttribute("aria-current", "step");
-    expect(within(stepList).getByText("Split")).toBeVisible();
     expect(within(stepList).getByText("Rep ranges")).toBeVisible();
     expect(within(stepList).getByText("Volume")).toBeVisible();
     expect(within(stepList).getByText("Exercises")).toBeVisible();
@@ -276,11 +278,16 @@ describe("PlanBuilderRoute", () => {
     const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
 
     expect(within(frequencyGroup).getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
-    expect(within(frequencyGroup).getByText("Full Body A/B only")).toBeVisible();
-    expect(within(frequencyGroup).getByText("Full Body recommended")).toBeVisible();
-    expect(within(frequencyGroup).getByText("Upper/Lower recommended")).toBeVisible();
-    expect(within(frequencyGroup).getByText("Advanced Push/Pull/Legs variation")).toBeVisible();
-    expect(screen.getByText("Recommended for you")).toBeVisible();
+    expect(within(frequencyGroup).queryByText("Full Body A/B")).not.toBeInTheDocument();
+    expect(within(frequencyGroup).queryByText("Full Body")).not.toBeInTheDocument();
+    expect(within(frequencyGroup).queryByText("Upper/Lower")).not.toBeInTheDocument();
+    expect(within(frequencyGroup).queryByText("Push/Pull/Legs variation")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Recommended weekly split" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
+    expect(screen.getByText("Why this split fits")).toBeVisible();
+    expect(screen.getByText("Suggested weekly layout")).toBeVisible();
+    expect(screen.getByText("Alternating Full Body A/B")).toBeVisible();
+    expect(screen.getByText("Upper / Lower / Full Body")).toBeVisible();
     expect(
       screen.queryByText(/6-day plans are not available in this first version/i),
     ).not.toBeInTheDocument();
@@ -295,7 +302,7 @@ describe("PlanBuilderRoute", () => {
     expectBlueprintSummaryField(summary, "Split", "Pending");
     expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
     expect(screen.getByRole("button", { name: /^back$/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /continue to split/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /continue to training style/i })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "What happens next" })).not.toBeInTheDocument();
   });
 
@@ -311,10 +318,10 @@ describe("PlanBuilderRoute", () => {
     expect(within(frequencyGroup).getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
     expect(within(frequencyGroup).getByText("4 days/week")).toBeVisible();
     expect(within(frequencyGroup).getByText("5 days/week")).toBeVisible();
-    expect(screen.getByText("Full Body recommended")).toBeVisible();
+    expect(within(frequencyGroup).queryByText("Full Body")).not.toBeInTheDocument();
     expect(
-      screen.getByText(/flexible split options, steady recovery, and enough training frequency/i),
-    ).toBeVisible();
+      screen.queryByText(/flexible split options, steady recovery, and enough training frequency/i),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/6-day plans are not available in this first version/i),
     ).not.toBeInTheDocument();
@@ -331,9 +338,7 @@ describe("PlanBuilderRoute", () => {
       expect(within(summary).getAllByText("5 days/week")).toHaveLength(1);
     });
 
-    expect(
-      screen.getByText(/supports higher weekly frequency and shorter sessions/i),
-    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Rotating Push/Pull/Legs" })).toBeVisible();
 
     firstView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
@@ -368,18 +373,11 @@ describe("PlanBuilderRoute", () => {
       expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
     });
 
-    await user.click(screen.getByRole("button", { name: /continue to split/i }));
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     await waitFor(() => {
       expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
     });
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "4-Day Upper/Lower",
-      ),
-    ).toBeVisible();
 
     await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
 
@@ -388,13 +386,9 @@ describe("PlanBuilderRoute", () => {
         within(splitGroup).getByRole("radio", { name: /rotating push\/pull\/legs/i }),
       ).toBeChecked();
     });
-    expect(await screen.findByText(/rotating-cycle preview/i)).toBeVisible();
     expect(
-      await screen.findByText(/schedule-flexible: the cycle rotates across available weekdays/i),
-    ).toBeVisible();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "Rotating Push/Pull/Legs",
+      await screen.findByText(
+        /can work for 4 days\/week, but upper\/lower is easier to keep consistent across fixed weekdays/i,
       ),
     ).toBeVisible();
   });
@@ -413,16 +407,14 @@ describe("PlanBuilderRoute", () => {
       expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
     });
 
-    await user.click(screen.getByRole("button", { name: /continue to split/i }));
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const splitGroup = await getTrainingScheduleSplitSection();
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     await waitFor(() => {
       expect(within(splitGroup).getByRole("radio", { name: /4-day upper\/lower/i })).toBeChecked();
     });
 
-    expect(within(summary).getByText("4-Day Upper/Lower")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Split", "Pending");
     expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
 
     await user.click(within(splitGroup).getByText("Rotating Push/Pull/Legs"));
@@ -433,84 +425,65 @@ describe("PlanBuilderRoute", () => {
       ).toBeChecked();
     });
 
-    await waitFor(() => {
-      expect(within(summary).getByText("Rotating Push/Pull/Legs")).toBeVisible();
-    });
     expect(within(summary).queryByText("4-Day Upper/Lower")).not.toBeInTheDocument();
   });
 
-  it("keeps the Split step focused on the Plan Blueprint instead of generated-plan wording", async () => {
-    await confirmDefaultTrainingFrequency();
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    expect(
-      await screen.findByRole("heading", { name: /choose your training split/i }),
-    ).toBeVisible();
-    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
-    expect(screen.getByText(/choose a compatible training split for the saved plan blueprint/i));
-    expect(screen.queryByText(/generated plan/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
-  });
-
-  it("redirects direct access to Split back to Frequency when Training Frequency is configured but not confirmed", async () => {
-    await saveFourDayTrainingFrequency();
-
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "4 days/week",
-      ),
-    ).toBeVisible();
-  });
-
-  it("confirms Training Frequency before navigating from Frequency to Split", async () => {
+  it("confirms Training schedule before navigating from Frequency to Rep ranges", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     await selectTrainingFrequency(user, 4);
-    await user.click(screen.getByRole("button", { name: /continue to split/i }));
+    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
     });
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
         exercises: false,
         frequency: true,
         repRanges: false,
-        split: false,
+        split: true,
         volume: false,
       });
     });
   });
 
-  it("redirects direct access to Split back to Frequency when a stale confirmed Frequency marker has invalid data", async () => {
-    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+  it("lets the user choose another compatible split from Training schedule before continuing", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    await db.planBlueprints.put({
-      ...blueprint,
-      confirmedBuilderSteps: {
-        exercises: false,
-        frequency: true,
-        repRanges: false,
-        split: false,
-        volume: false,
-      },
-      trainingFrequencyDaysPerWeek: 6 as TrainingFrequencyDaysPerWeek,
-      updatedAt: "2026-05-30T11:35:00.000Z",
-    });
+    expect(
+      await screen.findByRole("radio", { name: getLabelMatcher(trainingSplitLabels.fullBody3Day) }),
+    ).toBeChecked();
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+    await user.click(screen.getByText(trainingSplitLabels.upperLowerFullBody));
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+      expect(
+        screen.getByRole("radio", {
+          name: getLabelMatcher(trainingSplitLabels.upperLowerFullBody),
+        }),
+      ).toBeChecked();
     });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
+    });
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        confirmedBuilderSteps: {
+          exercises: false,
+          frequency: true,
+          repRanges: false,
+          split: true,
+          volume: false,
+        },
+        split: "upper-lower-full-body",
+      });
+    });
   });
 
   it("renders the Rep Range Style cards, defaults to Balanced hypertrophy on step entry, and saves a new selection immediately", async () => {
@@ -568,47 +541,20 @@ describe("PlanBuilderRoute", () => {
     expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
   });
 
-  it("redirects direct access to Rep ranges back to Split when no compatible Training Split is saved", async () => {
+  it("redirects direct access to Rep ranges back to Training schedule when no compatible Training Split is saved", async () => {
     await saveConfirmedFourDayTrainingFrequency();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
-    expect(
-      await screen.findByRole("heading", { name: /choose your training split/i }),
-    ).toBeVisible();
-    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
     expect(
       within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
         "4 days/week",
       ),
     ).toBeVisible();
-  });
-
-  it("confirms Training Split before navigating from Split to Rep ranges", async () => {
-    const user = userEvent.setup();
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
-
-    await selectTrainingFrequency(user, 4);
-    const splitGroup = await continueToSplitStep(user);
-
-    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
-    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
-    });
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).confirmedBuilderSteps).toEqual({
-        exercises: false,
-        frequency: true,
-        repRanges: false,
-        split: true,
-        volume: false,
-      });
-    });
   });
 
   it("confirms Rep ranges before navigating from Rep ranges to Volume", async () => {
@@ -620,7 +566,7 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to volume/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
@@ -636,7 +582,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("redirects direct access to Volume back to Split when a stale confirmed Split marker has incompatible data", async () => {
+  it("redirects direct access to Volume back to Training schedule when a stale confirmed Split marker has incompatible data", async () => {
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
     await db.planBlueprints.put({
@@ -656,9 +602,9 @@ describe("PlanBuilderRoute", () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
-    expect(await screen.findByRole("group", { name: /training split/i })).toBeVisible();
+    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
   });
 
   it("redirects direct access to Volume back to Rep ranges when the saved Rep Range Style has not been confirmed", async () => {
@@ -991,7 +937,7 @@ describe("PlanBuilderRoute", () => {
 
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to volume/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
@@ -1695,11 +1641,11 @@ describe("PlanBuilderRoute", () => {
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
 
-    const splitGroup = await continueToSplitStep(user);
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
 
-    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
 
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
@@ -1707,64 +1653,6 @@ describe("PlanBuilderRoute", () => {
     expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
     expect(within(summary).getByText(trainingSplitLabels.rotatingPushPullLegs)).toBeVisible();
     expect(within(summary).getByText("Higher volume")).toBeVisible();
-
-    guardedExercisesView.unmount();
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
-
-    await expectReadOnlyExercisesStep();
-  });
-
-  it("preserves saved Rep ranges and Volume data after Split changes and restores guarded Exercises access after reconfirmation", async () => {
-    const user = userEvent.setup();
-
-    await saveConfirmedPlanBuilderProgressForTest({
-      repRangeStyle: "strength_leaning",
-      split: "full-body-3-day",
-      trainingFrequencyDaysPerWeek: 3,
-      volumePreset: "conservative",
-    });
-
-    const splitView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    await selectTrainingSplit(user, splitGroup, trainingSplitLabels.alternatingFullBodyAB);
-
-    await expectPlanBlueprintToMatch({
-      confirmedBuilderSteps: {
-        frequency: true,
-        repRanges: true,
-        split: false,
-        volume: true,
-      },
-      repRanges: "strength_leaning",
-      split: "alternating-full-body-a-b",
-      trainingFrequencyDaysPerWeek: 3,
-      volumePreset: "conservative",
-      volumePresetSource: "user_selected",
-      weeklyRepTargets: expect.arrayContaining(conservativePresetWeeklyRepTargets),
-    });
-
-    splitView.unmount();
-
-    const guardedExercisesView = renderPlanBuilder({
-      initialEntries: [planBuilderPaths.exercises],
-    });
-
-    await expectPlanBuilderPath(guardedExercisesView.router, planBuilderPaths.split);
-
-    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    expect(resumedSplitGroup).toBeVisible();
-    expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.alternatingFullBodyAB);
-
-    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
-
-    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
-    const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
-
-    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.strengthLeaning);
-    expect(within(summary).getByText(trainingSplitLabels.alternatingFullBodyAB)).toBeVisible();
-    expect(within(summary).getByText("Conservative")).toBeVisible();
 
     guardedExercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
@@ -1928,26 +1816,81 @@ describe("PlanBuilderRoute", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("navigates back from Rep ranges to Split", async () => {
+  it("navigates backward through the Plan Builder stepper and returns forward when downstream output is still confirmed", async () => {
     const user = userEvent.setup();
 
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /frequency/i }));
+    await expectPlanBuilderPath(router, planBuilderPaths.frequency);
+
+    const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
+
+    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await user.click(screen.getByRole("button", { name: /volume/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+  });
+
+  it("redirects stepper forward navigation to the affected step after an upstream change stales downstream output", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedPlanBuilderProgressForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
+
+    expect(await screen.findByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /rep ranges/i }));
+    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
+
+    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+
+    await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps));
+    await user.click(
+      within(screen.getByRole("list", { name: /plan builder steps/i })).getByRole("button", {
+        name: /volume/i,
+      }),
+    );
+
+    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
+    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
+  });
+
+  it("navigates backward from the wide Plan Blueprint progress summary", async () => {
+    const user = userEvent.setup();
+
+    mockPlanBuilderMediaQueries({ isLargeScreen: true, isWideDesktop: true });
     await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
+    expect(await screen.findByText("Step 2 of 4")).toBeVisible();
+
+    await user.click(await screen.findByRole("button", { name: /go to training schedule/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.frequency);
+    expect(await screen.findByRole("heading", { name: /training schedule/i })).toBeVisible();
+
+    await user.click(await screen.findByRole("button", { name: /go to training style/i }));
+
+    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
-
-    await user.click(screen.getByRole("link", { name: /back to split/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
-    });
-    expect(
-      await screen.findByRole("heading", { name: /choose your training split/i }),
-    ).toBeVisible();
-    expect(
-      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
-    ).toHaveAttribute("aria-current", "step");
   });
 
   it("keeps the Plan Blueprint summary on Balanced hypertrophy when the persisted Recommended Default is explicitly reselected", async () => {
@@ -2048,8 +1991,8 @@ describe("PlanBuilderRoute", () => {
       ),
     ).not.toBeInTheDocument();
     expect(
-      options.getByText("Best fit for 4 days/week, Upper/Lower, and a muscle-building goal."),
-    ).toBeVisible();
+      options.queryByText("Best fit for 4 days/week, Upper/Lower, and a muscle-building goal."),
+    ).not.toBeInTheDocument();
     expect(
       options.queryByText(
         "Useful when you want slightly lighter loading and more controlled fatigue across the week.",
@@ -2119,50 +2062,6 @@ describe("PlanBuilderRoute", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders fixed-week and rotating-cycle details inside the selected Training Split panel", async () => {
-    const user = userEvent.setup();
-
-    await planBuilderService.confirmSelectedTrainingFrequency({
-      timestamp: "2026-05-30T11:10:00.000Z",
-      trainingFrequencyDaysPerWeek: 4,
-    });
-
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    await waitFor(() => {
-      expect(
-        within(splitGroup).getByRole("radio", {
-          name: getLabelMatcher(trainingSplitLabels.upperLower4Day),
-        }),
-      ).toBeChecked();
-    });
-
-    const fixedWeekDetails = getSelectedTrainingSplitDetails(trainingSplitLabels.upperLower4Day);
-
-    expectTrainingSplitFitExplanation(
-      fixedWeekDetails,
-      /recommended fit/i,
-      /four anchored sessions give upper and lower work dedicated space twice each week/i,
-    );
-    expectFixedWeekScheduleDetails(fixedWeekDetails);
-    expectUnsupportedTrainingSplitGuidance();
-
-    await user.click(within(splitGroup).getByText(trainingSplitLabels.rotatingPushPullLegs));
-
-    const rotatingDetails = await findSelectedTrainingSplitDetails(
-      trainingSplitLabels.rotatingPushPullLegs,
-    );
-
-    expectTrainingSplitFitExplanation(
-      rotatingDetails,
-      /compatible alternative/i,
-      /a rotating push\/pull\/legs cycle stays flexible when your available weekdays move around/i,
-    );
-    expectRotatingCycleScheduleDetails(rotatingDetails);
-  });
-
   it.each(
     selectableTrainingSplitCases,
   )("shows only the approved selectable Training Splits for $daysPerWeek days/week", async ({
@@ -2175,17 +2074,18 @@ describe("PlanBuilderRoute", () => {
       trainingFrequencyDaysPerWeek: daysPerWeek,
     });
 
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
+    const splitGroup = await getTrainingScheduleSplitSection();
     const splitOptions = within(splitGroup);
 
     expect(splitOptions.getAllByRole("radio")).toHaveLength(expectedLabels.length);
     expect(
       splitOptions.getByRole("radio", { name: getLabelMatcher(recommendedLabel) }),
     ).toBeChecked();
-    expect(splitOptions.getAllByText("Recommended")).toHaveLength(1);
-    expect(splitOptions.queryAllByText("Also works")).toHaveLength(expectedLabels.length - 1);
+    expect(splitGroup.querySelector(".training-schedule-split__badge")).toHaveTextContent(
+      "Best fit",
+    );
 
     for (const label of expectedLabels) {
       expect(splitOptions.getByText(label)).toBeVisible();
@@ -2193,51 +2093,9 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("auto-selects and persists the recommended split when Split opens without a compatible selection", async () => {
-    await planBuilderService.confirmSelectedTrainingFrequency({
-      timestamp: "2026-05-30T11:05:00.000Z",
-      trainingFrequencyDaysPerWeek: 5,
-    });
-
-    const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-    const splitOptions = within(splitGroup);
-
-    await waitFor(() => {
-      expect(
-        splitOptions.getByRole("radio", {
-          name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
-        }),
-      ).toBeChecked();
-    });
-    await waitFor(async () => {
-      expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(
-        "rotating-push-pull-legs",
-      );
-    });
-
-    firstView.unmount();
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
-    const resumedSplitOptions = within(resumedSplitGroup);
-
-    expect(
-      resumedSplitOptions.getByRole("radio", {
-        name: getLabelMatcher(trainingSplitLabels.rotatingPushPullLegs),
-      }),
-    ).toBeChecked();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        trainingSplitLabels.rotatingPushPullLegs,
-      ),
-    ).toBeVisible();
-  });
-
   it.each(
     singleSelectableTrainingSplitCases,
-  )("keeps the Split step actionable for $daysPerWeek days/week when only one Training Split is selectable", async ({
+  )("keeps Training schedule actionable for $daysPerWeek days/week when only one Training Split is selectable", async ({
     daysPerWeek,
     expectedSplitId,
     label,
@@ -2247,29 +2105,14 @@ describe("PlanBuilderRoute", () => {
 
     await selectTrainingFrequency(user, daysPerWeek);
 
-    const splitGroup = await continueToSplitStep(user);
+    const splitGroup = await getTrainingScheduleSplitSection();
     const splitOptions = within(splitGroup);
 
     expect(splitOptions.getAllByRole("radio")).toHaveLength(1);
     expectTrainingSplitChecked(splitGroup, label);
-    expect(screen.getByRole("link", { name: /back to frequency/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /continue to training style/i })).toBeVisible();
 
-    await user.click(screen.getByRole("link", { name: /back to frequency/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-
-    const resumedSplitGroup = await continueToSplitStep(user);
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
-    });
-    expectTrainingSplitChecked(resumedSplitGroup, label);
-
-    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
+    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -2289,23 +2132,18 @@ describe("PlanBuilderRoute", () => {
 
     await selectTrainingFrequency(user, 4);
 
-    const splitGroup = await continueToSplitStep(user);
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
     await expectPersistedTrainingSplit("rotating-push-pull-legs");
 
     firstView.unmount();
     await confirmSelectedTrainingFrequencyForTest(4);
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
-    const resumedSplitGroup = await screen.findByRole("group", { name: /training split/i });
+    const resumedSplitGroup = await getTrainingScheduleSplitSection();
 
     expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.rotatingPushPullLegs);
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        trainingSplitLabels.rotatingPushPullLegs,
-      ),
-    ).toBeVisible();
   });
 
   it("does not retain an incompatible selected Training Split after the training frequency changes", async () => {
@@ -2315,12 +2153,10 @@ describe("PlanBuilderRoute", () => {
 
     await selectTrainingFrequency(user, 4);
 
-    const splitGroup = await continueToSplitStep(user);
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     await selectTrainingSplit(user, splitGroup, trainingSplitLabels.rotatingPushPullLegs);
     await expectPersistedTrainingSplit("rotating-push-pull-legs");
-
-    await user.click(screen.getByRole("link", { name: /back to frequency/i }));
 
     const summary = await screen.findByRole("complementary", {
       name: /plan blueprint summary/i,
@@ -2338,20 +2174,14 @@ describe("PlanBuilderRoute", () => {
     ).not.toBeInTheDocument();
     expectBlueprintSummaryField(summary, "Split", "Pending");
 
-    const resumedSplitGroup = await continueToSplitStep(user);
+    const resumedSplitGroup = await getTrainingScheduleSplitSection();
 
     await waitFor(() => {
       expectTrainingSplitChecked(resumedSplitGroup, trainingSplitLabels.fullBody3Day);
     });
-    await expectPersistedTrainingSplit("full-body-3-day");
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        trainingSplitLabels.fullBody3Day,
-      ),
-    ).toBeVisible();
   });
 
-  it("shows the builder steps, disables Back on Frequency, and navigates between the Frequency, Split, and Rep ranges URLs", async () => {
+  it("shows the builder steps, disables Back on Frequency, and continues from Frequency to Rep ranges", async () => {
     const user = userEvent.setup();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
@@ -2359,35 +2189,13 @@ describe("PlanBuilderRoute", () => {
     const stepList = await screen.findByRole("list", { name: /plan builder steps/i });
 
     expect(within(stepList).getByText("Frequency")).toHaveAttribute("aria-current", "step");
-    expect(within(stepList).getByText("Split")).toBeVisible();
     expect(within(stepList).getByText("Rep ranges")).toBeVisible();
     expect(within(stepList).getByText("Volume")).toBeVisible();
     expect(within(stepList).getByText("Exercises")).toBeVisible();
     expect(within(stepList).getByText("Review")).toBeVisible();
     expect(await screen.findByRole("button", { name: /^back$/i })).toBeDisabled();
 
-    await user.click(await screen.findByRole("button", { name: /continue to split/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /choose your training split/i }),
-    ).toBeVisible();
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.split);
-    });
-    expect(screen.getByRole("radio", { name: /3-day full body/i })).toBeChecked();
-    expect(
-      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Split"),
-    ).toHaveAttribute("aria-current", "step");
-
-    await user.click(screen.getByRole("link", { name: /back to frequency/i }));
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: /continue to split/i }));
-    await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to training style/i }));
 
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expectRepRangeStyleChecked(
@@ -2402,23 +2210,6 @@ describe("PlanBuilderRoute", () => {
         "Rep ranges",
       ),
     ).toHaveAttribute("aria-current", "step");
-  });
-
-  it("renders the split URL directly with the recommended 3-day split selected", async () => {
-    await confirmDefaultTrainingFrequency();
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.split] });
-
-    const splitGroup = await screen.findByRole("group", { name: /training split/i });
-
-    expect(router.state.location.pathname).toBe(planBuilderPaths.split);
-    expect(within(splitGroup).getByRole("radio", { name: /3-day full body/i })).toBeChecked();
-    expect(within(splitGroup).getByText("Upper / Lower / Full Body")).toBeVisible();
-    expect(within(splitGroup).getByText("Alternating Full Body A/B")).toBeVisible();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "3-Day Full Body",
-      ),
-    ).toBeVisible();
   });
 });
 
@@ -2442,7 +2233,6 @@ function renderPlanBuilder({
       },
     },
   });
-
   const view = render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
@@ -2451,22 +2241,51 @@ function renderPlanBuilder({
 
   return {
     ...view,
+    queryClient,
     router,
   };
 }
 
-async function expectPlanBuilderPath(
-  router: ReturnType<typeof renderPlanBuilder>["router"],
-  pathname: string,
-) {
+async function expectPlanBuilderPath(router: ReturnType<typeof createAppRouter>, pathname: string) {
   await waitFor(() => {
     expect(router.state.location.pathname).toBe(pathname);
   });
 }
 
-async function expectPlanBlueprintToMatch(expectedBlueprint: object) {
+async function expectPlanBlueprintToMatch(expected: object) {
   await waitFor(async () => {
-    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject(expectedBlueprint);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject(expected);
+  });
+}
+
+function mockPlanBuilderMediaQueries({
+  isLargeScreen,
+  isWideDesktop,
+}: {
+  isLargeScreen: boolean;
+  isWideDesktop: boolean;
+}) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
+      matches: query.includes("2200") ? isWideDesktop : isLargeScreen,
+      media: query,
+      onchange: null,
+      removeEventListener: () => {},
+      removeListener: () => {},
+    }),
+    writable: true,
+  });
+}
+
+function restoreDefaultMatchMedia() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: defaultMatchMedia,
+    writable: true,
   });
 }
 
@@ -2614,17 +2433,6 @@ function expectBlueprintSummaryField(summary: HTMLElement, label: string, value:
   expect(within(fieldNode).getByText(value)).toBeVisible();
 }
 
-async function saveFourDayTrainingFrequency() {
-  await planBuilderService.updateTrainingFrequency({
-    timestamp: "2026-05-30T11:30:00.000Z",
-    trainingFrequencyDaysPerWeek: 4,
-  });
-}
-
-async function confirmDefaultTrainingFrequency() {
-  await confirmSelectedTrainingFrequencyForTest(3, "2026-05-30T11:24:00.000Z");
-}
-
 async function saveConfirmedFourDayTrainingFrequency() {
   await confirmSelectedTrainingFrequencyForTest(4, "2026-05-30T11:30:00.000Z");
 }
@@ -2714,10 +2522,15 @@ async function expectTrainingFrequencyChecked(
   });
 }
 
-async function continueToSplitStep(user: PlanBuilderTestUser) {
-  await user.click(screen.getByRole("button", { name: /continue to split/i }));
+async function getTrainingScheduleSplitSection() {
+  const heading = await screen.findByRole("heading", { name: /recommended weekly split/i });
+  const section = heading.closest("section");
 
-  return screen.findByRole("group", { name: /training split/i });
+  if (!(section instanceof HTMLElement)) {
+    throw new Error("Expected the Training schedule split section.");
+  }
+
+  return section;
 }
 
 async function selectTrainingSplit(
@@ -2809,55 +2622,6 @@ async function expectPersistedTrainingSplit(split: TrainingSplitId | null) {
   await waitFor(async () => {
     expect((await planBuilderService.getOrCreatePlanBlueprint()).split).toBe(split);
   });
-}
-
-function getSelectedTrainingSplitDetails(label: string) {
-  return screen.getByRole("region", { name: getLabelMatcher(label) });
-}
-
-function findSelectedTrainingSplitDetails(label: string) {
-  return screen.findByRole("region", { name: getLabelMatcher(label) });
-}
-
-function expectTrainingSplitFitExplanation(
-  detailsPanel: HTMLElement,
-  title: RegExp,
-  description: RegExp,
-) {
-  const details = within(detailsPanel);
-
-  expect(details.getByText(/why this split fits/i)).toBeVisible();
-  expect(details.getByText(title)).toBeVisible();
-  expect(details.getByText(description)).toBeVisible();
-}
-
-function expectFixedWeekScheduleDetails(detailsPanel: HTMLElement) {
-  const details = within(detailsPanel);
-
-  expect(details.getByText(/suggested weekly layout/i)).toBeVisible();
-  expect(details.getByText("Mon")).toBeVisible();
-  expect(details.getAllByText("Upper")).toHaveLength(2);
-}
-
-function expectRotatingCycleScheduleDetails(detailsPanel: HTMLElement) {
-  const details = within(detailsPanel);
-
-  expect(details.getByText(/rotating-cycle preview/i)).toBeVisible();
-  expect(
-    details.getByText(
-      /schedule-flexible: the cycle rotates across available weekdays and can land as 4-5 sessions in a calendar week/i,
-    ),
-  ).toBeVisible();
-  expect(details.getByText(/cycle step 1/i)).toBeVisible();
-  expect(details.getAllByText("Push")).toHaveLength(2);
-  expect(details.queryByText(/suggested weekly layout/i)).not.toBeInTheDocument();
-}
-
-function expectUnsupportedTrainingSplitGuidance() {
-  expect(screen.getByText(/not included in this step/i)).toBeVisible();
-  expect(
-    screen.getByText(/too low in frequency for most users on a 2-5 day builder/i),
-  ).toBeVisible();
 }
 
 function getLabelMatcher(label: string) {

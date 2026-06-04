@@ -40,28 +40,16 @@ const repRangeStyleStatusBadgeStyles = {
 
 export const repRangeStyleDetailStyles = {
   selected: {
-    noteBodyClassName: "text-[#244256]",
-    noteLabelClassName: "text-[#006f78]",
-    notePanelClassName: "bg-transparent",
-    targetCardClassName: "bg-white/72",
     targetLabelClassName: "text-[#5c6d73]",
     targetValueClassName: "text-stone-950",
   },
   unselected: {
-    noteBodyClassName: "text-stone-600",
-    noteLabelClassName: "text-stone-500",
-    notePanelClassName: "bg-transparent",
-    targetCardClassName: "bg-[#f4f0e8]",
     targetLabelClassName: "text-stone-500",
     targetValueClassName: "text-stone-900",
   },
 } as const satisfies Record<
   SelectableOptionState,
   {
-    noteBodyClassName: string;
-    noteLabelClassName: string;
-    notePanelClassName: string;
-    targetCardClassName: string;
     targetLabelClassName: string;
     targetValueClassName: string;
   }

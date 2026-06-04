@@ -49,18 +49,18 @@
   --jw-sidebar-nav-height: 3rem;
   --jw-sidebar-padding-x: 1rem;
   --jw-sidebar-padding-y: 1.125rem;
-  --jw-builder-page-max-width: 86rem;
+  --jw-builder-page-max-width: 74rem;
   --jw-builder-rail-width: 18rem;
-  --jw-builder-content-gap: 1.125rem;
-  --jw-builder-section-gap: 0.875rem;
-  --jw-builder-card-padding: 0.875rem;
-  --jw-builder-compact-card-padding: 0.75rem;
+  --jw-builder-content-gap: 0.875rem;
+  --jw-builder-section-gap: 0.75rem;
+  --jw-builder-card-padding: 1.125rem;
+  --jw-builder-compact-card-padding: 1rem;
   --jw-builder-page-title-size: 2.375rem;
-  --jw-builder-page-title-line-height: 2.75rem;
-  --jw-builder-section-title-size: 1.75rem;
-  --jw-builder-section-title-line-height: 2.125rem;
-  --jw-builder-body-size: 0.9375rem;
-  --jw-builder-body-line-height: 1.375rem;
+  --jw-builder-page-title-line-height: 2.625rem;
+  --jw-builder-section-title-size: 1.625rem;
+  --jw-builder-section-title-line-height: 2rem;
+  --jw-builder-body-size: 1rem;
+  --jw-builder-body-line-height: 1.5rem;
 }
 
 @media (min-width: 1800px) {
@@ -77,15 +77,15 @@
     --jw-panel-padding: 1.125rem;
     --jw-sidebar-width: 16rem;
     --jw-sidebar-nav-height: 3.25rem;
-    --jw-builder-page-max-width: 94rem;
+    --jw-builder-page-max-width: 82rem;
     --jw-builder-rail-width: 20rem;
-    --jw-builder-content-gap: 1.5rem;
-    --jw-builder-section-gap: 1.125rem;
+    --jw-builder-content-gap: 1rem;
+    --jw-builder-section-gap: 0.875rem;
     --jw-builder-card-padding: 1rem;
-    --jw-builder-page-title-size: 2.5rem;
-    --jw-builder-page-title-line-height: 2.875rem;
-    --jw-builder-section-title-size: 1.875rem;
-    --jw-builder-section-title-line-height: 2.25rem;
+    --jw-builder-page-title-size: 2.75rem;
+    --jw-builder-page-title-line-height: 3rem;
+    --jw-builder-section-title-size: 1.75rem;
+    --jw-builder-section-title-line-height: 2.125rem;
     --jw-builder-body-size: 1rem;
     --jw-builder-body-line-height: 1.5rem;
   }
@@ -106,10 +106,10 @@
     --jw-sidebar-width: 17rem;
     --jw-sidebar-nav-height: 3.5rem;
     --jw-icon-md: 1.375rem;
-    --jw-builder-page-max-width: 104rem;
+    --jw-builder-page-max-width: 84rem;
     --jw-builder-rail-width: 20rem;
-    --jw-builder-content-gap: 1.75rem;
-    --jw-builder-section-gap: 1.25rem;
+    --jw-builder-content-gap: 1rem;
+    --jw-builder-section-gap: 0.875rem;
   }
 }
 

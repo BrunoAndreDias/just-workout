@@ -36,11 +36,9 @@ import { ExerciseSelectionPreferencesStep } from "./steps/exercise-selection-pre
 import { RepRangeStyleStep } from "./steps/rep-range-style-step";
 import { ReviewPlaceholderStep } from "./steps/review-placeholder-step";
 import { TrainingFrequencyStep } from "./steps/training-frequency-step";
-import { TrainingSplitStep } from "./steps/training-split-step";
 import { WeeklyVolumeTargetsStep } from "./steps/weekly-volume-targets-step";
 import {
   getRecommendedTrainingSplitId,
-  getTrainingSplit,
   isTrainingSplitCompatible,
   type TrainingSplitId,
 } from "./training-split";
@@ -53,7 +51,9 @@ import {
 export function PlanBuilderRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
   const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
+  const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
   const { mutateAsync: confirmSelectedTrainingFrequency } = useConfirmTrainingFrequencyMutation();
+  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
   const navigate = useNavigate();
 
   function handleTrainingFrequencyChange(
@@ -65,101 +65,59 @@ export function PlanBuilderRoute() {
     });
   }
 
-  async function handleContinueToSplit() {
-    if (!blueprint) {
-      return;
-    }
-
-    await confirmSelectedTrainingFrequency({
-      timestamp: new Date().toISOString(),
-      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
-    });
-    await navigate({ to: planBuilderPaths.split });
-  }
-
-  return (
-    <PlanBuilderPage
-      currentStep="frequency"
-      intro={
-        <PageLead className="text-[1.05rem] leading-6">
-          Configure your training blueprint step by step before generating your plan.
-        </PageLead>
-      }
-      summary={summary}
-    >
-      {blueprint ? (
-        <TrainingFrequencyStep
-          canContinueToSplit={hasValidTrainingFrequency(blueprint)}
-          onContinueToSplit={handleContinueToSplit}
-          onTrainingFrequencyChange={handleTrainingFrequencyChange}
-          selectedTrainingFrequencyDaysPerWeek={
-            hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
-          }
-        />
-      ) : (
-        <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
-      )}
-    </PlanBuilderPage>
-  );
-}
-
-export function PlanBuilderSplitRoute() {
-  const { blueprint, summary } = usePlanBuilderBlueprint();
-  const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
-  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
-  const navigate = useNavigate();
-  const selectedSplitId = blueprint ? getVisibleTrainingSplitId(blueprint) : null;
-  const selectedSplit = selectedSplitId ? getTrainingSplit(selectedSplitId) : null;
-
-  useEffect(() => {
-    if (!blueprint || hasCompatibleSelectedTrainingSplit(blueprint)) {
-      return;
-    }
-
-    updateTrainingSplit({
-      split: getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek),
-      timestamp: new Date().toISOString(),
-    });
-  }, [blueprint, updateTrainingSplit]);
-
-  function handleTrainingSplitChange(split: TrainingSplitId) {
+  function handleTrainingScheduleSplitChange(split: TrainingSplitId) {
     updateTrainingSplit({
       split,
       timestamp: new Date().toISOString(),
     });
   }
 
-  async function handleContinueToRepRanges() {
-    if (!selectedSplitId) {
+  async function handleContinueToTrainingStyle() {
+    if (!blueprint) {
       return;
     }
 
+    const timestamp = new Date().toISOString();
+    const selectedSplit = getVisibleTrainingSplitId(blueprint);
+
+    updateTrainingSplit({
+      split: selectedSplit,
+      timestamp,
+    });
+    await confirmSelectedTrainingFrequency({
+      timestamp,
+      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+    });
     await confirmSelectedTrainingSplit({
-      split: selectedSplitId,
-      timestamp: new Date().toISOString(),
+      split: selectedSplit,
+      timestamp,
     });
     await navigate({ to: planBuilderPaths.repRanges });
   }
 
   return (
     <PlanBuilderPage
-      currentStep="split"
+      currentStep="frequency"
       intro={
-        <PageLead className="max-w-2xl">
-          Choose a compatible Training Split for the saved Plan Blueprint.
+        <PageLead>
+          Choose how often you can train and confirm the weekly split Just Workout should use.
         </PageLead>
       }
       summary={summary}
     >
-      {blueprint && selectedSplit ? (
-        <TrainingSplitStep
-          onContinueToRepRanges={handleContinueToRepRanges}
-          onTrainingSplitChange={handleTrainingSplitChange}
-          selectedSplit={selectedSplit}
-          trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+      {blueprint ? (
+        <TrainingFrequencyStep
+          canContinueToTrainingStyle={hasValidTrainingFrequency(blueprint)}
+          onContinueToTrainingStyle={handleContinueToTrainingStyle}
+          onTrainingFrequencyChange={handleTrainingFrequencyChange}
+          onTrainingSplitChange={handleTrainingScheduleSplitChange}
+          selectedTrainingSplitId={getVisibleTrainingSplitId(blueprint)}
+          selectedTrainingFrequencyDaysPerWeek={
+            hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
+          }
         />
       ) : (
-        <p className="text-sm font-semibold text-stone-600">Loading Training Split...</p>
+        <p className="text-sm font-semibold text-stone-600">Loading Training Frequency...</p>
       )}
     </PlanBuilderPage>
   );
@@ -213,7 +171,7 @@ export function PlanBuilderRepRangesRoute() {
       currentStep="rep-ranges"
       intro={
         <PageLead className="text-[1.05rem] leading-6">
-          Configure your training blueprint step by step before generating your plan.
+          Select the Rep Range Style that should shape main lifts, secondary work, and accessories.
         </PageLead>
       }
       summary={summary}

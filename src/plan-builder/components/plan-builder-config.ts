@@ -2,7 +2,6 @@ export type PlanBuilderPrototypeVariant = "bottom" | "header" | "rail" | "strip"
 
 export const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
-  { id: "split", label: "Split" },
   { id: "rep-ranges", label: "Rep ranges" },
   { id: "volume", label: "Volume" },
   { id: "exercises", label: "Exercises" },
@@ -23,8 +22,7 @@ export const planBuilderPrototypeVariants = [
 export const planBuilderLargeScreenQuery = "(min-width: 1280px) and (min-height: 720px)";
 
 export const planBuilderNextStepBodyByStep = {
-  frequency: "Next, you'll choose the best Training Split for your weekly schedule.",
-  split: "Next, you'll choose a Rep Range Style for your Plan Blueprint.",
+  frequency: "Next, you'll choose the rep range and volume style for your workout plan.",
   "rep-ranges": "Next, you will set weekly volume targets for each muscle group.",
   volume:
     "Exercises come next; this step stays focused on weekly rep targets before specific lifts are chosen.",

@@ -25,7 +25,7 @@ test.describe("desktop plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 5);
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
 
-    await continueToSplit(page, trainingSplitLabels.rotatingPushPullLegs);
+    await continueToTrainingStyle(page, trainingSplitLabels.rotatingPushPullLegs);
 
     await expect(locators.summary.getByText("5 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -46,8 +46,8 @@ test.describe("desktop plan builder layout", () => {
     );
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("button", { name: /continue to split/i }),
-      "Continue to Split button",
+      page.getByRole("button", { name: /continue to training style/i }),
+      "continue to training style button",
     );
     await expectNoVerticalOverflow(page);
   });
@@ -62,52 +62,52 @@ test.describe("desktop plan builder layout", () => {
 
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("button", { name: /continue to split/i }),
-      "Continue to Split button",
+      page.getByRole("button", { name: /continue to training style/i }),
+      "continue to training style button",
     );
     await expectLocatorAboveViewportBottom(
       page,
-      page.getByRole("button", { name: /continue to split/i }),
+      page.getByRole("button", { name: /continue to training style/i }),
       24,
-      "Continue to Split button",
+      "continue to training style button",
     );
     await expectNoVerticalOverflow(page);
   });
 
-  test("fits the split step on a short desktop viewport without clipping actions", async ({
+  test("fits the Training schedule step on a short desktop viewport without clipping actions", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
 
     await openPlanBuilder(page);
-    await page.getByRole("button", { name: /continue to split/i }).click();
-    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
 
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("link", { name: /back to frequency/i }),
-      "Back to Frequency link",
+      page.getByRole("button", { name: /^back$/i }),
+      "Back button",
     );
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("button", { name: /continue to rep ranges/i }),
-      "Continue to Rep ranges button",
+      page.getByRole("button", { name: /continue to training style/i }),
+      "continue to training style button",
     );
     await expectLocatorAboveViewportBottom(
       page,
-      page.getByRole("button", { name: /continue to rep ranges/i }),
+      page.getByRole("button", { name: /continue to training style/i }),
       12,
-      "Continue to Rep ranges button",
+      "continue to training style button",
     );
     await expectNoVerticalOverflow(page);
   });
 
-  test("keeps the split step compact on a 24-inch desktop viewport", async ({ page }) => {
+  test("keeps the Training schedule step compact on a 24-inch desktop viewport", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1920, height: 930 });
 
     await openPlanBuilder(page);
-    await page.getByRole("button", { name: /continue to split/i }).click();
-    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
 
     await expectLocatorHeightAtMost(
       page.locator(".plan-builder-stepper"),
@@ -116,9 +116,9 @@ test.describe("desktop plan builder layout", () => {
     );
     await expectLocatorAboveViewportBottom(
       page,
-      page.getByRole("button", { name: /continue to rep ranges/i }),
+      page.getByRole("button", { name: /continue to training style/i }),
       48,
-      "Continue to Rep ranges button",
+      "continue to training style button",
     );
     await expectLocatorWithinViewport(
       page,
@@ -133,17 +133,19 @@ test.describe("desktop plan builder layout", () => {
     await expectNoVerticalOverflow(page);
   });
 
-  test("uses the same stepper and blueprint shell on frequency and split", async ({ page }) => {
+  test("keeps the same stepper and blueprint shell after continuing to Training style", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1920, height: 930 });
 
     await openPlanBuilder(page);
     const frequencyShell = await getPlanBuilderShellMetrics(page);
 
-    await page.getByRole("button", { name: /continue to split/i }).click();
-    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
-    const splitShell = await getPlanBuilderShellMetrics(page);
+    await page.getByRole("button", { name: /continue to training style/i }).click();
+    await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.repRanges}$`));
+    const trainingStyleShell = await getPlanBuilderShellMetrics(page);
 
-    expect(splitShell).toEqual(frequencyShell);
+    expect(trainingStyleShell).toEqual(frequencyShell);
   });
 
   test("does not scroll with a long saved split value on a laptop viewport", async ({ page }) => {
@@ -151,8 +153,8 @@ test.describe("desktop plan builder layout", () => {
 
     const locators = await openPlanBuilder(page);
     await selectTrainingFrequency(locators.frequencyGroup, 5);
-    await continueToSplit(page, trainingSplitLabels.rotatingPushPullLegs);
-    await page.getByRole("link", { name: /back to frequency/i }).click();
+    await continueToTrainingStyle(page, trainingSplitLabels.rotatingPushPullLegs);
+    await page.getByRole("link", { name: /back to training schedule/i }).click();
     await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
 
     await expect(
@@ -175,8 +177,8 @@ test.describe("desktop plan builder layout", () => {
 
       await expectLocatorWithinViewport(
         page,
-        page.getByRole("button", { name: /continue to split/i }),
-        "Continue to Split button",
+        page.getByRole("button", { name: /continue to training style/i }),
+        "continue to training style button",
       );
       await expectLocatorWithinViewport(
         page,
@@ -210,8 +212,8 @@ test.describe("laptop plan builder layout", () => {
     );
     await expectLocatorWithinViewport(
       page,
-      page.getByRole("button", { name: /continue to split/i }),
-      "Continue to Split button",
+      page.getByRole("button", { name: /continue to training style/i }),
+      "continue to training style button",
     );
   });
 });
@@ -226,7 +228,7 @@ test.describe("mobile plan builder layout", () => {
     await selectTrainingFrequency(locators.frequencyGroup, 4);
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
 
-    await continueToSplit(page, trainingSplitLabels.upperLower4Day);
+    await continueToTrainingStyle(page, trainingSplitLabels.upperLower4Day);
 
     await expect(locators.summary.getByText("4 days/week")).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -414,14 +416,16 @@ async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: num
   await expect(frequencyGroup.getByRole("radio", { name: getLabelMatcher(label) })).toBeChecked();
 }
 
-async function continueToSplit(page: Page, expectedSplitLabel: string) {
-  await page.getByRole("button", { name: /continue to split/i }).click();
+async function continueToTrainingStyle(page: Page, expectedSplitLabel: string) {
+  await page.getByRole("button", { name: /continue to training style/i }).click();
 
-  await expect(page.getByRole("heading", { name: /choose your training split/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
   await expect(
-    page.getByRole("radio", { name: getLabelMatcher(expectedSplitLabel) }),
-  ).toBeChecked();
-  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.split}$`));
+    page
+      .getByRole("complementary", { name: /plan blueprint summary/i })
+      .getByText(expectedSplitLabel),
+  ).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.repRanges}$`));
 }
 
 async function expectNoHorizontalOverflow(page: Page) {

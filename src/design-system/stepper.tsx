@@ -11,9 +11,16 @@ type StepperProps = {
   density?: "default" | "compact";
   items: ReadonlyArray<StepperItem>;
   label: string;
+  onItemSelect?: (item: StepperItem) => void;
 };
 
-export function Stepper({ currentIndex, density = "compact", items, label }: StepperProps) {
+export function Stepper({
+  currentIndex,
+  density = "compact",
+  items,
+  label,
+  onItemSelect,
+}: StepperProps) {
   return (
     <nav aria-label={label}>
       <ol
@@ -27,15 +34,10 @@ export function Stepper({ currentIndex, density = "compact", items, label }: Ste
       >
         {items.map((item, index) => {
           const status = getStepperStatus(index, currentIndex);
-
-          return (
-            <li className="plan-builder-stepper-item" key={item.id}>
-              {index > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className="plan-builder-stepper-line"
-                />
-              ) : null}
+          const isCurrent = status === "current";
+          const isInteractive = onItemSelect && !isCurrent;
+          const itemContent = (
+            <>
               <span
                 className={cn(
                   "plan-builder-stepper-dot",
@@ -47,7 +49,7 @@ export function Stepper({ currentIndex, density = "compact", items, label }: Ste
                 {index + 1}
               </span>
               <span
-                aria-current={status === "current" ? "step" : undefined}
+                aria-current={isCurrent ? "step" : undefined}
                 className={cn(
                   "plan-builder-stepper-label",
                   status === "current"
@@ -57,6 +59,24 @@ export function Stepper({ currentIndex, density = "compact", items, label }: Ste
               >
                 {item.label}
               </span>
+            </>
+          );
+
+          return (
+            <li className="plan-builder-stepper-item" key={item.id}>
+              {index > 0 ? <span aria-hidden="true" className="plan-builder-stepper-line" /> : null}
+              {isInteractive ? (
+                <button
+                  aria-label={item.label}
+                  className="plan-builder-stepper-control"
+                  onClick={() => onItemSelect(item)}
+                  type="button"
+                >
+                  {itemContent}
+                </button>
+              ) : (
+                <span className="plan-builder-stepper-control">{itemContent}</span>
+              )}
             </li>
           );
         })}
