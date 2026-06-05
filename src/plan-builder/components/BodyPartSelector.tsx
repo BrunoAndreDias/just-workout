@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import bodyMapFrontBackAsset from "../../assets/body-map/body-map-front-back.png";
+import bodyMapFrontBackAsset from "../../assets/body-map/body-map-tight-vector-trace.svg";
 import {
   type BodyMapRegionId,
   bodyMapRegions,
@@ -22,9 +22,6 @@ export function BodyPartSelector() {
       selectedRegionId ? getBodyPartExercises(bodyPartSelectorExercises, selectedRegionId) : [],
     [selectedRegionId],
   );
-  const selectedRegionLabel = selectedRegionId
-    ? getBodyMapRegionLabel(selectedRegionId)
-    : "No body part selected";
 
   function selectRegion(regionId: BodyMapRegionId) {
     setSelectedRegionId(regionId);
@@ -46,15 +43,9 @@ export function BodyPartSelector() {
 
   return (
     <section aria-labelledby={`${componentId}-title`} className="body-part-selector">
-      <div className="body-part-selector__header">
-        <div className="body-part-selector__title-group">
-          <h4 id={`${componentId}-title`}>Body-part exercise picker</h4>
-          <p>Select one body region on the map, then choose exercises for that region.</p>
-        </div>
-        <span className="body-part-selector__selected-region" aria-live="polite">
-          {selectedRegionLabel}
-        </span>
-      </div>
+      <h4 className="sr-only" id={`${componentId}-title`}>
+        Body-part exercise selection
+      </h4>
 
       <div className="body-part-selector__content">
         <div className="body-part-selector__map-panel">
@@ -80,7 +71,7 @@ export function BodyPartSelector() {
               aria-label="Selectable body regions"
               className="body-part-selector__overlay"
               preserveAspectRatio="xMidYMid meet"
-              viewBox="0 0 1448 1086"
+              viewBox="0 0 731 1001"
             >
               {bodyMapRegions.map((region) => {
                 const isSelected = selectedRegionId === region.id;
@@ -113,6 +104,7 @@ export function BodyPartSelector() {
                         d={path}
                         data-region={region.id}
                         key={path}
+                        transform={getBodyMapRegionPathTransform(path)}
                         vectorEffect="non-scaling-stroke"
                       />
                     ))}
@@ -183,4 +175,15 @@ function formatEquipmentLabel(equipmentId: string): string {
     .split("_")
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(" ");
+}
+
+function getBodyMapRegionPathTransform(path: string): string {
+  const firstCoordinateMatch = path.match(/^M(?<x>\d+)/);
+  const firstX = Number(firstCoordinateMatch?.groups?.x ?? 0);
+
+  if (firstX > 700) {
+    return "matrix(0.9222 0 0 1 -339.16 0)";
+  }
+
+  return "matrix(0.9538 0 0 1 -281.14 0)";
 }

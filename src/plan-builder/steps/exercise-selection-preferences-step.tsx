@@ -8,7 +8,6 @@ import {
   Scale,
   Shield,
   Target,
-  TriangleAlert,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../design-system/button";
@@ -25,30 +24,11 @@ import {
   type ExerciseSelectionPreferences,
   type ExerciseSelectionPreferenceValidationErrors,
   emptyExerciseSelectionPendingInputs,
-  getEquipmentPreset,
-  getExerciseSelectionStrategy,
   hasExerciseSelectionPreferenceValidationErrors,
-  type MovementPatternCoverageGroup,
   removeExerciseSelectionPreferenceItem,
 } from "../exercise-selection-preferences";
 import { planBuilderPaths } from "../plan-builder-paths";
-import { MovementPatternCoverageSection } from "./movement-pattern-coverage";
 import "./exercise-selection-preferences-step.css";
-
-const exerciseSelectionHighlights = [
-  {
-    body: "Main work favors productive compound lifts when they fit the Plan Blueprint.",
-    title: "Compound-first bias",
-  },
-  {
-    body: "Isolation work can still support Weekly Rep Targets when more direct work is needed.",
-    title: "Targeted support",
-  },
-  {
-    body: "Painful, unavailable, or unsuitable exercises stay out of later Training Plan choices.",
-    title: "Safety boundary",
-  },
-] as const satisfies ReadonlyArray<ExerciseSelectionHighlightProps>;
 
 const automaticRuleIcons = {
   adaptive_rest_timing: AlarmClock,
@@ -61,17 +41,11 @@ const automaticRuleIcons = {
 
 type ExerciseSelectionPreferencesStepProps = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  movementPatternCoverage: ReadonlyArray<MovementPatternCoverageGroup>;
   onContinueToReview: (exerciseSelectionPreferences: ExerciseSelectionPreferences) => Promise<void>;
   onExerciseSelectionPreferencesChange: (
     exerciseSelectionPreferences: ExerciseSelectionPreferences,
   ) => Promise<void>;
   rulesAppliedAutomatically: ReadonlyArray<AutomaticExerciseSelectionRule>;
-};
-
-type ExerciseSelectionHighlightProps = {
-  body: string;
-  title: string;
 };
 
 type ExerciseSelectionPreferencesEditorProps = {
@@ -94,13 +68,10 @@ type ExerciseSelectionPreferencesEditorProps = {
 
 export function ExerciseSelectionPreferencesStep({
   exerciseSelectionPreferences,
-  movementPatternCoverage,
   onContinueToReview,
   onExerciseSelectionPreferencesChange,
   rulesAppliedAutomatically,
 }: ExerciseSelectionPreferencesStepProps) {
-  const selectedStrategy = getExerciseSelectionStrategy(exerciseSelectionPreferences.strategy);
-  const selectedEquipmentPreset = getEquipmentPreset(exerciseSelectionPreferences.equipmentPreset);
   const [pendingInputs, setPendingInputs] = useState<ExerciseSelectionPendingInputs>({
     ...emptyExerciseSelectionPendingInputs,
   });
@@ -214,38 +185,6 @@ export function ExerciseSelectionPreferencesStep({
 
           <BodyPartSelector />
 
-          <div className="exercise-selection-conflict-note">
-            <TriangleAlert aria-hidden="true" size={32} strokeWidth={1.8} />
-            <div>
-              <h4>Before you continue</h4>
-              <p>
-                Avoided Exercises are hard exclusions. If generation later cannot find a safe viable
-                replacement, Review will surface an Exercise Selection Conflict for you to resolve
-                instead of silently keeping the avoided exercise.
-              </p>
-            </div>
-          </div>
-
-          <StepActions className="exercise-selection-actions">
-            <Button asChild size="step" variant="outline">
-              <Link to={planBuilderPaths.volume}>
-                <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
-                Back to Volume
-              </Link>
-            </Button>
-            <Button
-              onClick={() => {
-                void handleContinueToReviewClick();
-              }}
-              size="step"
-              type="button"
-              variant="builderPrimary"
-            >
-              Continue to Review
-              <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
-            </Button>
-          </StepActions>
-
           <div className="exercise-selection-preference-grid mt-6 grid gap-4 lg:grid-cols-2">
             <ExerciseSelectionPreferencesEditor
               description="Optional soft preferences. Just Workout will prioritize them when they fit your Plan Blueprint, movement balance, and Weekly Rep Targets."
@@ -277,89 +216,31 @@ export function ExerciseSelectionPreferencesStep({
               validationError={validationErrors.avoidedExercise}
             />
           </div>
+
+          <StepActions className="exercise-selection-actions">
+            <Button asChild size="step" variant="outline">
+              <Link to={planBuilderPaths.volume}>
+                <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
+                Back to Volume
+              </Link>
+            </Button>
+            <Button
+              onClick={() => {
+                void handleContinueToReviewClick();
+              }}
+              size="step"
+              type="button"
+              variant="builderPrimary"
+            >
+              Continue to Review
+              <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
+            </Button>
+          </StepActions>
         </StepPanel>
 
         <ExerciseSelectionAutomaticRulesPanel
           rulesAppliedAutomatically={rulesAppliedAutomatically}
         />
-
-        <div className="exercise-selection-context-grid grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <StepPanel
-            aria-labelledby="exercise-selection-strategy-title"
-            className="exercise-selection-summary-panel"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3
-                  className="text-xl font-black leading-tight text-stone-950"
-                  id="exercise-selection-strategy-title"
-                >
-                  Exercise selection strategy
-                </h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                  Step 5 keeps the Plan Blueprint focused on strategy and equipment before the later
-                  Training Plan is created.
-                </p>
-              </div>
-              {selectedStrategy.isRecommended ? (
-                <span className="rounded-full bg-[#b93725] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
-                  Recommended default
-                </span>
-              ) : null}
-            </div>
-
-            <div className="mt-4 rounded-lg bg-stone-950 p-4 text-stone-50">
-              <h4 className="text-lg font-black">{selectedStrategy.title}</h4>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-200">
-                {selectedStrategy.description}
-              </p>
-            </div>
-
-            <ul className="mt-4 grid gap-3">
-              {exerciseSelectionHighlights.map((highlight) => (
-                <ExerciseSelectionHighlight key={highlight.title} {...highlight} />
-              ))}
-            </ul>
-          </StepPanel>
-
-          <StepPanel
-            aria-labelledby="equipment-preset-title"
-            className="exercise-selection-summary-panel"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3
-                  className="text-xl font-black leading-tight text-stone-950"
-                  id="equipment-preset-title"
-                >
-                  Equipment preset
-                </h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                  Full gym is the current preset. It defines the equipment pool used later during
-                  Training Plan generation.
-                </p>
-              </div>
-              <span className="rounded-full bg-[#006f78] px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white">
-                Current preset
-              </span>
-            </div>
-
-            <div className="mt-4 rounded-lg border border-stone-900/10 bg-[#f9f6ef] p-4">
-              <h4 className="text-lg font-black text-stone-950">{selectedEquipmentPreset.title}</h4>
-              <ul aria-label="Included equipment" className="mt-3 flex flex-wrap gap-2">
-                {selectedEquipmentPreset.includedEquipment.map((equipment) => (
-                  <li key={equipment.id}>
-                    <span className="inline-flex items-center rounded-full border border-stone-900/10 bg-white px-3 py-1 text-sm font-bold text-stone-950">
-                      {equipment.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </StepPanel>
-        </div>
-
-        <MovementPatternCoverageSection coverageGroups={movementPatternCoverage} />
       </div>
     </div>
   );
@@ -489,15 +370,6 @@ function ExerciseSelectionAutomaticRulesPanel({
         })}
       </ul>
     </StepPanel>
-  );
-}
-
-function ExerciseSelectionHighlight({ body, title }: ExerciseSelectionHighlightProps) {
-  return (
-    <li className="rounded-lg bg-[#f9f6ef] px-4 py-3">
-      <h5 className="text-sm font-black text-stone-950">{title}</h5>
-      <p className="mt-1 text-sm leading-6 text-stone-600">{body}</p>
-    </li>
   );
 }
 

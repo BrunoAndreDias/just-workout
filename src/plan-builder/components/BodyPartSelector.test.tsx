@@ -10,7 +10,7 @@ import {
 } from "./body-part-selector-data";
 
 describe("BodyPartSelector", () => {
-  it("defines readable overlay regions for the approved body-map PNG", () => {
+  it("defines readable overlay regions for the body map", () => {
     expect(bodyMapRegions.map((region) => region.id)).toEqual(getBodyMapRegionOrder());
 
     for (const region of bodyMapRegions) {
@@ -43,7 +43,7 @@ describe("BodyPartSelector", () => {
 
     const chestExercises = screen.getByRole("list", { name: /chest exercises/i });
 
-    expect(screen.getAllByText("Chest")).toHaveLength(2);
+    expect(screen.getByText("Chest")).toBeVisible();
     expect(
       within(chestExercises).getByRole("checkbox", {
         name: /flat barbell or dumbbell bench press/i,

@@ -79,27 +79,6 @@ const exercisesStepExcludedContentPatterns = [
   /progress charts?/i,
 ] as const;
 
-const defaultExerciseStepIncludedEquipmentLabels = [
-  "Barbell",
-  "Dumbbells",
-  "Machines",
-  "Cables",
-  "Pull-up bar",
-  "Bodyweight",
-] as const;
-
-const defaultExerciseStepMovementPatternLabels = [
-  "Horizontal push",
-  "Horizontal pull",
-  "Vertical push",
-  "Vertical pull",
-  "Elbow flexion",
-  "Elbow extension",
-  "Quad dominant",
-  "Hip/hamstring dominant",
-  "Calves/accessories",
-] as const;
-
 const defaultExerciseStepAutomaticRuleLabels = [
   "Prioritize compounds for main work",
   "Use isolation work for targeted volume",
@@ -715,7 +694,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("renders the read-only Step 5 strategy, movement coverage, and equipment screen on direct access when Volume is confirmed", async () => {
+  it("renders the Step 5 strategy, equipment, and preferences screen on direct access when Volume is confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -741,58 +720,6 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("shows derived movement-pattern coverage on Step 5 without implying final exercise slots", async () => {
-    await saveConfirmedPlanBuilderProgressForTest({
-      repRangeStyle: "balanced_hypertrophy",
-      split: "upper-lower-4-day",
-      trainingFrequencyDaysPerWeek: 4,
-      volumePreset: "balanced",
-    });
-
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
-
-    const coverageSection = await screen.findByRole("region", {
-      name: /movement pattern coverage/i,
-    });
-    const coverage = within(coverageSection);
-
-    expect(
-      coverage.getByText(/read-only in v1 and does not promise final exercise slots/i),
-    ).toBeVisible();
-    expect(
-      coverage.getByText(
-        /derived from the current training split, strategy, and weekly rep targets/i,
-      ),
-    ).toBeVisible();
-    expect(
-      coverage.getByText(
-        /covered across the split's upper sessions while lower days stay focused/i,
-      ),
-    ).toBeVisible();
-    expect(
-      coverage.getByText(
-        /covered across the split's lower sessions with room for direct accessory work/i,
-      ),
-    ).toBeVisible();
-
-    for (const patternLabel of [
-      "Horizontal push",
-      "Horizontal pull",
-      "Vertical push",
-      "Vertical pull",
-      "Elbow flexion",
-      "Elbow extension",
-      "Quad dominant",
-      "Hip/hamstring dominant",
-      "Calves/accessories",
-    ]) {
-      expect(coverage.getByText(patternLabel)).toBeVisible();
-    }
-
-    expect(coverage.getAllByText("Direct Weekly Rep Target")).toHaveLength(8);
-    expect(coverage.getByText("Indirect support only")).toBeVisible();
-  });
-
   it("shows the Step 5 automatic rules note with passive rest copy and no rest controls", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
@@ -810,7 +737,7 @@ describe("PlanBuilderRoute", () => {
     expectNoManualRestControls();
   });
 
-  it("explains hard exclusions and later conflict handling without Step 5 conflict-resolution controls", async () => {
+  it("explains avoided exercise exclusions without Step 5 conflict-resolution controls", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -831,16 +758,7 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toBeVisible();
 
-    const continueSection = getClosestSection(
-      screen.getByRole("heading", { name: /before you continue/i }),
-      "Before you continue",
-    );
-
-    expect(
-      within(continueSection).getByText(
-        /avoided exercises are hard exclusions\. if generation later cannot find a safe viable replacement, review will surface an exercise selection conflict for you to resolve instead of silently keeping the avoided exercise\./i,
-      ),
-    ).toBeVisible();
+    expect(screen.queryByRole("heading", { name: /before you continue/i })).not.toBeInTheDocument();
     expectNoConflictResolutionControls();
   });
 
@@ -1269,7 +1187,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await screen.findByRole("heading", { name: /exercise selection strategy/i });
+    await screen.findByRole("heading", { name: /preferred exercises/i });
 
     await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
     await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
@@ -2379,25 +2297,13 @@ function getExercisePreferenceListEntry({
 }
 
 async function expectReadOnlyExercisesStep() {
-  expect(
-    await screen.findByRole("heading", { name: /exercise selection strategy/i }),
-  ).toBeVisible();
-  expect(screen.getByRole("heading", { name: /^Balanced$/i })).toBeVisible();
-  expect(screen.getByRole("heading", { name: /^Full gym$/i })).toBeVisible();
-  expect(screen.getByRole("heading", { name: /preferred exercises/i })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: /preferred exercises/i })).toBeVisible();
   expect(screen.getByRole("heading", { name: /avoided exercises/i })).toBeVisible();
-  expect(screen.getByRole("heading", { name: /movement-pattern coverage/i })).toBeVisible();
   expect(screen.getByRole("heading", { name: /rules applied automatically/i })).toBeVisible();
-
-  const includedEquipment = screen.getByRole("list", { name: /included equipment/i });
-
-  for (const label of defaultExerciseStepIncludedEquipmentLabels) {
-    expect(within(includedEquipment).getByText(label)).toBeVisible();
-  }
-
-  for (const label of defaultExerciseStepMovementPatternLabels) {
-    expect(screen.getByText(label)).toBeVisible();
-  }
+  expect(
+    screen.queryByRole("heading", { name: /exercise selection strategy/i }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: /equipment preset/i })).not.toBeInTheDocument();
 
   for (const label of defaultExerciseStepAutomaticRuleLabels) {
     expect(screen.getByText(label)).toBeVisible();

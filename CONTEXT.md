@@ -84,6 +84,26 @@ _Avoid_: Glutes baseline target, separate glutes target
 The choices in a **Plan Blueprint** that guide how **Just Workout** should select exercises when generating a **Training Plan**. **Exercise Selection Preferences** describe selection strategy, equipment context, user-preferred exercises, and user-avoided exercises; they are not the generated workout days or final exercise list.
 _Avoid_: Generated exercises, workout exercise list, final routine exercises
 
+**User-Defined Exercise**:
+An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**.
+_Avoid_: Custom exercise, free-text exercise
+
+**Primary Muscle Group**:
+The main muscle group a **User-Defined Exercise** is intended to train directly. When adding a **User-Defined Exercise** from the body map, the first selected muscle group is the **Primary Muscle Group**.
+_Avoid_: Main body part, target area
+
+**Secondary Muscle Group**:
+A muscle group that receives meaningful indirect work from a **User-Defined Exercise**. When adding a **User-Defined Exercise** from the body map, muscle groups selected after the **Primary Muscle Group** are **Secondary Muscle Groups**.
+_Avoid_: Extra target, supporting area
+
+**Movement Pattern**:
+The exercise category that describes the main direction or joint action of a strength exercise, such as horizontal push, vertical pull, quad dominant, or elbow extension. **Movement Patterns** help Just Workout balance opposing work across a workout or week.
+_Avoid_: Exercise category, movement type
+
+**Exercise Role**:
+Whether an exercise is compound or isolation for training-plan evaluation. An **Exercise Role** helps Just Workout prioritize main work, add targeted volume, and classify **User-Defined Exercises**.
+_Avoid_: Exercise type, lift kind
+
 **Equipment Preset**:
 The equipment environment a user chooses in the **Plan Blueprint** so **Just Workout** knows which exercise categories can be considered during later **Training Plan** generation.
 _Avoid_: Equipment checklist, gym inventory

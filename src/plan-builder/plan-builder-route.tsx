@@ -20,7 +20,6 @@ import { PlanBuilderPage } from "./components/plan-builder-page";
 import {
   createDefaultExerciseSelectionPreferences,
   deriveAutomaticExerciseSelectionRules,
-  deriveMovementPatternCoverage,
   type ExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import {
@@ -282,13 +281,6 @@ export function PlanBuilderExercisesRoute() {
   const exerciseSelectionPreferences = isExerciseSelectionStepReady
     ? blueprint.exerciseSelectionPreferences
     : createDefaultExerciseSelectionPreferences();
-  const movementPatternCoverage = isExerciseSelectionStepReady
-    ? deriveMovementPatternCoverage({
-        split: blueprint.split,
-        strategy: exerciseSelectionPreferences.strategy,
-        weeklyRepTargets: blueprint.weeklyRepTargets,
-      })
-    : [];
   const rulesAppliedAutomatically = deriveAutomaticExerciseSelectionRules(
     exerciseSelectionPreferences.strategy,
   );
@@ -317,7 +309,7 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Review exercise strategy, equipment, movement coverage, and preferences before Review.
+          Review exercise strategy, equipment, and preferences before Review.
         </PageLead>
       }
       summary={summary}
@@ -325,7 +317,6 @@ export function PlanBuilderExercisesRoute() {
       {isExerciseSelectionStepReady ? (
         <ExerciseSelectionPreferencesStep
           exerciseSelectionPreferences={exerciseSelectionPreferences}
-          movementPatternCoverage={movementPatternCoverage}
           onContinueToReview={handleContinueToReview}
           onExerciseSelectionPreferencesChange={handleExerciseSelectionPreferencesChange}
           rulesAppliedAutomatically={rulesAppliedAutomatically}
