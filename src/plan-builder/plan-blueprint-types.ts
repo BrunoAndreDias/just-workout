@@ -8,6 +8,7 @@ import type {
   VolumePresetSource,
   WeeklyRepTarget,
 } from "./training-volume";
+import type { MainCompoundSelection } from "./weekly-movement-coverage";
 
 export type TrainingGoal = "build-muscle";
 export type TrainingFrequencyDaysPerWeek = 2 | 3 | 4 | 5;
@@ -57,6 +58,7 @@ export type PlanBlueprint = {
   volumePreset: VolumePresetId | null;
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+  mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
 };
@@ -169,12 +171,14 @@ export type StoredPlanBlueprint = Omit<
   PlanBlueprint,
   | "confirmedBuilderSteps"
   | "exerciseSelectionPreferences"
+  | "mainCompoundSelections"
   | "volumePreset"
   | "volumePresetSource"
   | "weeklyRepTargets"
 > & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
   exerciseSelectionPreferences?: unknown;
+  mainCompoundSelections?: unknown;
   volumePreset?: unknown;
   volumePresetSource?: unknown;
   weeklyRepTargets?: unknown;

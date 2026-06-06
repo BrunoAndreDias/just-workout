@@ -32,6 +32,33 @@ const testBlueprintOptions = {
   timestamp: "2026-05-30T10:00:00.000Z",
 } as const;
 
+const completeMainCompoundSelections = [
+  {
+    exerciseId: "flat-barbell-or-dumbbell-bench-press",
+    movementPattern: "horizontal_push",
+  },
+  {
+    exerciseId: "bent-over-barbell-or-dumbbell-rows",
+    movementPattern: "horizontal_pull",
+  },
+  {
+    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+    movementPattern: "vertical_push",
+  },
+  {
+    exerciseId: "pull-ups",
+    movementPattern: "vertical_pull",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-squats",
+    movementPattern: "quad_dominant",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+    movementPattern: "hip_hamstring_dominant",
+  },
+] as const;
+
 const firstUpdateTimestamp = "2026-05-30T10:05:00.000Z";
 const secondUpdateTimestamp = "2026-05-30T10:10:00.000Z";
 
@@ -87,6 +114,7 @@ describe("plan blueprint", () => {
       volumePreset: null,
       volumePresetSource: null,
       weeklyRepTargets: null,
+      mainCompoundSelections: [],
       exerciseSelectionPreferences: {
         avoidedExercises: [],
         equipmentPreset: "full_gym",
@@ -115,6 +143,7 @@ describe("plan blueprint", () => {
         updatedAt: testBlueprintOptions.timestamp,
       }),
     ).toMatchObject({
+      mainCompoundSelections: [],
       exerciseSelectionPreferences: {
         avoidedExercises: [],
         equipmentPreset: "full_gym",
@@ -131,6 +160,7 @@ describe("plan blueprint", () => {
             { id: "avoided-1", rawText: "Behind-the-neck press" },
             { rawText: "Missing id" },
           ],
+          ignored: true,
           equipmentPreset: "garage_gym",
           preferredExercises: [
             { id: "preferred-1", matchedExerciseId: "exercise-42", rawText: "Incline press" },
@@ -144,8 +174,39 @@ describe("plan blueprint", () => {
         repRanges: null,
         split: null,
         updatedAt: testBlueprintOptions.timestamp,
+        mainCompoundSelections: [
+          {
+            exerciseId: "flat-barbell-or-dumbbell-bench-press",
+            movementPattern: "horizontal_push",
+          },
+          {
+            exerciseId: "flat-dumbbell-flyes",
+            movementPattern: "horizontal_push",
+            updatedAt: 42 as unknown as string,
+          },
+          {
+            exerciseId: "pull-ups",
+            movementPattern: "vertical_pull",
+            updatedAt: "2026-05-30T10:05:00.000Z",
+          },
+          {
+            exerciseId: "not-a-real-exercise",
+            movementPattern: "elbow_extension" as unknown as "horizontal_push",
+          },
+        ],
       }),
     ).toMatchObject({
+      mainCompoundSelections: [
+        {
+          exerciseId: "flat-dumbbell-flyes",
+          movementPattern: "horizontal_push",
+        },
+        {
+          exerciseId: "pull-ups",
+          movementPattern: "vertical_pull",
+          updatedAt: "2026-05-30T10:05:00.000Z",
+        },
+      ],
       exerciseSelectionPreferences: {
         avoidedExercises: [{ id: "avoided-1", rawText: "Behind-the-neck press" }],
         equipmentPreset: "full_gym",
@@ -471,7 +532,9 @@ describe("plan blueprint", () => {
   });
 
   it("stores confirmed Exercises progress separately from draft Exercise Selection Preferences", () => {
-    const blueprint = createConfirmedPlanBlueprint({});
+    const blueprint = createConfirmedPlanBlueprint({
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
 
     const confirmedBlueprint = confirmExerciseSelectionPreferences({
       blueprint,
@@ -515,12 +578,36 @@ describe("plan blueprint", () => {
 
   it("summarizes Review as the next step once Exercises is confirmed", () => {
     const blueprint = confirmExerciseSelectionPreferences({
-      blueprint: createConfirmedPlanBlueprint({}),
+      blueprint: createConfirmedPlanBlueprint({
+        mainCompoundSelections: completeMainCompoundSelections,
+      }),
       timestamp: firstUpdateTimestamp,
     });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
       nextStep: "Review",
     });
+  });
+
+  it("blocks Exercises confirmation when required Weekly Movement Coverage is missing", () => {
+    expect(() =>
+      confirmExerciseSelectionPreferences({
+        blueprint: createConfirmedPlanBlueprint({
+          mainCompoundSelections: [
+            {
+              exerciseId: "flat-barbell-or-dumbbell-bench-press",
+              movementPattern: "horizontal_push",
+            },
+            {
+              exerciseId: "bent-over-barbell-or-dumbbell-rows",
+              movementPattern: "horizontal_pull",
+            },
+          ],
+        }),
+        timestamp: firstUpdateTimestamp,
+      }),
+    ).toThrowError(
+      "Exercises cannot be confirmed while required Weekly Movement Coverage is missing.",
+    );
   });
 });

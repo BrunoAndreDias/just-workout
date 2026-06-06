@@ -22,6 +22,10 @@ import {
   getConfirmedBuilderSteps,
   isVolumeStepComplete,
 } from "./plan-blueprint-progress";
+import {
+  getWeeklyMovementCoverage,
+  normalizeMainCompoundSelections,
+} from "./weekly-movement-coverage";
 
 export {
   getPlanBuilderRedirectStep,
@@ -93,6 +97,7 @@ export function createDefaultPlanBlueprint({
     volumePreset: null,
     volumePresetSource: null,
     weeklyRepTargets: null,
+    mainCompoundSelections: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
     confirmedBuilderSteps: getConfirmedBuilderSteps({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
@@ -107,6 +112,7 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
     exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
       blueprint.exerciseSelectionPreferences,
     ),
+    mainCompoundSelections: normalizeMainCompoundSelections(blueprint.mainCompoundSelections),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
   };
 }
@@ -411,6 +417,22 @@ export function confirmExerciseSelectionPreferences({
 
   if (!isVolumeStepComplete(blueprintToConfirm)) {
     throw new Error("Exercises cannot be confirmed before Training Volume is confirmed.");
+  }
+
+  if (!blueprintToConfirm.split) {
+    throw new Error("Exercises cannot be confirmed before a Training Split is selected.");
+  }
+
+  if (
+    !getWeeklyMovementCoverage({
+      mainCompoundSelections: blueprintToConfirm.mainCompoundSelections,
+      split: blueprintToConfirm.split,
+      trainingFrequencyDaysPerWeek: blueprintToConfirm.trainingFrequencyDaysPerWeek,
+    }).canConfirmExercises
+  ) {
+    throw new Error(
+      "Exercises cannot be confirmed while required Weekly Movement Coverage is missing.",
+    );
   }
 
   return {

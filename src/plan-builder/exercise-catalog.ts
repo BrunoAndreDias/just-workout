@@ -24,6 +24,16 @@ export type MovementPatternId =
 
 export type ExerciseRoleId = "compound" | "isolation";
 
+export type CompoundCapableMovementPatternId = Extract<
+  MovementPatternId,
+  | "horizontal_push"
+  | "horizontal_pull"
+  | "vertical_push"
+  | "vertical_pull"
+  | "quad_dominant"
+  | "hip_hamstring_dominant"
+>;
+
 export type ExerciseCatalogExercise = {
   catalogMuscleGroup: ExerciseCatalogMuscleGroupId;
   id: string;
@@ -662,4 +672,32 @@ export function getExerciseCatalogExercisesByMovementPattern(
   return exerciseCatalogExercises.filter(
     (exercise) => exercise.movementPattern === movementPattern,
   );
+}
+
+export function getExerciseCatalogExercise(
+  exerciseId: string,
+): ExerciseCatalogExercise | undefined {
+  return exerciseCatalogExercises.find((exercise) => exercise.id === exerciseId);
+}
+
+export function isCompoundCapableMovementPattern(
+  movementPattern: unknown,
+): movementPattern is CompoundCapableMovementPatternId {
+  return (
+    movementPattern === "horizontal_push" ||
+    movementPattern === "horizontal_pull" ||
+    movementPattern === "vertical_push" ||
+    movementPattern === "vertical_pull" ||
+    movementPattern === "quad_dominant" ||
+    movementPattern === "hip_hamstring_dominant"
+  );
+}
+
+export function isMainCompoundEligible(
+  exercise: Pick<ExerciseCatalogExercise, "movementPattern" | "role">,
+): exercise is ExerciseCatalogExercise & {
+  movementPattern: CompoundCapableMovementPatternId;
+  role: "compound";
+} {
+  return exercise.role === "compound" && isCompoundCapableMovementPattern(exercise.movementPattern);
 }

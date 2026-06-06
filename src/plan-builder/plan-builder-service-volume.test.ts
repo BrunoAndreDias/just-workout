@@ -5,6 +5,33 @@ import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 import { isTrainingVolumeConfiguration } from "./training-volume";
 
+const completeMainCompoundSelections = [
+  {
+    exerciseId: "flat-barbell-or-dumbbell-bench-press",
+    movementPattern: "horizontal_push",
+  },
+  {
+    exerciseId: "bent-over-barbell-or-dumbbell-rows",
+    movementPattern: "horizontal_pull",
+  },
+  {
+    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+    movementPattern: "vertical_push",
+  },
+  {
+    exerciseId: "pull-ups",
+    movementPattern: "vertical_pull",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-squats",
+    movementPattern: "quad_dominant",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+    movementPattern: "hip_hamstring_dominant",
+  },
+] as const;
+
 describe("planBuilderService volume and dependency invalidation", () => {
   beforeEach(async () => {
     await db.delete();
@@ -221,6 +248,10 @@ describe("planBuilderService volume and dependency invalidation", () => {
     await planBuilderService.confirmSelectedTrainingVolume({
       timestamp: "2026-05-30T10:33:00.000Z",
       trainingVolumeConfiguration: initializedBlueprint,
+    });
+    await db.planBlueprints.put({
+      ...(await planBuilderService.getOrCreatePlanBlueprint()),
+      mainCompoundSelections: completeMainCompoundSelections,
     });
     await planBuilderService.confirmSelectedExerciseSelectionPreferences({
       exerciseSelectionPreferences,

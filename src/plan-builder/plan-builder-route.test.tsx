@@ -188,6 +188,33 @@ type ConfirmedPlanBuilderProgressForTest = {
 
 const defaultMatchMedia = window.matchMedia;
 
+const completeMainCompoundSelections = [
+  {
+    exerciseId: "flat-barbell-or-dumbbell-bench-press",
+    movementPattern: "horizontal_push",
+  },
+  {
+    exerciseId: "bent-over-barbell-or-dumbbell-rows",
+    movementPattern: "horizontal_pull",
+  },
+  {
+    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+    movementPattern: "vertical_push",
+  },
+  {
+    exerciseId: "pull-ups",
+    movementPattern: "vertical_pull",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-squats",
+    movementPattern: "quad_dominant",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+    movementPattern: "hip_hamstring_dominant",
+  },
+] as const;
+
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
     await db.delete();
@@ -2423,6 +2450,13 @@ async function saveConfirmedPlanBuilderProgressForTest({
   await planBuilderService.confirmSelectedTrainingVolume({
     timestamp: "2026-05-31T09:05:00.000Z",
     trainingVolumeConfiguration: trainingVolumeBlueprint,
+  });
+
+  const configuredBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+  await db.planBlueprints.put({
+    ...configuredBlueprint,
+    mainCompoundSelections: completeMainCompoundSelections,
   });
 }
 

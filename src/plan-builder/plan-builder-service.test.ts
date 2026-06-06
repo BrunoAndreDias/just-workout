@@ -49,6 +49,33 @@ const exercisePreferenceDraftUpdateCases = [
   },
 ] satisfies ReadonlyArray<ExercisePreferenceDraftUpdateCase>;
 
+const completeMainCompoundSelections = [
+  {
+    exerciseId: "flat-barbell-or-dumbbell-bench-press",
+    movementPattern: "horizontal_push",
+  },
+  {
+    exerciseId: "bent-over-barbell-or-dumbbell-rows",
+    movementPattern: "horizontal_pull",
+  },
+  {
+    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+    movementPattern: "vertical_push",
+  },
+  {
+    exerciseId: "pull-ups",
+    movementPattern: "vertical_pull",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-squats",
+    movementPattern: "quad_dominant",
+  },
+  {
+    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+    movementPattern: "hip_hamstring_dominant",
+  },
+] as const;
+
 describe("planBuilderService", () => {
   beforeEach(async () => {
     await db.delete();
@@ -113,6 +140,20 @@ describe("planBuilderService", () => {
         preferredExercises: [],
         strategy: "balanced",
       },
+    });
+  });
+
+  it("resumes blueprints saved before Main Compound Selections existed with an empty canonical shape", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.mainCompoundSelections;
+
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundSelections: [],
     });
   });
 
@@ -205,6 +246,7 @@ describe("planBuilderService", () => {
         ...initialBlueprint.exerciseSelectionPreferences,
         [listId]: initialExercises,
       },
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -269,6 +311,7 @@ describe("planBuilderService", () => {
         split: true,
         volume: true,
       },
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -344,6 +387,7 @@ describe("planBuilderService", () => {
         volume: true,
       },
       exerciseSelectionPreferences,
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "controlled_higher_reps",
       split: "rotating-push-pull-legs",
       trainingFrequencyDaysPerWeek: 4,
@@ -426,6 +470,7 @@ describe("planBuilderService", () => {
         volume: true,
       },
       exerciseSelectionPreferences,
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,

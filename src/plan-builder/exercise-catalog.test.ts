@@ -3,7 +3,10 @@ import {
   type ExerciseCatalogExercise,
   exerciseCatalogExercises,
   exerciseCatalogMuscleGroups,
+  getExerciseCatalogExercise,
   getExerciseCatalogExercisesByMovementPattern,
+  isCompoundCapableMovementPattern,
+  isMainCompoundEligible,
 } from "./exercise-catalog";
 
 describe("exercise catalog", () => {
@@ -104,10 +107,32 @@ describe("exercise catalog", () => {
       role: "isolation",
     });
   });
+
+  it("wraps main compound eligibility behind a domain helper", () => {
+    expect(
+      isMainCompoundEligible(findExistingExercise("flat-barbell-or-dumbbell-bench-press")),
+    ).toBe(true);
+    expect(isMainCompoundEligible(findExistingExercise("flat-dumbbell-flyes"))).toBe(false);
+    expect(
+      isMainCompoundEligible(findExistingExercise("barbell-dumbbell-or-machine-upright-rows")),
+    ).toBe(false);
+    expect(isCompoundCapableMovementPattern("vertical_push")).toBe(true);
+    expect(isCompoundCapableMovementPattern("elbow_extension")).toBe(false);
+  });
 });
 
 function findExercise(exerciseId: string): ExerciseCatalogExercise {
   const exercise = exerciseCatalogExercises.find(({ id }) => id === exerciseId);
+
+  if (!exercise) {
+    throw new Error(`Missing exercise "${exerciseId}".`);
+  }
+
+  return exercise;
+}
+
+function findExistingExercise(exerciseId: string): ExerciseCatalogExercise {
+  const exercise = getExerciseCatalogExercise(exerciseId);
 
   if (!exercise) {
     throw new Error(`Missing exercise "${exerciseId}".`);
