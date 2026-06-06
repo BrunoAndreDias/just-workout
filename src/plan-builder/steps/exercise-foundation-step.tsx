@@ -258,9 +258,18 @@ export function ExerciseFoundationStep({
         </div>
       </StepPanel>
 
-      <details className="rounded-2xl border border-stone-900/10 bg-white/80 shadow-sm">
-        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-black text-stone-950">
-          Exercise preferences · optional
+      <details className="rounded-2xl border border-stone-900/10 bg-stone-50/80 shadow-sm">
+        <summary className="cursor-pointer list-none px-5 py-4">
+          <span className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-stone-500">
+            Secondary section
+          </span>
+          <span className="mt-1 block text-sm font-black text-stone-950">
+            Exercise preferences · optional
+          </span>
+          <span className="mt-1 block text-sm text-stone-600">
+            Keep soft Preferred Exercise and Avoided Exercise inputs separate from Weekly Movement
+            Coverage.
+          </span>
         </summary>
         <div className="border-t border-stone-900/10 px-5 py-5">
           <p className="max-w-3xl text-sm leading-6 text-stone-600">

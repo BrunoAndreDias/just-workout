@@ -728,7 +728,7 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("keeps Exercise preferences collapsed by default and expands them on demand", async () => {
+  it("keeps Exercise preferences collapsed by default as a secondary section and expands them on demand", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedVolumeStepForTest({
@@ -741,6 +741,7 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectReadOnlyExercisesStep();
+    expect(screen.getByText("Secondary section")).toBeVisible();
     await openExercisePreferencesSection(user);
     expect(screen.getByLabelText(/preferred exercises/i)).toBeVisible();
     expect(screen.getByLabelText(/avoided exercises/i)).toBeVisible();
