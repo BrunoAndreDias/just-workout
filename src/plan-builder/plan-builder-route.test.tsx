@@ -755,6 +755,29 @@ describe("PlanBuilderRoute", () => {
 
     await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+      volumePreset: "balanced",
+    });
+
+    const fullBodyBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...fullBodyBlueprint,
+      mainCompoundSelections: selectionsWithoutVerticalPush,
+    });
+
+    const fullBodyView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByText("Main compound coverage: 5 of 5 required patterns covered."),
+    ).toBeVisible();
+    expect(screen.getByText("Recommended push balance: add Vertical push.")).toBeVisible();
+
+    fullBodyView.unmount();
+
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
       volumePreset: "balanced",
@@ -800,6 +823,52 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toBeVisible();
     expect(screen.getByText("Push coverage missing: Vertical push.")).toBeVisible();
+  });
+
+  it("keeps the no-drawer Exercises flow in suggested coverage after editing preferences", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+      volumePreset: "balanced",
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+    expect(
+      screen.getByText(
+        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
+      ),
+    ).toBeVisible();
+
+    await openExercisePreferencesSection(user);
+    await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    await user.click(
+      within(
+        getRequiredClosestForm(screen.getByLabelText(/preferred exercises/i), "Preferred Exercise"),
+      ).getByRole("button", { name: /^add$/i }),
+    );
+
+    expect(
+      screen.getByText(
+        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Recommended push balance: add Vertical push.")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Confirm main compounds to continue." }),
+    ).toBeDisabled();
+    await expectPlanBlueprintToMatch({
+      confirmedBuilderSteps: {
+        exercises: false,
+      },
+      exerciseSelectionPreferences: {
+        preferredExercises: [{ rawText: "Incline dumbbell press" }],
+      },
+    });
   });
 
   it("reveals the optional accessories summary only after persisted main compound coverage is valid", async () => {
