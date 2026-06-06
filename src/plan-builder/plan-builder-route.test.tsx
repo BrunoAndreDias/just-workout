@@ -14,6 +14,7 @@ import {
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
+import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import type { TrainingSplitId } from "./training-split";
 import { isTrainingVolumeConfiguration, type VolumePresetId } from "./training-volume";
 
@@ -188,33 +189,6 @@ type ConfirmedPlanBuilderProgressForTest = {
 
 const defaultMatchMedia = window.matchMedia;
 
-const completeMainCompoundSelections = [
-  {
-    exerciseId: "flat-barbell-or-dumbbell-bench-press",
-    movementPattern: "horizontal_push",
-  },
-  {
-    exerciseId: "bent-over-barbell-or-dumbbell-rows",
-    movementPattern: "horizontal_pull",
-  },
-  {
-    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
-    movementPattern: "vertical_push",
-  },
-  {
-    exerciseId: "pull-ups",
-    movementPattern: "vertical_pull",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-squats",
-    movementPattern: "quad_dominant",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
-    movementPattern: "hip_hamstring_dominant",
-  },
-] as const;
-
 describe("PlanBuilderRoute", () => {
   beforeEach(async () => {
     await db.delete();
@@ -232,7 +206,7 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-    expect(screen.getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /3 days per week/i })).toBeChecked();
   });
 
   it("renders the resumable plan builder summary inside the app shell", async () => {
@@ -243,7 +217,7 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
     expect(await screen.findByText("Build muscle")).toBeVisible();
-    expect(await screen.findAllByText("3 days/week")).toHaveLength(2);
+    expect(await screen.findAllByText("3 days/week")).toHaveLength(1);
     expect(within(summary).getByRole("heading", { name: "Plan blueprint" })).toBeVisible();
     expect(within(summary).getByText("Draft")).toBeVisible();
     expectBlueprintSummaryField(summary, "Goal", "Build muscle");
@@ -274,14 +248,13 @@ describe("PlanBuilderRoute", () => {
 
     const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
 
-    expect(within(frequencyGroup).getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
+    expect(within(frequencyGroup).getByRole("radio", { name: /3 days per week/i })).toBeChecked();
     expect(within(frequencyGroup).queryByText("Full Body A/B")).not.toBeInTheDocument();
     expect(within(frequencyGroup).queryByText("Full Body")).not.toBeInTheDocument();
     expect(within(frequencyGroup).queryByText("Upper/Lower")).not.toBeInTheDocument();
     expect(within(frequencyGroup).queryByText("Push/Pull/Legs variation")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Recommended weekly split" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Choose your weekly split" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
-    expect(screen.getByText("Why this split fits")).toBeVisible();
     expect(screen.getByText("Suggested weekly layout")).toBeVisible();
     expect(screen.getByText("Alternating Full Body A/B")).toBeVisible();
     expect(screen.getByText("Upper / Lower / Full Body")).toBeVisible();
@@ -311,10 +284,10 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    expect(within(frequencyGroup).getByText("2 days/week")).toBeVisible();
-    expect(within(frequencyGroup).getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
-    expect(within(frequencyGroup).getByText("4 days/week")).toBeVisible();
-    expect(within(frequencyGroup).getByText("5 days/week")).toBeVisible();
+    expect(within(frequencyGroup).getByText("2 days")).toBeVisible();
+    expect(within(frequencyGroup).getByRole("radio", { name: /3 days per week/i })).toBeChecked();
+    expect(within(frequencyGroup).getByText("4 days")).toBeVisible();
+    expect(within(frequencyGroup).getByText("5 days")).toBeVisible();
     expect(within(frequencyGroup).queryByText("Full Body")).not.toBeInTheDocument();
     expect(
       screen.queryByText(/flexible split options, steady recovery, and enough training frequency/i),
@@ -323,10 +296,10 @@ describe("PlanBuilderRoute", () => {
       screen.queryByText(/6-day plans are not available in this first version/i),
     ).not.toBeInTheDocument();
 
-    await user.click(within(frequencyGroup).getByText("5 days/week"));
+    await user.click(within(frequencyGroup).getByRole("radio", { name: /5 days per week/i }));
 
     await waitFor(() => {
-      expect(within(frequencyGroup).getByRole("radio", { name: /5 days\/week/i })).toBeChecked();
+      expect(within(frequencyGroup).getByRole("radio", { name: /5 days per week/i })).toBeChecked();
     });
 
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
@@ -346,7 +319,7 @@ describe("PlanBuilderRoute", () => {
 
     await waitFor(() => {
       expect(
-        within(resumedFrequencyGroup).getByRole("radio", { name: /5 days\/week/i }),
+        within(resumedFrequencyGroup).getByRole("radio", { name: /5 days per week/i }),
       ).toBeChecked();
     });
     expect(
@@ -365,9 +338,9 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await user.click(within(frequencyGroup).getByRole("radio", { name: /4 days per week/i }));
     await waitFor(() => {
-      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
+      expect(within(frequencyGroup).getByRole("radio", { name: /4 days per week/i })).toBeChecked();
     });
 
     const splitGroup = await getTrainingScheduleSplitSection();
@@ -383,11 +356,6 @@ describe("PlanBuilderRoute", () => {
         within(splitGroup).getByRole("radio", { name: /rotating push\/pull\/legs/i }),
       ).toBeChecked();
     });
-    expect(
-      await screen.findByText(
-        /can work for 4 days\/week, but upper\/lower is easier to keep consistent across fixed weekdays/i,
-      ),
-    ).toBeVisible();
   });
 
   it("shows split-derived summary statuses and updates them when the selected split changes", async () => {
@@ -399,9 +367,9 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await user.click(within(frequencyGroup).getByRole("radio", { name: /4 days per week/i }));
     await waitFor(() => {
-      expect(within(frequencyGroup).getByRole("radio", { name: /4 days\/week/i })).toBeChecked();
+      expect(within(frequencyGroup).getByRole("radio", { name: /4 days per week/i })).toBeChecked();
     });
 
     const splitGroup = await getTrainingScheduleSplitSection();
@@ -1551,7 +1519,7 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    await user.click(within(frequencyGroup).getByText("5 days/week"));
+    await user.click(within(frequencyGroup).getByRole("radio", { name: /5 days per week/i }));
     await expectTrainingFrequencyChecked(frequencyGroup, 5);
 
     await waitFor(async () => {
@@ -1779,7 +1747,7 @@ describe("PlanBuilderRoute", () => {
 
     const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
 
-    await user.click(within(frequencyGroup).getByText("4 days/week"));
+    await user.click(within(frequencyGroup).getByRole("radio", { name: /4 days per week/i }));
     await user.click(screen.getByRole("button", { name: /volume/i }));
 
     await expectPlanBuilderPath(router, planBuilderPaths.volume);
@@ -2145,7 +2113,11 @@ describe("PlanBuilderRoute", () => {
       name: /training frequency/i,
     });
 
-    await user.click(within(resumedFrequencyGroup).getByText(getTrainingFrequencyLabel(3)));
+    await user.click(
+      within(resumedFrequencyGroup).getByRole("radio", {
+        name: getLabelMatcher(getTrainingFrequencyOptionLabel(3)),
+      }),
+    );
 
     await expectTrainingFrequencyChecked(resumedFrequencyGroup, 3);
     await expectPersistedTrainingSplit(null);
@@ -2478,7 +2450,11 @@ async function selectTrainingFrequency(
     name: /training frequency/i,
   });
 
-  await user.click(within(frequencyGroup).getByText(getTrainingFrequencyLabel(daysPerWeek)));
+  await user.click(
+    within(frequencyGroup).getByRole("radio", {
+      name: getLabelMatcher(getTrainingFrequencyOptionLabel(daysPerWeek)),
+    }),
+  );
   await expectTrainingFrequencyChecked(frequencyGroup, daysPerWeek);
 
   return frequencyGroup;
@@ -2491,14 +2467,14 @@ async function expectTrainingFrequencyChecked(
   await waitFor(() => {
     expect(
       within(frequencyGroup).getByRole("radio", {
-        name: getLabelMatcher(getTrainingFrequencyLabel(daysPerWeek)),
+        name: getLabelMatcher(getTrainingFrequencyOptionLabel(daysPerWeek)),
       }),
     ).toBeChecked();
   });
 }
 
 async function getTrainingScheduleSplitSection() {
-  const heading = await screen.findByRole("heading", { name: /recommended weekly split/i });
+  const heading = await screen.findByRole("heading", { name: /choose your weekly split/i });
   const section = heading.closest("section");
 
   if (!(section instanceof HTMLElement)) {
@@ -2603,8 +2579,8 @@ function getLabelMatcher(label: string) {
   return new RegExp(escapeRegExp(label), "i");
 }
 
-function getTrainingFrequencyLabel(daysPerWeek: TrainingFrequencyDaysPerWeek) {
-  return `${daysPerWeek} days/week`;
+function getTrainingFrequencyOptionLabel(daysPerWeek: TrainingFrequencyDaysPerWeek) {
+  return `${daysPerWeek} days per week`;
 }
 
 function escapeRegExp(value: string) {

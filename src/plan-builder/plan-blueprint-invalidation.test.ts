@@ -16,39 +16,13 @@ import {
   setOptionalVolumeTargetEnabled,
   summarizePlanBlueprint,
 } from "./plan-blueprint";
+import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 
 const testBlueprintOptions = {
   id: "blueprint-1",
   timestamp: "2026-05-30T10:00:00.000Z",
 } as const;
-
-const completeMainCompoundSelections = [
-  {
-    exerciseId: "flat-barbell-or-dumbbell-bench-press",
-    movementPattern: "horizontal_push",
-  },
-  {
-    exerciseId: "bent-over-barbell-or-dumbbell-rows",
-    movementPattern: "horizontal_pull",
-  },
-  {
-    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
-    movementPattern: "vertical_push",
-  },
-  {
-    exerciseId: "pull-ups",
-    movementPattern: "vertical_pull",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-squats",
-    movementPattern: "quad_dominant",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
-    movementPattern: "hip_hamstring_dominant",
-  },
-] as const;
 
 const firstUpdateTimestamp = "2026-05-30T10:05:00.000Z";
 const secondUpdateTimestamp = "2026-05-30T10:10:00.000Z";

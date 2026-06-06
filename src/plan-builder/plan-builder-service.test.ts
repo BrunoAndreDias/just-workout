@@ -7,6 +7,7 @@ import type {
 } from "./exercise-selection-preferences";
 import type { PlanBlueprint } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
+import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import {
   createRecommendedTrainingVolumeConfiguration,
   createTrainingVolumeConfiguration,
@@ -48,33 +49,6 @@ const exercisePreferenceDraftUpdateCases = [
     title: "Avoided Exercise",
   },
 ] satisfies ReadonlyArray<ExercisePreferenceDraftUpdateCase>;
-
-const completeMainCompoundSelections = [
-  {
-    exerciseId: "flat-barbell-or-dumbbell-bench-press",
-    movementPattern: "horizontal_push",
-  },
-  {
-    exerciseId: "bent-over-barbell-or-dumbbell-rows",
-    movementPattern: "horizontal_pull",
-  },
-  {
-    exerciseId: "standing-overhead-barbell-or-dumbbell-press",
-    movementPattern: "vertical_push",
-  },
-  {
-    exerciseId: "pull-ups",
-    movementPattern: "vertical_pull",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-squats",
-    movementPattern: "quad_dominant",
-  },
-  {
-    exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
-    movementPattern: "hip_hamstring_dominant",
-  },
-] as const;
 
 describe("planBuilderService", () => {
   beforeEach(async () => {

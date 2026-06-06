@@ -1,5 +1,6 @@
 import {
   type CompoundCapableMovementPatternId,
+  compoundCapableMovementPatterns,
   getExerciseCatalogExercise,
   isCompoundCapableMovementPattern,
   isMainCompoundEligible,
@@ -46,15 +47,6 @@ type WeeklyMovementCoverageRule = {
   requiredPatterns: ReadonlyArray<CompoundCapableMovementPatternId>;
 };
 
-const allCompoundCapableMovementPatterns = [
-  "horizontal_push",
-  "horizontal_pull",
-  "vertical_push",
-  "vertical_pull",
-  "quad_dominant",
-  "hip_hamstring_dominant",
-] as const satisfies ReadonlyArray<CompoundCapableMovementPatternId>;
-
 const fullBodyRule = {
   bucketByPattern: {
     hip_hamstring_dominant: "Full Body",
@@ -86,7 +78,7 @@ const upperLowerRule = {
   },
   coverageRuleFamily: "upper_lower",
   recommendedPatterns: [],
-  requiredPatterns: allCompoundCapableMovementPatterns,
+  requiredPatterns: compoundCapableMovementPatterns,
 } as const satisfies WeeklyMovementCoverageRule;
 
 const pushPullLegsRule = {
@@ -100,7 +92,7 @@ const pushPullLegsRule = {
   },
   coverageRuleFamily: "push_pull_legs",
   recommendedPatterns: [],
-  requiredPatterns: allCompoundCapableMovementPatterns,
+  requiredPatterns: compoundCapableMovementPatterns,
 } as const satisfies WeeklyMovementCoverageRule;
 
 export function normalizeMainCompoundSelections(
@@ -124,7 +116,7 @@ export function normalizeMainCompoundSelections(
     });
   }
 
-  return allCompoundCapableMovementPatterns.flatMap((movementPattern) => {
+  return compoundCapableMovementPatterns.flatMap((movementPattern) => {
     const selection = canonicalSelections.get(movementPattern);
 
     return selection ? [selection] : [];
@@ -142,7 +134,7 @@ export function getWeeklyMovementCoverage({
       .filter((selection) => doesMainCompoundSelectionCoverMovementPattern(selection))
       .map((selection) => selection.movementPattern),
   );
-  const rows = allCompoundCapableMovementPatterns
+  const rows = compoundCapableMovementPatterns
     .filter(
       (movementPattern) =>
         coverageRule.requiredPatterns.includes(movementPattern) ||
@@ -152,9 +144,7 @@ export function getWeeklyMovementCoverage({
       bucket: coverageRule.bucketByPattern[movementPattern],
       isCovered: coveredPatterns.has(movementPattern),
       movementPattern,
-      requirement: coverageRule.requiredPatterns.includes(movementPattern)
-        ? ("required" as const)
-        : ("recommended" as const),
+      requirement: getMovementPatternRequirement(coverageRule, movementPattern),
     }));
   const missingRequiredPatterns = coverageRule.requiredPatterns.filter(
     (movementPattern) => !coveredPatterns.has(movementPattern),
@@ -168,7 +158,6 @@ export function getWeeklyMovementCoverage({
     coveredRequiredPatternCount,
     missingRequiredPatterns,
     missingRequiredSummary: getMissingRequiredSummary(
-      coverageRule.coverageRuleFamily,
       coverageRule.bucketByPattern,
       missingRequiredPatterns,
     ),
@@ -238,7 +227,6 @@ function doesMainCompoundSelectionCoverMovementPattern(selection: MainCompoundSe
 }
 
 function getMissingRequiredSummary(
-  coverageRuleFamily: CoverageRuleFamilyId,
   bucketByPattern: WeeklyMovementCoverageRule["bucketByPattern"],
   missingRequiredPatterns: ReadonlyArray<CompoundCapableMovementPatternId>,
 ): string | null {
@@ -255,14 +243,17 @@ function getMissingRequiredSummary(
 
     const movementPatternLabel = formatMovementPatternLabel(movementPattern);
 
-    if (coverageRuleFamily === "push_pull_legs") {
-      return `${bucketByPattern[movementPattern]} coverage missing: ${movementPatternLabel}.`;
-    }
-
     return `${bucketByPattern[movementPattern]} coverage missing: ${movementPatternLabel}.`;
   }
 
   return `Missing ${missingRequiredPatterns.length} required movement patterns.`;
+}
+
+function getMovementPatternRequirement(
+  coverageRule: WeeklyMovementCoverageRule,
+  movementPattern: CompoundCapableMovementPatternId,
+): WeeklyMovementCoverageRow["requirement"] {
+  return coverageRule.requiredPatterns.includes(movementPattern) ? "required" : "recommended";
 }
 
 function formatMovementPatternLabel(movementPattern: CompoundCapableMovementPatternId): string {

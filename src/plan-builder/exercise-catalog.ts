@@ -24,15 +24,16 @@ export type MovementPatternId =
 
 export type ExerciseRoleId = "compound" | "isolation";
 
-export type CompoundCapableMovementPatternId = Extract<
-  MovementPatternId,
-  | "horizontal_push"
-  | "horizontal_pull"
-  | "vertical_push"
-  | "vertical_pull"
-  | "quad_dominant"
-  | "hip_hamstring_dominant"
->;
+export const compoundCapableMovementPatterns = [
+  "horizontal_push",
+  "horizontal_pull",
+  "vertical_push",
+  "vertical_pull",
+  "quad_dominant",
+  "hip_hamstring_dominant",
+] as const satisfies ReadonlyArray<MovementPatternId>;
+
+export type CompoundCapableMovementPatternId = (typeof compoundCapableMovementPatterns)[number];
 
 export type ExerciseCatalogExercise = {
   catalogMuscleGroup: ExerciseCatalogMuscleGroupId;
@@ -683,19 +684,14 @@ export function getExerciseCatalogExercise(
 export function isCompoundCapableMovementPattern(
   movementPattern: unknown,
 ): movementPattern is CompoundCapableMovementPatternId {
-  return (
-    movementPattern === "horizontal_push" ||
-    movementPattern === "horizontal_pull" ||
-    movementPattern === "vertical_push" ||
-    movementPattern === "vertical_pull" ||
-    movementPattern === "quad_dominant" ||
-    movementPattern === "hip_hamstring_dominant"
-  );
+  return compoundCapableMovementPatterns.some((pattern) => pattern === movementPattern);
 }
 
-export function isMainCompoundEligible(
-  exercise: Pick<ExerciseCatalogExercise, "movementPattern" | "role">,
-): exercise is ExerciseCatalogExercise & {
+export function isMainCompoundEligible<
+  T extends Pick<ExerciseCatalogExercise, "movementPattern" | "role">,
+>(
+  exercise: T,
+): exercise is T & {
   movementPattern: CompoundCapableMovementPatternId;
   role: "compound";
 } {
