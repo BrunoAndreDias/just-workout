@@ -84,6 +84,10 @@ _Avoid_: Glutes baseline target, separate glutes target
 The choices in a **Plan Blueprint** that guide how **Just Workout** should select exercises when generating a **Training Plan**. **Exercise Selection Preferences** describe selection strategy, equipment context, user-preferred exercises, and user-avoided exercises; they are not the generated workout days or final exercise list.
 _Avoid_: Generated exercises, workout exercise list, final routine exercises
 
+**Main Compound Selection**:
+A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** are actual plan-building choices, not soft **Exercise Selection Preferences**, and they are evaluated before the **Training Plan** is generated.
+_Avoid_: Preferred exercise, catalog row, generated exercise
+
 **User-Defined Exercise**:
 An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**.
 _Avoid_: Custom exercise, free-text exercise
@@ -99,6 +103,22 @@ _Avoid_: Extra target, supporting area
 **Movement Pattern**:
 The exercise category that describes the main direction or joint action of a strength exercise, such as horizontal push, vertical pull, quad dominant, or elbow extension. **Movement Patterns** help Just Workout balance opposing work across a workout or week.
 _Avoid_: Exercise category, movement type
+
+**Weekly Movement Coverage**:
+The set of **Movement Patterns** a **Plan Blueprint** must cover across the training week before **Training Plan** generation. **Weekly Movement Coverage** is evaluated against the selected **Training Frequency** and **Training Split**; it is not a fixed per-screen checklist and does not require every workout day to contain every required pattern.
+_Avoid_: Hardcoded exercise checklist, per-day movement requirement
+
+**Coverage Rule Family**:
+A group of **Training Splits** that share the same **Weekly Movement Coverage** expectations. Full Body, Upper/Lower, and Push/Pull/Legs are distinct **Coverage Rule Families** because they explain missing movement coverage differently and can treat the same **Movement Pattern** as required or recommended.
+_Avoid_: Split id rule, UI checklist variant
+
+**Split Bucket**:
+A **Training Split** context used to explain where **Weekly Movement Coverage** belongs, such as Push, Pull, Legs, Upper, Lower, or Full Body. Validation remains canonical by **Movement Pattern**, but user-facing copy can include the **Split Bucket** that is missing coverage.
+_Avoid_: Workout day, fixed weekday
+
+**Compound-Capable Movement Pattern**:
+A major **Movement Pattern** that can be covered by a **Main Compound Selection**, such as horizontal push, horizontal pull, vertical push, vertical pull, quad dominant, or hip/hamstring dominant. Arm and accessory patterns can contribute useful training work, but they are handled as optional isolation or accessory coverage rather than required **Main Compound Selections**.
+_Avoid_: Accessory requirement, arm main lift
 
 **Exercise Role**:
 Whether an exercise is compound or isolation for training-plan evaluation. An **Exercise Role** helps Just Workout prioritize main work, add targeted volume, and classify **User-Defined Exercises**.
