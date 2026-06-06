@@ -747,6 +747,60 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByLabelText(/avoided exercises/i)).toBeVisible();
   });
 
+  it("recomputes Exercise foundation summary and missing copy from the selected split", async () => {
+    const selectionsWithoutVerticalPush = completeMainCompoundSelections.filter(
+      (selection) => selection.movementPattern !== "vertical_push",
+    );
+
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const upperLowerBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...upperLowerBlueprint,
+      mainCompoundSelections: selectionsWithoutVerticalPush,
+    });
+
+    const upperLowerView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByText(
+        "Main compound coverage: 5 of 6 required patterns covered · 1 required still missing.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Upper coverage missing: Vertical push.")).toBeVisible();
+
+    upperLowerView.unmount();
+
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const pushPullLegsBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...pushPullLegsBlueprint,
+      mainCompoundSelections: selectionsWithoutVerticalPush,
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(
+      await screen.findByText(
+        "Main compound coverage: 5 of 6 required patterns covered · 1 required still missing.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Push coverage missing: Vertical push.")).toBeVisible();
+  });
+
   it("keeps avoided exercise editing available inside the optional preferences section", async () => {
     const user = userEvent.setup();
 

@@ -102,7 +102,9 @@ export function ExerciseFoundationStep({
     trainingFrequencyDaysPerWeek,
   });
   const normalizedSelections = normalizeMainCompoundSelections(mainCompoundSelections);
+  const hasConfirmedSelections = normalizedSelections.length > 0;
   const suggestedFoundation = suggestedFoundationBySplit[split];
+  const recommendedGuidance = getRecommendedGuidance(coverage.rows);
   const suggestedRequiredPatternCount = coverage.rows.filter(
     (row) =>
       row.requirement === "required" && suggestedFoundation[row.movementPattern] !== undefined,
@@ -184,16 +186,16 @@ export function ExerciseFoundationStep({
               Exercise foundation overview
             </h3>
             <p className="text-sm font-semibold text-stone-700">
-              {getSuggestedFoundationSummary({
-                missingSuggestedRequiredCount,
-                requiredPatternCount: coverage.requiredPatternCount,
-                suggestedRequiredPatternCount,
-              })}
+              {hasConfirmedSelections
+                ? getConfirmedCoverageSummary(coverage)
+                : getSuggestedFoundationSummary({
+                    missingSuggestedRequiredCount,
+                    requiredPatternCount: coverage.requiredPatternCount,
+                    suggestedRequiredPatternCount,
+                  })}
             </p>
-            {coverage.coverageRuleFamily === "full_body" ? (
-              <p className="mt-2 text-sm text-stone-600">
-                Recommended push balance: add Vertical push.
-              </p>
+            {recommendedGuidance ? (
+              <p className="mt-2 text-sm text-stone-600">{recommendedGuidance}</p>
             ) : null}
           </div>
 
@@ -205,12 +207,16 @@ export function ExerciseFoundationStep({
               const suggestedExerciseId = suggestedFoundation[row.movementPattern];
               const status = getFoundationRowStatus({
                 confirmedSelection,
+                hasConfirmedSelections,
                 requirement: row.requirement,
                 suggestedExerciseId,
               });
               const exerciseName = getFoundationExerciseName({
                 confirmedSelection,
+                movementPattern: row.movementPattern,
+                missingCopy: getMissingMovementPatternCopy(row),
                 suggestedExerciseId,
+                visibleStatus: status,
               });
 
               return (
@@ -227,7 +233,7 @@ export function ExerciseFoundationStep({
                         {formatMovementPatternLabel(row.movementPattern)}
                       </h4>
                       <p className="text-sm text-stone-600">
-                        {exerciseName ?? getMissingFoundationCopy(row.requirement)}
+                        {exerciseName ?? getMissingFoundationCopy(row.movementPattern)}
                       </p>
                     </div>
                     <span
@@ -426,15 +432,21 @@ function getExerciseSelectionPendingInputId(
 
 function getFoundationRowStatus({
   confirmedSelection,
+  hasConfirmedSelections,
   requirement,
   suggestedExerciseId,
 }: {
   confirmedSelection: MainCompoundSelection | undefined;
+  hasConfirmedSelections: boolean;
   requirement: "recommended" | "required";
   suggestedExerciseId: string | undefined;
 }): FoundationRowStatus {
   if (confirmedSelection !== undefined) {
     return "confirmed";
+  }
+
+  if (hasConfirmedSelections && requirement === "required") {
+    return "missing_required";
   }
 
   if (suggestedExerciseId !== undefined) {
@@ -446,20 +458,30 @@ function getFoundationRowStatus({
 
 function getFoundationExerciseName({
   confirmedSelection,
+  missingCopy,
+  movementPattern,
   suggestedExerciseId,
+  visibleStatus,
 }: {
   confirmedSelection: MainCompoundSelection | undefined;
+  missingCopy: string;
+  movementPattern: CompoundCapableMovementPatternId;
   suggestedExerciseId: string | undefined;
+  visibleStatus: FoundationRowStatus;
 }): string | null {
   if (confirmedSelection !== undefined) {
     return getExerciseCatalogExercise(confirmedSelection.exerciseId)?.name ?? null;
+  }
+
+  if (visibleStatus === "missing_required") {
+    return missingCopy;
   }
 
   if (suggestedExerciseId !== undefined) {
     return getExerciseCatalogExercise(suggestedExerciseId)?.name ?? null;
   }
 
-  return null;
+  return getMissingFoundationCopy(movementPattern);
 }
 
 function getFoundationStatusClassName(status: FoundationRowStatus): string {
@@ -488,10 +510,10 @@ function getFoundationStatusLabel(status: FoundationRowStatus): string {
   }
 }
 
-function getMissingFoundationCopy(requirement: "recommended" | "required"): string {
-  return requirement === "required"
-    ? "No suggested exercise yet. Required coverage is still missing."
-    : "Helpful next iteration addition for push balance.";
+function getMissingFoundationCopy(movementPattern: CompoundCapableMovementPatternId): string {
+  return movementPattern === "vertical_push"
+    ? "Helpful next iteration addition for push balance."
+    : "No suggested exercise yet. Required coverage is still missing.";
 }
 
 function getSuggestedFoundationSummary({
@@ -508,4 +530,47 @@ function getSuggestedFoundationSummary({
   }
 
   return `Suggested starting point: would cover ${suggestedRequiredPatternCount} of ${requiredPatternCount} required patterns · ${missingSuggestedRequiredCount} required still missing.`;
+}
+
+function getConfirmedCoverageSummary({
+  coveredRequiredPatternCount,
+  requiredPatternCount,
+}: {
+  coveredRequiredPatternCount: number;
+  requiredPatternCount: number;
+}): string {
+  const missingRequiredCount = requiredPatternCount - coveredRequiredPatternCount;
+
+  if (missingRequiredCount === 0) {
+    return `Main compound coverage: ${coveredRequiredPatternCount} of ${requiredPatternCount} required patterns covered.`;
+  }
+
+  return `Main compound coverage: ${coveredRequiredPatternCount} of ${requiredPatternCount} required patterns covered · ${missingRequiredCount} required still missing.`;
+}
+
+function getMissingMovementPatternCopy({
+  bucket,
+  movementPattern,
+}: {
+  bucket: string;
+  movementPattern: CompoundCapableMovementPatternId;
+}): string {
+  return `${bucket} coverage missing: ${formatMovementPatternLabel(movementPattern)}.`;
+}
+
+function getRecommendedGuidance(
+  rows: ReadonlyArray<{
+    isCovered: boolean;
+    movementPattern: CompoundCapableMovementPatternId;
+    requirement: "recommended" | "required";
+  }>,
+): string | null {
+  const missingRecommendedVerticalPush = rows.find(
+    (row) =>
+      row.movementPattern === "vertical_push" &&
+      row.requirement === "recommended" &&
+      !row.isCovered,
+  );
+
+  return missingRecommendedVerticalPush ? "Recommended push balance: add Vertical push." : null;
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import {
   getWeeklyMovementCoverage,
   normalizeMainCompoundSelections,
@@ -74,6 +75,52 @@ describe("weekly movement coverage", () => {
     expect(coverage.coveredRequiredPatternCount).toBe(5);
     expect(coverage.missingRequiredPatterns).toEqual(["vertical_push"]);
     expect(coverage.canConfirmExercises).toBe(false);
+  });
+
+  it("recomputes required counts from the active Coverage Rule Family for the same selections", () => {
+    const selectionsWithoutVerticalPush = completeMainCompoundSelections.filter(
+      (selection) => selection.movementPattern !== "vertical_push",
+    );
+
+    expect(
+      getWeeklyMovementCoverage({
+        mainCompoundSelections: selectionsWithoutVerticalPush,
+        split: "full-body-3-day",
+        trainingFrequencyDaysPerWeek: 3,
+      }),
+    ).toMatchObject({
+      canConfirmExercises: true,
+      coveredRequiredPatternCount: 5,
+      missingRequiredPatterns: [],
+      recommendedPatterns: ["vertical_push"],
+      requiredPatternCount: 5,
+    });
+
+    expect(
+      getWeeklyMovementCoverage({
+        mainCompoundSelections: selectionsWithoutVerticalPush,
+        split: "upper-lower-4-day",
+        trainingFrequencyDaysPerWeek: 4,
+      }),
+    ).toMatchObject({
+      canConfirmExercises: false,
+      coveredRequiredPatternCount: 5,
+      missingRequiredPatterns: ["vertical_push"],
+      requiredPatternCount: 6,
+    });
+
+    expect(
+      getWeeklyMovementCoverage({
+        mainCompoundSelections: selectionsWithoutVerticalPush,
+        split: "rotating-push-pull-legs",
+        trainingFrequencyDaysPerWeek: 4,
+      }),
+    ).toMatchObject({
+      canConfirmExercises: false,
+      coveredRequiredPatternCount: 5,
+      missingRequiredPatterns: ["vertical_push"],
+      requiredPatternCount: 6,
+    });
   });
 
   it("uses split bucket copy for Push/Pull/Legs missing requirements", () => {
