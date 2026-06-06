@@ -28,6 +28,7 @@ import {
   getWeeklyMovementCoverage,
   type MainCompoundSelection,
   normalizeMainCompoundSelections,
+  type WeeklyMovementCoverageRow,
 } from "../weekly-movement-coverage";
 
 type ExerciseFoundationStepProps = {
@@ -103,6 +104,9 @@ export function ExerciseFoundationStep({
   });
   const normalizedSelections = normalizeMainCompoundSelections(mainCompoundSelections);
   const hasConfirmedSelections = normalizedSelections.length > 0;
+  const confirmedSelectionByPattern = new Map(
+    normalizedSelections.map((selection) => [selection.movementPattern, selection]),
+  );
   const suggestedFoundation = suggestedFoundationBySplit[split];
   const recommendedGuidance = getRecommendedGuidance(coverage.rows);
   const suggestedRequiredPatternCount = coverage.rows.filter(
@@ -201,9 +205,7 @@ export function ExerciseFoundationStep({
 
           <ul aria-label="Exercise foundation rows" className="grid gap-3">
             {coverage.rows.map((row) => {
-              const confirmedSelection = normalizedSelections.find(
-                (selection) => selection.movementPattern === row.movementPattern,
-              );
+              const confirmedSelection = confirmedSelectionByPattern.get(row.movementPattern);
               const suggestedExerciseId = suggestedFoundation[row.movementPattern];
               const status = getFoundationRowStatus({
                 confirmedSelection,
@@ -211,12 +213,11 @@ export function ExerciseFoundationStep({
                 requirement: row.requirement,
                 suggestedExerciseId,
               });
-              const exerciseName = getFoundationExerciseName({
+              const rowDescription = getFoundationRowDescription({
                 confirmedSelection,
-                movementPattern: row.movementPattern,
-                missingCopy: getMissingMovementPatternCopy(row),
+                row,
                 suggestedExerciseId,
-                visibleStatus: status,
+                status,
               });
 
               return (
@@ -232,9 +233,7 @@ export function ExerciseFoundationStep({
                       <h4 className="text-base font-black text-stone-950">
                         {formatMovementPatternLabel(row.movementPattern)}
                       </h4>
-                      <p className="text-sm text-stone-600">
-                        {exerciseName ?? getMissingFoundationCopy(row.movementPattern)}
-                      </p>
+                      <p className="text-sm text-stone-600">{rowDescription}</p>
                     </div>
                     <span
                       className={cn(
@@ -456,32 +455,37 @@ function getFoundationRowStatus({
   return requirement === "required" ? "missing_required" : "recommended";
 }
 
-function getFoundationExerciseName({
+function getFoundationRowDescription({
   confirmedSelection,
-  missingCopy,
-  movementPattern,
+  row,
   suggestedExerciseId,
-  visibleStatus,
+  status,
 }: {
   confirmedSelection: MainCompoundSelection | undefined;
-  missingCopy: string;
-  movementPattern: CompoundCapableMovementPatternId;
+  row: WeeklyMovementCoverageRow;
   suggestedExerciseId: string | undefined;
-  visibleStatus: FoundationRowStatus;
-}): string | null {
+  status: FoundationRowStatus;
+}): string {
   if (confirmedSelection !== undefined) {
-    return getExerciseCatalogExercise(confirmedSelection.exerciseId)?.name ?? null;
+    return getExerciseNameOrMissingCopy(confirmedSelection.exerciseId, row.movementPattern);
   }
 
-  if (visibleStatus === "missing_required") {
-    return missingCopy;
+  if (status === "missing_required") {
+    return getMissingMovementPatternCopy(row);
   }
 
   if (suggestedExerciseId !== undefined) {
-    return getExerciseCatalogExercise(suggestedExerciseId)?.name ?? null;
+    return getExerciseNameOrMissingCopy(suggestedExerciseId, row.movementPattern);
   }
 
-  return getMissingFoundationCopy(movementPattern);
+  return getMissingFoundationCopy(row.movementPattern);
+}
+
+function getExerciseNameOrMissingCopy(
+  exerciseId: string,
+  movementPattern: CompoundCapableMovementPatternId,
+): string {
+  return getExerciseCatalogExercise(exerciseId)?.name ?? getMissingFoundationCopy(movementPattern);
 }
 
 function getFoundationStatusClassName(status: FoundationRowStatus): string {
