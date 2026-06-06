@@ -2,7 +2,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { PageLead } from "../design-system/typography";
 import {
-  useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
   useConfirmTrainingFrequencyMutation,
   useConfirmTrainingSplitMutation,
@@ -19,7 +18,6 @@ import {
 import { PlanBuilderPage } from "./components/plan-builder-page";
 import {
   createDefaultExerciseSelectionPreferences,
-  deriveAutomaticExerciseSelectionRules,
   type ExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import {
@@ -31,7 +29,7 @@ import {
   type RepRangeStyleId,
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
-import { ExerciseSelectionPreferencesStep } from "./steps/exercise-selection-preferences-step";
+import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
 import { RepRangeStyleStep } from "./steps/rep-range-style-step";
 import { ReviewPlaceholderStep } from "./steps/review-placeholder-step";
 import { TrainingFrequencyStep } from "./steps/training-frequency-step";
@@ -268,9 +266,6 @@ export function PlanBuilderVolumeRoute() {
 }
 
 export function PlanBuilderExercisesRoute() {
-  const navigate = useNavigate();
-  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
-    useConfirmExerciseSelectionPreferencesMutation();
   const { mutateAsync: updateSelectedExerciseSelectionPreferences } =
     useUpdateExerciseSelectionPreferencesMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
@@ -281,9 +276,6 @@ export function PlanBuilderExercisesRoute() {
   const exerciseSelectionPreferences = isExerciseSelectionStepReady
     ? blueprint.exerciseSelectionPreferences
     : createDefaultExerciseSelectionPreferences();
-  const rulesAppliedAutomatically = deriveAutomaticExerciseSelectionRules(
-    exerciseSelectionPreferences.strategy,
-  );
 
   async function handleExerciseSelectionPreferencesChange(
     nextExerciseSelectionPreferences: ExerciseSelectionPreferences,
@@ -294,32 +286,24 @@ export function PlanBuilderExercisesRoute() {
     });
   }
 
-  async function handleContinueToReview(
-    nextExerciseSelectionPreferences: ExerciseSelectionPreferences,
-  ) {
-    await confirmSelectedExerciseSelectionPreferences({
-      exerciseSelectionPreferences: nextExerciseSelectionPreferences,
-      timestamp: new Date().toISOString(),
-    });
-    await navigate({ to: planBuilderPaths.review });
-  }
-
   return (
     <PlanBuilderPage
       currentStep="exercises"
       intro={
         <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Review exercise strategy, equipment, and preferences before Review.
+          Review the main compound movement patterns your plan needs. Exercise selection will be
+          editable in the next iteration.
         </PageLead>
       }
       summary={summary}
     >
       {isExerciseSelectionStepReady ? (
-        <ExerciseSelectionPreferencesStep
+        <ExerciseFoundationStep
           exerciseSelectionPreferences={exerciseSelectionPreferences}
-          onContinueToReview={handleContinueToReview}
+          mainCompoundSelections={blueprint.mainCompoundSelections}
           onExerciseSelectionPreferencesChange={handleExerciseSelectionPreferencesChange}
-          rulesAppliedAutomatically={rulesAppliedAutomatically}
+          split={blueprint.split}
+          trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
         />
       ) : (
         <p className="text-sm font-semibold text-stone-600">

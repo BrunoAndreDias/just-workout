@@ -256,7 +256,9 @@ function getMovementPatternRequirement(
   return coverageRule.requiredPatterns.includes(movementPattern) ? "required" : "recommended";
 }
 
-function formatMovementPatternLabel(movementPattern: CompoundCapableMovementPatternId): string {
+export function formatMovementPatternLabel(
+  movementPattern: CompoundCapableMovementPatternId,
+): string {
   switch (movementPattern) {
     case "horizontal_push":
       return "Horizontal push";

@@ -139,7 +139,7 @@ function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
     case "volume":
       return "Set your training volume";
     case "exercises":
-      return "Choose your exercises";
+      return "Exercise foundation";
     case "review":
       return "Review your plan blueprint";
   }

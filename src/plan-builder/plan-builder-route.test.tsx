@@ -5,11 +5,10 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
-import {
-  deriveAutomaticExerciseSelectionRules,
-  type ExerciseSelectionPreferenceItem,
-  type ExerciseSelectionPreferenceListId,
-  type ExerciseSelectionPreferences,
+import type {
+  ExerciseSelectionPreferenceItem,
+  ExerciseSelectionPreferenceListId,
+  ExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import type { RepRangeStyleId, TrainingFrequencyDaysPerWeek } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
@@ -78,15 +77,6 @@ const exercisesStepExcludedContentPatterns = [
   /nutrition/i,
   /bodyweight tracking/i,
   /progress charts?/i,
-] as const;
-
-const defaultExerciseStepAutomaticRuleLabels = [
-  "Prioritize compounds for main work",
-  "Use isolation work for targeted volume",
-  "Keep movement-pattern coverage balanced",
-  "Align exercise selection with Weekly Rep Targets",
-  "Respect avoided exercises as hard exclusions",
-  "Apply rest timing automatically",
 ] as const;
 
 type ExercisePreferenceChipDraftCase = {
@@ -689,23 +679,46 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("renders the Step 5 strategy, equipment, and preferences screen on direct access when Volume is confirmed", async () => {
-    await saveConfirmedPlanBuilderProgressForTest({
+  it("renders the no-drawer Exercise foundation overview on direct access when Volume is confirmed", async () => {
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
-      split: "upper-lower-4-day",
-      trainingFrequencyDaysPerWeek: 4,
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
       volumePreset: "conservative",
     });
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectPlanBuilderPath(router, planBuilderPaths.exercises);
-    await expectReadOnlyExercisesStep();
+    expect(await screen.findByRole("heading", { name: "Exercise foundation" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Review the main compound movement patterns your plan needs. Exercise selection will be editable in the next iteration.",
+      ),
+    ).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Exercises",
       ),
     ).toHaveAttribute("aria-current", "step");
+
+    expect(
+      screen.getByText(
+        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Vertical pull")).toBeVisible();
+    expect(screen.getByText("Missing required")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /choose/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /change/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirm main compounds to continue." }),
+    ).toBeDisabled();
+    expect(screen.getByText("Exercise preferences · optional")).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: /preferred exercises/i, hidden: true }),
+    ).not.toBeVisible();
+
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(summary).toBeVisible();
@@ -715,8 +728,10 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("shows the Step 5 automatic rules note with passive rest copy and no rest controls", async () => {
-    await saveConfirmedPlanBuilderProgressForTest({
+  it("keeps Exercise preferences collapsed by default and expands them on demand", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -725,15 +740,16 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByRole("heading", { name: /rules applied automatically/i }),
-    ).toBeVisible();
-    expectAutomaticExerciseSelectionRulesToBeVisible();
-    expectNoManualRestControls();
+    await expectReadOnlyExercisesStep();
+    await openExercisePreferencesSection(user);
+    expect(screen.getByLabelText(/preferred exercises/i)).toBeVisible();
+    expect(screen.getByLabelText(/avoided exercises/i)).toBeVisible();
   });
 
-  it("explains avoided exercise exclusions without Step 5 conflict-resolution controls", async () => {
-    await saveConfirmedPlanBuilderProgressForTest({
+  it("keeps avoided exercise editing available inside the optional preferences section", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -741,6 +757,8 @@ describe("PlanBuilderRoute", () => {
     });
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await openExercisePreferencesSection(user);
 
     const avoidedExercisesSection = getClosestSection(
       await screen.findByRole("heading", { name: /avoided exercises/i }),
@@ -753,7 +771,6 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toBeVisible();
 
-    expect(screen.queryByRole("heading", { name: /before you continue/i })).not.toBeInTheDocument();
     expectNoConflictResolutionControls();
   });
 
@@ -1141,9 +1158,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("confirms Exercises before navigating from Exercises to Review", async () => {
-    const user = userEvent.setup();
-
+  it("keeps Exercises unconfirmed and hides Review progression in the no-drawer screen", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -1151,47 +1166,51 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectReadOnlyExercisesStep();
-
-    await user.click(screen.getByRole("button", { name: /continue to review/i }));
-
-    await expectPlanBuilderPath(router, planBuilderPaths.review);
-    await expectReviewStepComingNext();
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
-        exercises: true,
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
         volume: true,
       },
     });
+    expect(screen.queryByRole("button", { name: /continue to review/i })).not.toBeInTheDocument();
   });
 
-  it("auto-commits valid pending Preferred and Avoided Exercises when continuing to Review", async () => {
+  it("persists valid Preferred and Avoided Exercises without confirming Exercises", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
       volumePreset: "balanced",
     });
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await screen.findByRole("heading", { name: /preferred exercises/i });
+    await openExercisePreferencesSection(user);
 
     await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    await user.click(
+      within(
+        getRequiredClosestForm(screen.getByLabelText(/preferred exercises/i), "Preferred Exercise"),
+      ).getByRole("button", { name: /^add$/i }),
+    );
     await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
-    await user.click(screen.getByRole("button", { name: /continue to review/i }));
+    await user.click(
+      within(
+        getRequiredClosestForm(screen.getByLabelText(/avoided exercises/i), "Avoided Exercise"),
+      ).getByRole("button", { name: /^add$/i }),
+    );
 
-    await expectPlanBuilderPath(router, planBuilderPaths.review);
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
-        exercises: true,
+        exercises: false,
         frequency: true,
         repRanges: true,
         split: true,
@@ -1207,7 +1226,7 @@ describe("PlanBuilderRoute", () => {
   it("persists committed exercise entries as draft values while pending text stays local to Step 5", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -1215,7 +1234,8 @@ describe("PlanBuilderRoute", () => {
     });
 
     const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
-    const preferredInput = await screen.findByLabelText(/preferred exercises/i);
+    await openExercisePreferencesSection(user);
+    const preferredInput = screen.getByLabelText(/preferred exercises/i);
 
     await user.type(preferredInput, "Chest-supported row");
     await expectPlanBlueprintToMatch({
@@ -1242,6 +1262,7 @@ describe("PlanBuilderRoute", () => {
 
     firstView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
     expect(await screen.findByText("Chest-supported row")).toBeVisible();
     expect(screen.getByLabelText(/avoided exercises/i)).toHaveValue("");
@@ -1281,6 +1302,7 @@ describe("PlanBuilderRoute", () => {
     });
 
     const firstView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
     expect(await screen.findByText(initialItem.rawText)).toBeVisible();
 
@@ -1304,6 +1326,7 @@ describe("PlanBuilderRoute", () => {
     const reviewView = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
 
     await expectPlanBuilderPath(reviewView.router, planBuilderPaths.exercises);
+    await openExercisePreferencesSection(user);
     expect(await screen.findByText(initialItem.rawText)).toBeVisible();
     expect(screen.getByText(addedText)).toBeVisible();
 
@@ -1328,7 +1351,7 @@ describe("PlanBuilderRoute", () => {
   it("blocks duplicate and conflicting exercise entries with inline validation", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -1336,8 +1359,9 @@ describe("PlanBuilderRoute", () => {
     });
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
-    await user.type(await screen.findByLabelText(/preferred exercises/i), "Incline dumbbell press");
+    await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
     await user.keyboard("{Enter}");
     await expectPlanBlueprintToMatch({
       exerciseSelectionPreferences: {
@@ -1380,7 +1404,7 @@ describe("PlanBuilderRoute", () => {
   it("blocks normalized exact duplicates within Avoided Exercises with inline validation", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -1388,8 +1412,9 @@ describe("PlanBuilderRoute", () => {
     });
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
-    await user.type(await screen.findByLabelText(/avoided exercises/i), "Upright row");
+    await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
     await user.keyboard("{Enter}");
     await expectPlanBlueprintToMatch({
       exerciseSelectionPreferences: {
@@ -1413,7 +1438,7 @@ describe("PlanBuilderRoute", () => {
   it("blocks conflicting Preferred Exercises when the same normalized text exists in Avoided Exercises", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -1421,8 +1446,9 @@ describe("PlanBuilderRoute", () => {
     });
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
-    await user.type(await screen.findByLabelText(/avoided exercises/i), "Upright row");
+    await user.type(screen.getByLabelText(/avoided exercises/i), "Upright row");
     await user.keyboard("{Enter}");
     await expectPlanBlueprintToMatch({
       exerciseSelectionPreferences: {
@@ -1450,24 +1476,28 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("blocks Continue to Review when pending input is invalid", async () => {
+  it("keeps Exercises unconfirmed when preference editing has validation errors", async () => {
     const user = userEvent.setup();
 
-    await saveConfirmedPlanBuilderProgressForTest({
+    await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
       volumePreset: "balanced",
     });
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+    await openExercisePreferencesSection(user);
 
-    await user.type(await screen.findByLabelText(/preferred exercises/i), "Hack squat");
+    await user.type(screen.getByLabelText(/preferred exercises/i), "Hack squat");
     await user.keyboard("{Enter}");
     await user.type(screen.getByLabelText(/avoided exercises/i), "hack squat");
-    await user.click(screen.getByRole("button", { name: /continue to review/i }));
+    await user.click(
+      within(
+        getRequiredClosestForm(screen.getByLabelText(/avoided exercises/i), "Avoided Exercise"),
+      ).getByRole("button", { name: /^add$/i }),
+    );
 
-    await expectPlanBuilderPath(router, planBuilderPaths.exercises);
     expect(
       await screen.findByText(
         "This exercise is already in Preferred Exercises. Remove it there or change this entry.",
@@ -2296,35 +2326,32 @@ function getExercisePreferenceListEntry({
 }
 
 async function expectReadOnlyExercisesStep() {
+  expect(
+    await screen.findByRole("heading", { level: 1, name: "Exercise foundation" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(
+      "Review the main compound movement patterns your plan needs. Exercise selection will be editable in the next iteration.",
+    ),
+  ).toBeVisible();
+  expect(await screen.findByText("Exercise preferences · optional")).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Confirm main compounds to continue." }),
+  ).toBeDisabled();
+  expect(
+    screen.getByRole("heading", { name: /preferred exercises/i, hidden: true }),
+  ).not.toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: /avoided exercises/i, hidden: true }),
+  ).not.toBeVisible();
+  expect(screen.queryByRole("button", { name: /choose/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /change/i })).not.toBeInTheDocument();
+}
+
+async function openExercisePreferencesSection(user: PlanBuilderTestUser) {
+  await user.click(await screen.findByText("Exercise preferences · optional"));
   expect(await screen.findByRole("heading", { name: /preferred exercises/i })).toBeVisible();
   expect(screen.getByRole("heading", { name: /avoided exercises/i })).toBeVisible();
-  expect(screen.getByRole("heading", { name: /rules applied automatically/i })).toBeVisible();
-  expect(
-    screen.queryByRole("heading", { name: /exercise selection strategy/i }),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByRole("heading", { name: /equipment preset/i })).not.toBeInTheDocument();
-
-  for (const label of defaultExerciseStepAutomaticRuleLabels) {
-    expect(screen.getByText(label)).toBeVisible();
-  }
-}
-
-function expectAutomaticExerciseSelectionRulesToBeVisible() {
-  const rulesList = screen.getByRole("list", { name: /automatic exercise selection rules/i });
-  const rules = deriveAutomaticExerciseSelectionRules("balanced");
-
-  for (const rule of rules) {
-    expect(within(rulesList).getByText(rule.description)).toBeVisible();
-  }
-}
-
-function expectNoManualRestControls() {
-  expect(screen.queryByRole("slider")).not.toBeInTheDocument();
-  expect(screen.queryByRole("textbox", { name: /rest/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("spinbutton", { name: /rest/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /rest/i })).not.toBeInTheDocument();
-  expect(screen.queryByText(/60-90 seconds/i)).not.toBeInTheDocument();
-  expect(screen.queryByText(/2-3 minutes/i)).not.toBeInTheDocument();
 }
 
 function getClosestSection(element: HTMLElement, sectionName: string) {
@@ -2391,6 +2418,27 @@ async function saveConfirmedPlanBuilderProgressForTest({
   trainingFrequencyDaysPerWeek,
   volumePreset,
 }: ConfirmedPlanBuilderProgressForTest) {
+  await saveConfirmedVolumeStepForTest({
+    repRangeStyle,
+    split,
+    trainingFrequencyDaysPerWeek,
+    volumePreset,
+  });
+
+  const configuredBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+  await db.planBlueprints.put({
+    ...configuredBlueprint,
+    mainCompoundSelections: completeMainCompoundSelections,
+  });
+}
+
+async function saveConfirmedVolumeStepForTest({
+  repRangeStyle,
+  split,
+  trainingFrequencyDaysPerWeek,
+  volumePreset,
+}: ConfirmedPlanBuilderProgressForTest) {
   await planBuilderService.confirmSelectedTrainingFrequency({
     timestamp: "2026-05-31T09:00:00.000Z",
     trainingFrequencyDaysPerWeek,
@@ -2422,13 +2470,6 @@ async function saveConfirmedPlanBuilderProgressForTest({
   await planBuilderService.confirmSelectedTrainingVolume({
     timestamp: "2026-05-31T09:05:00.000Z",
     trainingVolumeConfiguration: trainingVolumeBlueprint,
-  });
-
-  const configuredBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-  await db.planBlueprints.put({
-    ...configuredBlueprint,
-    mainCompoundSelections: completeMainCompoundSelections,
   });
 }
 
