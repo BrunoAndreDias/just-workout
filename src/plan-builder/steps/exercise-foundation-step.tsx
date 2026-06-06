@@ -267,7 +267,7 @@ export function ExerciseFoundationStep({
             Exercise preferences · optional
           </span>
           <span className="mt-1 block text-sm text-stone-600">
-            Keep soft Preferred Exercise and Avoided Exercise inputs separate from Weekly Movement
+            Keep Preferred Exercise and Avoided Exercise inputs separate from Weekly Movement
             Coverage.
           </span>
         </summary>
