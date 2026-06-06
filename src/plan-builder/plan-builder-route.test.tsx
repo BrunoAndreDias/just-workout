@@ -801,6 +801,52 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByText("Push coverage missing: Vertical push.")).toBeVisible();
   });
 
+  it("reveals the optional accessories summary only after persisted main compound coverage is valid", async () => {
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+
+    const emptyCoverageView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    await expectReadOnlyExercisesStep();
+    expect(screen.queryByText("Optional accessories · Configure later.")).not.toBeInTheDocument();
+    emptyCoverageView.unmount();
+
+    const incompleteBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...incompleteBlueprint,
+      mainCompoundSelections: completeMainCompoundSelections.filter(
+        (selection) => selection.movementPattern !== "vertical_push",
+      ),
+    });
+
+    const incompleteCoverageView = renderPlanBuilder({
+      initialEntries: [planBuilderPaths.exercises],
+    });
+
+    await expectReadOnlyExercisesStep();
+    expect(screen.queryByText("Optional accessories · Configure later.")).not.toBeInTheDocument();
+
+    incompleteCoverageView.unmount();
+
+    const completeCoverageBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...completeCoverageBlueprint,
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(await screen.findByText("Optional accessories · Configure later.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /accessories/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /accessories/i })).not.toBeInTheDocument();
+  });
+
   it("keeps avoided exercise editing available inside the optional preferences section", async () => {
     const user = userEvent.setup();
 

@@ -263,6 +263,20 @@ export function ExerciseFoundationStep({
         </div>
       </StepPanel>
 
+      {hasConfirmedSelections && coverage.canConfirmExercises ? (
+        <section
+          aria-label="Optional accessories summary"
+          className="rounded-2xl border border-stone-900/10 bg-stone-50/80 px-5 py-4 shadow-sm"
+        >
+          <span className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-stone-500">
+            Optional section
+          </span>
+          <p className="mt-1 text-sm font-black text-stone-950">
+            Optional accessories · Configure later.
+          </p>
+        </section>
+      ) : null}
+
       <details className="rounded-2xl border border-stone-900/10 bg-stone-50/80 shadow-sm">
         <summary className="cursor-pointer list-none px-5 py-4">
           <span className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-stone-500">
