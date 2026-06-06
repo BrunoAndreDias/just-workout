@@ -49,6 +49,7 @@ const repRangeStyleBoundaryCopy =
   "Rest times and progression rules will be added when the plan is generated.";
 
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
+const optionalAccessoriesSummaryText = "Optional accessories · Configure later.";
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
@@ -812,37 +813,29 @@ describe("PlanBuilderRoute", () => {
     const emptyCoverageView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectReadOnlyExercisesStep();
-    expect(screen.queryByText("Optional accessories · Configure later.")).not.toBeInTheDocument();
+    expect(screen.queryByText(optionalAccessoriesSummaryText)).not.toBeInTheDocument();
     emptyCoverageView.unmount();
 
-    const incompleteBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...incompleteBlueprint,
-      mainCompoundSelections: completeMainCompoundSelections.filter(
+    await saveMainCompoundSelectionsForTest(
+      completeMainCompoundSelections.filter(
         (selection) => selection.movementPattern !== "vertical_push",
       ),
-    });
+    );
 
     const incompleteCoverageView = renderPlanBuilder({
       initialEntries: [planBuilderPaths.exercises],
     });
 
     await expectReadOnlyExercisesStep();
-    expect(screen.queryByText("Optional accessories · Configure later.")).not.toBeInTheDocument();
+    expect(screen.queryByText(optionalAccessoriesSummaryText)).not.toBeInTheDocument();
 
     incompleteCoverageView.unmount();
 
-    const completeCoverageBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...completeCoverageBlueprint,
-      mainCompoundSelections: completeMainCompoundSelections,
-    });
+    await saveMainCompoundSelectionsForTest(completeMainCompoundSelections);
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(await screen.findByText("Optional accessories · Configure later.")).toBeVisible();
+    expect(await screen.findByText(optionalAccessoriesSummaryText)).toBeVisible();
     expect(screen.queryByRole("button", { name: /accessories/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: /accessories/i })).not.toBeInTheDocument();
   });
@@ -2526,11 +2519,17 @@ async function saveConfirmedPlanBuilderProgressForTest({
     volumePreset,
   });
 
+  await saveMainCompoundSelectionsForTest(completeMainCompoundSelections);
+}
+
+async function saveMainCompoundSelectionsForTest(
+  mainCompoundSelections: ReadonlyArray<(typeof completeMainCompoundSelections)[number]>,
+) {
   const configuredBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
   await db.planBlueprints.put({
     ...configuredBlueprint,
-    mainCompoundSelections: completeMainCompoundSelections,
+    mainCompoundSelections,
   });
 }
 

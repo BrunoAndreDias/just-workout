@@ -109,6 +109,7 @@ export function ExerciseFoundationStep({
   );
   const suggestedFoundation = suggestedFoundationBySplit[split];
   const recommendedGuidance = getRecommendedGuidance(coverage.rows);
+  const canShowOptionalAccessoriesSummary = hasConfirmedSelections && coverage.canConfirmExercises;
   const suggestedRequiredPatternCount = coverage.rows.filter(
     (row) =>
       row.requirement === "required" && suggestedFoundation[row.movementPattern] !== undefined,
@@ -263,19 +264,7 @@ export function ExerciseFoundationStep({
         </div>
       </StepPanel>
 
-      {hasConfirmedSelections && coverage.canConfirmExercises ? (
-        <section
-          aria-label="Optional accessories summary"
-          className="rounded-2xl border border-stone-900/10 bg-stone-50/80 px-5 py-4 shadow-sm"
-        >
-          <span className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-stone-500">
-            Optional section
-          </span>
-          <p className="mt-1 text-sm font-black text-stone-950">
-            Optional accessories · Configure later.
-          </p>
-        </section>
-      ) : null}
+      {canShowOptionalAccessoriesSummary ? <OptionalAccessoriesSummary /> : null}
 
       <details className="rounded-2xl border border-stone-900/10 bg-stone-50/80 shadow-sm">
         <summary className="cursor-pointer list-none px-5 py-4">
@@ -329,6 +318,22 @@ export function ExerciseFoundationStep({
         </div>
       </details>
     </div>
+  );
+}
+
+function OptionalAccessoriesSummary() {
+  return (
+    <section
+      aria-label="Optional accessories summary"
+      className="rounded-2xl border border-stone-900/10 bg-stone-50/80 px-5 py-4 shadow-sm"
+    >
+      <span className="text-[0.7rem] font-bold uppercase tracking-[0.18em] text-stone-500">
+        Optional section
+      </span>
+      <p className="mt-1 text-sm font-black text-stone-950">
+        Optional accessories · Configure later.
+      </p>
+    </section>
   );
 }
 
