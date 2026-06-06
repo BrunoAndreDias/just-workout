@@ -60,66 +60,29 @@ type ExerciseSelectionPreferencesEditorProps = {
 
 type FoundationRowStatus = "confirmed" | "missing_required" | "recommended" | "suggested";
 
-type SuggestedFoundation = {
-  exerciseIdByPattern: Partial<Record<CompoundCapableMovementPatternId, string>>;
+type SuggestedFoundationByPattern = Partial<Record<CompoundCapableMovementPatternId, string>>;
+
+const fullBodySuggestedFoundation: SuggestedFoundationByPattern = {
+  hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
+  horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
+  horizontal_push: "flat-barbell-or-dumbbell-bench-press",
+  quad_dominant: "barbell-or-dumbbell-squats",
 };
 
-const suggestedFoundationBySplit: Record<TrainingSplitId, SuggestedFoundation> = {
-  "alternating-full-body-a-b": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-    },
-  },
-  "full-body-2-day": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-    },
-  },
-  "full-body-3-day": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-    },
-  },
-  "rotating-push-pull-legs": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-      vertical_pull: "pull-ups",
-      vertical_push: "standing-overhead-barbell-or-dumbbell-press",
-    },
-  },
-  "upper-lower-4-day": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-      vertical_pull: "pull-ups",
-      vertical_push: "standing-overhead-barbell-or-dumbbell-press",
-    },
-  },
-  "upper-lower-full-body": {
-    exerciseIdByPattern: {
-      hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-      horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-      horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-      quad_dominant: "barbell-or-dumbbell-squats",
-      vertical_pull: "pull-ups",
-      vertical_push: "standing-overhead-barbell-or-dumbbell-press",
-    },
-  },
+const allPatternSuggestedFoundation: SuggestedFoundationByPattern = {
+  ...fullBodySuggestedFoundation,
+  vertical_pull: "pull-ups",
+  vertical_push: "standing-overhead-barbell-or-dumbbell-press",
 };
+
+const suggestedFoundationBySplit = {
+  "alternating-full-body-a-b": fullBodySuggestedFoundation,
+  "full-body-2-day": fullBodySuggestedFoundation,
+  "full-body-3-day": fullBodySuggestedFoundation,
+  "rotating-push-pull-legs": allPatternSuggestedFoundation,
+  "upper-lower-4-day": allPatternSuggestedFoundation,
+  "upper-lower-full-body": allPatternSuggestedFoundation,
+} as const satisfies Record<TrainingSplitId, SuggestedFoundationByPattern>;
 
 export function ExerciseFoundationStep({
   exerciseSelectionPreferences,
@@ -142,8 +105,7 @@ export function ExerciseFoundationStep({
   const suggestedFoundation = suggestedFoundationBySplit[split];
   const suggestedRequiredPatternCount = coverage.rows.filter(
     (row) =>
-      row.requirement === "required" &&
-      suggestedFoundation.exerciseIdByPattern[row.movementPattern] !== undefined,
+      row.requirement === "required" && suggestedFoundation[row.movementPattern] !== undefined,
   ).length;
   const missingSuggestedRequiredCount =
     coverage.requiredPatternCount - suggestedRequiredPatternCount;
@@ -240,19 +202,16 @@ export function ExerciseFoundationStep({
               const confirmedSelection = normalizedSelections.find(
                 (selection) => selection.movementPattern === row.movementPattern,
               );
-              const suggestedExerciseId =
-                suggestedFoundation.exerciseIdByPattern[row.movementPattern];
+              const suggestedExerciseId = suggestedFoundation[row.movementPattern];
               const status = getFoundationRowStatus({
                 confirmedSelection,
                 requirement: row.requirement,
                 suggestedExerciseId,
               });
-              const exerciseName =
-                confirmedSelection !== undefined
-                  ? getExerciseCatalogExercise(confirmedSelection.exerciseId)?.name
-                  : suggestedExerciseId !== undefined
-                    ? getExerciseCatalogExercise(suggestedExerciseId)?.name
-                    : null;
+              const exerciseName = getFoundationExerciseName({
+                confirmedSelection,
+                suggestedExerciseId,
+              });
 
               return (
                 <li
@@ -474,6 +433,24 @@ function getFoundationRowStatus({
   }
 
   return requirement === "required" ? "missing_required" : "recommended";
+}
+
+function getFoundationExerciseName({
+  confirmedSelection,
+  suggestedExerciseId,
+}: {
+  confirmedSelection: MainCompoundSelection | undefined;
+  suggestedExerciseId: string | undefined;
+}): string | null {
+  if (confirmedSelection !== undefined) {
+    return getExerciseCatalogExercise(confirmedSelection.exerciseId)?.name ?? null;
+  }
+
+  if (suggestedExerciseId !== undefined) {
+    return getExerciseCatalogExercise(suggestedExerciseId)?.name ?? null;
+  }
+
+  return null;
 }
 
 function getFoundationStatusClassName(status: FoundationRowStatus): string {
