@@ -50,6 +50,8 @@ const repRangeStyleBoundaryCopy =
 
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 const optionalAccessoriesSummaryText = "Optional accessories · Configure later.";
+const fullBodySuggestedMainCompoundCoverageText =
+  "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.";
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
@@ -703,11 +705,7 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toHaveAttribute("aria-current", "step");
 
-    expect(
-      screen.getByText(
-        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByText(fullBodySuggestedMainCompoundCoverageText)).toBeVisible();
     expect(screen.getByText("Vertical pull")).toBeVisible();
     expect(screen.getByText("Missing required")).toBeVisible();
     expect(screen.queryByRole("button", { name: /choose/i })).not.toBeInTheDocument();
@@ -760,12 +758,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
 
-    const fullBodyBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...fullBodyBlueprint,
-      mainCompoundSelections: selectionsWithoutVerticalPush,
-    });
+    await saveMainCompoundSelectionsForTest(selectionsWithoutVerticalPush);
 
     const fullBodyView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
@@ -783,12 +776,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
 
-    const upperLowerBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...upperLowerBlueprint,
-      mainCompoundSelections: selectionsWithoutVerticalPush,
-    });
+    await saveMainCompoundSelectionsForTest(selectionsWithoutVerticalPush);
 
     const upperLowerView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
@@ -808,12 +796,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
 
-    const pushPullLegsBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...pushPullLegsBlueprint,
-      mainCompoundSelections: selectionsWithoutVerticalPush,
-    });
+    await saveMainCompoundSelectionsForTest(selectionsWithoutVerticalPush);
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
@@ -838,11 +821,7 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectReadOnlyExercisesStep();
-    expect(
-      screen.getByText(
-        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByText(fullBodySuggestedMainCompoundCoverageText)).toBeVisible();
 
     await openExercisePreferencesSection(user);
     await user.type(screen.getByLabelText(/preferred exercises/i), "Incline dumbbell press");
@@ -852,11 +831,7 @@ describe("PlanBuilderRoute", () => {
       ).getByRole("button", { name: /^add$/i }),
     );
 
-    expect(
-      screen.getByText(
-        "Suggested starting point: would cover 4 of 5 required patterns · 1 required still missing.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByText(fullBodySuggestedMainCompoundCoverageText)).toBeVisible();
     expect(screen.getByText("Recommended push balance: add Vertical push.")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Confirm main compounds to continue." }),
