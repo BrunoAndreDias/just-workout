@@ -10,7 +10,11 @@ import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import type { TrainingSplitId } from "./training-split";
-import { isTrainingVolumeConfiguration, type VolumePresetId } from "./training-volume";
+import {
+  isTrainingVolumeConfiguration,
+  type OptionalVolumeMuscleGroupId,
+  type VolumePresetId,
+} from "./training-volume";
 
 const trainingSplitLabels = {
   alternatingFullBodyAB: "Alternating Full Body A/B",
@@ -44,9 +48,9 @@ const repRangeStyleBoundaryCopy =
   "Rest times and progression rules will be added when the plan is generated.";
 
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
-const optionalAccessoriesSummaryText = "3 recommended · 5 optional available";
-const optionalAccessoriesUnavailableText =
-  "Optional accessories · available after main compounds are confirmed";
+const isolationExercisesSummaryText = "2 recommended · 4 more available";
+const isolationExercisesUnavailableText =
+  "Isolation exercises · available after main compounds are confirmed";
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
@@ -137,6 +141,7 @@ const singleSelectableTrainingSplitCases = [
 type PlanBuilderTestUser = ReturnType<typeof userEvent.setup>;
 
 type ConfirmedPlanBuilderProgressForTest = {
+  enabledOptionalVolumeTargets?: ReadonlyArray<OptionalVolumeMuscleGroupId>;
   repRangeStyle: RepRangeStyleId;
   split: TrainingSplitId;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
@@ -712,11 +717,11 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("region", { name: "Rotation pools locked" })).toBeVisible();
     expect(screen.queryByText("Rotation pool preview")).not.toBeInTheDocument();
     expect(screen.queryByText("Rotation pool")).not.toBeInTheDocument();
-    expect(screen.getByText(optionalAccessoriesUnavailableText)).toBeVisible();
+    expect(screen.getByText(isolationExercisesUnavailableText)).toBeVisible();
 
     expect(screen.getAllByRole("button", { name: "Choose" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByText(optionalAccessoriesSummaryText)).not.toBeInTheDocument();
+    expect(screen.queryByText(isolationExercisesSummaryText)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /choose horizontal push exercise/i })).toBeDisabled();
     expect(screen.queryByText("Exercise preferences · optional")).not.toBeInTheDocument();
     await expectPlanBlueprintToMatch({
@@ -932,7 +937,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it("keeps accessories quiet until persisted main compound coverage is valid", async () => {
+  it("keeps isolation exercises quiet until persisted main compound coverage is valid", async () => {
     await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -943,8 +948,8 @@ describe("PlanBuilderRoute", () => {
     const emptyCoverageView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectReadOnlyExercisesStep();
-    expect(screen.getByText(optionalAccessoriesUnavailableText)).toBeVisible();
-    expect(screen.queryByText(optionalAccessoriesSummaryText)).not.toBeInTheDocument();
+    expect(screen.getByText(isolationExercisesUnavailableText)).toBeVisible();
+    expect(screen.queryByText(isolationExercisesSummaryText)).not.toBeInTheDocument();
     emptyCoverageView.unmount();
 
     await saveMainCompoundSelectionsForTest(
@@ -958,8 +963,8 @@ describe("PlanBuilderRoute", () => {
     });
 
     await expectReadOnlyExercisesStep();
-    expect(screen.getByText(optionalAccessoriesUnavailableText)).toBeVisible();
-    expect(screen.queryByText(optionalAccessoriesSummaryText)).not.toBeInTheDocument();
+    expect(screen.getByText(isolationExercisesUnavailableText)).toBeVisible();
+    expect(screen.queryByText(isolationExercisesSummaryText)).not.toBeInTheDocument();
 
     incompleteCoverageView.unmount();
 
@@ -967,13 +972,13 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(await screen.findByText("Optional accessories")).toBeVisible();
-    expect(screen.getByText(optionalAccessoriesSummaryText)).toBeVisible();
-    expect(screen.getByRole("button", { name: /^configure$/i })).toBeVisible();
-    expect(screen.queryByRole("textbox", { name: /accessories/i })).not.toBeInTheDocument();
+    expect(await screen.findByText("Isolation exercises")).toBeVisible();
+    expect(screen.getByText(isolationExercisesSummaryText)).toBeVisible();
+    expect(screen.getByRole("button", { name: /^add isolation exercises$/i })).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: /isolation exercises/i })).not.toBeInTheDocument();
   });
 
-  it("configures optional accessories without blocking Review or changing main compound validation", async () => {
+  it("configures isolation exercises without blocking Review or changing main compound validation", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedVolumeStepForTest({
@@ -990,35 +995,79 @@ describe("PlanBuilderRoute", () => {
 
     expect(reviewCta).toBeEnabled();
 
-    await user.click(screen.getByRole("button", { name: /^configure$/i }));
+    await user.click(screen.getByRole("button", { name: /^add isolation exercises$/i }));
 
-    const accessoriesDialog = await screen.findByRole("dialog", {
-      name: "Configure optional accessories",
+    const isolationExercisesDialog = await screen.findByRole("dialog", {
+      name: "Configure isolation exercises",
     });
 
-    expect(accessoriesDialog).toBeVisible();
-    expect(screen.getByRole("searchbox", { name: /search optional accessories/i })).toBeVisible();
+    expect(isolationExercisesDialog).toBeVisible();
+    expect(screen.getByRole("searchbox", { name: /search isolation exercises/i })).toBeVisible();
     expect(screen.getByRole("button", { name: "Muscle group" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Equipment" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Beginner-friendly" })).toBeVisible();
     expect(screen.getByRole("checkbox", { name: /leg curl/i })).toBeVisible();
+    expect(screen.getAllByText("Add").length).toBeGreaterThan(0);
     expect(screen.getByText("hamstring work")).toBeVisible();
     expect(screen.getByRole("checkbox", { name: /farmer walks/i })).toBeVisible();
     expect(screen.getByText("grip & core")).toBeVisible();
+    expect(screen.queryByRole("checkbox", { name: /decline crunch/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /calf raise/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^core$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^calves$/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("checkbox", { name: /lateral raise/i }));
 
     expect(screen.getByRole("checkbox", { name: /lateral raise/i })).toBeChecked();
+    expect(screen.getByText("Added")).toBeVisible();
     expect(screen.getByRole("button", { name: /continue to review/i })).toBeEnabled();
 
     await user.click(
-      within(accessoriesDialog).getByRole("button", { name: /close optional accessories/i }),
+      within(isolationExercisesDialog).getByRole("button", { name: /close isolation exercises/i }),
     );
 
-    expect(screen.getByText("1 selected · 3 recommended · 5 optional available")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Optional accessories" })).toBeVisible();
+    expect(screen.getByText("1 selected · 2 recommended · 4 more available")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Isolation exercises" })).toBeVisible();
+    expect(screen.getByRole("list", { name: "Selected isolation exercises" })).toBeVisible();
+    expect(screen.getByText("Lateral raise")).toBeVisible();
+    expect(screen.getByRole("button", { name: /^edit isolation exercises$/i })).toBeVisible();
     expect(
       screen.getByText("Main compound coverage: 6 of 6 required patterns covered."),
+    ).toBeVisible();
+  });
+
+  it("shows abs and calf isolation exercises only when their optional Volume Targets are enabled", async () => {
+    const user = userEvent.setup();
+
+    await saveConfirmedVolumeStepForTest({
+      enabledOptionalVolumeTargets: ["abs", "calves"],
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await saveMainCompoundSelectionsForTest(completeMainCompoundSelections);
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    expect(await screen.findByText("Isolation exercises")).toBeVisible();
+    expect(screen.getByText("3 recommended · 5 more available")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /^add isolation exercises$/i }));
+
+    const isolationExercisesDialog = await screen.findByRole("dialog", {
+      name: "Configure isolation exercises",
+    });
+
+    expect(
+      within(isolationExercisesDialog).getByRole("checkbox", { name: /decline crunch/i }),
+    ).toBeVisible();
+    expect(
+      within(isolationExercisesDialog).getByRole("checkbox", { name: /calf raise/i }),
+    ).toBeVisible();
+    expect(within(isolationExercisesDialog).getByRole("button", { name: /^core$/i })).toBeVisible();
+    expect(
+      within(isolationExercisesDialog).getByRole("button", { name: /^calves$/i }),
     ).toBeVisible();
   });
 
@@ -1311,7 +1360,8 @@ describe("PlanBuilderRoute", () => {
         within(row).getByRole("button", { name: new RegExp(`add ${label} target`, "i") }),
       ).toBeEnabled();
       expect(within(row).getByText("Not included")).toBeVisible();
-      expect(within(row).getByText("Optional")).toBeVisible();
+      expect(within(row).getByText("Add target")).toBeVisible();
+      expect(within(row).queryByText("Optional")).not.toBeInTheDocument();
       expect(within(row).queryByText("Included")).not.toBeInTheDocument();
       expect(within(row).queryByText(/reps\/week/i)).not.toBeInTheDocument();
       expect(within(row).queryByText(/sets\/week/i)).not.toBeInTheDocument();
@@ -1417,7 +1467,7 @@ describe("PlanBuilderRoute", () => {
       expect(within(calvesRow).getByText(/45 reps\/week/i)).toBeVisible();
     });
     expect(within(calvesRow).getByText(/4-6 sets\/week/i)).toBeVisible();
-    expect(within(calvesRow).getByText("Included")).toBeVisible();
+    expect(within(calvesRow).queryByText("Included")).not.toBeInTheDocument();
     expect(within(calvesRow).getByRole("button", { name: /remove calves target/i })).toBeVisible();
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -2438,6 +2488,7 @@ async function saveMainCompoundSelectionsForTest(
 }
 
 async function saveConfirmedVolumeStepForTest({
+  enabledOptionalVolumeTargets = [],
   repRangeStyle,
   split,
   trainingFrequencyDaysPerWeek,
@@ -2464,6 +2515,14 @@ async function saveConfirmedVolumeStepForTest({
     trainingVolumeBlueprint = await planBuilderService.updateTrainingVolumePreset({
       timestamp: "2026-05-31T09:04:00.000Z",
       volumePreset,
+    });
+  }
+
+  for (const muscleGroup of enabledOptionalVolumeTargets) {
+    trainingVolumeBlueprint = await planBuilderService.updateOptionalVolumeTarget({
+      isEnabled: true,
+      muscleGroup,
+      timestamp: "2026-05-31T09:04:30.000Z",
     });
   }
 

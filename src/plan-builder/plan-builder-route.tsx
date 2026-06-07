@@ -315,6 +315,7 @@ export function PlanBuilderExercisesRoute() {
           }}
           split={blueprint.split}
           trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+          weeklyRepTargets={blueprint.weeklyRepTargets}
         />
       ) : (
         <p className="text-sm font-semibold text-stone-600">Loading exercise foundation...</p>

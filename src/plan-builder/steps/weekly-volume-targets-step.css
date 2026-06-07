@@ -265,10 +265,7 @@
 
 .weekly-volume-target-row {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) minmax(7rem, auto) minmax(7.5rem, auto) minmax(
-      6.5rem,
-      auto
-    );
+  grid-template-columns: minmax(9rem, 1fr) 8rem 8.5rem 7rem;
   align-items: center;
   gap: 0.85rem;
   min-width: 0;
@@ -307,12 +304,6 @@
   font-weight: 600;
 }
 
-.weekly-volume-target-row--optional {
-  grid-template-columns:
-    minmax(10rem, 1fr) minmax(7rem, auto) minmax(7.5rem, auto) minmax(5.75rem, auto)
-    auto;
-}
-
 .weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
   .weekly-volume-target-row__muscle,
 .weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
@@ -348,7 +339,18 @@
 }
 
 .weekly-volume-target-row__action--remove {
+  width: 2rem;
+  min-width: 2rem;
+  border: 1px solid transparent;
+  padding-right: 0;
+  padding-left: 0;
   color: #52636a;
+}
+
+.weekly-volume-target-row__action--remove:hover {
+  border-color: rgba(25, 43, 45, 0.12);
+  background: rgba(25, 43, 45, 0.05);
+  color: #1f3439;
 }
 
 .weekly-volume-target-row__action:hover {
@@ -366,7 +368,7 @@
 }
 
 .weekly-volume-targets-note {
-  max-width: 45rem;
+  width: 100%;
   margin: 0;
   border-top: 1px solid var(--jw-step-border);
   padding-top: 0.7rem;

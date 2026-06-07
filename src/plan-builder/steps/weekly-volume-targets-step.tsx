@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, ChevronLeft } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, Trash2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions } from "../../design-system/step-screen";
@@ -382,10 +382,6 @@ function OptionalWeeklyVolumeTargetGroup({
               <span className="weekly-volume-target-row__sets">
                 {row.isEnabled ? row.estimatedSetRangeLabel : "Optional direct work"}
               </span>
-              <WeeklyVolumeTargetStatusBadge
-                label={row.isEnabled ? "Included" : "Optional"}
-                tone="optional"
-              />
               <Button
                 aria-label={`${row.actionLabel} ${row.label} target`}
                 className={cn(
@@ -396,9 +392,14 @@ function OptionalWeeklyVolumeTargetGroup({
                 )}
                 onClick={() => onOptionalVolumeTargetToggle(row.muscleGroupId, !row.isEnabled)}
                 size="sm"
+                type="button"
                 variant={row.isEnabled ? "ghost" : "outline"}
               >
-                {row.isEnabled ? "Remove" : "Add target"}
+                {row.isEnabled ? (
+                  <Trash2 aria-hidden="true" size={15} strokeWidth={2.1} />
+                ) : (
+                  "Add target"
+                )}
               </Button>
             </li>
           ))}

@@ -238,6 +238,82 @@
   padding: 1rem 0 0;
 }
 
+.exercise-accessories-summary__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.exercise-accessories-summary__empty {
+  margin: 0.75rem 0 0;
+  color: #536873;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2rem;
+}
+
+.exercise-accessories-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exercise-accessories-selected__item {
+  display: inline-grid;
+  min-height: 2rem;
+  grid-template-columns: minmax(0, auto) auto auto;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(0, 119, 128, 0.22);
+  border-radius: 0.5rem;
+  background: #f3fbfa;
+  padding: 0.28rem 0.35rem 0.28rem 0.65rem;
+  color: #005d64;
+}
+
+.exercise-accessories-selected__name {
+  overflow: hidden;
+  max-width: 14rem;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-accessories-selected__meta {
+  color: #31505d;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1rem;
+}
+
+.exercise-accessories-selected__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #00666e;
+}
+
+.exercise-accessories-selected__remove:hover {
+  background: rgba(0, 119, 128, 0.12);
+}
+
+.exercise-accessories-selected__remove:focus-visible {
+  outline: 2px solid #007780;
+  outline-offset: 2px;
+}
+
 .rotation-pool-inline-preview {
   display: grid;
   gap: 0.6rem;
@@ -826,9 +902,40 @@
   color: #51483f;
 }
 
+.optional-accessories-drawer__option {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+}
+
+.optional-accessories-drawer__option-action {
+  display: inline-flex;
+  min-width: 3.5rem;
+  min-height: 1.85rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 119, 128, 0.26);
+  border-radius: 0.45rem;
+  background: #ffffff;
+  color: #00666e;
+  font-size: 0.75rem;
+  font-weight: 850;
+  line-height: 1rem;
+}
+
+.optional-accessories-drawer__option.is-selected .optional-accessories-drawer__option-action {
+  border-color: rgba(0, 119, 128, 0.36);
+  background: #dff4f2;
+  color: #005d64;
+}
+
 @media (min-width: 1280px) and (max-width: 1599px) {
   .main-compound-drawer {
     width: min(31rem, calc(100vw - var(--jw-sidebar-width)));
+  }
+}
+
+@media (min-width: 1024px) and (min-height: 700px) {
+  .plan-builder-page--exercises .exercise-accessories-summary {
+    margin-bottom: 5.75rem;
   }
 }
 
@@ -860,9 +967,18 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
+  .optional-accessories-drawer__option {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
   .main-compound-drawer__option-tags {
     grid-column: 2 / -1;
     justify-content: flex-start;
+  }
+
+  .optional-accessories-drawer__option-action {
+    grid-column: 2 / -1;
+    width: fit-content;
   }
 
   .main-compound-drawer__option-name {

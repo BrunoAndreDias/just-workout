@@ -31,6 +31,7 @@ import type { MainCompoundRotationPool } from "../main-compound-rotation-pool";
 import type { TrainingFrequencyDaysPerWeek } from "../plan-blueprint-types";
 import { planBuilderPaths } from "../plan-builder-paths";
 import type { TrainingSplitId } from "../training-split";
+import type { OptionalVolumeMuscleGroupId, WeeklyRepTarget } from "../training-volume";
 import {
   formatMovementPatternLabel,
   getWeeklyMovementCoverage,
@@ -52,6 +53,7 @@ type ExerciseFoundationStepProps = {
   ) => Promise<void>;
   split: TrainingSplitId;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
 };
 
 type FoundationRowStatus = "missing" | "recommended" | "required" | "suggested";
@@ -99,6 +101,7 @@ type AccessoryExercise = {
   id: string;
   muscleGroup: AccessoryMuscleGroupFilterId;
   name: string;
+  optionalVolumeMuscleGroup?: OptionalVolumeMuscleGroupId;
   rationale?: string;
 };
 
@@ -160,6 +163,7 @@ const accessoryExercises: ReadonlyArray<AccessoryExercise> = [
     id: "decline-crunch",
     muscleGroup: "core",
     name: "Decline crunch",
+    optionalVolumeMuscleGroup: "abs",
     rationale: "core frequency",
   },
   {
@@ -194,6 +198,7 @@ const accessoryExercises: ReadonlyArray<AccessoryExercise> = [
     id: "calf-raise",
     muscleGroup: "calves",
     name: "Calf raise",
+    optionalVolumeMuscleGroup: "calves",
   },
   {
     beginnerFriendly: true,
@@ -230,6 +235,46 @@ const accessoryBeginnerFilters = [
   { id: "beginner_friendly", label: "Beginner-friendly" },
 ] as const;
 
+function getEnabledOptionalVolumeMuscleGroups(
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>,
+): ReadonlySet<OptionalVolumeMuscleGroupId> {
+  return new Set(
+    weeklyRepTargets
+      .filter(
+        (
+          weeklyRepTarget,
+        ): weeklyRepTarget is WeeklyRepTarget & {
+          muscleGroup: OptionalVolumeMuscleGroupId;
+        } =>
+          weeklyRepTarget.isEnabled &&
+          (weeklyRepTarget.muscleGroup === "abs" || weeklyRepTarget.muscleGroup === "calves"),
+      )
+      .map((weeklyRepTarget) => weeklyRepTarget.muscleGroup),
+  );
+}
+
+function getAvailableAccessoryExercises(
+  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>,
+): ReadonlyArray<AccessoryExercise> {
+  const enabledOptionalVolumeMuscleGroups = getEnabledOptionalVolumeMuscleGroups(weeklyRepTargets);
+
+  return accessoryExercises.filter(
+    (exercise) =>
+      exercise.optionalVolumeMuscleGroup === undefined ||
+      enabledOptionalVolumeMuscleGroups.has(exercise.optionalVolumeMuscleGroup),
+  );
+}
+
+function getAvailableAccessoryMuscleGroupFilters(
+  exercises: ReadonlyArray<AccessoryExercise>,
+): ReadonlyArray<{ id: AccessoryMuscleGroupFilterId; label: string }> {
+  const availableMuscleGroupIds = new Set(exercises.map((exercise) => exercise.muscleGroup));
+
+  return accessoryMuscleGroupFilters.filter(
+    (filter) => filter.id === "all" || availableMuscleGroupIds.has(filter.id),
+  );
+}
+
 export function ExerciseFoundationStep({
   mainCompoundSelections,
   mainCompoundRotationPools,
@@ -238,6 +283,7 @@ export function ExerciseFoundationStep({
   onRotationPoolChange,
   split,
   trainingFrequencyDaysPerWeek,
+  weeklyRepTargets,
 }: ExerciseFoundationStepProps) {
   const [activePickerPattern, setActivePickerPattern] =
     useState<CompoundCapableMovementPatternId | null>(null);
@@ -268,7 +314,20 @@ export function ExerciseFoundationStep({
   const recommendedGuidance = getRecommendedGuidance(coverage.rows);
   const nextRequiredPattern = getNextMissingRequiredPattern(coverage.rows);
   const canShowOptionalAccessoriesSummary = hasConfirmedSelections && coverage.canConfirmExercises;
-  const selectedAccessoryCount = selectedAccessoryIds.size;
+  const availableAccessoryExercises = useMemo(
+    () => getAvailableAccessoryExercises(weeklyRepTargets),
+    [weeklyRepTargets],
+  );
+  const selectedAccessories = availableAccessoryExercises.filter((exercise) =>
+    selectedAccessoryIds.has(exercise.id),
+  );
+  const selectedAccessoryCount = selectedAccessories.length;
+  const recommendedAccessoryCount = availableAccessoryExercises.filter(
+    (exercise) => exercise.group === "recommended",
+  ).length;
+  const optionalAccessoryCount = availableAccessoryExercises.filter(
+    (exercise) => exercise.group === "optional",
+  ).length;
   const suggestedRequiredPatternCount = coverage.rows.filter(
     (row) =>
       row.requirement === "required" && suggestedFoundation[row.movementPattern] !== undefined,
@@ -289,6 +348,24 @@ export function ExerciseFoundationStep({
     activeRotationPoolPattern === null
       ? undefined
       : rotationPoolByPattern.get(activeRotationPoolPattern);
+
+  useEffect(() => {
+    const availableAccessoryExerciseIds = new Set(
+      availableAccessoryExercises.map((exercise) => exercise.id),
+    );
+
+    setSelectedAccessoryIds((currentAccessoryIds) => {
+      const nextAccessoryIds = new Set(
+        [...currentAccessoryIds].filter((accessoryId) =>
+          availableAccessoryExerciseIds.has(accessoryId),
+        ),
+      );
+
+      return nextAccessoryIds.size === currentAccessoryIds.size
+        ? currentAccessoryIds
+        : nextAccessoryIds;
+    });
+  }, [availableAccessoryExercises]);
 
   useEffect(() => {
     if (
@@ -564,6 +641,24 @@ export function ExerciseFoundationStep({
             />
           ) : null}
 
+          {canShowOptionalAccessoriesSummary ? (
+            <IsolationExercisesSummary
+              isDrawerOpen={isAccessoryDrawerOpen}
+              onConfigure={() => {
+                setActivePickerPattern(null);
+                setActiveRotationPoolPattern(null);
+                setIsAccessoryDrawerOpen(true);
+              }}
+              onRemove={(accessoryId) => handleAccessorySelectionChange(accessoryId, false)}
+              optionalAccessoryCount={optionalAccessoryCount}
+              recommendedAccessoryCount={recommendedAccessoryCount}
+              selectedAccessories={selectedAccessories}
+              selectedExerciseCount={selectedAccessoryCount}
+            />
+          ) : (
+            <IsolationExercisesUnavailableSummary />
+          )}
+
           <StepActions>
             <Button asChild size="step" variant="outline">
               <Link to={planBuilderPaths.volume}>
@@ -589,22 +684,9 @@ export function ExerciseFoundationStep({
         </div>
       </StepPanel>
 
-      {canShowOptionalAccessoriesSummary ? (
-        <OptionalAccessoriesSummary
-          isDrawerOpen={isAccessoryDrawerOpen}
-          onConfigure={() => {
-            setActivePickerPattern(null);
-            setActiveRotationPoolPattern(null);
-            setIsAccessoryDrawerOpen(true);
-          }}
-          selectedAccessoryCount={selectedAccessoryCount}
-        />
-      ) : (
-        <OptionalAccessoriesUnavailableSummary />
-      )}
-
       {isAccessoryDrawerOpen ? (
-        <OptionalAccessoriesDrawer
+        <IsolationExercisesDrawer
+          accessoryExercises={availableAccessoryExercises}
           onClose={() => setIsAccessoryDrawerOpen(false)}
           onSelectionChange={handleAccessorySelectionChange}
           selectedAccessoryIds={selectedAccessoryIds}
@@ -852,27 +934,35 @@ function getRotationPoolOptions({
   });
 }
 
-function OptionalAccessoriesSummary({
+function IsolationExercisesSummary({
   isDrawerOpen,
   onConfigure,
-  selectedAccessoryCount,
+  onRemove,
+  optionalAccessoryCount,
+  recommendedAccessoryCount,
+  selectedAccessories,
+  selectedExerciseCount,
 }: {
   isDrawerOpen: boolean;
   onConfigure: () => void;
-  selectedAccessoryCount: number;
+  onRemove: (accessoryId: string) => void;
+  optionalAccessoryCount: number;
+  recommendedAccessoryCount: number;
+  selectedAccessories: ReadonlyArray<AccessoryExercise>;
+  selectedExerciseCount: number;
 }) {
   return (
-    <section aria-label="Optional accessories summary" className="exercise-accessories-summary">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section aria-label="Isolation exercises summary" className="exercise-accessories-summary">
+      <div className="exercise-accessories-summary__header">
         <div className="min-w-0">
-          <h3 className="text-sm font-black text-stone-950">Optional accessories</h3>
+          <h3 className="text-sm font-black text-stone-950">Isolation exercises</h3>
           <p className="mt-1 text-sm text-stone-600">
             Add targeted isolation work if you want more direct muscle coverage.
           </p>
           <p className="mt-2 text-sm font-semibold text-stone-700">
-            {selectedAccessoryCount > 0
-              ? `${selectedAccessoryCount} selected · 3 recommended · 5 optional available`
-              : "3 recommended · 5 optional available"}
+            {selectedExerciseCount > 0
+              ? `${selectedExerciseCount} selected · ${recommendedAccessoryCount} recommended · ${optionalAccessoryCount} more available`
+              : `${recommendedAccessoryCount} recommended · ${optionalAccessoryCount} more available`}
           </p>
         </div>
         <Button
@@ -883,31 +973,56 @@ function OptionalAccessoriesSummary({
           type="button"
           variant="outline"
         >
-          Configure
+          <Plus aria-hidden="true" size={16} strokeWidth={2} />
+          {selectedExerciseCount > 0 ? "Edit isolation exercises" : "Add isolation exercises"}
         </Button>
       </div>
+      {selectedAccessories.length > 0 ? (
+        <ul aria-label="Selected isolation exercises" className="exercise-accessories-selected">
+          {selectedAccessories.map((exercise) => (
+            <li className="exercise-accessories-selected__item" key={exercise.id}>
+              <span className="exercise-accessories-selected__name">{exercise.name}</span>
+              <span className="exercise-accessories-selected__meta">
+                {getAccessoryFilterLabel(accessoryMuscleGroupFilters, exercise.muscleGroup)}
+              </span>
+              <button
+                aria-label={`Remove ${exercise.name} from isolation exercises`}
+                className="exercise-accessories-selected__remove"
+                onClick={() => onRemove(exercise.id)}
+                type="button"
+              >
+                <X aria-hidden="true" size={14} strokeWidth={2.2} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="exercise-accessories-summary__empty">No isolation exercises selected yet.</p>
+      )}
     </section>
   );
 }
 
-function OptionalAccessoriesUnavailableSummary() {
+function IsolationExercisesUnavailableSummary() {
   return (
     <section
-      aria-label="Optional accessories availability"
+      aria-label="Isolation exercises availability"
       className="exercise-accessories-summary exercise-accessories-summary--muted"
     >
       <p className="text-sm font-semibold text-stone-600">
-        Optional accessories · available after main compounds are confirmed
+        Isolation exercises · available after main compounds are confirmed
       </p>
     </section>
   );
 }
 
-function OptionalAccessoriesDrawer({
+function IsolationExercisesDrawer({
+  accessoryExercises,
   onClose,
   onSelectionChange,
   selectedAccessoryIds,
 }: {
+  accessoryExercises: ReadonlyArray<AccessoryExercise>;
   onClose: () => void;
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
@@ -920,6 +1035,19 @@ function OptionalAccessoriesDrawer({
   const [activeBeginnerFilterId, setActiveBeginnerFilterId] =
     useState<AccessoryBeginnerFilterId>("all");
   const titleId = "optional-accessories-drawer-title";
+  const availableMuscleGroupFilters = useMemo(
+    () => getAvailableAccessoryMuscleGroupFilters(accessoryExercises),
+    [accessoryExercises],
+  );
+
+  useEffect(() => {
+    if (availableMuscleGroupFilters.some((filter) => filter.id === activeMuscleGroupFilterId)) {
+      return;
+    }
+
+    setActiveMuscleGroupFilterId("all");
+  }, [activeMuscleGroupFilterId, availableMuscleGroupFilters]);
+
   const filteredAccessories = useMemo(
     () =>
       accessoryExercises.filter((exercise) => {
@@ -937,7 +1065,13 @@ function OptionalAccessoriesDrawer({
 
         return matchesSearch && matchesMuscleGroup && matchesEquipment && matchesBeginner;
       }),
-    [activeBeginnerFilterId, activeEquipmentFilterId, activeMuscleGroupFilterId, searchQuery],
+    [
+      accessoryExercises,
+      activeBeginnerFilterId,
+      activeEquipmentFilterId,
+      activeMuscleGroupFilterId,
+      searchQuery,
+    ],
   );
   const recommendedAccessories = filteredAccessories.filter(
     (exercise) => exercise.group === "recommended",
@@ -949,7 +1083,7 @@ function OptionalAccessoriesDrawer({
   return (
     <div className="main-compound-drawer-shell">
       <button
-        aria-label="Close optional accessories"
+        aria-label="Close isolation exercises"
         className="main-compound-drawer-backdrop"
         onClick={onClose}
         type="button"
@@ -964,10 +1098,10 @@ function OptionalAccessoriesDrawer({
         <div className="main-compound-drawer__header">
           <div className="main-compound-drawer__title-row">
             <h3 className="main-compound-drawer__title" id={titleId}>
-              Configure optional accessories
+              Configure isolation exercises
             </h3>
             <Button
-              aria-label="Close optional accessories"
+              aria-label="Close isolation exercises"
               onClick={onClose}
               size="sm"
               type="button"
@@ -977,18 +1111,18 @@ function OptionalAccessoriesDrawer({
             </Button>
           </div>
           <p className="main-compound-drawer__helper">
-            Accessories can add direct work, but they do not count toward required main compound
-            coverage.
+            Isolation exercises can add direct work, but they do not count toward required main
+            compound coverage.
           </p>
         </div>
 
         <div className="main-compound-drawer__controls">
           <label className="main-compound-drawer__search">
             <Search aria-hidden="true" size={18} strokeWidth={2} />
-            <span className="sr-only">Search optional accessories</span>
+            <span className="sr-only">Search isolation exercises</span>
             <input
               onChange={(event) => setSearchQuery(event.currentTarget.value)}
-              placeholder="Search optional accessories..."
+              placeholder="Search isolation exercises..."
               type="search"
               value={searchQuery}
             />
@@ -996,7 +1130,7 @@ function OptionalAccessoriesDrawer({
           <div className="optional-accessories-drawer__filter-stack">
             <AccessoryFilterGroup
               activeFilterId={activeMuscleGroupFilterId}
-              filters={accessoryMuscleGroupFilters}
+              filters={availableMuscleGroupFilters}
               legend="Muscle group"
               onFilterChange={setActiveMuscleGroupFilterId}
             />
@@ -1024,20 +1158,20 @@ function OptionalAccessoriesDrawer({
           />
           <AccessoryExerciseGroup
             exercises={optionalAccessories}
-            groupLabel="Optional"
+            groupLabel="Additional"
             onSelectionChange={onSelectionChange}
             selectedAccessoryIds={selectedAccessoryIds}
           />
           {filteredAccessories.length === 0 ? (
             <p className="main-compound-drawer__empty">
-              No accessories match the current search and filters.
+              No isolation exercises match the current search and filters.
             </p>
           ) : null}
         </div>
 
         <div className="main-compound-drawer__footer">
           <p>
-            Optional accessories are non-blocking. Continue to Review only depends on required main
+            Isolation exercises are non-blocking. Continue to Review only depends on required main
             compound coverage.
           </p>
         </div>
@@ -1086,7 +1220,7 @@ function AccessoryExerciseGroup({
   selectedAccessoryIds,
 }: {
   exercises: ReadonlyArray<AccessoryExercise>;
-  groupLabel: "Optional" | "Recommended";
+  groupLabel: "Additional" | "Recommended";
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
 }) {
@@ -1096,7 +1230,7 @@ function AccessoryExerciseGroup({
 
   return (
     <section
-      aria-label={`${groupLabel} accessories`}
+      aria-label={`${groupLabel} isolation exercises`}
       className="optional-accessories-drawer__group"
     >
       <h4 className="optional-accessories-drawer__group-title">{groupLabel}</h4>
@@ -1106,7 +1240,10 @@ function AccessoryExerciseGroup({
 
           return (
             <label
-              className={cn("main-compound-drawer__option", isSelected && "is-selected")}
+              className={cn(
+                "main-compound-drawer__option optional-accessories-drawer__option",
+                isSelected && "is-selected",
+              )}
               key={exercise.id}
             >
               <input
@@ -1136,7 +1273,14 @@ function AccessoryExerciseGroup({
                 </span>
               </span>
               <span className="main-compound-drawer__option-state" aria-hidden="true">
-                {isSelected ? <Check size={16} strokeWidth={2.4} /> : null}
+                {isSelected ? (
+                  <Check size={16} strokeWidth={2.4} />
+                ) : (
+                  <Plus size={14} strokeWidth={2.2} />
+                )}
+              </span>
+              <span className="optional-accessories-drawer__option-action" aria-hidden="true">
+                {isSelected ? "Added" : "Add"}
               </span>
             </label>
           );

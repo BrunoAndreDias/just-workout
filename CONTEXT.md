@@ -9,12 +9,24 @@ The product name for the personal training app.
 _Avoid_: StrongPlan
 
 **Training Plan**:
-The final generated plan a user follows for their training. A **Training Plan** contains the workout structure the user will perform over time and keeps the **Training Frequency** it was built for.
+The final generated plan a user follows for their training. A **Training Plan** is created deliberately from a completed **Plan Blueprint**, contains the workout structure the user will perform over time, and keeps the **Training Frequency** it was built for.
 _Avoid_: Routine, program
+
+**Active Training Plan**:
+The **Training Plan** the user currently follows. Generating a new **Training Plan** makes it the **Active Training Plan** instead of any previous one.
+_Avoid_: Current routine, selected program
 
 **Training Block**:
 A defined span of time within a **Training Plan** before selected exercises are reviewed or rotated for a different training stimulus. The default **Training Block** length is 6 weeks.
 _Avoid_: Mesocycle, phase, cycle
+
+**Workout Template**:
+A reusable workout structure inside a **Training Plan** that represents one session the user can perform. In the first generated **Training Plan**, **Workout Templates** can exist as split-derived skeletons before full exercise prescriptions are available.
+_Avoid_: Workout day, generated routine
+
+**Superset Group**:
+The default exercise grouping inside a generated **Workout Template**, where related exercise slots are performed together before moving to the next group. A **Superset Group** can combine movement slots such as upper pull, upper push, shoulders, abs, or isolation work, and its exact structure can become configurable later.
+_Avoid_: Superset approach, circuit
 
 **Plan Blueprint**:
 The in-progress set of choices a user makes before generating a **Training Plan**. A new **Plan Blueprint** starts with a 3 days/week **Training Frequency**, and an unfinished **Plan Blueprint** can be resumed before generation.
@@ -23,6 +35,10 @@ _Avoid_: Draft routine, temporary plan
 **Plan Builder**:
 The guided flow where a user creates a **Plan Blueprint** and generates a **Training Plan**.
 _Avoid_: Routine builder, program wizard
+
+**Generate Step**:
+The final **Plan Builder** step where a user generates a **Training Plan** from the completed **Plan Blueprint**. A **Generate Step** can include a final blueprint review, but its canonical purpose is generation.
+_Avoid_: Review step, final review
 
 **Recommended Default**:
 A **Plan Builder** choice that Just Workout preselects and persists because it is the recommended starting point. A **Recommended Default** is a valid **Plan Blueprint** choice, but the user has not actively confirmed that builder step until they continue past it.
