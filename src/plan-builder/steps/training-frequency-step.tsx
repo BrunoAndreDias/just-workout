@@ -222,11 +222,9 @@ function TrainingFrequencyRecommendationCard({
                 type="radio"
                 value={split.id}
               />
-              {isSelected ? (
-                <span className="training-schedule-split__selected-check">
-                  <Check aria-hidden="true" size={18} strokeWidth={2.5} />
-                </span>
-              ) : null}
+              <span className="training-schedule-split__selected-check" aria-hidden="true">
+                {isSelected ? <Check size={18} strokeWidth={2.5} /> : null}
+              </span>
               <div className="training-schedule-split__heading">
                 <div className="training-schedule-split__title-row">
                   <h3>{split.label}</h3>
@@ -237,24 +235,28 @@ function TrainingFrequencyRecommendationCard({
                 <p>{split.cardDescription}</p>
               </div>
 
-              <ul
-                className="training-schedule-split__benefits"
-                aria-label={`${split.label} benefits`}
-              >
-                {benefits.map((benefit) => (
-                  <li key={benefit}>
-                    <Check aria-hidden="true" size={15} strokeWidth={2.4} />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
+              {isSelected ? (
+                <ul
+                  className="training-schedule-split__benefits"
+                  aria-label={`${split.label} benefits`}
+                >
+                  {benefits.map((benefit) => (
+                    <li key={benefit}>
+                      <Check aria-hidden="true" size={15} strokeWidth={2.4} />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="training-schedule-split__select-affordance">Select</span>
+              )}
             </label>
           );
         })}
       </div>
 
       <div className="training-schedule-split__layout">
-        <h3>Suggested weekly layout</h3>
+        <h3>Selected weekly layout</h3>
         <ol>
           {weeklyLayout.map((layoutDay) => (
             <li

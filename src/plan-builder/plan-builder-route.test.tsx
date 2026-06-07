@@ -50,7 +50,6 @@ const optionalAccessoriesUnavailableText =
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
-  /exercise selection/i,
   /generated training plan/i,
   /chart/i,
   /analytics/i,
@@ -212,7 +211,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(frequencyGroup).queryByText("Push/Pull/Legs variation")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Choose your weekly split" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
-    expect(screen.getByText("Suggested weekly layout")).toBeVisible();
+    expect(screen.getByText("Selected weekly layout")).toBeVisible();
     expect(screen.getByText("Alternating Full Body A/B")).toBeVisible();
     expect(screen.getByText("Upper / Lower / Full Body")).toBeVisible();
     expect(
@@ -1175,8 +1174,11 @@ describe("PlanBuilderRoute", () => {
     });
     expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
     expect(screen.getByRole("group", { name: /^volume preset$/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /required weekly rep targets/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /optional volume targets/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /weekly volume targets/i })).toBeVisible();
+    expect(screen.getByText(/these targets guide which exercises/i)).toBeVisible();
+    expect(screen.getByRole("heading", { name: /main targets/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /supporting targets/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /optional targets/i })).toBeVisible();
     expect(screen.queryByRole("heading", { name: /how this works/i })).not.toBeInTheDocument();
     expect(
       screen.queryByText(
@@ -1196,7 +1198,7 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("renders the required Weekly Rep Target rows with canonical reps, derived set estimates, and quiet adjustment affordances", async () => {
+  it("renders the required Weekly Rep Target rows as grouped lists with canonical reps and derived set estimates", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
       repRangeStyle: "balanced_hypertrophy",
@@ -1205,38 +1207,73 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    const table = await screen.findByRole("table", { name: /required weekly rep targets/i });
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
+    const mainTargets = await within(weeklyTargets).findByRole("list", { name: /main targets/i });
+    const supportingTargets = await within(weeklyTargets).findByRole("list", {
+      name: /supporting targets/i,
+    });
     const rowExpectations = [
-      { label: "Chest", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
-      { label: "Back", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
-      { label: "Shoulders", reps: "45 reps/week", sets: "4-6 sets/week", status: "Moderate" },
-      { label: "Quads", reps: "90 reps/week", sets: "8-12 sets/week", status: "Main target" },
       {
+        group: mainTargets,
+        label: "Chest",
+        reps: "90 reps/week",
+        sets: "8-12 sets/week",
+        status: "Main target",
+      },
+      {
+        group: mainTargets,
+        label: "Back",
+        reps: "90 reps/week",
+        sets: "8-12 sets/week",
+        status: "Main target",
+      },
+      {
+        group: mainTargets,
+        label: "Quads",
+        reps: "90 reps/week",
+        sets: "8-12 sets/week",
+        status: "Main target",
+      },
+      {
+        group: mainTargets,
         label: "Hamstrings/Glutes",
         reps: "90 reps/week",
         sets: "8-12 sets/week",
         status: "Main target",
       },
-      { label: "Biceps", reps: "45 reps/week", sets: "4-6 sets/week", status: "Accessory" },
-      { label: "Triceps", reps: "45 reps/week", sets: "4-6 sets/week", status: "Accessory" },
+      {
+        group: supportingTargets,
+        label: "Shoulders",
+        reps: "45 reps/week",
+        sets: "4-6 sets/week",
+        status: "Moderate",
+      },
+      {
+        group: supportingTargets,
+        label: "Biceps",
+        reps: "45 reps/week",
+        sets: "4-6 sets/week",
+        status: "Accessory",
+      },
+      {
+        group: supportingTargets,
+        label: "Triceps",
+        reps: "45 reps/week",
+        sets: "4-6 sets/week",
+        status: "Accessory",
+      },
     ] as const;
 
-    for (const { label, reps, sets, status } of rowExpectations) {
-      const rowLabel = within(table).getByText(label);
-      const row = rowLabel.closest("tr");
+    expect(
+      within(weeklyTargets).getByText(/targets are generated from your selected volume style/i),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /adjust .* target/i })).not.toBeInTheDocument();
 
-      if (!(row instanceof HTMLTableRowElement)) {
-        throw new Error(`Expected ${label} to render inside a table row.`);
-      }
-
+    for (const { group, label, reps, sets, status } of rowExpectations) {
+      const row = getListItemByLabel(group, label);
       expect(within(row).getByText(reps)).toBeVisible();
       expect(within(row).getByText(sets)).toBeVisible();
       expect(within(row).getByText(status)).toBeVisible();
-      expect(
-        within(row).getByRole("button", {
-          name: new RegExp(`adjust ${label} target`, "i"),
-        }),
-      ).toBeDisabled();
     }
 
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
@@ -1248,7 +1285,7 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("renders Calves and Abs as disabled Optional Volume Targets by default", async () => {
+  it("renders Calves and Abs as optional targets inside Weekly volume targets by default", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
       repRangeStyle: "balanced_hypertrophy",
@@ -1257,15 +1294,25 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    const table = await screen.findByRole("table", { name: /optional volume targets/i });
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
+    const optionalTargets = await within(weeklyTargets).findByRole("list", {
+      name: /optional targets/i,
+    });
+    expect(
+      within(weeklyTargets).getByText(
+        /add direct work for smaller muscle groups if you want them included/i,
+      ),
+    ).toBeVisible();
 
     for (const label of ["Calves", "Abs"] as const) {
-      const row = getTableRowByLabel(table, label);
+      const row = getListItemByLabel(optionalTargets, label);
 
-      expect(within(row).getAllByText("Optional")).toHaveLength(3);
       expect(
         within(row).getByRole("button", { name: new RegExp(`add ${label} target`, "i") }),
       ).toBeEnabled();
+      expect(within(row).getByText("Not included")).toBeVisible();
+      expect(within(row).getByText("Optional")).toBeVisible();
+      expect(within(row).queryByText("Included")).not.toBeInTheDocument();
       expect(within(row).queryByText(/reps\/week/i)).not.toBeInTheDocument();
       expect(within(row).queryByText(/sets\/week/i)).not.toBeInTheDocument();
     }
@@ -1283,10 +1330,10 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
     const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
-    const table = await screen.findByRole("table", { name: /required weekly rep targets/i });
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
-    const chestRow = getTableRowByLabel(table, "Chest");
-    const shouldersRow = getTableRowByLabel(table, "Shoulders");
+    const chestRow = getListItemByLabel(weeklyTargets, "Chest");
+    const shouldersRow = getListItemByLabel(weeklyTargets, "Shoulders");
 
     expect(within(volumePresetGroup).getByRole("radio", { name: /conservative/i })).toBeVisible();
     expect(within(volumePresetGroup).getByRole("radio", { name: /balanced/i })).toBeChecked();
@@ -1358,15 +1405,19 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
     const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
-    const optionalTable = await screen.findByRole("table", { name: /optional volume targets/i });
-    const calvesRow = getTableRowByLabel(optionalTable, "Calves");
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
+    const optionalTargets = await within(weeklyTargets).findByRole("list", {
+      name: /optional targets/i,
+    });
+    const calvesRow = getListItemByLabel(optionalTargets, "Calves");
 
     await user.click(within(calvesRow).getByRole("button", { name: /add calves target/i }));
 
     await waitFor(() => {
-      expect(within(calvesRow).getByText("45 reps/week")).toBeVisible();
+      expect(within(calvesRow).getByText(/45 reps\/week/i)).toBeVisible();
     });
-    expect(within(calvesRow).getByText("4-6 sets/week")).toBeVisible();
+    expect(within(calvesRow).getByText(/4-6 sets\/week/i)).toBeVisible();
+    expect(within(calvesRow).getByText("Included")).toBeVisible();
     expect(within(calvesRow).getByRole("button", { name: /remove calves target/i })).toBeVisible();
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -1389,8 +1440,8 @@ describe("PlanBuilderRoute", () => {
         within(volumePresetGroup).getByRole("radio", { name: /higher volume/i }),
       ).toBeChecked();
     });
-    expect(within(calvesRow).getByText("60 reps/week")).toBeVisible();
-    expect(within(calvesRow).getByText("5-8 sets/week")).toBeVisible();
+    expect(within(calvesRow).getByText(/60 reps\/week/i)).toBeVisible();
+    expect(within(calvesRow).getByText(/5-8 sets\/week/i)).toBeVisible();
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
         volumePreset: "higher_volume",
@@ -1404,8 +1455,9 @@ describe("PlanBuilderRoute", () => {
     await user.click(within(calvesRow).getByRole("button", { name: /remove calves target/i }));
 
     await waitFor(() => {
-      expect(within(calvesRow).getAllByText("Optional")).toHaveLength(3);
+      expect(within(calvesRow).queryByText("Included")).not.toBeInTheDocument();
     });
+    expect(within(calvesRow).getByText("Not included")).toBeVisible();
     expect(within(calvesRow).getByRole("button", { name: /add calves target/i })).toBeVisible();
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -1628,10 +1680,8 @@ describe("PlanBuilderRoute", () => {
     await user.click(screen.getByRole("button", { name: /continue to volume/i }));
 
     const volumeView = await screen.findByRole("heading", { name: /set your training volume/i });
-    const requiredTargetsTable = await screen.findByRole("table", {
-      name: /required weekly rep targets/i,
-    });
-    const chestRow = getTableRowByLabel(requiredTargetsTable, "Chest");
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
+    const chestRow = getListItemByLabel(weeklyTargets, "Chest");
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(volumeView).toBeVisible();
@@ -1665,10 +1715,8 @@ describe("PlanBuilderRoute", () => {
 
     const volumeView = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
     const volumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
-    const requiredTargetsTable = await screen.findByRole("table", {
-      name: /required weekly rep targets/i,
-    });
-    const chestRow = getTableRowByLabel(requiredTargetsTable, "Chest");
+    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
+    const chestRow = getListItemByLabel(weeklyTargets, "Chest");
 
     await user.click(within(volumePresetGroup).getByText("Conservative"));
 
@@ -1932,6 +1980,8 @@ describe("PlanBuilderRoute", () => {
   });
 
   it("shows data-driven Rep Range Style notes and targets without rendering advanced programming controls", async () => {
+    const user = userEvent.setup();
+
     await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
@@ -1956,6 +2006,7 @@ describe("PlanBuilderRoute", () => {
     expect(options.getAllByText("Main compounds")).toHaveLength(3);
     expect(options.getAllByText("Secondary compounds")).toHaveLength(3);
     expect(options.getAllByText("Accessories")).toHaveLength(3);
+    expect(options.queryByText("Select")).not.toBeInTheDocument();
     expect(options.getByText("4-6 reps")).toBeVisible();
     expect(options.getAllByText("6-8 reps")).toHaveLength(2);
     expect(options.getAllByText("8-10 reps")).toHaveLength(2);
@@ -1969,6 +2020,17 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByText(/rest time recommendation/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/load recommendation/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/advanced programming controls/i)).not.toBeInTheDocument();
+
+    await user.click(options.getByText(repRangeStyleLabels.strengthLeaning));
+
+    await waitFor(() => {
+      expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.strengthLeaning);
+    });
+
+    expect(options.getByText("4-6 reps")).toBeVisible();
+    expect(options.getAllByText("6-8 reps")).toHaveLength(2);
+    expect(options.getByText("8-12 reps")).toBeVisible();
+    expect(options.getByText("10-15 reps")).toBeVisible();
   });
 
   it("updates Rep Range Style explanation bullets and uses the approved boundary and next-step copy", async () => {
@@ -2046,6 +2108,32 @@ describe("PlanBuilderRoute", () => {
       expect(splitOptions.getByText(label)).toBeVisible();
       expect(splitOptions.getByRole("radio", { name: getLabelMatcher(label) })).toBeVisible();
     }
+  });
+
+  it("shows full split benefits only for the selected Training Split", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    const splitGroup = await getTrainingScheduleSplitSection();
+
+    expect(within(splitGroup).getByRole("radio", { name: /3-day full body/i })).toBeChecked();
+    expect(within(splitGroup).getByText("Muscles trained 3x/week")).toBeVisible();
+    expect(within(splitGroup).queryByText("More variety")).not.toBeInTheDocument();
+    expect(within(splitGroup).getAllByText("Select")).toHaveLength(2);
+
+    await user.click(within(splitGroup).getByText(trainingSplitLabels.alternatingFullBodyAB));
+
+    await waitFor(() => {
+      expect(
+        within(splitGroup).getByRole("radio", {
+          name: getLabelMatcher(trainingSplitLabels.alternatingFullBodyAB),
+        }),
+      ).toBeChecked();
+    });
+
+    expect(within(splitGroup).getByText("More variety")).toBeVisible();
+    expect(within(splitGroup).queryByText("Muscles trained 3x/week")).not.toBeInTheDocument();
   });
 
   it.each(
@@ -2504,12 +2592,12 @@ function getRepRangeStyleEffectsPanel() {
   return screen.getByRole("region", { name: /how this affects your plan/i });
 }
 
-function getTableRowByLabel(table: HTMLElement, label: string) {
-  const rowLabel = within(table).getByText(label);
-  const row = rowLabel.closest("tr");
+function getListItemByLabel(container: HTMLElement, label: string) {
+  const rowLabel = within(container).getByText(label);
+  const row = rowLabel.closest("li");
 
-  if (!(row instanceof HTMLTableRowElement)) {
-    throw new Error(`Expected ${label} to render inside a table row.`);
+  if (!(row instanceof HTMLLIElement)) {
+    throw new Error(`Expected ${label} to render inside a list item.`);
   }
 
   return row;

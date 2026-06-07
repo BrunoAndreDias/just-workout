@@ -151,11 +151,9 @@ function RepRangeStyleOptionRadio({
                 <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
               ) : null}
             </div>
-            {isSelected ? (
-              <span className="rep-range-option__selected-check" aria-hidden="true">
-                <Check aria-hidden="true" size={14} strokeWidth={3} />
-              </span>
-            ) : null}
+            <span className="rep-range-option__selected-check" aria-hidden="true">
+              {isSelected ? <Check size={14} strokeWidth={3} /> : null}
+            </span>
           </div>
           <p className={cn("rep-range-option__copy", repRangeStyleDescriptionStyles[optionState])}>
             {option.description}

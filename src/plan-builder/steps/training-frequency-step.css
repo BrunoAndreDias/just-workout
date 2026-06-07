@@ -3563,15 +3563,252 @@ button.training-frequency-action-button {
   }
 }
 
-/* Last density override: selected rows use borders and checks, not card fills. */
-.plan-builder-page--frequency .training-frequency-option,
-.plan-builder-page--frequency .training-frequency-option:hover,
-.plan-builder-page--frequency .training-frequency-option--selected,
-.plan-builder-page--frequency .training-frequency-option:has(input:checked),
-.plan-builder-page--frequency .training-schedule-split__card,
-.plan-builder-page--frequency .training-schedule-split__card:hover,
-.plan-builder-page--frequency .training-schedule-split__card--selected,
-.plan-builder-page--frequency .training-schedule-split__layout li {
-  background: transparent;
+/* Selection affordance pass: flat controls with clear radio states. */
+.plan-builder-page--frequency .training-frequency-options {
+  gap: 0.625rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option {
+  min-height: 4.5rem;
+  align-items: flex-start;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 253, 250, 0.5);
+  padding: 0.72rem 2.85rem 0.72rem 0.82rem;
+  text-align: left;
   box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover {
+  border-color: rgba(0, 119, 128, 0.34);
+  background: rgba(255, 253, 250, 0.78);
+}
+
+.plan-builder-page--frequency .training-frequency-option:has(input:focus-visible) {
+  outline: 2px solid rgba(0, 99, 106, 0.86);
+  outline-offset: 2px;
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected,
+.plan-builder-page--frequency .training-frequency-option:has(input:checked) {
+  border-color: var(--jw-step-selected-border);
+  background: rgba(242, 251, 250, 0.86);
+  color: var(--jw-step-selected-ink);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__check {
+  top: 50%;
+  right: 0.82rem;
+  width: 1.32rem;
+  height: 1.32rem;
+  transform: translateY(-50%);
+  border-color: var(--jw-step-selected-strong);
+  background: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon,
+.plan-builder-page--frequency .training-frequency-option__icon-frame {
+  display: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__label {
+  margin-top: 0;
+  color: var(--jw-step-ink);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.1rem;
+}
+
+.plan-builder-page--frequency
+  .training-frequency-option--selected
+  .training-frequency-option__label,
+.plan-builder-page--frequency
+  .training-frequency-option:has(input:checked)
+  .training-frequency-option__label {
+  color: var(--jw-step-selected-ink);
+  font-weight: 800;
+}
+
+.plan-builder-page--frequency .training-frequency-option__helper {
+  margin-top: 0.24rem;
+  color: var(--jw-step-muted);
+  font-size: 0.76rem;
+  line-height: 0.96rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split {
+  margin-top: 1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__cards {
+  gap: 0.7rem;
+  margin-top: 0.65rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card {
+  min-height: 6.9rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 253, 250, 0.48);
+  padding: 0.86rem 0.9rem 0.78rem;
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:hover {
+  border-color: rgba(0, 119, 128, 0.34);
+  background: rgba(255, 253, 250, 0.78);
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:has(input:focus-visible) {
+  outline: 2px solid rgba(0, 99, 106, 0.86);
+  outline-offset: 2px;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: var(--jw-step-selected-border);
+  background: rgba(242, 251, 250, 0.82);
+  color: var(--jw-step-selected-ink);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected h3 {
+  color: var(--jw-step-selected-ink);
+  font-weight: 800;
+}
+
+.plan-builder-page--frequency .training-schedule-split__selected-check {
+  top: 0.82rem;
+  right: 0.82rem;
+  width: 1.34rem;
+  height: 1.34rem;
+  border: 1px solid rgba(28, 25, 23, 0.18);
+  background: transparent;
+  color: transparent;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__card--selected
+  .training-schedule-split__selected-check {
+  border-color: var(--jw-step-selected-strong);
+  background: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--frequency .training-schedule-split__title-row {
+  padding-right: 1.9rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading p {
+  display: block;
+  margin-top: 0.42rem;
+  overflow: visible;
+  color: var(--jw-step-copy);
+  font-size: 0.8rem;
+  line-height: 1.08rem;
+  -webkit-line-clamp: initial;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__card:not(.training-schedule-split__card--selected)
+  .training-schedule-split__heading
+  p {
+  color: var(--jw-step-muted);
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits {
+  gap: 0.4rem;
+  margin-top: 0.68rem;
+  border-top: 1px solid rgba(0, 119, 128, 0.16);
+  padding-top: 0.58rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits li {
+  color: var(--jw-step-selected-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 0.98rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits svg {
+  color: var(--jw-step-selected-strong);
+}
+
+.training-schedule-split__select-affordance {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.62rem;
+  color: rgba(7, 93, 99, 0.72);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  opacity: 0;
+  transform: translateY(-0.12rem);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__card:hover
+  .training-schedule-split__select-affordance,
+.plan-builder-page--frequency
+  .training-schedule-split__card:has(input:focus-visible)
+  .training-schedule-split__select-affordance {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout {
+  margin-top: 0.95rem;
+  border-top: 1px solid rgba(0, 119, 128, 0.16);
+  padding-top: 0.78rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout ol {
+  gap: 0.42rem;
+  margin-top: 0.58rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  min-height: 3.9rem;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 0.45rem;
+  background: rgba(255, 253, 250, 0.4);
+  padding: 0.46rem 0.28rem;
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__layout-day:not(.training-schedule-split__layout-day--rest) {
+  border-color: rgba(0, 119, 128, 0.24);
+  background: rgba(242, 251, 250, 0.62);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-builder-page--frequency .training-frequency-option,
+  .plan-builder-page--frequency .training-schedule-split__card,
+  .training-schedule-split__select-affordance {
+    transition: none;
+  }
+}
+
+.plan-builder-page--frequency .plan-builder-title + p {
+  max-width: 78rem;
+}
+
+@media (min-width: 1280px) {
+  .plan-builder-page--frequency .plan-builder-title + p {
+    white-space: nowrap;
+  }
 }

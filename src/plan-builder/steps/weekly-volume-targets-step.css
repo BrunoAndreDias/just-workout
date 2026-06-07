@@ -23,8 +23,7 @@
 }
 
 .training-volume-section-copy,
-.volume-preset-option__copy,
-.training-volume-table-wrap {
+.volume-preset-option__copy {
   font-size: var(--jw-body-size);
   line-height: var(--jw-body-line-height);
 }
@@ -76,14 +75,11 @@
   display: grid;
   gap: 1.25rem;
   margin-top: 1.25rem;
+  max-width: 58rem;
 }
 
 .training-volume-target-section {
   min-width: 0;
-}
-
-.training-volume-table-wrap {
-  margin-top: 0.75rem;
 }
 
 .training-volume-actions {
@@ -107,7 +103,7 @@
   }
 
   .training-volume-targets-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.55fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
     margin-top: 0.85rem;
   }
@@ -122,34 +118,6 @@
     margin-top: 0.1rem;
     font-size: 0.66rem;
     line-height: 0.85rem;
-  }
-
-  .training-volume-table-wrap {
-    margin-top: 0.4rem;
-  }
-
-  .training-volume-table-wrap th,
-  .training-volume-table-wrap td {
-    padding: 0.38rem 0.5rem;
-    font-size: 0.66rem;
-    line-height: 0.82rem;
-  }
-
-  .training-volume-table-wrap thead th {
-    font-size: 0.58rem;
-    line-height: 0.75rem;
-  }
-
-  .training-volume-table-wrap .inline-flex {
-    padding: 0.2rem 0.45rem;
-    font-size: 0.58rem;
-    line-height: 0.72rem;
-  }
-
-  .training-volume-table-wrap button {
-    min-height: 1.65rem;
-    height: 1.65rem;
-    font-size: 0.66rem;
   }
 
   .training-volume-actions {
@@ -185,18 +153,6 @@
     gap: 0.55rem;
     margin-top: 0.5rem;
   }
-
-  .training-volume-table-wrap th,
-  .training-volume-table-wrap td {
-    padding: 0.28rem 0.42rem;
-    font-size: 0.6rem;
-    line-height: 0.75rem;
-  }
-
-  .training-volume-table-wrap thead th {
-    font-size: 0.54rem;
-    line-height: 0.68rem;
-  }
 }
 
 @media (max-width: 1023px), (min-width: 1800px) {
@@ -222,9 +178,8 @@
 
 /* Final shared polish: keep Volume in the same palette and action rail as every step. */
 .plan-builder-page--volume .volume-preset-option,
-.plan-builder-page--volume .training-volume-table-wrap {
+.plan-builder-page--volume .training-volume-target-section {
   border-color: var(--jw-step-border);
-  background-color: var(--jw-step-surface-soft);
   color: var(--jw-step-ink);
 }
 
@@ -251,6 +206,200 @@
   color: var(--jw-step-copy);
 }
 
+.weekly-volume-target-groups {
+  display: grid;
+  gap: 0;
+  margin-top: 1rem;
+}
+
+.weekly-volume-target-group {
+  min-width: 0;
+  border-top: 1px solid var(--jw-step-border);
+  padding: 0.82rem 0 0.9rem;
+}
+
+.weekly-volume-target-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.weekly-volume-target-group--optional {
+  padding-bottom: 0;
+}
+
+.weekly-volume-target-group h5 {
+  margin: 0;
+  color: #31505d;
+  font-family: var(--jw-font-heading);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.1rem;
+}
+
+.weekly-volume-target-group__header {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 40rem;
+}
+
+.weekly-volume-target-group__header p {
+  margin: 0;
+  color: var(--jw-step-copy);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.15rem;
+}
+
+.weekly-volume-target-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weekly-volume-target-list {
+  margin-top: 0.42rem;
+}
+
+.weekly-volume-target-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(7rem, auto) minmax(7.5rem, auto) minmax(
+      6.5rem,
+      auto
+    );
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+  border-top: 1px solid rgba(25, 43, 45, 0.1);
+  padding: 0.62rem 0;
+}
+
+.weekly-volume-target-row__muscle {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  color: var(--jw-step-ink);
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.15rem;
+}
+
+.weekly-volume-target-row__description {
+  color: #6f7774;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+}
+
+.weekly-volume-target-row__reps,
+.weekly-volume-target-row__sets {
+  color: #1f3439;
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.weekly-volume-target-row__sets {
+  color: #52636a;
+  font-weight: 600;
+}
+
+.weekly-volume-target-row--optional {
+  grid-template-columns:
+    minmax(10rem, 1fr) minmax(7rem, auto) minmax(7.5rem, auto) minmax(5.75rem, auto)
+    auto;
+}
+
+.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
+  .weekly-volume-target-row__muscle,
+.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
+  .weekly-volume-target-row__reps,
+.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
+  .weekly-volume-target-row__sets {
+  color: #69736f;
+}
+
+.weekly-volume-target-row--included {
+  background: linear-gradient(90deg, rgba(0, 119, 128, 0.06), rgba(0, 119, 128, 0));
+}
+
+.weekly-volume-target-row__action {
+  justify-self: end;
+  min-width: 6.35rem;
+  height: 2rem;
+  min-height: 2rem;
+  border-radius: 0.45rem;
+  font-size: 0.76rem;
+  font-weight: 750;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.weekly-volume-target-row__action--add {
+  border-color: rgba(0, 119, 128, 0.34);
+  background: #ffffff;
+  color: #00636a;
+}
+
+.weekly-volume-target-row__action--remove {
+  color: #52636a;
+}
+
+.weekly-volume-target-row__action:hover {
+  border-color: rgba(0, 119, 128, 0.32);
+  background: rgba(0, 119, 128, 0.08);
+  color: #005f66;
+}
+
+.weekly-volume-target-row__action:active {
+  transform: translateY(1px);
+}
+
+.weekly-volume-target-row__action:focus-visible {
+  outline-color: #007780;
+}
+
+.weekly-volume-targets-note {
+  max-width: 45rem;
+  margin: 0;
+  border-top: 1px solid var(--jw-step-border);
+  padding-top: 0.7rem;
+  color: #31505d;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2rem;
+}
+
+.plan-builder-page--volume .training-volume-target-section__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 45rem;
+}
+
+.plan-builder-page--volume .training-volume-target-section__header h4 {
+  color: #0f2329;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.35rem;
+}
+
+.plan-builder-page--volume .training-volume-target-section__header .training-volume-section-copy {
+  max-width: 39rem;
+  color: #31505d;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
 @media (min-width: 1024px) and (min-height: 700px) {
   .plan-builder-page.plan-builder-page--volume .plan-builder-workspace-card {
     padding-bottom: 6rem;
@@ -273,33 +422,32 @@
   }
 }
 
-/* Compact anti-card pass for Training Volume. */
+/* Product-ready Volume composition: preserve option cards, flatten target details. */
 .plan-builder-page--volume .training-volume-step,
 .plan-builder-page--volume .training-volume-panel {
   min-width: 0;
 }
 
 .plan-builder-page--volume .volume-preset-options {
-  gap: 0;
+  gap: 0.85rem;
 }
 
 .plan-builder-page--volume .volume-preset-option {
   min-height: auto;
-  border-width: 0 0 1px;
-  border-radius: 0;
-  background: transparent;
-  padding: 0.75rem 0;
-  box-shadow: none;
+  border-width: 1px;
+  border-radius: 0.5rem;
+  background: var(--jw-step-surface-soft);
+  padding: 0.9rem;
 }
 
-.plan-builder-page--volume .volume-preset-option:hover,
-.plan-builder-page--volume .volume-preset-option--selected {
-  background: transparent;
+.plan-builder-page--volume .volume-preset-option:hover {
+  background: var(--jw-step-surface);
 }
 
 .plan-builder-page--volume .volume-preset-option--selected {
   border-color: var(--jw-step-selected-border);
-  box-shadow: none;
+  background: var(--jw-step-selected-bg);
+  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.12);
 }
 
 .plan-builder-page--volume .volume-preset-option__title,
@@ -325,46 +473,138 @@
 }
 
 .plan-builder-page--volume .training-volume-targets-grid {
-  gap: 0.875rem;
-  margin-top: 0.875rem;
+  gap: 1.6rem;
+  margin-top: 1.15rem;
+  max-width: 58rem;
 }
 
 .plan-builder-page--volume .training-volume-target-section {
   border-top: 1px solid var(--jw-step-border);
-  padding-top: 0.75rem;
+  padding-top: 0.9rem;
 }
 
-.plan-builder-page--volume .training-volume-table-wrap {
-  margin-top: 0.5rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.plan-builder-page--volume .training-volume-table-wrap table {
-  font-size: 0.8125rem;
-}
-
-.plan-builder-page--volume .training-volume-table-wrap thead {
-  border-bottom: 1px solid var(--jw-step-border);
-  background: transparent;
-}
-
-.plan-builder-page--volume .training-volume-table-wrap th,
-.plan-builder-page--volume .training-volume-table-wrap td {
-  padding: 0.55rem 0.75rem 0.55rem 0;
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--volume .training-volume-table-wrap thead th {
+.plan-builder-page--volume .weekly-volume-target-row .inline-flex {
+  justify-self: start;
   font-size: 0.6875rem;
   line-height: 0.9rem;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
-.plan-builder-page--volume .training-volume-table-wrap .inline-flex {
-  font-size: 0.6875rem;
-  line-height: 0.9rem;
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page--volume .training-volume-targets-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 0.7rem;
+  }
+
+  .plan-builder-page--volume .volume-preset-option {
+    padding: 0.72rem;
+  }
+
+  .plan-builder-page--volume .volume-preset-option__copy {
+    margin-top: 0.32rem;
+    line-height: 1.08rem;
+  }
+
+  .plan-builder-page--volume .volume-preset-option .rep-range-targets {
+    padding-top: 0.34rem;
+  }
+
+  .plan-builder-page--volume .volume-preset-option .rep-range-target {
+    padding: 0.3rem 0;
+  }
+
+  .plan-builder-page--volume .training-volume-target-section {
+    padding-top: 0.65rem;
+  }
+
+  .weekly-volume-target-groups {
+    margin-top: 0.62rem;
+  }
+
+  .weekly-volume-target-row {
+    padding: 0.36rem 0;
+  }
+
+  .weekly-volume-target-group {
+    padding-top: 0.5rem;
+    padding-bottom: 0.52rem;
+  }
+
+  .weekly-volume-target-group__header {
+    gap: 0.12rem;
+  }
+
+  .plan-builder-page--volume .training-volume-target-section__header h4 {
+    font-size: 1rem;
+    line-height: 1.2rem;
+  }
+
+  .plan-builder-page--volume .training-volume-target-section__header .training-volume-section-copy {
+    margin-top: 0.24rem;
+    line-height: 1rem;
+  }
+
+  .weekly-volume-target-row__description {
+    font-size: 0.7rem;
+    line-height: 0.88rem;
+  }
+
+  .weekly-volume-target-group--optional .weekly-volume-target-group__header {
+    display: flex;
+    max-width: none;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.7rem;
+  }
+
+  .weekly-volume-target-row--optional {
+    padding: 0.12rem 0;
+  }
+
+  .weekly-volume-targets-note {
+    padding-top: 0.45rem;
+    font-size: 0.74rem;
+    line-height: 1rem;
+  }
+}
+
+@media (max-width: 980px) {
+  .weekly-volume-target-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .weekly-volume-target-row--optional {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .weekly-volume-target-row__reps,
+  .weekly-volume-target-row__sets {
+    grid-column: 1;
+  }
+
+  .plan-builder-page--volume .weekly-volume-target-row .inline-flex {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .weekly-volume-target-row__action {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
+  }
+}
+
+@media (max-width: 560px) {
+  .weekly-volume-target-row,
+  .weekly-volume-target-row--optional {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan-builder-page--volume .weekly-volume-target-row .inline-flex,
+  .weekly-volume-target-row__action {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: start;
+  }
 }

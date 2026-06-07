@@ -639,3 +639,154 @@
   font-size: 0.9375rem;
   line-height: 1.45rem;
 }
+
+/* Selection affordance pass: flat Rep range radios with selected-only details. */
+.plan-builder-page--rep-ranges .rep-range-step {
+  gap: 0.95rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-options {
+  gap: 0.7rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option {
+  min-height: 8.15rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 253, 250, 0.5);
+  padding: 0.86rem 0.9rem 0.78rem;
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option:hover {
+  border-color: rgba(0, 119, 128, 0.34);
+  background: rgba(255, 253, 250, 0.78);
+}
+
+.plan-builder-page--rep-ranges .rep-range-option:has(input:focus-visible) {
+  outline: 2px solid rgba(0, 99, 106, 0.86);
+  outline-offset: 2px;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option--selected {
+  border-color: var(--jw-step-selected-border);
+  background: rgba(242, 251, 250, 0.82);
+  color: var(--jw-step-selected-ink);
+  box-shadow: none;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option__header {
+  min-height: 1.5rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option__title-row {
+  padding-right: 1.9rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option__title {
+  color: var(--jw-step-ink);
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.14rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option--selected .rep-range-option__title {
+  color: var(--jw-step-selected-ink);
+  font-weight: 800;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option__selected-check {
+  width: 1.34rem;
+  height: 1.34rem;
+  border: 1px solid rgba(28, 25, 23, 0.18);
+  background: transparent;
+  color: transparent;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option--selected .rep-range-option__selected-check {
+  border-color: var(--jw-step-selected-strong);
+  background: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--rep-ranges .rep-range-option__copy {
+  max-width: none;
+  margin-top: 0.42rem;
+  color: var(--jw-step-copy);
+  font-size: 0.8rem;
+  line-height: 1.08rem;
+}
+
+.plan-builder-page--rep-ranges
+  .rep-range-option:not(.rep-range-option--selected)
+  .rep-range-option__copy {
+  color: var(--jw-step-muted);
+}
+
+.plan-builder-page--rep-ranges .rep-range-targets {
+  margin-top: 0.68rem;
+  border-top: 1px solid rgba(0, 119, 128, 0.16);
+  padding-top: 0.12rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-target {
+  gap: 0.75rem;
+  border-top-color: rgba(0, 119, 128, 0.13);
+  padding: 0.46rem 0;
+}
+
+.plan-builder-page--rep-ranges .rep-range-target:first-child {
+  border-top: 0;
+}
+
+.plan-builder-page--rep-ranges .rep-range-target__label {
+  color: var(--jw-step-selected-ink);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 0.98rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-target__value {
+  color: var(--jw-step-ink);
+  font-size: 0.8rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-details {
+  gap: 0.55rem;
+  border-top: 1px solid rgba(0, 119, 128, 0.16);
+  border-bottom: 0;
+  padding-top: 0.78rem;
+  padding-bottom: 0;
+}
+
+.plan-builder-page--rep-ranges .rep-range-effects-list {
+  gap: 0.38rem;
+}
+
+.plan-builder-page--rep-ranges .rep-range-effects-list li {
+  color: #162325;
+  font-size: 0.84rem;
+  line-height: 1.24rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-builder-page--rep-ranges .rep-range-option {
+    transition: none;
+  }
+}
+
+.plan-builder-page--rep-ranges .plan-builder-title + p {
+  max-width: 78rem;
+}
+
+@media (min-width: 1280px) {
+  .plan-builder-page--rep-ranges .plan-builder-title + p {
+    white-space: nowrap;
+  }
+}
