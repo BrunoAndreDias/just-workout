@@ -11,9 +11,9 @@ import {
 
 describe("exercise catalog", () => {
   it("keeps one rich exercise catalog without duplicate ids or names", () => {
-    expect(exerciseCatalogExercises).toHaveLength(72);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(72);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(72);
+    expect(exerciseCatalogExercises).toHaveLength(81);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(81);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(81);
   });
 
   it("derives the muscle-group browsing view from the rich catalog", () => {
@@ -36,13 +36,24 @@ describe("exercise catalog", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(72);
+    ).toBe(81);
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "chest")?.exercises,
     ).toContain("Flat Barbell or Dumbbell Bench Press");
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "triceps")?.exercises,
     ).toContain("Cable Press-Downs");
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "abs")?.exercises,
+    ).toContain("Cable Crunches");
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "abs")?.exercises,
+    ).toEqual(
+      expect.arrayContaining(["Ab Wheel Rollouts", "Dead Bugs", "Planks", "Reverse Crunches"]),
+    );
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "calves")?.exercises,
+    ).toContain("Standing Calf Raises");
   });
 
   it("can query exercises by movement pattern from the same catalog", () => {

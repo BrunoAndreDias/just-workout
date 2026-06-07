@@ -13,7 +13,6 @@ import { useState } from "react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
-import { BodyPartSelector } from "../components/BodyPartSelector";
 import {
   type AutomaticExerciseSelectionRule,
   commitPendingExerciseSelectionPreferences,
@@ -41,7 +40,9 @@ const automaticRuleIcons = {
 
 type ExerciseSelectionPreferencesStepProps = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  onContinueToReview: (exerciseSelectionPreferences: ExerciseSelectionPreferences) => Promise<void>;
+  onContinueToGenerate: (
+    exerciseSelectionPreferences: ExerciseSelectionPreferences,
+  ) => Promise<void>;
   onExerciseSelectionPreferencesChange: (
     exerciseSelectionPreferences: ExerciseSelectionPreferences,
   ) => Promise<void>;
@@ -68,7 +69,7 @@ type ExerciseSelectionPreferencesEditorProps = {
 
 export function ExerciseSelectionPreferencesStep({
   exerciseSelectionPreferences,
-  onContinueToReview,
+  onContinueToGenerate,
   onExerciseSelectionPreferencesChange,
   rulesAppliedAutomatically,
 }: ExerciseSelectionPreferencesStepProps) {
@@ -143,7 +144,7 @@ export function ExerciseSelectionPreferencesStep({
     );
   }
 
-  async function handleContinueToReviewClick() {
+  async function handleContinueToGenerateClick() {
     const commitResult = commitPendingExerciseSelectionPreferences({
       createId: () => crypto.randomUUID(),
       exerciseSelectionPreferences,
@@ -160,7 +161,7 @@ export function ExerciseSelectionPreferencesStep({
     });
     setValidationErrors({});
 
-    await onContinueToReview(commitResult.exerciseSelectionPreferences);
+    await onContinueToGenerate(commitResult.exerciseSelectionPreferences);
   }
 
   return (
@@ -182,8 +183,6 @@ export function ExerciseSelectionPreferencesStep({
               and coverage checks stay visible as guardrails while preferences remain the main task.
             </p>
           </div>
-
-          <BodyPartSelector />
 
           <div className="exercise-selection-preference-grid mt-6 grid gap-4 lg:grid-cols-2">
             <ExerciseSelectionPreferencesEditor
@@ -226,13 +225,13 @@ export function ExerciseSelectionPreferencesStep({
             </Button>
             <Button
               onClick={() => {
-                void handleContinueToReviewClick();
+                void handleContinueToGenerateClick();
               }}
               size="step"
               type="button"
               variant="builderPrimary"
             >
-              Continue to Review
+              Continue to Generate
               <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
             </Button>
           </StepActions>

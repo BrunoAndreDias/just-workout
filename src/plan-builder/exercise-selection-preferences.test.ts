@@ -139,13 +139,22 @@ describe("exercise selection preferences", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(72);
+    ).toBe(81);
     expect(exerciseCatalogMuscleGroups[0]?.exercises).toContain(
       "Flat Barbell or Dumbbell Bench Press",
     );
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "triceps")?.exercises,
     ).toContain("Cable Press-Downs");
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "abs")?.exercises,
+    ).toContain("Cable Crunches");
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "abs")?.exercises,
+    ).toEqual(expect.arrayContaining(["Ab Wheel Rollouts", "Dead Bugs", "Side Planks"]));
+    expect(
+      exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "calves")?.exercises,
+    ).toContain("Standing Calf Raises");
   });
 
   it("normalizes saved preference items and re-derives calves coverage from the current Weekly Rep Targets", () => {

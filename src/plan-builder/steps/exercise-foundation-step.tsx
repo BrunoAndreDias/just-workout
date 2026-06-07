@@ -44,7 +44,7 @@ import "./exercise-foundation-step.css";
 type ExerciseFoundationStepProps = {
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
-  onContinueToReview: () => Promise<void>;
+  onContinueToGenerate: () => Promise<void>;
   onMainCompoundSelectionChange: (
     selection: Pick<MainCompoundSelection, "exerciseId" | "movementPattern">,
   ) => Promise<void>;
@@ -278,7 +278,7 @@ function getAvailableAccessoryMuscleGroupFilters(
 export function ExerciseFoundationStep({
   mainCompoundSelections,
   mainCompoundRotationPools,
-  onContinueToReview,
+  onContinueToGenerate,
   onMainCompoundSelectionChange,
   onRotationPoolChange,
   split,
@@ -301,7 +301,7 @@ export function ExerciseFoundationStep({
     split,
     trainingFrequencyDaysPerWeek,
   });
-  const canContinueToReview = coverage.canConfirmExercises;
+  const canContinueToGenerate = coverage.canConfirmExercises;
   const confirmedSelectionByPattern = new Map(
     normalizedSelections.map((selection) => [selection.movementPattern, selection]),
   );
@@ -470,15 +470,15 @@ export function ExerciseFoundationStep({
               <span
                 className={cn(
                   "exercise-foundation-tabbar__locked",
-                  canContinueToReview ? "exercise-foundation-tabbar__locked--ready" : null,
+                  canContinueToGenerate ? "exercise-foundation-tabbar__locked--ready" : null,
                 )}
               >
-                {canContinueToReview ? (
+                {canContinueToGenerate ? (
                   <CircleCheck aria-hidden="true" size={15} strokeWidth={2.2} />
                 ) : (
                   <Lock aria-hidden="true" size={15} strokeWidth={2} />
                 )}
-                {canContinueToReview
+                {canContinueToGenerate
                   ? "Rotation pools are ready. Edit them as future Training Block swaps."
                   : "Complete main compounds to unlock rotation pools."}
               </span>
@@ -604,13 +604,13 @@ export function ExerciseFoundationStep({
               </ul>
             </section>
 
-            {!canContinueToReview ? <LockedRotationPoolSummary /> : null}
+            {!canContinueToGenerate ? <LockedRotationPoolSummary /> : null}
           </div>
 
           <ExerciseCoverageSummary
             coverage={coverage}
             hasConfirmedSelections={hasConfirmedSelections}
-            isRotationPoolUnlocked={canContinueToReview}
+            isRotationPoolUnlocked={canContinueToGenerate}
             suggestedFoundation={suggestedFoundation}
           />
         </div>
@@ -667,17 +667,17 @@ export function ExerciseFoundationStep({
               </Link>
             </Button>
             <Button
-              disabled={!canContinueToReview}
+              disabled={!canContinueToGenerate}
               onClick={() => {
-                void onContinueToReview();
+                void onContinueToGenerate();
               }}
               size="step"
               type="button"
               variant="builderPrimary"
             >
-              {canContinueToReview
-                ? "Continue to Review"
-                : getBlockedReviewActionLabel(nextRequiredPattern)}
+              {canContinueToGenerate
+                ? "Continue to Generate"
+                : getBlockedGenerateActionLabel(nextRequiredPattern)}
               <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
             </Button>
           </StepActions>
@@ -1171,7 +1171,7 @@ function IsolationExercisesDrawer({
 
         <div className="main-compound-drawer__footer">
           <p>
-            Isolation exercises are non-blocking. Continue to Review only depends on required main
+            Isolation exercises are non-blocking. Continue to Generate only depends on required main
             compound coverage.
           </p>
         </div>
@@ -2006,7 +2006,7 @@ function getNextMissingRequiredPattern(
   );
 }
 
-function getBlockedReviewActionLabel(
+function getBlockedGenerateActionLabel(
   movementPattern: CompoundCapableMovementPatternId | null,
 ): string {
   if (movementPattern === null) {

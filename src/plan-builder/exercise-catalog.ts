@@ -20,7 +20,8 @@ export type MovementPatternId =
   | "elbow_extension"
   | "quad_dominant"
   | "hip_hamstring_dominant"
-  | "calves_accessories";
+  | "calves_accessories"
+  | "core";
 
 export type ExerciseRoleId = "compound" | "isolation";
 
@@ -567,6 +568,15 @@ export const exerciseCatalogExercises = [
     secondaryMuscleGroups: [],
   },
   {
+    catalogMuscleGroup: "calves",
+    id: "standing-calf-raises",
+    movementPattern: "calves_accessories",
+    name: "Standing Calf Raises",
+    primaryMuscleGroups: ["calves"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
     catalogMuscleGroup: "biceps",
     id: "standing-barbell-or-dumbbell-curls",
     movementPattern: "elbow_flexion",
@@ -718,6 +728,78 @@ export const exerciseCatalogExercises = [
     primaryMuscleGroups: ["triceps"],
     role: "compound",
     secondaryMuscleGroups: ["chest", "shoulders"],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "cable-crunches",
+    movementPattern: "core",
+    name: "Cable Crunches",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "hanging-leg-raises",
+    movementPattern: "core",
+    name: "Hanging Leg Raises",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "planks",
+    movementPattern: "core",
+    name: "Planks",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "ab-wheel-rollouts",
+    movementPattern: "core",
+    name: "Ab Wheel Rollouts",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: ["shoulders"],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "dead-bugs",
+    movementPattern: "core",
+    name: "Dead Bugs",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "reverse-crunches",
+    movementPattern: "core",
+    name: "Reverse Crunches",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "side-planks",
+    movementPattern: "core",
+    name: "Side Planks",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
+  },
+  {
+    catalogMuscleGroup: "abs",
+    id: "hollow-holds",
+    movementPattern: "core",
+    name: "Hollow Holds",
+    primaryMuscleGroups: ["abs"],
+    role: "isolation",
+    secondaryMuscleGroups: [],
   },
 ] as const satisfies ReadonlyArray<ExerciseCatalogExercise>;
 

@@ -21,12 +21,28 @@ A defined span of time within a **Training Plan** before selected exercises are 
 _Avoid_: Mesocycle, phase, cycle
 
 **Workout Template**:
-A reusable workout structure inside a **Training Plan** that represents one session the user can perform. In the first generated **Training Plan**, **Workout Templates** can exist as split-derived skeletons before full exercise prescriptions are available.
+A reusable workout structure inside a **Training Plan** that represents one session the user can perform. In the first generated **Training Plan**, **Workout Templates** are split-derived structures with concrete exercise slots, while exact sets, reps, progression, and future user configurability can be added later.
 _Avoid_: Workout day, generated routine
 
 **Superset Group**:
-The default exercise grouping inside a generated **Workout Template**, where related exercise slots are performed together before moving to the next group. A **Superset Group** can combine movement slots such as upper pull, upper push, shoulders, abs, or isolation work, and its exact structure can become configurable later.
+The default exercise grouping inside a generated **Workout Template**, where related concrete exercise slots are performed together before moving to the next group. A **Superset Group** can combine main compound work, secondary movement work, abs, or isolation work, and its exact structure can become configurable later.
 _Avoid_: Superset approach, circuit
+
+**Main Superset Group**:
+A **Superset Group** that contains the primary compound work for a **Workout Template**. By default, main upper supersets pair pull and push movement patterns with abs, and main lower supersets pair quad-dominant and hip/hamstring-dominant movement patterns with abs.
+_Avoid_: Compound circuit, main block
+
+**Isolation Finisher**:
+The final **Superset Group** in a generated **Workout Template** for smaller or more targeted exercises after the main compound work. The default lower **Isolation Finisher** contains lower isolation exercises, does not add a third abs slot, and must not repeat exercises already used as main or secondary work in the same **Workout Template**.
+_Avoid_: Accessory block, burnout
+
+**Default Abs Exposure**:
+The current generated-plan default of exactly two abs exercise slots per **Workout Template**. Abs appear in the main compound **Superset Groups** by default, not as an unbounded filler exercise in every group, and each abs slot should use a different abs exercise from the other abs slot in that **Workout Template**.
+_Avoid_: Core placeholder, optional abs slot
+
+**Lower Superset Template**:
+The default lower-body **Workout Template** structure with two **Main Superset Groups** plus one **Isolation Finisher**. The first lower main superset emphasizes the quad-dominant main compound and pairs it with a hip/hamstring secondary exercise plus abs; the second emphasizes the hip/hamstring main compound and pairs it with a quad secondary exercise plus abs.
+_Avoid_: Single lower superset, lower circuit
 
 **Plan Blueprint**:
 The in-progress set of choices a user makes before generating a **Training Plan**. A new **Plan Blueprint** starts with a 3 days/week **Training Frequency**, and an unfinished **Plan Blueprint** can be resumed before generation.
@@ -121,11 +137,11 @@ An exercise added by the user because it is not already available in Just Workou
 _Avoid_: Custom exercise, free-text exercise
 
 **Primary Muscle Group**:
-The main muscle group a **User-Defined Exercise** is intended to train directly. When adding a **User-Defined Exercise** from the body map, the first selected muscle group is the **Primary Muscle Group**.
+The main muscle group a **User-Defined Exercise** is intended to train directly. A **User-Defined Exercise** must have exactly one **Primary Muscle Group** so Just Workout can evaluate coverage and exercise fit.
 _Avoid_: Main body part, target area
 
 **Secondary Muscle Group**:
-A muscle group that receives meaningful indirect work from a **User-Defined Exercise**. When adding a **User-Defined Exercise** from the body map, muscle groups selected after the **Primary Muscle Group** are **Secondary Muscle Groups**.
+A muscle group that receives meaningful indirect work from a **User-Defined Exercise**. **Secondary Muscle Groups** are optional and describe meaningful supporting work without replacing the **Primary Muscle Group**.
 _Avoid_: Extra target, supporting area
 
 **Movement Pattern**:
