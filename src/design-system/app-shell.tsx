@@ -1,14 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  BookOpen,
-  CalendarCheck,
-  Dumbbell,
-  History,
-  Home,
-  type LucideIcon,
-  Settings,
-  TrendingUp,
-} from "lucide-react";
+import { CalendarCheck, Dumbbell } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -20,51 +11,54 @@ type AppShellProps = {
 
 type AppShellNavigationItem = {
   href: string;
-  icon: LucideIcon;
+  icon: ReactNode;
   label: string;
-  largeScreenOnly?: boolean;
 };
 
 const appShellNavigationItems = [
-  { href: "/", icon: Home, label: "Home", largeScreenOnly: true },
-  { href: "/workout", icon: Dumbbell, label: "Workouts", largeScreenOnly: true },
-  { href: "/exercise-library", icon: BookOpen, label: "Exercise Library", largeScreenOnly: true },
-  { href: "/plan-builder", icon: CalendarCheck, label: "Workout Plan Builder" },
-  { href: "/progress", icon: TrendingUp, label: "Progress", largeScreenOnly: true },
-  { href: "/history", icon: History, label: "History", largeScreenOnly: true },
-  { href: "/settings", icon: Settings, label: "Settings", largeScreenOnly: true },
+  {
+    href: "/plan-builder",
+    icon: (
+      <CalendarCheck aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
+    ),
+    label: "Plan Builder",
+  },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 
 export function AppShell({ children, currentPathname }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#162325]">
-      <div className="app-shell-grid grid min-h-screen w-full lg:grid-cols-[var(--jw-sidebar-width)_minmax(0,1fr)]">
-        <aside className="border-stone-950/8 bg-[#fbf8f3] px-[var(--jw-sidebar-padding-x)] py-[var(--jw-sidebar-padding-y)] lg:min-h-screen lg:border-r">
-          <Link className="flex min-w-0 items-center gap-3" to="/plan-builder">
-            <span className="app-shell-brand-mark flex h-[var(--jw-icon-circle-md)] w-[var(--jw-icon-circle-md)] shrink-0 items-center justify-center rounded-md bg-[#00636a] text-white">
-              <Dumbbell
-                aria-hidden="true"
-                className="app-shell-brand-icon h-[var(--jw-icon-md)] w-[var(--jw-icon-md)]"
-                strokeWidth={2.4}
-              />
-            </span>
-            <span className="app-shell-brand-name jw-heading-font truncate text-[1.125rem] font-bold leading-none tracking-[var(--jw-heading-tracking)] text-[#075d63]">
-              Just Workout
-            </span>
-          </Link>
+    <div className="app-shell min-h-screen text-[#162325]">
+      <div className="app-shell-frame mx-auto min-h-screen w-full max-w-[1200px] px-2 sm:px-2">
+        <div className="app-shell-surface min-h-screen border-x border-stone-950/12">
+          <header className="app-shell-topbar sticky top-0 z-40 flex items-stretch justify-between border-b border-stone-950/10 backdrop-blur-md">
+            <div className="flex min-w-0 items-stretch">
+              <Link
+                aria-label="Just Workout"
+                className="app-shell-brand flex min-w-0 items-center gap-2 px-4 pr-3 transition-colors hover:bg-stone-950/5 sm:px-5"
+                to="/plan-builder"
+              >
+                <span className="app-shell-brand-mark flex shrink-0 items-center justify-center bg-[#00636a] text-white">
+                  <Dumbbell aria-hidden="true" className="app-shell-brand-icon" strokeWidth={2.4} />
+                </span>
+                <span className="app-shell-brand-name jw-heading-font truncate font-bold leading-none tracking-[var(--jw-heading-tracking)] text-[#075d63]">
+                  Just Workout
+                </span>
+              </Link>
 
-          <nav className="mt-6 grid gap-1 lg:mt-12" aria-label="Primary">
-            {appShellNavigationItems.map((item) => (
-              <AppShellNavigationLink
-                currentPathname={currentPathname}
-                item={item}
-                key={item.href}
-              />
-            ))}
-          </nav>
-        </aside>
+              <nav className="app-shell-navigation flex items-stretch" aria-label="Primary">
+                {appShellNavigationItems.map((item) => (
+                  <AppShellNavigationLink
+                    currentPathname={currentPathname}
+                    item={item}
+                    key={item.href}
+                  />
+                ))}
+              </nav>
+            </div>
+          </header>
 
-        <main className="min-w-0 px-4 py-5 sm:px-6 lg:px-0 lg:py-0 lg:pr-4">{children}</main>
+          <main className="app-shell-main min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   );
@@ -77,30 +71,25 @@ function AppShellNavigationLink({
   currentPathname: string;
   item: AppShellNavigationItem;
 }) {
-  const isActive =
-    item.href === "/plan-builder"
-      ? currentPathname.startsWith(item.href)
-      : currentPathname === item.href;
-  const Icon = item.icon;
+  const isActive = currentPathname.startsWith(item.href);
 
   return (
     <Link
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "app-shell-navigation-link group flex min-h-[var(--jw-sidebar-nav-height)] items-center gap-3 rounded-lg px-3 text-[var(--jw-body-size)] font-semibold leading-none text-stone-950 transition-colors",
-        item.largeScreenOnly ? "app-shell-navigation-link--large-only" : null,
-        isActive
-          ? "border-l-4 border-[#007780] bg-stone-950/6 pl-2 text-[#075d63] xl:pl-3"
-          : "hover:bg-stone-950/5",
+        "app-shell-navigation-link group flex items-center justify-center px-2 text-sm font-medium leading-none text-stone-950 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#007780]/55",
       )}
       to={item.href}
     >
-      <Icon
-        aria-hidden="true"
-        className="h-[var(--jw-icon-md)] w-[var(--jw-icon-md)] shrink-0"
-        strokeWidth={1.8}
-      />
-      <span className="min-w-0 truncate">{item.label}</span>
+      <span
+        className={cn(
+          "app-shell-navigation-pill inline-flex items-center rounded-full px-3 py-1.5 transition-colors duration-200",
+          isActive ? "bg-stone-950/8 text-[#075d63]" : "group-hover:bg-stone-950/6",
+        )}
+      >
+        {item.icon}
+        <span className="min-w-0 truncate">{item.label}</span>
+      </span>
     </Link>
   );
 }

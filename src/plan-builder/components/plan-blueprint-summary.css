@@ -1554,6 +1554,10 @@ button.plan-blueprint-progress-summary__step-control:focus-visible {
   .plan-blueprint-progress-summary {
     display: none;
   }
+
+  .plan-builder-page--exercises .plan-blueprint-progress-summary {
+    display: grid;
+  }
 }
 
 @media (min-width: 2200px) {

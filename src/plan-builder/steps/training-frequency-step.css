@@ -2518,6 +2518,10 @@ button.training-frequency-action-button {
   padding: 0.75rem 0 0;
 }
 
+.training-frequency-actions > * {
+  width: 100%;
+}
+
 .training-frequency-action-button--back {
   color: #3f3a35;
 }
@@ -2525,6 +2529,12 @@ button.training-frequency-action-button {
 @media (max-width: 520px) {
   .training-schedule-split__alternative {
     display: block;
+  }
+}
+
+@media (min-width: 640px) {
+  .training-frequency-actions > * {
+    width: auto;
   }
 }
 
@@ -2841,7 +2851,7 @@ button.training-frequency-action-button {
 
 @media (min-width: 1024px) and (max-width: 1279px) {
   .plan-builder-page--frequency .training-frequency-panel {
-    padding-bottom: 5rem;
+    padding-bottom: 6rem;
   }
 
   .plan-builder-page--frequency .training-frequency-actions {
@@ -2858,7 +2868,7 @@ button.training-frequency-action-button {
 
 @media (min-width: 1280px) and (max-width: 1799px) and (min-height: 640px) {
   .plan-builder-page--frequency .training-frequency-panel {
-    padding-bottom: 5rem;
+    padding-bottom: 6rem;
   }
 
   .plan-builder-page--frequency .training-frequency-actions {
@@ -3327,4 +3337,241 @@ button.training-frequency-action-button {
   .plan-builder-page--frequency .training-schedule-split__layout li {
     min-height: 5.65rem;
   }
+}
+
+/* Compact anti-card pass for the Training Frequency step. */
+.plan-builder-page--frequency .training-frequency-panel {
+  gap: 0;
+}
+
+.plan-builder-page--frequency .training-frequency-title,
+.plan-builder-page--frequency .training-schedule-split__section-title,
+.plan-builder-page--frequency .training-schedule-split__layout > h3 {
+  font-size: 1rem;
+  line-height: 1.25rem;
+}
+
+.plan-builder-page--frequency .training-frequency-options {
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option {
+  min-height: 4.75rem;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.55rem 0.25rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover,
+.plan-builder-page--frequency .training-frequency-option--selected {
+  background: transparent;
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected {
+  border-color: var(--jw-step-selected-border);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__check {
+  top: 0.35rem;
+  right: 0.25rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon,
+.plan-builder-page--frequency .training-frequency-option__icon-frame {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__day {
+  top: 0.58rem;
+  font-size: 0.68rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__label {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__helper {
+  min-height: 0;
+  font-size: 0.75rem;
+  line-height: 0.95rem;
+}
+
+.plan-builder-page--frequency .training-frequency-recommendation,
+.plan-builder-page--frequency .training-frequency-note-row {
+  border-width: 1px 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.5rem 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split {
+  margin-top: 0.875rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__cards {
+  gap: 0;
+  margin-top: 0.5rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card {
+  min-height: auto;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.75rem 0;
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:hover,
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  background: transparent;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: var(--jw-step-selected-border);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split h3 {
+  font-size: 0.875rem;
+  line-height: 1.1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading p,
+.plan-builder-page--frequency .training-schedule-split__benefits li,
+.plan-builder-page--frequency .training-schedule-split__layout span {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout {
+  margin-top: 0.875rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout ol {
+  gap: 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  min-height: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.55rem 0;
+}
+
+/* Final shared polish: align Frequency with the same action rail and palette as later steps. */
+.plan-builder-page--frequency .training-frequency-option,
+.plan-builder-page--frequency .training-schedule-split__card,
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  border-color: var(--jw-step-border);
+  background-color: var(--jw-step-surface-soft);
+  color: var(--jw-step-ink);
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover,
+.plan-builder-page--frequency .training-schedule-split__card:hover {
+  border-color: rgba(0, 119, 128, 0.3);
+  background-color: var(--jw-step-surface);
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected,
+.plan-builder-page--frequency .training-frequency-option:has(input:checked),
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: var(--jw-step-selected-border);
+  background-color: var(--jw-step-selected-bg);
+  color: var(--jw-step-selected-ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.12);
+}
+
+.plan-builder-page--frequency .training-frequency-option__check,
+.plan-builder-page--frequency .training-schedule-split__selected-check {
+  border-color: var(--jw-step-selected-strong);
+  background-color: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--frequency .training-schedule-split__badge,
+.plan-builder-page--frequency .training-schedule-split__badge--selected {
+  background-color: rgba(0, 119, 128, 0.09);
+  color: var(--jw-step-selected-ink);
+}
+
+.plan-builder-page--frequency .training-frequency-option__helper,
+.plan-builder-page--frequency .training-schedule-split__heading p {
+  color: var(--jw-step-copy);
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest,
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest svg,
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest span {
+  color: var(--jw-step-rest);
+}
+
+.plan-builder-page--frequency .training-frequency-note-row {
+  border-color: var(--jw-step-warning-border);
+  background-color: var(--jw-step-warning-bg);
+  color: var(--jw-step-warning-ink);
+}
+
+@media (min-width: 1024px) and (min-height: 700px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 6rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    z-index: 40;
+    width: min(
+      calc(100vw - (2 * var(--app-shell-frame-padding-x)) - 2px),
+      calc(var(--app-shell-frame-max-width) - (2 * var(--app-shell-frame-padding-x)) - 2px)
+    );
+    margin-top: 0;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(251, 248, 243, 0), #fbf8f3 38%);
+    padding: 0.875rem 1.75rem 1rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 699px) {
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: static;
+    right: auto;
+    left: auto;
+    width: auto;
+    transform: none;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Last density override: selected rows use borders and checks, not card fills. */
+.plan-builder-page--frequency .training-frequency-option,
+.plan-builder-page--frequency .training-frequency-option:hover,
+.plan-builder-page--frequency .training-frequency-option--selected,
+.plan-builder-page--frequency .training-frequency-option:has(input:checked),
+.plan-builder-page--frequency .training-schedule-split__card,
+.plan-builder-page--frequency .training-schedule-split__card:hover,
+.plan-builder-page--frequency .training-schedule-split__card--selected,
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  background: transparent;
+  box-shadow: none;
 }

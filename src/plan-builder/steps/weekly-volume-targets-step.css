@@ -219,3 +219,152 @@
     width: auto;
   }
 }
+
+/* Final shared polish: keep Volume in the same palette and action rail as every step. */
+.plan-builder-page--volume .volume-preset-option,
+.plan-builder-page--volume .training-volume-table-wrap {
+  border-color: var(--jw-step-border);
+  background-color: var(--jw-step-surface-soft);
+  color: var(--jw-step-ink);
+}
+
+.plan-builder-page--volume .volume-preset-option:hover {
+  border-color: rgba(0, 119, 128, 0.3);
+  background-color: var(--jw-step-surface);
+}
+
+.plan-builder-page--volume .volume-preset-option--selected {
+  border-color: var(--jw-step-selected-border);
+  background-color: var(--jw-step-selected-bg);
+  color: var(--jw-step-selected-ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.12);
+}
+
+.plan-builder-page--volume .rep-range-option__selected-check {
+  border-color: var(--jw-step-selected-strong);
+  background-color: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--volume .volume-preset-option__copy,
+.plan-builder-page--volume .training-volume-section-copy {
+  color: var(--jw-step-copy);
+}
+
+@media (min-width: 1024px) and (min-height: 700px) {
+  .plan-builder-page.plan-builder-page--volume .plan-builder-workspace-card {
+    padding-bottom: 6rem;
+  }
+
+  .plan-builder-page.plan-builder-page--volume .step-actions.training-volume-actions {
+    position: fixed;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    z-index: 40;
+    width: min(
+      calc(100vw - (2 * var(--app-shell-frame-padding-x)) - 2px),
+      calc(var(--app-shell-frame-max-width) - (2 * var(--app-shell-frame-padding-x)) - 2px)
+    );
+    margin-top: 0;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(251, 248, 243, 0), #fbf8f3 38%);
+    padding: 0.875rem 1.75rem 1rem;
+  }
+}
+
+/* Compact anti-card pass for Training Volume. */
+.plan-builder-page--volume .training-volume-step,
+.plan-builder-page--volume .training-volume-panel {
+  min-width: 0;
+}
+
+.plan-builder-page--volume .volume-preset-options {
+  gap: 0;
+}
+
+.plan-builder-page--volume .volume-preset-option {
+  min-height: auto;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.75rem 0;
+  box-shadow: none;
+}
+
+.plan-builder-page--volume .volume-preset-option:hover,
+.plan-builder-page--volume .volume-preset-option--selected {
+  background: transparent;
+}
+
+.plan-builder-page--volume .volume-preset-option--selected {
+  border-color: var(--jw-step-selected-border);
+  box-shadow: none;
+}
+
+.plan-builder-page--volume .volume-preset-option__title,
+.plan-builder-page--volume .training-volume-section-title,
+.plan-builder-page--volume .training-volume-panel h4 {
+  font-size: 0.9375rem;
+  line-height: 1.15rem;
+}
+
+.plan-builder-page--volume .volume-preset-option__copy,
+.plan-builder-page--volume .training-volume-section-copy {
+  margin-top: 0.45rem;
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
+.plan-builder-page--volume .volume-preset-option .rep-range-targets {
+  padding-top: 0.5rem;
+}
+
+.plan-builder-page--volume .volume-preset-option .rep-range-target {
+  padding: 0.45rem 0;
+}
+
+.plan-builder-page--volume .training-volume-targets-grid {
+  gap: 0.875rem;
+  margin-top: 0.875rem;
+}
+
+.plan-builder-page--volume .training-volume-target-section {
+  border-top: 1px solid var(--jw-step-border);
+  padding-top: 0.75rem;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap {
+  margin-top: 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap table {
+  font-size: 0.8125rem;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap thead {
+  border-bottom: 1px solid var(--jw-step-border);
+  background: transparent;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap th,
+.plan-builder-page--volume .training-volume-table-wrap td {
+  padding: 0.55rem 0.75rem 0.55rem 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap thead th {
+  font-size: 0.6875rem;
+  line-height: 0.9rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan-builder-page--volume .training-volume-table-wrap .inline-flex {
+  font-size: 0.6875rem;
+  line-height: 0.9rem;
+}

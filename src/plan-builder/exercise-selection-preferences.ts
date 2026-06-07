@@ -3,7 +3,6 @@ import type { TrainingSplitId } from "./training-split";
 import type { WeeklyRepTarget } from "./training-volume";
 
 export type {
-  ExerciseCatalogMuscleGroup,
   ExerciseCatalogMuscleGroupId,
   MovementPatternId,
 } from "./exercise-catalog";
@@ -60,7 +59,7 @@ export type AutomaticExerciseSelectionRule = {
   id: AutomaticExerciseSelectionRuleId;
   label: string;
 };
-export type ExerciseSelectionStrategy = {
+type ExerciseSelectionStrategy = {
   description: string;
   id: ExerciseSelectionStrategyId;
   isRecommended: boolean;
@@ -77,11 +76,6 @@ export type MovementPatternCoverageGroup = {
   patterns: ReadonlyArray<MovementPatternCoveragePattern>;
   sessionBias: string;
   title: string;
-};
-type CreateExerciseSelectionPreferenceItemOptions = {
-  id: string;
-  matchedExerciseId?: string;
-  rawText: string;
 };
 type MovementPatternCoverageDefinition = {
   id: MovementPatternId;
@@ -160,13 +154,13 @@ const movementPatternSessionBiasBySplit = {
       "Covered across the split's upper and full-body sessions so upper-body work stays balanced.",
   },
 } as const satisfies Record<TrainingSplitId, Record<MovementPatternCoverageGroupId, string>>;
-export const defaultExerciseSelectionStrategyId = "balanced" satisfies ExerciseSelectionStrategyId;
-export const defaultEquipmentPresetId = "full_gym" satisfies EquipmentPresetId;
+const defaultExerciseSelectionStrategyId = "balanced" satisfies ExerciseSelectionStrategyId;
+const defaultEquipmentPresetId = "full_gym" satisfies EquipmentPresetId;
 export const emptyExerciseSelectionPendingInputs = {
   avoidedExercise: "",
   preferredExercise: "",
 } as const satisfies ExerciseSelectionPendingInputs;
-export const exerciseSelectionStrategies = [
+const exerciseSelectionStrategies = [
   {
     description:
       "A strong v1 default that prioritizes productive compounds, keeps movement coverage balanced, and uses isolation work when Weekly Rep Targets need it.",
@@ -176,7 +170,7 @@ export const exerciseSelectionStrategies = [
   },
 ] as const satisfies ReadonlyArray<ExerciseSelectionStrategy>;
 
-export const equipmentPresets = [
+const equipmentPresets = [
   {
     id: defaultEquipmentPresetId,
     includedEquipment: [
@@ -200,31 +194,8 @@ export function createDefaultExerciseSelectionPreferences(): ExerciseSelectionPr
   };
 }
 
-export function normalizeExerciseSelectionPreferenceText(value: string): string {
+function normalizeExerciseSelectionPreferenceText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
-}
-
-export function createExerciseSelectionPreferenceItem({
-  id,
-  matchedExerciseId,
-  rawText,
-}: CreateExerciseSelectionPreferenceItemOptions): ExerciseSelectionPreferenceItem {
-  const normalizedRawText = normalizeExerciseSelectionPreferenceText(rawText);
-
-  if (normalizedRawText.length === 0) {
-    throw new Error("Exercise Selection Preference text cannot be empty.");
-  }
-
-  const preferenceItem: ExerciseSelectionPreferenceItem = {
-    id,
-    rawText: normalizedRawText,
-  };
-
-  if (matchedExerciseId) {
-    preferenceItem.matchedExerciseId = matchedExerciseId;
-  }
-
-  return preferenceItem;
 }
 
 export function normalizeExerciseSelectionPreferences(
@@ -244,17 +215,15 @@ export function normalizeExerciseSelectionPreferences(
   };
 }
 
-export function isExerciseSelectionStrategyId(
-  value: unknown,
-): value is ExerciseSelectionStrategyId {
+function isExerciseSelectionStrategyId(value: unknown): value is ExerciseSelectionStrategyId {
   return exerciseSelectionStrategies.some((strategy) => strategy.id === value);
 }
 
-export function isEquipmentPresetId(value: unknown): value is EquipmentPresetId {
+function isEquipmentPresetId(value: unknown): value is EquipmentPresetId {
   return equipmentPresets.some((preset) => preset.id === value);
 }
 
-export function getExerciseSelectionStrategy(
+function getExerciseSelectionStrategy(
   strategyId: ExerciseSelectionStrategyId,
 ): ExerciseSelectionStrategy {
   const strategy = exerciseSelectionStrategies.find(({ id }) => id === strategyId);

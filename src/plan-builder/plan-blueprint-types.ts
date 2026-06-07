@@ -1,4 +1,5 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
+import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import type {
   OptionalVolumeMuscleGroupId,
@@ -59,6 +60,7 @@ export type PlanBlueprint = {
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
+  mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
 };
@@ -138,6 +140,20 @@ export type UpdateExerciseSelectionPreferencesOptions = {
   timestamp: string;
 };
 
+export type SelectMainCompoundOptions = {
+  blueprint: PlanBlueprint;
+  exerciseId: string;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
+export type UpdateMainCompoundRotationPoolOptions = {
+  blueprint: PlanBlueprint;
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
 export type ConfirmTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
@@ -172,6 +188,7 @@ export type StoredPlanBlueprint = Omit<
   | "confirmedBuilderSteps"
   | "exerciseSelectionPreferences"
   | "mainCompoundSelections"
+  | "mainCompoundRotationPools"
   | "volumePreset"
   | "volumePresetSource"
   | "weeklyRepTargets"
@@ -179,6 +196,7 @@ export type StoredPlanBlueprint = Omit<
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
   exerciseSelectionPreferences?: unknown;
   mainCompoundSelections?: unknown;
+  mainCompoundRotationPools?: unknown;
   volumePreset?: unknown;
   volumePresetSource?: unknown;
   weeklyRepTargets?: unknown;

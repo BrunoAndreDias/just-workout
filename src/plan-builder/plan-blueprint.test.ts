@@ -24,6 +24,7 @@ import {
   summarizePlanBlueprint,
   trainingFrequencyOptions,
   updateExerciseSelectionPreferences,
+  updateMainCompoundRotationPool,
 } from "./plan-blueprint";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
@@ -89,6 +90,7 @@ describe("plan blueprint", () => {
       volumePresetSource: null,
       weeklyRepTargets: null,
       mainCompoundSelections: [],
+      mainCompoundRotationPools: [],
       exerciseSelectionPreferences: {
         avoidedExercises: [],
         equipmentPreset: "full_gym",
@@ -537,6 +539,63 @@ describe("plan blueprint", () => {
         preferredExercises: [{ id: "preferred-1", rawText: "Incline dumbbell press" }],
       },
     });
+  });
+
+  it("updates Main Compound Rotation Pools without allowing selected main compound exercises", () => {
+    const blueprint = createConfirmedPlanBlueprint({
+      confirmedBuilderSteps: { exercises: true },
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
+
+    const updatedBlueprint = updateMainCompoundRotationPool({
+      blueprint,
+      exerciseIds: [
+        "pull-ups",
+        "chin-ups",
+        "chin-ups",
+        "flat-barbell-or-dumbbell-bench-press",
+        "lat-pull-downs",
+      ],
+      movementPattern: "vertical_pull",
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(updatedBlueprint.mainCompoundRotationPools).toEqual([
+      {
+        exerciseIds: ["chin-ups", "lat-pull-downs"],
+        movementPattern: "vertical_pull",
+        updatedAt: firstUpdateTimestamp,
+      },
+    ]);
+    expect(updatedBlueprint.confirmedBuilderSteps.exercises).toBe(false);
+  });
+
+  it("normalizes Main Compound Rotation Pools against changed main compound selections", () => {
+    const blueprint = normalizePlanBlueprint({
+      ...createConfirmedPlanBlueprint({
+        mainCompoundSelections: completeMainCompoundSelections,
+      }),
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: [
+            "chin-ups",
+            "pull-ups",
+            "flat-barbell-or-dumbbell-bench-press",
+            "barbell-or-dumbbell-squats",
+          ],
+          movementPattern: "vertical_pull",
+          updatedAt: firstUpdateTimestamp,
+        },
+      ],
+    });
+
+    expect(blueprint.mainCompoundRotationPools).toEqual([
+      {
+        exerciseIds: ["chin-ups"],
+        movementPattern: "vertical_pull",
+        updatedAt: firstUpdateTimestamp,
+      },
+    ]);
   });
 
   it("summarizes Exercises as the next step once Volume is confirmed", () => {

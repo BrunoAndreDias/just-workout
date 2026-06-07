@@ -2,13 +2,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { PageLead } from "../design-system/typography";
 import {
+  useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
   useConfirmTrainingFrequencyMutation,
   useConfirmTrainingSplitMutation,
   useConfirmTrainingVolumeMutation,
   useInitializeTrainingVolumeMutation,
   usePlanBuilderBlueprint,
-  useUpdateExerciseSelectionPreferencesMutation,
+  useUpdateMainCompoundRotationPoolMutation,
+  useUpdateMainCompoundSelectionMutation,
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
@@ -16,10 +18,6 @@ import {
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
 import { PlanBuilderPage } from "./components/plan-builder-page";
-import {
-  createDefaultExerciseSelectionPreferences,
-  type ExerciseSelectionPreferences,
-} from "./exercise-selection-preferences";
 import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
@@ -266,24 +264,23 @@ export function PlanBuilderVolumeRoute() {
 }
 
 export function PlanBuilderExercisesRoute() {
-  const { mutateAsync: updateSelectedExerciseSelectionPreferences } =
-    useUpdateExerciseSelectionPreferencesMutation();
+  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
+    useConfirmExerciseSelectionPreferencesMutation();
+  const { mutateAsync: updateMainCompoundRotationPool } =
+    useUpdateMainCompoundRotationPoolMutation();
+  const { mutateAsync: updateMainCompoundSelection } = useUpdateMainCompoundSelectionMutation();
   const { blueprint, summary } = usePlanBuilderBlueprint();
+  const navigate = useNavigate();
   const isExerciseSelectionStepReady =
     blueprint !== undefined &&
     hasCompatibleSelectedTrainingSplit(blueprint) &&
     isTrainingVolumeConfiguration(blueprint);
-  const exerciseSelectionPreferences = isExerciseSelectionStepReady
-    ? blueprint.exerciseSelectionPreferences
-    : createDefaultExerciseSelectionPreferences();
 
-  async function handleExerciseSelectionPreferencesChange(
-    nextExerciseSelectionPreferences: ExerciseSelectionPreferences,
-  ) {
-    await updateSelectedExerciseSelectionPreferences({
-      exerciseSelectionPreferences: nextExerciseSelectionPreferences,
+  async function handleContinueToReview() {
+    await confirmSelectedExerciseSelectionPreferences({
       timestamp: new Date().toISOString(),
     });
+    await navigate({ to: planBuilderPaths.review });
   }
 
   return (
@@ -291,24 +288,36 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Review the main compound movement patterns your plan needs. Exercise selection will be
-          editable in the next iteration.
+          Choose the main compounds that anchor weekly coverage. Rotation pools can suggest similar
+          swaps after a 6-week Training Block.
         </PageLead>
       }
       summary={summary}
     >
       {isExerciseSelectionStepReady ? (
         <ExerciseFoundationStep
-          exerciseSelectionPreferences={exerciseSelectionPreferences}
           mainCompoundSelections={blueprint.mainCompoundSelections}
-          onExerciseSelectionPreferencesChange={handleExerciseSelectionPreferencesChange}
+          mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+          onContinueToReview={handleContinueToReview}
+          onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
+            await updateMainCompoundSelection({
+              exerciseId,
+              movementPattern,
+              timestamp: new Date().toISOString(),
+            });
+          }}
+          onRotationPoolChange={async ({ exerciseIds, movementPattern }) => {
+            await updateMainCompoundRotationPool({
+              exerciseIds,
+              movementPattern,
+              timestamp: new Date().toISOString(),
+            });
+          }}
           split={blueprint.split}
           trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
         />
       ) : (
-        <p className="text-sm font-semibold text-stone-600">
-          Loading Exercise Selection Preferences...
-        </p>
+        <p className="text-sm font-semibold text-stone-600">Loading exercise foundation...</p>
       )}
     </PlanBuilderPage>
   );

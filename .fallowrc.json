@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": ["src/main.tsx"],
+  "ignoreDependencies": ["zod"],
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "coverage/**",
+    "test-results/**",
+    ".impeccable/**",
+    ".sandcastle/**",
+    "src/plan-builder/steps/exercise-selection-preferences-step.css"
+  ],
+  "duplicates": {
+    "ignore": [
+      "src/plan-builder/steps/exercise-foundation-step.tsx",
+      "src/plan-builder/steps/rep-range-style-step.tsx",
+      "src/plan-builder/steps/weekly-volume-targets-step.tsx",
+      "src/**/*.test.{ts,tsx}",
+      "tests/**"
+    ],
+    "ignoreImports": true
+  },
+  "health": {
+    "ignore": [
+      "src/plan-builder/steps/exercise-foundation-step.tsx",
+      "src/**/*.test.{ts,tsx}",
+      "tests/**"
+    ]
+  }
+}

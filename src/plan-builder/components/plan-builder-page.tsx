@@ -2,17 +2,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { Info } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { cn } from "../../design-system/cn";
-import { RailPanel } from "../../design-system/rail-panel";
 import { StepNotice } from "../../design-system/step-screen";
 import { Stepper } from "../../design-system/stepper";
 import { PageTitle } from "../../design-system/typography";
 import type { PlanBlueprintSummary } from "../plan-blueprint";
 import { planBuilderPaths } from "../plan-builder-paths";
-import {
-  PlanBlueprintHeaderBar,
-  PlanBlueprintProgressSummary,
-  PlanBlueprintRailCard,
-} from "./plan-blueprint-summary";
+import { PlanBlueprintHeaderBar, PlanBlueprintProgressSummary } from "./plan-blueprint-summary";
 import {
   type PlanBuilderStep,
   planBuilderLargeScreenQuery,
@@ -42,6 +37,8 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
   const prototypeVariant = usePlanBuilderPrototypeVariant();
   const shouldShowPlanBuilderRail = usePlanBuilderLargeScreenLayout();
   const shouldShowWideDesktopBlueprintSummary = usePlanBuilderWideDesktopLayout();
+  const shouldShowExerciseBlueprintSummary =
+    currentStep === "exercises" && shouldShowPlanBuilderRail;
   const pageTitle = getPlanBuilderPageTitle(currentStep);
   const navigateToPlanBuilderStep = (step: PlanBuilderStep) => {
     void navigate({ to: getPlanBuilderPathByStep(step) });
@@ -72,7 +69,7 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
         <header className="plan-builder-header">
           <PageTitle className="plan-builder-title">{pageTitle}</PageTitle>
           {intro}
-          {shouldShowWideDesktopBlueprintSummary ? (
+          {shouldShowWideDesktopBlueprintSummary || shouldShowExerciseBlueprintSummary ? (
             <PlanBlueprintProgressSummary
               currentStep={currentStep}
               onStepSelect={navigateToPlanBuilderStep}
@@ -99,16 +96,6 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
 
         <div className="plan-builder-step-content">{children}</div>
       </section>
-
-      {shouldShowPlanBuilderRail && !shouldShowWideDesktopBlueprintSummary ? (
-        <RailPanel aria-label="Plan blueprint summary" className="plan-builder-right-rail">
-          <PlanBlueprintRailCard
-            currentStep={currentStep}
-            onStepSelect={navigateToPlanBuilderStep}
-            summary={summary}
-          />
-        </RailPanel>
-      ) : null}
     </section>
   );
 }
@@ -146,7 +133,7 @@ function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
 
   return "Build your workout plan";
 }
-export function usePlanBuilderLargeScreenLayout() {
+function usePlanBuilderLargeScreenLayout() {
   return usePlanBuilderMediaQuery(planBuilderLargeScreenQuery);
 }
 

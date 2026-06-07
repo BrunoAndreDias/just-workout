@@ -1,9 +1,14 @@
+import { getExerciseCatalogExercise, isMainCompoundEligible } from "./exercise-catalog";
 import {
   createDefaultExerciseSelectionPreferences,
   type ExerciseSelectionPreferenceItem,
   type ExerciseSelectionPreferences,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
+import {
+  applyMainCompoundRotationPoolUpdate,
+  normalizeMainCompoundRotationPools,
+} from "./main-compound-rotation-pool";
 import { isRepRangeStyleId } from "./plan-blueprint-options";
 
 export {
@@ -47,6 +52,7 @@ import type {
   CreateDefaultPlanBlueprintOptions,
   InitializeTrainingVolumeOptions,
   PlanBlueprint,
+  SelectMainCompoundOptions,
   SelectRepRangeStyleOptions,
   SelectTrainingFrequencyOptions,
   SelectTrainingSplitOptions,
@@ -55,6 +61,7 @@ import type {
   StoredPlanBlueprint,
   TrainingFrequencyDaysPerWeek,
   UpdateExerciseSelectionPreferencesOptions,
+  UpdateMainCompoundRotationPoolOptions,
 } from "./plan-blueprint-types";
 
 export type {
@@ -66,8 +73,6 @@ export type {
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
   TrainingFrequencyOption,
-  TrainingFrequencyRecommendation,
-  TrainingGoal,
 } from "./plan-blueprint-types";
 
 import type { TrainingSplitId } from "./training-split";
@@ -98,6 +103,7 @@ export function createDefaultPlanBlueprint({
     volumePresetSource: null,
     weeklyRepTargets: null,
     mainCompoundSelections: [],
+    mainCompoundRotationPools: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
     confirmedBuilderSteps: getConfirmedBuilderSteps({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
@@ -106,13 +112,19 @@ export function createDefaultPlanBlueprint({
 }
 
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {
+  const mainCompoundSelections = normalizeMainCompoundSelections(blueprint.mainCompoundSelections);
+
   return {
     ...blueprint,
     ...normalizeTrainingVolumeConfiguration(blueprint),
     exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
       blueprint.exerciseSelectionPreferences,
     ),
-    mainCompoundSelections: normalizeMainCompoundSelections(blueprint.mainCompoundSelections),
+    mainCompoundSelections,
+    mainCompoundRotationPools: normalizeMainCompoundRotationPools({
+      mainCompoundSelections,
+      rotationPools: blueprint.mainCompoundRotationPools,
+    }),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
   };
 }
@@ -315,6 +327,83 @@ export function updateExerciseSelectionPreferences({
       exercises: hasExerciseSelectionPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
+    updatedAt: timestamp,
+  };
+}
+
+export function selectMainCompound({
+  blueprint,
+  exerciseId,
+  movementPattern,
+  timestamp,
+}: SelectMainCompoundOptions): PlanBlueprint {
+  const exercise = getExerciseCatalogExercise(exerciseId);
+
+  if (!exercise || !isMainCompoundEligible(exercise)) {
+    throw new Error(`Exercise "${exerciseId}" is not eligible as a main compound.`);
+  }
+
+  if (exercise.movementPattern !== movementPattern) {
+    throw new Error(
+      `Exercise "${exerciseId}" does not match movement pattern "${movementPattern}".`,
+    );
+  }
+
+  const normalizedSelections = normalizeMainCompoundSelections(blueprint.mainCompoundSelections);
+  const currentSelection = normalizedSelections.find(
+    (selection) => selection.movementPattern === movementPattern,
+  );
+  const hasMainCompoundChanged = currentSelection?.exerciseId !== exerciseId;
+  const nextSelection = {
+    exerciseId,
+    movementPattern,
+    updatedAt: timestamp,
+  };
+  const nextMainCompoundSelections = normalizeMainCompoundSelections([
+    ...normalizedSelections.filter((selection) => selection.movementPattern !== movementPattern),
+    nextSelection,
+  ]);
+  const nextMainCompoundRotationPools = normalizeMainCompoundRotationPools({
+    mainCompoundSelections: nextMainCompoundSelections,
+    rotationPools: blueprint.mainCompoundRotationPools,
+  });
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...getConfirmedBuilderSteps(blueprint),
+      exercises: hasMainCompoundChanged ? false : getConfirmedBuilderSteps(blueprint).exercises,
+    },
+    mainCompoundSelections: nextMainCompoundSelections,
+    mainCompoundRotationPools: nextMainCompoundRotationPools,
+    updatedAt: timestamp,
+  };
+}
+
+export function updateMainCompoundRotationPool({
+  blueprint,
+  exerciseIds,
+  movementPattern,
+  timestamp,
+}: UpdateMainCompoundRotationPoolOptions): PlanBlueprint {
+  const mainCompoundSelections = normalizeMainCompoundSelections(blueprint.mainCompoundSelections);
+  const nextMainCompoundRotationPools = applyMainCompoundRotationPoolUpdate({
+    mainCompoundSelections,
+    rotationPools: blueprint.mainCompoundRotationPools,
+    update: {
+      exerciseIds,
+      movementPattern,
+      updatedAt: timestamp,
+    },
+  });
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...getConfirmedBuilderSteps(blueprint),
+      exercises: false,
+    },
+    mainCompoundRotationPools: nextMainCompoundRotationPools,
     updatedAt: timestamp,
   };
 }

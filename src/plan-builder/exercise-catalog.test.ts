@@ -11,9 +11,9 @@ import {
 
 describe("exercise catalog", () => {
   it("keeps one rich exercise catalog without duplicate ids or names", () => {
-    expect(exerciseCatalogExercises).toHaveLength(65);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(65);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(65);
+    expect(exerciseCatalogExercises).toHaveLength(72);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(72);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(72);
   });
 
   it("derives the muscle-group browsing view from the rich catalog", () => {
@@ -36,7 +36,7 @@ describe("exercise catalog", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(65);
+    ).toBe(72);
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "chest")?.exercises,
     ).toContain("Flat Barbell or Dumbbell Bench Press");
@@ -50,7 +50,18 @@ describe("exercise catalog", () => {
       getExerciseCatalogExercisesByMovementPattern("vertical_pull").map(
         (exercise) => exercise.name,
       ),
-    ).toEqual(["Pull-Ups", "Chin-Ups", "Lat Pull-Downs"]);
+    ).toEqual([
+      "Pull-Ups",
+      "Chin-Ups",
+      "Lat Pull-Downs",
+      "Neutral-Grip Pulldown",
+      "Assisted Pull-Up",
+      "Wide-Grip Lat Pulldown",
+      "Close-Grip Lat Pulldown",
+      "Reverse-Grip Lat Pulldown",
+      "Close Neutral-Grip Pulldown",
+      "Medium-Grip Lat Pulldown",
+    ]);
     expect(
       getExerciseCatalogExercisesByMovementPattern("horizontal_push").map(
         (exercise) => exercise.name,

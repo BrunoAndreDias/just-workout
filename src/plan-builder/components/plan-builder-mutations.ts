@@ -9,6 +9,7 @@ import {
   initializeTrainingVolume,
   type PlanBlueprint,
   type RepRangeStyleId,
+  selectMainCompound,
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
@@ -16,7 +17,7 @@ import {
   setOptionalVolumeTargetEnabled,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
-  updateExerciseSelectionPreferences,
+  updateMainCompoundRotationPool,
 } from "../plan-blueprint";
 import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
@@ -25,6 +26,7 @@ import type {
   TrainingVolumeConfiguration,
   VolumePresetId,
 } from "../training-volume";
+import type { MainCompoundSelection } from "../weekly-movement-coverage";
 import { planBuilderBlueprintQueryKey } from "./plan-builder-config";
 
 type TrainingFrequencyMutationVariables = {
@@ -66,8 +68,15 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
-type UpdateExerciseSelectionPreferencesMutationVariables = {
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+type UpdateMainCompoundSelectionMutationVariables = {
+  exerciseId: string;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
+type UpdateMainCompoundRotationPoolMutationVariables = {
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
   timestamp: string;
 };
 
@@ -77,7 +86,7 @@ type ConfirmTrainingVolumeMutationVariables = {
 };
 
 type ConfirmExerciseSelectionPreferencesMutationVariables = {
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   timestamp: string;
 };
 export function usePlanBuilderBlueprint() {
@@ -273,17 +282,37 @@ export function useConfirmExerciseSelectionPreferencesMutation() {
   });
 }
 
-export function useUpdateExerciseSelectionPreferencesMutation() {
-  return usePlanBlueprintMutation<UpdateExerciseSelectionPreferencesMutationVariables>({
-    mutationFn: ({ exerciseSelectionPreferences, timestamp }) =>
-      planBuilderService.updateExerciseSelectionPreferences({
-        exerciseSelectionPreferences,
+export function useUpdateMainCompoundSelectionMutation() {
+  return usePlanBlueprintMutation<UpdateMainCompoundSelectionMutationVariables>({
+    mutationFn: ({ exerciseId, movementPattern, timestamp }) =>
+      planBuilderService.updateMainCompoundSelection({
+        exerciseId,
+        movementPattern,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
-      updateExerciseSelectionPreferences({
+    optimisticUpdate: (blueprint, { exerciseId, movementPattern, timestamp }) =>
+      selectMainCompound({
         blueprint,
-        exerciseSelectionPreferences,
+        exerciseId,
+        movementPattern,
+        timestamp,
+      }),
+  });
+}
+
+export function useUpdateMainCompoundRotationPoolMutation() {
+  return usePlanBlueprintMutation<UpdateMainCompoundRotationPoolMutationVariables>({
+    mutationFn: ({ exerciseIds, movementPattern, timestamp }) =>
+      planBuilderService.updateMainCompoundRotationPool({
+        exerciseIds,
+        movementPattern,
+        timestamp,
+      }),
+    optimisticUpdate: (blueprint, { exerciseIds, movementPattern, timestamp }) =>
+      updateMainCompoundRotationPool({
+        blueprint,
+        exerciseIds,
+        movementPattern,
         timestamp,
       }),
   });

@@ -22,6 +22,34 @@
   line-height: var(--jw-page-lead-line-height);
 }
 
+.exercise-coverage-preview__segments {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.exercise-coverage-preview__segment {
+  height: 0.25rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.12);
+}
+
+.exercise-coverage-preview__segment--balanced {
+  background: #007780;
+}
+
+.exercise-coverage-preview__segment--missing {
+  background: #d97706;
+}
+
+.exercise-coverage-preview__segment--quiet {
+  background: rgba(0, 119, 128, 0.48);
+}
+
+.exercise-coverage-preview__segment--suggested {
+  background: #0284c7;
+}
+
 @media (min-width: 1024px) and (max-width: 1279px) {
   .plan-builder-workspace-card {
     padding-top: 1.5rem;
@@ -263,7 +291,7 @@
     display: grid;
     max-width: 100%;
     min-height: 100dvh;
-    grid-template-columns: minmax(0, 1fr) 18rem;
+    grid-template-columns: minmax(0, 1fr) 16rem;
     align-items: start;
     gap: 1rem;
   }
@@ -286,6 +314,10 @@
     align-content: start;
   }
 
+  .plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr) 15.5rem;
+  }
+
   .plan-builder-step-content {
     margin-top: 1.5rem;
   }
@@ -293,8 +325,12 @@
 
 @media (min-width: 1280px) and (max-width: 1439px) and (min-height: 720px) {
   .plan-builder-page {
-    grid-template-columns: minmax(0, 1fr) 16.5rem;
+    grid-template-columns: minmax(0, 1fr) 14.5rem;
     gap: 0.75rem;
+  }
+
+  .plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .plan-builder-workspace-card {
@@ -322,14 +358,6 @@
   .plan-builder-page--frequency {
     max-width: 96rem;
     grid-template-columns: minmax(0, 1fr) 23rem;
-  }
-
-  .plan-builder-page--exercises {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-builder-page--exercises .plan-builder-right-rail {
-    display: none;
   }
 }
 
@@ -1369,5 +1397,158 @@
 
   .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
     padding: 1.8rem 2.5rem 1.4rem;
+  }
+}
+
+.plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
+  padding-bottom: 15rem;
+}
+
+@media (min-width: 640px) {
+  .plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
+    padding-bottom: 10rem;
+  }
+}
+
+/* The plan blueprint rail was removed; keep desktop workspace layouts single-column. */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page,
+  .plan-builder-page.plan-builder-page--frequency,
+  .plan-builder-page.plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-main .plan-builder-page.plan-builder-page,
+  .app-shell-main .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    min-height: calc(100dvh - 3.8125rem);
+  }
+
+  .app-shell-main .plan-builder-page.plan-builder-page--frequency,
+  .app-shell-main .plan-builder-page.plan-builder-page--frequency .plan-builder-workspace-card {
+    max-height: none;
+  }
+}
+
+@media (min-width: 2200px) and (min-height: 900px) {
+  .app-shell-main .plan-builder-page.plan-builder-page,
+  .app-shell-main .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    min-height: calc(100dvh - 3.8125rem);
+  }
+}
+
+/* Shared Plan Builder color polish: one restrained palette across every step. */
+.plan-builder-page {
+  --jw-step-ink: #120f0d;
+  --jw-step-copy: #244256;
+  --jw-step-muted: #536873;
+  --jw-step-border: rgba(28, 25, 23, 0.12);
+  --jw-step-surface: #fffdfa;
+  --jw-step-surface-soft: rgba(255, 253, 250, 0.72);
+  --jw-step-selected-bg: #f2fbfa;
+  --jw-step-selected-border: #007780;
+  --jw-step-selected-ink: #075d63;
+  --jw-step-selected-strong: #00636a;
+  --jw-step-rest: #6b655f;
+  --jw-step-warning-bg: #fff8f1;
+  --jw-step-warning-border: rgba(186, 86, 31, 0.22);
+  --jw-step-warning-ink: #8a4a18;
+}
+
+/* Compact builder density: flatter surfaces, smaller copy, clearer grouping by dividers. */
+.plan-builder-page {
+  --jw-body-size: 0.8125rem;
+  --jw-body-line-height: 1.25rem;
+  --jw-card-padding: 0.875rem;
+  --jw-card-padding-compact: 0.625rem;
+  --jw-content-gap: 0.875rem;
+  --jw-section-gap: 0.75rem;
+  --jw-page-lead-size: 0.8125rem;
+  --jw-page-lead-line-height: 1.1875rem;
+  --jw-page-title-size: 1.75rem;
+  --jw-page-title-line-height: 2rem;
+  --jw-builder-body-size: 0.8125rem;
+  --jw-builder-body-line-height: 1.25rem;
+  --jw-builder-content-gap: 0.75rem;
+  --jw-builder-section-gap: 0.625rem;
+  --jw-builder-page-title-size: 1.75rem;
+  --jw-builder-page-title-line-height: 2rem;
+  --jw-builder-section-title-size: 1rem;
+  --jw-builder-section-title-line-height: 1.25rem;
+}
+
+.plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+  background: transparent;
+  box-shadow: none;
+}
+
+.plan-builder-page.plan-builder-page .plan-builder-title {
+  max-width: none;
+  font-size: var(--jw-builder-page-title-size);
+  line-height: var(--jw-builder-page-title-line-height);
+}
+
+.plan-builder-page.plan-builder-page .plan-builder-title + p {
+  max-width: 58ch;
+  font-size: var(--jw-builder-body-size);
+  line-height: var(--jw-builder-body-line-height);
+}
+
+.plan-builder-page.plan-builder-page .plan-builder-workspace-card > header {
+  gap: 0.25rem;
+}
+
+.plan-builder-page.plan-builder-page .plan-builder-step-content {
+  margin-top: 0.75rem;
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
+.plan-builder-page.plan-builder-page
+  .plan-builder-step-content
+  :where(p, li, dt, dd, th, td, label) {
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
+.plan-builder-page.plan-builder-page .step-panel,
+.plan-builder-page.plan-builder-page .step-notice,
+.plan-builder-page.plan-builder-page .plan-builder-step-status {
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.plan-builder-page.plan-builder-page .step-notice__title {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.plan-builder-page.plan-builder-page .step-notice__body,
+.plan-builder-page.plan-builder-page .plan-builder-step-status p {
+  font-size: var(--jw-body-size);
+  line-height: var(--jw-body-line-height);
+}
+
+.plan-builder-page.plan-builder-page .step-actions {
+  gap: 0.625rem;
+}
+
+@media (max-width: 639px) {
+  .plan-builder-page {
+    --jw-builder-page-title-size: 1.5rem;
+    --jw-builder-page-title-line-height: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
   }
 }

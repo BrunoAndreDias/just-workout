@@ -12,6 +12,10 @@ _Avoid_: StrongPlan
 The final generated plan a user follows for their training. A **Training Plan** contains the workout structure the user will perform over time and keeps the **Training Frequency** it was built for.
 _Avoid_: Routine, program
 
+**Training Block**:
+A defined span of time within a **Training Plan** before selected exercises are reviewed or rotated for a different training stimulus. The default **Training Block** length is 6 weeks.
+_Avoid_: Mesocycle, phase, cycle
+
 **Plan Blueprint**:
 The in-progress set of choices a user makes before generating a **Training Plan**. A new **Plan Blueprint** starts with a 3 days/week **Training Frequency**, and an unfinished **Plan Blueprint** can be resumed before generation.
 _Avoid_: Draft routine, temporary plan
@@ -80,13 +84,21 @@ _Avoid_: Main target, accessory-only target
 The user-facing **Plan Builder** row for the baseline hamstrings **Weekly Rep Target**. It does not create a separate baseline glutes target; glute specialization would be an optional product-specific override.
 _Avoid_: Glutes baseline target, separate glutes target
 
-**Exercise Selection Preferences**:
-The choices in a **Plan Blueprint** that guide how **Just Workout** should select exercises when generating a **Training Plan**. **Exercise Selection Preferences** describe selection strategy, equipment context, user-preferred exercises, and user-avoided exercises; they are not the generated workout days or final exercise list.
-_Avoid_: Generated exercises, workout exercise list, final routine exercises
-
 **Main Compound Selection**:
-A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** are actual plan-building choices, not soft **Exercise Selection Preferences**, and they are evaluated before the **Training Plan** is generated.
+A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** are actual plan-building choices and are evaluated before the **Training Plan** is generated.
 _Avoid_: Preferred exercise, catalog row, generated exercise
+
+**Main Compound Rotation Pool**:
+The set of alternative compound exercises associated with a **Main Compound Selection** that share its **Movement Pattern** and primary muscle group so **Just Workout** can replace that selected exercise at a **Training Block** boundary. A **Main Compound Rotation Pool** supports a different training stimulus over time; it does not include the current **Main Compound Selection** and does not add extra **Weekly Movement Coverage**.
+_Avoid_: Multiple main compound selections, preferred compounds, variation list
+
+**Rotation Pool Compound Exercise**:
+An eligible alternative compound exercise inside a **Main Compound Rotation Pool**. A **Rotation Pool Compound Exercise** can replace the current **Main Compound Selection** only when it shares the same **Movement Pattern** and primary muscle group.
+_Avoid_: Alternate compound, backup exercise, variation
+
+**Main Compound Rotation Proposal**:
+A suggested set of main compound replacements presented at a **Training Block** boundary. A **Main Compound Rotation Proposal** may include only some **Main Compound Selections**, and the user confirms, skips, or changes the proposed replacements before they affect the **Training Plan**.
+_Avoid_: Automatic exercise swap, hidden rotation, forced replacement
 
 **User-Defined Exercise**:
 An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**.
@@ -131,18 +143,6 @@ _Avoid_: Equipment checklist, gym inventory
 **Full Gym Equipment Preset**:
 An **Equipment Preset** indicating broad gym access, including free weights, machines, cables, pull-up options, and bodyweight movements. It expands eligible exercise selection without generating a **Training Plan** by itself.
 _Avoid_: All equipment selected, editable equipment list
-
-**Preferred Exercise**:
-An exercise the user wants **Just Workout** to consider during later **Training Plan** generation. A **Preferred Exercise** is a soft preference and can be used when it fits the **Plan Blueprint**, equipment context, movement-pattern balance, volume targets, safety, and progression.
-_Avoid_: Required exercise, guaranteed exercise
-
-**Avoided Exercise**:
-An exercise the user marks as painful, unavailable, or unsuitable. An **Avoided Exercise** is a hard exclusion; if no safe viable replacement exists during **Training Plan** generation, **Just Workout** should surface an **Exercise Selection Conflict** rather than silently include it.
-_Avoid_: Disliked exercise, low-priority exercise
-
-**Exercise Selection Conflict**:
-A blocker found when **Just Workout** cannot generate a safe viable **Training Plan** from the current **Exercise Selection Preferences**. The user must resolve the conflict by removing an exclusion, adjusting equipment or preferences, or explicitly accepting a lower-quality incomplete **Training Plan**.
-_Avoid_: Warning, validation message, generation error
 
 ## Example Dialogue
 

@@ -45,7 +45,7 @@ export type ExerciseCatalogExercise = {
   secondaryMuscleGroups: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
 };
 
-export type ExerciseCatalogMuscleGroup = {
+type ExerciseCatalogMuscleGroup = {
   exercises: ReadonlyArray<string>;
   id: ExerciseCatalogMuscleGroupId;
   title: string;
@@ -211,6 +211,69 @@ export const exerciseCatalogExercises = [
     id: "lat-pull-downs",
     movementPattern: "vertical_pull",
     name: "Lat Pull-Downs",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "neutral-grip-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Neutral-Grip Pulldown",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "assisted-pull-up",
+    movementPattern: "vertical_pull",
+    name: "Assisted Pull-Up",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "wide-grip-lat-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Wide-Grip Lat Pulldown",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "close-grip-lat-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Close-Grip Lat Pulldown",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "reverse-grip-lat-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Reverse-Grip Lat Pulldown",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "close-neutral-grip-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Close Neutral-Grip Pulldown",
+    primaryMuscleGroups: ["back"],
+    role: "compound",
+    secondaryMuscleGroups: ["biceps", "forearms"],
+  },
+  {
+    catalogMuscleGroup: "back",
+    id: "medium-grip-lat-pulldown",
+    movementPattern: "vertical_pull",
+    name: "Medium-Grip Lat Pulldown",
     primaryMuscleGroups: ["back"],
     role: "compound",
     secondaryMuscleGroups: ["biceps", "forearms"],

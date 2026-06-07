@@ -9,6 +9,7 @@ import {
   initializeTrainingVolume as initializeTrainingVolumeState,
   normalizePlanBlueprint,
   type RepRangeStyleId,
+  selectMainCompound,
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
@@ -16,6 +17,7 @@ import {
   setOptionalVolumeTargetEnabled,
   type TrainingFrequencyDaysPerWeek,
   updateExerciseSelectionPreferences as updateExerciseSelectionPreferencesState,
+  updateMainCompoundRotationPool as updateMainCompoundRotationPoolState,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
@@ -24,6 +26,7 @@ import type {
   TrainingVolumeConfiguration,
   VolumePresetId,
 } from "./training-volume";
+import type { MainCompoundSelection } from "./weekly-movement-coverage";
 
 async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
@@ -75,6 +78,18 @@ type UpdateOptionalVolumeTargetOptions = {
 
 type UpdateExerciseSelectionPreferencesOptions = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  timestamp?: string;
+};
+
+type SelectMainCompoundOptions = {
+  exerciseId: string;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp?: string;
+};
+
+type UpdateMainCompoundRotationPoolOptions = {
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
   timestamp?: string;
 };
 
@@ -196,6 +211,40 @@ async function updateExerciseSelectionPreferences({
   );
 }
 
+async function updateMainCompoundSelection({
+  exerciseId,
+  movementPattern,
+  timestamp = new Date().toISOString(),
+}: SelectMainCompoundOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    selectMainCompound({
+      blueprint,
+      exerciseId,
+      movementPattern,
+      timestamp,
+    }),
+  );
+}
+
+async function updateMainCompoundRotationPool({
+  exerciseIds,
+  movementPattern,
+  timestamp = new Date().toISOString(),
+}: UpdateMainCompoundRotationPoolOptions) {
+  const blueprint = await getOrCreatePlanBlueprint();
+
+  return savePlanBlueprint(
+    updateMainCompoundRotationPoolState({
+      blueprint,
+      exerciseIds,
+      movementPattern,
+      timestamp,
+    }),
+  );
+}
+
 async function confirmSelectedTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
@@ -295,6 +344,8 @@ export const planBuilderService = {
   getOrCreatePlanBlueprint,
   initializeTrainingVolume,
   updateExerciseSelectionPreferences,
+  updateMainCompoundRotationPool,
+  updateMainCompoundSelection,
   updateOptionalVolumeTarget,
   updateRepRangeStyle,
   updateTrainingSplit,

@@ -18,7 +18,7 @@ export function StepPanel({ as = "section", className, ...props }: StepPanelProp
   return (
     <Component
       className={cn(
-        "step-panel rounded-lg border border-stone-900/10 bg-white/78 p-[var(--jw-card-padding)]",
+        "step-panel border-y border-stone-900/10 bg-transparent py-[var(--jw-card-padding)]",
         className,
       )}
       {...props}
@@ -51,7 +51,7 @@ export function StepNotice({
   return (
     <div
       className={cn(
-        "step-notice flex gap-3 rounded-lg border border-[#f0cfad] bg-[#fff8f1] px-[var(--jw-card-padding)] py-[var(--jw-card-padding-compact)] text-[#8a4a18]",
+        "step-notice flex gap-3 border-y border-[#f0cfad] bg-transparent px-0 py-[var(--jw-card-padding-compact)] text-[#8a4a18]",
         hasVisibleTitle ? "items-start" : "items-center",
         className,
       )}

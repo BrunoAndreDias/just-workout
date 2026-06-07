@@ -48,8 +48,7 @@ const weeklyVolumeTargetStatusStyles = {
   optional: "bg-[#f4f0e8] text-[#5c6d73]",
 } as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
 
-const weeklyVolumeTargetColumnHeaderClassName =
-  "px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500";
+const weeklyVolumeTargetColumnHeaderClassName = "px-3 py-2 text-xs font-bold text-stone-500";
 
 type WeeklyVolumeTargetsStepProps = {
   canContinueToExercises: boolean;
@@ -340,12 +339,12 @@ function OptionalWeeklyRepTargetsSection({
 
 function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsProps) {
   return (
-    <div className="training-volume-table-wrap overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
+    <div className="training-volume-table-wrap overflow-x-auto">
       <table
         aria-label="Required Weekly Rep Targets"
         className="min-w-full border-collapse text-left"
       >
-        <thead className="bg-[#f4f0e8]">
+        <thead>
           <tr>
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Muscle group</th>
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Weekly rep target</th>
@@ -354,22 +353,22 @@ function RequiredWeeklyRepTargetsTable({ rows }: RequiredWeeklyRepTargetsRowsPro
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Adjustment</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-900/10 bg-white/88">
+        <tbody className="divide-y divide-stone-900/10">
           {rows.map((row) => (
             <tr className="align-top" key={row.muscleGroupId}>
-              <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
+              <th className="px-3 py-2.5 text-sm font-semibold text-stone-950" scope="row">
                 {row.label}
               </th>
-              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+              <td className="px-3 py-2.5 text-sm font-semibold text-stone-900">
                 {row.weeklyRepTargetLabel}
               </td>
-              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+              <td className="px-3 py-2.5 text-sm font-semibold text-stone-900">
                 {row.estimatedSetRangeLabel}
               </td>
-              <td className="px-4 py-4">
+              <td className="px-3 py-2.5">
                 <WeeklyVolumeTargetStatusBadge label={row.statusLabel} tone={row.statusTone} />
               </td>
-              <td className="px-4 py-4">
+              <td className="px-3 py-2.5">
                 <Button
                   aria-label={`Adjust ${row.label} target`}
                   className="px-0 text-stone-500 disabled:opacity-100"
@@ -393,9 +392,9 @@ function OptionalWeeklyRepTargetsTable({
   rows,
 }: OptionalWeeklyRepTargetsTableProps) {
   return (
-    <div className="training-volume-table-wrap overflow-x-auto rounded-lg border border-stone-900/10 bg-[#fcfaf6]">
+    <div className="training-volume-table-wrap overflow-x-auto">
       <table aria-label="Optional Volume Targets" className="min-w-full border-collapse text-left">
-        <thead className="bg-[#f4f0e8]">
+        <thead>
           <tr>
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Muscle group</th>
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Weekly rep target</th>
@@ -404,22 +403,22 @@ function OptionalWeeklyRepTargetsTable({
             <th className={weeklyVolumeTargetColumnHeaderClassName}>Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-900/10 bg-white/88">
+        <tbody className="divide-y divide-stone-900/10">
           {rows.map((row) => (
             <tr className="align-top" key={row.muscleGroupId}>
-              <th className="px-4 py-4 text-sm font-semibold text-stone-950" scope="row">
+              <th className="px-3 py-2.5 text-sm font-semibold text-stone-950" scope="row">
                 {row.label}
               </th>
-              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+              <td className="px-3 py-2.5 text-sm font-semibold text-stone-900">
                 {row.weeklyRepTargetLabel}
               </td>
-              <td className="px-4 py-4 text-sm font-semibold text-stone-900">
+              <td className="px-3 py-2.5 text-sm font-semibold text-stone-900">
                 {row.estimatedSetRangeLabel}
               </td>
-              <td className="px-4 py-4">
+              <td className="px-3 py-2.5">
                 <WeeklyVolumeTargetStatusBadge label="Optional" tone="optional" />
               </td>
-              <td className="px-4 py-4">
+              <td className="px-3 py-2.5">
                 <Button
                   aria-label={`${row.actionLabel} ${row.label} target`}
                   onClick={() => onOptionalVolumeTargetToggle(row.muscleGroupId, !row.isEnabled)}
@@ -441,7 +440,7 @@ function WeeklyVolumeTargetStatusBadge({ label, tone }: WeeklyVolumeTargetStatus
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide",
+        "inline-flex rounded-full px-2 py-0.5 text-xs font-bold",
         weeklyVolumeTargetStatusStyles[tone],
       )}
     >
