@@ -7,6 +7,7 @@ import {
   useConfirmTrainingFrequencyMutation,
   useConfirmTrainingSplitMutation,
   useConfirmTrainingVolumeMutation,
+  useGenerateTrainingPlanMutation,
   useInitializeTrainingVolumeMutation,
   usePlanBuilderBlueprint,
   useUpdateMainCompoundRotationPoolMutation,
@@ -28,8 +29,8 @@ import {
 } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
+import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
 import { RepRangeStyleStep } from "./steps/rep-range-style-step";
-import { ReviewPlaceholderStep } from "./steps/review-placeholder-step";
 import { TrainingFrequencyStep } from "./steps/training-frequency-step";
 import { WeeklyVolumeTargetsStep } from "./steps/weekly-volume-targets-step";
 import {
@@ -276,11 +277,11 @@ export function PlanBuilderExercisesRoute() {
     hasCompatibleSelectedTrainingSplit(blueprint) &&
     isTrainingVolumeConfiguration(blueprint);
 
-  async function handleContinueToReview() {
+  async function handleContinueToGenerate() {
     await confirmSelectedExerciseSelectionPreferences({
       timestamp: new Date().toISOString(),
     });
-    await navigate({ to: planBuilderPaths.review });
+    await navigate({ to: planBuilderPaths.generate });
   }
 
   return (
@@ -298,7 +299,7 @@ export function PlanBuilderExercisesRoute() {
         <ExerciseFoundationStep
           mainCompoundSelections={blueprint.mainCompoundSelections}
           mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
-          onContinueToReview={handleContinueToReview}
+          onContinueToGenerate={handleContinueToGenerate}
           onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
             await updateMainCompoundSelection({
               exerciseId,
@@ -324,20 +325,36 @@ export function PlanBuilderExercisesRoute() {
   );
 }
 
-export function PlanBuilderReviewRoute() {
+export function PlanBuilderGenerateRoute() {
   const { summary } = usePlanBuilderBlueprint();
+  const { mutateAsync: generateTrainingPlan, isPending: isGenerating } =
+    useGenerateTrainingPlanMutation();
+  const navigate = useNavigate();
+
+  async function handleGenerateTrainingPlan() {
+    const trainingPlan = await generateTrainingPlan();
+
+    await navigate({
+      params: { planId: trainingPlan.id },
+      to: "/training-plans/$planId",
+    });
+  }
 
   return (
     <PlanBuilderPage
-      currentStep="review"
+      currentStep="generate"
       intro={
         <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Confirm the Plan Blueprint before Training Plan generation.
+          Create the Active Training Plan from the completed Plan Blueprint.
         </p>
       }
       summary={summary}
     >
-      <ReviewPlaceholderStep />
+      <GenerateTrainingPlanStep
+        isGenerating={isGenerating}
+        onGenerateTrainingPlan={handleGenerateTrainingPlan}
+        summary={summary}
+      />
     </PlanBuilderPage>
   );
 }

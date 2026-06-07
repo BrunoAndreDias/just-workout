@@ -5,7 +5,7 @@ export const planBuilderSteps = [
   { id: "rep-ranges", label: "Rep ranges" },
   { id: "volume", label: "Volume" },
   { id: "exercises", label: "Exercises" },
-  { id: "review", label: "Review" },
+  { id: "generate", label: "Generate" },
 ];
 
 export type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
@@ -26,6 +26,6 @@ export const planBuilderNextStepBodyByStep = {
   "rep-ranges": "Next, you will set weekly volume targets for each muscle group.",
   volume:
     "Exercises come next; this step stays focused on weekly rep targets before specific lifts are chosen.",
-  exercises: "Next, you'll review the blueprint before generating the Training Plan.",
-  review: "Review the blueprint and generate the Training Plan when everything is ready.",
+  exercises: "Next, you'll generate the Training Plan from this blueprint.",
+  generate: "Generate the Training Plan when everything is ready.",
 } as const satisfies Record<PlanBuilderStep, string>;

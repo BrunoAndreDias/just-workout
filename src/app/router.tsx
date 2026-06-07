@@ -2,15 +2,16 @@ import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/
 import {
   getPlanBuilderRedirectStep,
   PlanBuilderExercisesRoute,
+  PlanBuilderGenerateRoute,
   type PlanBuilderGuardedStep,
   type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
-  PlanBuilderReviewRoute,
   PlanBuilderRoute,
   PlanBuilderVolumeRoute,
   planBuilderPaths,
   planBuilderService,
 } from "../plan-builder";
+import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
 import { RootLayout } from "./root-layout";
 
 const rootRoute = createRootRoute({
@@ -80,7 +81,7 @@ async function requireConfirmedTrainingVolume() {
 }
 
 async function requireConfirmedExercises() {
-  return requirePlanBuilderStep("review");
+  return requirePlanBuilderStep("generate");
 }
 
 const planBuilderRepRangesRoute = createRoute({
@@ -104,11 +105,23 @@ const planBuilderExercisesRoute = createRoute({
   path: planBuilderPaths.exercises,
 });
 
-const planBuilderReviewRoute = createRoute({
+const planBuilderGenerateRoute = createRoute({
   beforeLoad: requireConfirmedExercises,
-  component: PlanBuilderReviewRoute,
+  component: PlanBuilderGenerateRoute,
   getParentRoute: () => rootRoute,
-  path: planBuilderPaths.review,
+  path: planBuilderPaths.generate,
+});
+
+const trainingPlanRoute = createRoute({
+  component: TrainingPlanRoute,
+  getParentRoute: () => rootRoute,
+  path: "/training-plans/$planId",
+});
+
+const trainingPlansRoute = createRoute({
+  component: TrainingPlansRoute,
+  getParentRoute: () => rootRoute,
+  path: "/training-plans",
 });
 
 const routeTree = rootRoute.addChildren([
@@ -118,7 +131,9 @@ const routeTree = rootRoute.addChildren([
   planBuilderRepRangesRoute,
   planBuilderVolumeRoute,
   planBuilderExercisesRoute,
-  planBuilderReviewRoute,
+  planBuilderGenerateRoute,
+  trainingPlansRoute,
+  trainingPlanRoute,
 ]);
 
 type AppRouterHistory = Parameters<typeof createRouter>[0]["history"];

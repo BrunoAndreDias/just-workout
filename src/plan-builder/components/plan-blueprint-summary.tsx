@@ -430,16 +430,16 @@ function getPlanBlueprintProgressSteps(
     },
     {
       body:
-        currentStep === "review"
+        currentStep === "generate"
           ? "Current"
           : furthestAvailableStepNumber >= 5
             ? "Ready"
             : "Locked",
-      id: "review",
-      isCurrent: currentStep === "review",
+      id: "generate",
+      isCurrent: currentStep === "generate",
       isLocked: furthestAvailableStepNumber < 5,
       number: 5,
-      title: "Review",
+      title: "Generate",
     },
   ];
 }
@@ -452,7 +452,7 @@ function getFurthestAvailablePlanBuilderStepNumber(summary: PlanBlueprintSummary
       return 3;
     case "Exercises":
       return 4;
-    case "Review":
+    case "Generate":
       return 5;
   }
 

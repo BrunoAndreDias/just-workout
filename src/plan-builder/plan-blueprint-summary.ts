@@ -91,7 +91,7 @@ function getPlanBlueprintNextStep({
     return "Exercises";
   }
 
-  return "Review";
+  return "Generate";
 }
 
 function getPlanBlueprintSplitSummaryDetails(

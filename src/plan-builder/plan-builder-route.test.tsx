@@ -205,7 +205,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(stepList).getByText("Rep ranges")).toBeVisible();
     expect(within(stepList).getByText("Volume")).toBeVisible();
     expect(within(stepList).getByText("Exercises")).toBeVisible();
-    expect(within(stepList).getByText("Review")).toBeVisible();
+    expect(within(stepList).getByText("Generate")).toBeVisible();
 
     const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
 
@@ -830,7 +830,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("presents Exercises as a suggested preview without confirming coverage or enabling Review", async () => {
+  it("presents Exercises as a suggested preview without confirming coverage or enabling Generate", async () => {
     mockPlanBuilderMediaQueries({ isLargeScreen: true, isWideDesktop: false });
     await saveConfirmedVolumeStepForTest({
       repRangeStyle: "balanced_hypertrophy",
@@ -853,12 +853,12 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("complementary", { name: "Coverage summary" })).toBeVisible();
     expect(screen.getByRole("region", { name: "Rotation pools locked" })).toBeVisible();
 
-    const reviewCta = screen.getByRole("button", {
+    const generateCta = screen.getByRole("button", {
       name: /choose horizontal push exercise/i,
     });
 
-    expect(reviewCta).toBeDisabled();
-    expect(reviewCta).not.toHaveAccessibleDescription();
+    expect(generateCta).toBeDisabled();
+    expect(generateCta).not.toHaveAccessibleDescription();
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
         exercises: false,
@@ -978,7 +978,7 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByRole("textbox", { name: /isolation exercises/i })).not.toBeInTheDocument();
   });
 
-  it("configures isolation exercises without blocking Review or changing main compound validation", async () => {
+  it("configures isolation exercises without blocking Generate or changing main compound validation", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedVolumeStepForTest({
@@ -991,9 +991,9 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    const reviewCta = await screen.findByRole("button", { name: /continue to review/i });
+    const generateCta = await screen.findByRole("button", { name: /continue to generate/i });
 
-    expect(reviewCta).toBeEnabled();
+    expect(generateCta).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: /^add isolation exercises$/i }));
 
@@ -1020,7 +1020,7 @@ describe("PlanBuilderRoute", () => {
 
     expect(screen.getByRole("checkbox", { name: /lateral raise/i })).toBeChecked();
     expect(screen.getByText("Added")).toBeVisible();
-    expect(screen.getByRole("button", { name: /continue to review/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /continue to generate/i })).toBeEnabled();
 
     await user.click(
       within(isolationExercisesDialog).getByRole("button", { name: /close isolation exercises/i }),
@@ -1071,7 +1071,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
   });
 
-  it("enables Review only after persisted main compound selections cover every required pattern", async () => {
+  it("enables Generate only after persisted main compound selections cover every required pattern", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedVolumeStepForTest({
@@ -1108,9 +1108,9 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByRole("region", { name: "Rotation pools locked" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Change" })).toHaveLength(6);
 
-    const reviewCta = screen.getByRole("button", { name: /continue to review/i });
+    const generateCta = screen.getByRole("button", { name: /continue to generate/i });
 
-    expect(reviewCta).toBeEnabled();
+    expect(generateCta).toBeEnabled();
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
         exercises: false,
@@ -1118,12 +1118,12 @@ describe("PlanBuilderRoute", () => {
       mainCompoundSelections: completeMainCompoundSelections,
     });
 
-    await user.click(reviewCta);
+    await user.click(generateCta);
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.review);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.generate);
     });
-    await expectReviewStepComingNext();
+    await expectGenerateStepComingNext();
     await expectPlanBlueprintToMatch({
       confirmedBuilderSteps: {
         exercises: true,
@@ -1132,7 +1132,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("redirects direct access to Review back to Exercises when Exercises has not been confirmed", async () => {
+  it("redirects direct access to Generate back to Exercises when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -1140,7 +1140,7 @@ describe("PlanBuilderRoute", () => {
       volumePreset: "balanced",
     });
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.generate] });
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
@@ -1148,7 +1148,9 @@ describe("PlanBuilderRoute", () => {
     await expectConfirmableExercisesStep();
   });
 
-  it("renders the Review placeholder on direct access when Exercises is confirmed", async () => {
+  it("generates an active Training Plan and navigates to the plan route", async () => {
+    const user = userEvent.setup();
+
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -1159,13 +1161,42 @@ describe("PlanBuilderRoute", () => {
       timestamp: "2026-05-31T09:06:00.000Z",
     });
 
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.review] });
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.generate] });
 
-    await expectPlanBuilderPath(router, planBuilderPaths.review);
-    await expectReviewStepComingNext();
+    await expectPlanBuilderPath(router, planBuilderPaths.generate);
+    await expectGenerateStepComingNext();
     expect(
-      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText("Review"),
+      within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
+        "Generate",
+      ),
     ).toHaveAttribute("aria-current", "step");
+
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+    });
+    expect(await screen.findByRole("heading", { name: "4-Day Upper/Lower" })).toBeVisible();
+    expect(screen.getByText("Active Training Plan")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Upper A" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Lower A" })).toBeVisible();
+    expect(screen.getAllByText("Flat Barbell or Dumbbell Bench Press").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Barbell or Dumbbell Squats").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /training plans/i })).toBeVisible();
+    expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
+  });
+
+  it("opens the Training Plans route from the top menu", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+
+    await user.click(await screen.findByRole("link", { name: /training plans/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/training-plans");
+    });
+    expect(await screen.findByRole("heading", { name: "Generated training plans" })).toBeVisible();
+    expect(screen.getByText("No Training Plans yet")).toBeVisible();
   });
 
   it("initializes the Balanced volume defaults when Volume opens without saved volume data", async () => {
@@ -1570,7 +1601,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("keeps Exercises unconfirmed until the active Review CTA is used", async () => {
+  it("keeps Exercises unconfirmed until the active Generate CTA is used", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -1590,7 +1621,7 @@ describe("PlanBuilderRoute", () => {
         volume: true,
       },
     });
-    expect(screen.getByRole("button", { name: /continue to review/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /continue to generate/i })).toBeEnabled();
   });
 
   it("returns from Exercises to Volume with the existing footer back action", async () => {
@@ -1893,25 +1924,6 @@ describe("PlanBuilderRoute", () => {
     const user = userEvent.setup();
 
     mockPlanBuilderMediaQueries({ isLargeScreen: true, isWideDesktop: true });
-    await saveConfirmedFourDayUpperLowerTrainingSplit();
-
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
-
-    await user.click(await screen.findByRole("button", { name: /go to training schedule/i }));
-
-    await expectPlanBuilderPath(router, planBuilderPaths.frequency);
-    expect(await screen.findByRole("heading", { name: /training schedule/i })).toBeVisible();
-
-    await user.click(await screen.findByRole("button", { name: /go to rep ranges/i }));
-
-    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
-    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
-  });
-
-  it("navigates backward from the large-screen Plan Blueprint rail", async () => {
-    const user = userEvent.setup();
-
-    mockPlanBuilderMediaQueries({ isLargeScreen: true, isWideDesktop: false });
     await saveConfirmedFourDayUpperLowerTrainingSplit();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
@@ -2289,7 +2301,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(stepList).getByText("Rep ranges")).toBeVisible();
     expect(within(stepList).getByText("Volume")).toBeVisible();
     expect(within(stepList).getByText("Exercises")).toBeVisible();
-    expect(within(stepList).getByText("Review")).toBeVisible();
+    expect(within(stepList).getByText("Generate")).toBeVisible();
     expect(await screen.findByRole("button", { name: /^back$/i })).toBeDisabled();
 
     await user.click(await screen.findByRole("button", { name: /continue to training style/i }));
@@ -2422,19 +2434,20 @@ async function expectConfirmableExercisesStep() {
   expect(
     screen.queryByText("Exercise selection will be editable in the next iteration."),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /continue to review/i })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /continue to generate/i })).toBeEnabled();
   expect(screen.queryByText("Exercise preferences · optional")).not.toBeInTheDocument();
   expect(screen.queryAllByRole("button", { name: /change/i }).length).toBeGreaterThan(0);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 }
 
-async function expectReviewStepComingNext() {
-  expect(await screen.findByRole("heading", { name: /review step coming next/i })).toBeVisible();
+async function expectGenerateStepComingNext() {
+  expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   expect(
     screen.getByText(
-      /exercise order and rest rules will be applied automatically during generation/i,
+      /split-derived Workout Templates, selected main compounds, weekly volume targets, rep range style, and Superset Groups/i,
     ),
   ).toBeVisible();
+  expect(screen.getByRole("button", { name: /^generate training plan$/i })).toBeEnabled();
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {

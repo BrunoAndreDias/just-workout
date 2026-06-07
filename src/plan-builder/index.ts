@@ -7,8 +7,8 @@ export { getPlanBuilderRedirectStep } from "./plan-blueprint";
 export { planBuilderPaths } from "./plan-builder-paths";
 export {
   PlanBuilderExercisesRoute,
+  PlanBuilderGenerateRoute,
   PlanBuilderRepRangesRoute,
-  PlanBuilderReviewRoute,
   PlanBuilderRoute,
   PlanBuilderVolumeRoute,
 } from "./plan-builder-route";

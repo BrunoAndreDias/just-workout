@@ -609,7 +609,7 @@ describe("plan blueprint", () => {
     });
   });
 
-  it("summarizes Review as the next step once Exercises is confirmed", () => {
+  it("summarizes Generate as the next step once Exercises is confirmed", () => {
     const blueprint = confirmExerciseSelectionPreferences({
       blueprint: createConfirmedPlanBlueprint({
         mainCompoundSelections: completeMainCompoundSelections,
@@ -618,7 +618,7 @@ describe("plan blueprint", () => {
     });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
-      nextStep: "Review",
+      nextStep: "Generate",
     });
   });
 

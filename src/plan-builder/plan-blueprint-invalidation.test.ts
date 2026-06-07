@@ -299,7 +299,7 @@ describe("plan blueprint invalidation and redirects", () => {
       exerciseSelectionPreferences,
       split: "rotating-push-pull-legs",
     });
-    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "review")).toBe("frequency");
+    expect(getPlanBuilderRedirectStep(splitChangedBlueprint, "generate")).toBe("frequency");
 
     expect(
       getPlanBuilderRedirectStep(
@@ -308,7 +308,7 @@ describe("plan blueprint invalidation and redirects", () => {
           split: "rotating-push-pull-legs",
           timestamp: "2026-05-30T10:15:00.000Z",
         }),
-        "review",
+        "generate",
       ),
     ).toBe("exercises");
   });
@@ -384,7 +384,7 @@ describe("plan blueprint invalidation and redirects", () => {
       exerciseSelectionPreferences,
       repRanges: "strength_leaning",
     });
-    expect(getPlanBuilderRedirectStep(repRangesChangedBlueprint, "review")).toBe("rep-ranges");
+    expect(getPlanBuilderRedirectStep(repRangesChangedBlueprint, "generate")).toBe("rep-ranges");
   });
 
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {
@@ -463,11 +463,11 @@ describe("plan blueprint invalidation and redirects", () => {
     expect(getPlanBuilderRedirectStep(blueprintWithInvalidRepRanges, "volume")).toBe("rep-ranges");
     expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "exercises")).toBe("volume");
     expect(getPlanBuilderRedirectStep(blueprintWithInvalidVolume, "exercises")).toBe("volume");
-    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "review")).toBe("volume");
-    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedExercises, "review")).toBe(
+    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedVolume, "generate")).toBe("volume");
+    expect(getPlanBuilderRedirectStep(blueprintWithUnconfirmedExercises, "generate")).toBe(
       "exercises",
     );
-    expect(getPlanBuilderRedirectStep(blueprintWithConfirmedExercises, "review")).toBeNull();
+    expect(getPlanBuilderRedirectStep(blueprintWithConfirmedExercises, "generate")).toBeNull();
   });
 
   it("describes the default 3-day recommendation", () => {

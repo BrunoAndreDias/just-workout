@@ -108,8 +108,8 @@ function getPlanBuilderPathByStep(step: string) {
       return planBuilderPaths.frequency;
     case "rep-ranges":
       return planBuilderPaths.repRanges;
-    case "review":
-      return planBuilderPaths.review;
+    case "generate":
+      return planBuilderPaths.generate;
     case "volume":
       return planBuilderPaths.volume;
   }
@@ -127,8 +127,8 @@ function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {
       return "Set your training volume";
     case "exercises":
       return "Exercise foundation";
-    case "review":
-      return "Review your plan blueprint";
+    case "generate":
+      return "Generate your training plan";
   }
 
   return "Build your workout plan";

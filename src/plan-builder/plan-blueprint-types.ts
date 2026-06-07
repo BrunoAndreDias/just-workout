@@ -37,7 +37,7 @@ export type RepRangeStyle = {
   title: string;
   volumeEstimationRepRange: VolumeEstimationRepRange;
 };
-export type PlanBuilderGuardedStep = "rep-ranges" | "volume" | "exercises" | "review";
+export type PlanBuilderGuardedStep = "rep-ranges" | "volume" | "exercises" | "generate";
 export type PlanBuilderRedirectStep = "frequency" | "rep-ranges" | "volume" | "exercises";
 
 export type PlanBuilderConfirmedSteps = {

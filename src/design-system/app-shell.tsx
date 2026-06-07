@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarCheck, Dumbbell } from "lucide-react";
+import { CalendarCheck, ClipboardList, Dumbbell } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -22,6 +22,13 @@ const appShellNavigationItems = [
       <CalendarCheck aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
     ),
     label: "Plan Builder",
+  },
+  {
+    href: "/training-plans",
+    icon: (
+      <ClipboardList aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
+    ),
+    label: "Training Plans",
   },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 

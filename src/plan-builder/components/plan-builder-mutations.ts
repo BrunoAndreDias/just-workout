@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type TrainingPlan, trainingPlanService } from "../../training-plan";
 import type { ExerciseSelectionPreferences } from "../exercise-selection-preferences";
 import {
   confirmExerciseSelectionPreferences,
@@ -315,6 +316,12 @@ export function useUpdateMainCompoundRotationPoolMutation() {
         movementPattern,
         timestamp,
       }),
+  });
+}
+
+export function useGenerateTrainingPlanMutation() {
+  return useMutation<TrainingPlan, Error, void>({
+    mutationFn: trainingPlanService.generateTrainingPlan,
   });
 }
 
