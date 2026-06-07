@@ -1180,8 +1180,8 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByText("Active Training Plan")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Upper A" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Lower A" })).toBeVisible();
-    expect(screen.getAllByText("Flat Barbell or Dumbbell Bench Press").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Barbell or Dumbbell Squats").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Flat Barbell Bench Press").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Barbell Squats").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /training plans/i })).toBeVisible();
     expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
   });

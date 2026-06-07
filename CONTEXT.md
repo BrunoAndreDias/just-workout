@@ -160,6 +160,18 @@ _Avoid_: Split id rule, UI checklist variant
 A **Training Split** context used to explain where **Weekly Movement Coverage** belongs, such as Push, Pull, Legs, Upper, Lower, or Full Body. Validation remains canonical by **Movement Pattern**, but user-facing copy can include the **Split Bucket** that is missing coverage.
 _Avoid_: Workout day, fixed weekday
 
+**Full-Body Template Focus**:
+The emphasis used when arranging main compounds inside a **Full Body** **Workout Template**. The current default is upper-focused and not yet user-configurable: each core full-body superset pairs two upper-body main compounds with one lower-body main compound, with no abs inside the core supersets. A future lower-focused option can invert that ratio while keeping the same two core superset structure.
+_Avoid_: Full-body mode, body emphasis
+
+**Workout Block**:
+A grouped section inside a generated **Workout Template**. The default block types are superset, isolation, and abs. Upper templates generate two complementary push/pull/abs superset blocks, Lower templates generate two complementary quad-dominant/hip-hamstring/abs superset blocks, and Full Body templates generate two upper-focused full-body superset blocks plus accessory work.
+_Avoid_: UI superset setting, configurable circuit
+
+**Workout Exercise Role**:
+The role an exercise fills inside a generated **Workout Block**: main compound, secondary compound, isolation, or abs. Main compounds carry the primary movement for the block; secondary compounds provide the complementary movement; isolation and abs exercises belong in accessory or abs blocks unless the default Upper/Lower superset rule explicitly includes abs.
+_Avoid_: Exercise type, set style
+
 **Compound-Capable Movement Pattern**:
 A major **Movement Pattern** that can be covered by a **Main Compound Selection**, such as horizontal push, horizontal pull, vertical push, vertical pull, quad dominant, or hip/hamstring dominant. Arm and accessory patterns can contribute useful training work, but they are handled as optional isolation or accessory coverage rather than required **Main Compound Selections**.
 _Avoid_: Accessory requirement, arm main lift

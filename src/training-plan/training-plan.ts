@@ -1,6 +1,8 @@
 import {
   type ExerciseCatalogExercise,
+  type ExerciseCatalogMuscleGroupId,
   getExerciseCatalogExercise,
+  type MovementPatternId,
 } from "../plan-builder/exercise-catalog";
 import type { MainCompoundRotationPool } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
@@ -15,13 +17,17 @@ export type TrainingPlanSlot = {
   exerciseId: string;
   exerciseName: string;
   kind: "exercise";
+  movementPattern: MovementPatternId;
+  role: "main_compound" | "secondary_compound" | "isolation" | "abs";
   slotLabel: string;
+  targetMuscles: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
 };
 
 export type SupersetGroup = {
   id: string;
   slots: ReadonlyArray<TrainingPlanSlot>;
   title: string;
+  type: "superset" | "isolation" | "abs";
 };
 
 export type WorkoutTemplate = {
@@ -57,6 +63,17 @@ type TemplateDraft = {
   bucket: string;
   id: string;
   label: string;
+};
+
+type FullBodyFocus = "upper" | "lower";
+
+type TemplateSelections = {
+  hipHamstringDominant: MainCompoundSelection | null;
+  primaryUpperPull: MainCompoundSelection | null;
+  primaryUpperPush: MainCompoundSelection | null;
+  quadDominant: MainCompoundSelection | null;
+  secondaryUpperPull: MainCompoundSelection | null;
+  secondaryUpperPush: MainCompoundSelection | null;
 };
 
 export function generateTrainingPlanFromBlueprint({
@@ -113,7 +130,11 @@ export function generateTrainingPlanFromBlueprint({
     workoutTemplates: templates.map((template) => ({
       id: template.id,
       label: template.label,
-      supersetGroups: createSupersetGroups(template),
+      supersetGroups: createSupersetGroups({
+        fullBodyFocus: "upper",
+        isAllFullBodyPlan: isAllFullBodySplit(blueprint.split),
+        template,
+      }),
     })),
   };
 }
@@ -204,19 +225,49 @@ function getLeastAssignedTemplate(templates: ReadonlyArray<TemplateDraft>): Temp
   );
 }
 
-function createSupersetGroups(template: TemplateDraft): ReadonlyArray<SupersetGroup> {
-  const upperPulls = getSelectionsForPatterns(template.assignedSelections, [
-    "horizontal_pull",
-    "vertical_pull",
-  ]);
-  const upperPushes = getSelectionsForPatterns(template.assignedSelections, [
-    "horizontal_push",
-    "vertical_push",
-  ]);
-  const horizontalPull = getSelectionForPattern(template.assignedSelections, "horizontal_pull");
-  const verticalPull = getSelectionForPattern(template.assignedSelections, "vertical_pull");
-  const horizontalPush = getSelectionForPattern(template.assignedSelections, "horizontal_push");
-  const verticalPush = getSelectionForPattern(template.assignedSelections, "vertical_push");
+function isAllFullBodySplit(split: PlanBlueprint["split"]): boolean {
+  return (
+    split === "alternating-full-body-a-b" ||
+    split === "full-body-2-day" ||
+    split === "full-body-3-day"
+  );
+}
+
+function createSupersetGroups({
+  fullBodyFocus,
+  isAllFullBodyPlan,
+  template,
+}: {
+  // TODO: expose Full-Body Template Focus as a Plan Builder configuration once the UI supports it.
+  fullBodyFocus: FullBodyFocus;
+  isAllFullBodyPlan: boolean;
+  template: TemplateDraft;
+}): ReadonlyArray<SupersetGroup> {
+  const selections = getTemplateSelections(template.assignedSelections);
+
+  if (template.bucket === "Full Body") {
+    return createFullBodySupersetGroups({
+      fullBodyFocus,
+      isAllFullBodyPlan,
+      selections,
+      templateId: template.id,
+    });
+  }
+
+  if (template.bucket === "Lower" || template.bucket === "Legs") {
+    return createLowerSupersetGroups(template.id, selections);
+  }
+
+  return createUpperSupersetGroups(template, selections);
+}
+
+function getTemplateSelections(
+  assignedSelections: ReadonlyArray<MainCompoundSelection>,
+): TemplateSelections {
+  const horizontalPull = getSelectionForPattern(assignedSelections, "horizontal_pull");
+  const verticalPull = getSelectionForPattern(assignedSelections, "vertical_pull");
+  const horizontalPush = getSelectionForPattern(assignedSelections, "horizontal_push");
+  const verticalPush = getSelectionForPattern(assignedSelections, "vertical_push");
   const primaryUpperPull = horizontalPull ?? verticalPull;
   const secondaryUpperPull = getAlternateUpperSelection({
     firstSelection: primaryUpperPull,
@@ -227,98 +278,150 @@ function createSupersetGroups(template: TemplateDraft): ReadonlyArray<SupersetGr
     firstSelection: primaryUpperPush,
     secondSelection: verticalPush ?? horizontalPush,
   });
-  const quadDominant = getSelectionForPattern(template.assignedSelections, "quad_dominant");
-  const hipHamstringDominant = getSelectionForPattern(
-    template.assignedSelections,
-    "hip_hamstring_dominant",
-  );
-  const groups: SupersetGroup[] = [];
+  const quadDominant = getSelectionForPattern(assignedSelections, "quad_dominant");
+  const hipHamstringDominant = getSelectionForPattern(assignedSelections, "hip_hamstring_dominant");
 
-  if (template.bucket === "Lower" || template.bucket === "Legs") {
-    groups.push({
-      id: `${template.id}-lower-superset-1`,
-      slots: [
-        quadDominant
-          ? createSelectedExerciseSlot(quadDominant)
-          : createDefaultExerciseSlot("quad_dominant"),
-        createDefaultExerciseSlot("hip_hamstring_secondary"),
-        createDefaultExerciseSlot("abs_1"),
-      ],
-      title: "Lower superset 1",
-    });
-    groups.push({
-      id: `${template.id}-lower-superset-2`,
-      slots: [
-        hipHamstringDominant
-          ? createSelectedExerciseSlot(hipHamstringDominant)
-          : createDefaultExerciseSlot("hip_hamstring_dominant"),
-        createDefaultExerciseSlot("quad_secondary"),
-        createDefaultExerciseSlot("abs_2"),
-      ],
-      title: "Lower superset 2",
-    });
-    groups.push(createIsolationGroup(template.id, "Lower isolation", false));
+  return {
+    hipHamstringDominant,
+    primaryUpperPull,
+    primaryUpperPush,
+    quadDominant,
+    secondaryUpperPull,
+    secondaryUpperPush,
+  };
+}
 
-    return groups;
+function createFullBodySupersetGroups({
+  fullBodyFocus,
+  isAllFullBodyPlan,
+  selections,
+  templateId,
+}: {
+  fullBodyFocus: FullBodyFocus;
+  isAllFullBodyPlan: boolean;
+  selections: TemplateSelections;
+  templateId: string;
+}): ReadonlyArray<SupersetGroup> {
+  if (fullBodyFocus === "lower") {
+    // TODO: implement lower-focused Full Body defaults when full-body focus becomes configurable.
   }
 
-  groups.push({
-    id: `${template.id}-upper-superset-1`,
-    slots: [
-      primaryUpperPull
-        ? createSelectedExerciseSlot(primaryUpperPull)
-        : createDefaultExerciseSlot("upper_pull_1"),
-      primaryUpperPush
-        ? createSelectedExerciseSlot(primaryUpperPush)
-        : createDefaultExerciseSlot("horizontal_push"),
-      createDefaultExerciseSlot("abs_1"),
-    ],
-    title: "Upper superset 1",
-  });
-
-  const hasSecondUpperSuperset = upperPulls[1] || upperPushes[1] || template.bucket === "Full Body";
-
-  if (hasSecondUpperSuperset) {
-    groups.push({
-      id: `${template.id}-upper-superset-2`,
+  const groups = [
+    createWorkoutBlock({
+      id: `${templateId}-full-body-superset-1`,
       slots: [
-        secondaryUpperPull
-          ? createSelectedExerciseSlot(secondaryUpperPull)
-          : createDefaultExerciseSlot("upper_pull_2"),
-        secondaryUpperPush
-          ? createSelectedExerciseSlot(secondaryUpperPush)
-          : createDefaultExerciseSlot("vertical_push"),
-        createDefaultExerciseSlot("abs_2"),
+        createSelectionSlot(selections.primaryUpperPush, "horizontal_push", "main_compound"),
+        createSelectionSlot(selections.primaryUpperPull, "upper_pull_1", "secondary_compound"),
+        createSelectionSlot(selections.quadDominant, "quad_dominant", "main_compound"),
       ],
-      title: "Upper superset 2",
-    });
-  }
-
-  if (quadDominant || hipHamstringDominant || template.bucket === "Full Body") {
-    groups.push({
-      id: `${template.id}-lower-superset`,
+      title: "Full-body superset 1",
+      type: "superset",
+    }),
+    createWorkoutBlock({
+      id: `${templateId}-full-body-superset-2`,
       slots: [
-        quadDominant
-          ? createSelectedExerciseSlot(quadDominant)
-          : createDefaultExerciseSlot("quad_dominant"),
-        hipHamstringDominant
-          ? createSelectedExerciseSlot(hipHamstringDominant)
-          : createDefaultExerciseSlot("hip_hamstring_dominant"),
+        createSelectionSlot(selections.secondaryUpperPull, "upper_pull_2", "main_compound"),
+        createSelectionSlot(selections.secondaryUpperPush, "vertical_push", "secondary_compound"),
+        createSelectionSlot(
+          selections.hipHamstringDominant,
+          "hip_hamstring_dominant",
+          "main_compound",
+        ),
       ],
-      title: "Lower superset",
-    });
-  }
+      title: "Full-body superset 2",
+      type: "superset",
+    }),
+    createFullBodyIsolationGroup(templateId),
+  ];
 
-  groups.push(createIsolationGroup(template.id, "Upper isolation", !hasSecondUpperSuperset));
+  if (isAllFullBodyPlan) {
+    groups.push(createAbsFinisherGroup(templateId));
+  }
 
   return groups;
 }
 
-function getSelectionsForPatterns(
-  selections: ReadonlyArray<MainCompoundSelection>,
-  movementPatterns: ReadonlyArray<MainCompoundSelection["movementPattern"]>,
-): MainCompoundSelection[] {
-  return selections.filter((selection) => movementPatterns.includes(selection.movementPattern));
+function createLowerSupersetGroups(
+  templateId: string,
+  selections: TemplateSelections,
+): ReadonlyArray<SupersetGroup> {
+  return [
+    createWorkoutBlock({
+      id: `${templateId}-lower-superset-1`,
+      slots: [
+        createSelectionSlot(selections.quadDominant, "quad_dominant", "main_compound"),
+        createDefaultExerciseSlot("hip_hamstring_secondary", "secondary_compound"),
+        createDefaultExerciseSlot("abs_1", "abs"),
+      ],
+      title: "Lower superset 1",
+      type: "superset",
+    }),
+    createWorkoutBlock({
+      id: `${templateId}-lower-superset-2`,
+      slots: [
+        createSelectionSlot(
+          selections.hipHamstringDominant,
+          "hip_hamstring_dominant",
+          "main_compound",
+        ),
+        createDefaultExerciseSlot("quad_secondary", "secondary_compound"),
+        createDefaultExerciseSlot("abs_2", "abs"),
+      ],
+      title: "Lower superset 2",
+      type: "superset",
+    }),
+    createIsolationGroup(templateId, "Lower isolation", false),
+  ];
+}
+
+function createUpperSupersetGroups(
+  template: TemplateDraft,
+  selections: TemplateSelections,
+): ReadonlyArray<SupersetGroup> {
+  const groups = [
+    createWorkoutBlock({
+      id: `${template.id}-upper-superset-1`,
+      slots: [
+        createSelectionSlot(selections.primaryUpperPush, "horizontal_push", "main_compound"),
+        createSelectionSlot(selections.primaryUpperPull, "upper_pull_1", "secondary_compound"),
+        createDefaultExerciseSlot("abs_1", "abs"),
+      ],
+      title: "Upper superset 1",
+      type: "superset",
+    }),
+    createWorkoutBlock({
+      id: `${template.id}-upper-superset-2`,
+      slots: [
+        createSelectionSlot(selections.secondaryUpperPull, "upper_pull_2", "main_compound"),
+        createSelectionSlot(selections.secondaryUpperPush, "vertical_push", "secondary_compound"),
+        createDefaultExerciseSlot("abs_2", "abs"),
+      ],
+      title: "Upper superset 2",
+      type: "superset",
+    }),
+  ];
+
+  if (selections.quadDominant || selections.hipHamstringDominant) {
+    groups.push(
+      createWorkoutBlock({
+        id: `${template.id}-lower-superset`,
+        slots: [
+          createSelectionSlot(selections.quadDominant, "quad_dominant", "main_compound"),
+          createSelectionSlot(
+            selections.hipHamstringDominant,
+            "hip_hamstring_dominant",
+            "main_compound",
+          ),
+        ],
+        title: "Lower superset",
+        type: "superset",
+      }),
+    );
+  }
+
+  groups.push(createIsolationGroup(template.id, "Upper isolation", false));
+
+  return groups;
 }
 
 function getSelectionForPattern(
@@ -342,25 +445,56 @@ function getAlternateUpperSelection({
   return secondSelection;
 }
 
-function createSelectedExerciseSlot(selection: MainCompoundSelection): TrainingPlanSlot {
+function createWorkoutBlock({ id, slots, title, type }: SupersetGroup): SupersetGroup {
+  return {
+    id,
+    slots,
+    title,
+    type,
+  };
+}
+
+function createSelectionSlot(
+  selection: MainCompoundSelection | null,
+  defaultSlotKey: DefaultExerciseSlotKey,
+  role: TrainingPlanSlot["role"],
+): TrainingPlanSlot {
+  return selection
+    ? createSelectedExerciseSlot(selection, role)
+    : createDefaultExerciseSlot(defaultSlotKey, role);
+}
+
+function createSelectedExerciseSlot(
+  selection: MainCompoundSelection,
+  role: TrainingPlanSlot["role"],
+): TrainingPlanSlot {
   const exercise = getExerciseCatalogExercise(selection.exerciseId);
 
   return {
     exerciseId: selection.exerciseId,
     exerciseName: exercise?.name ?? selection.exerciseId,
     kind: "exercise",
+    movementPattern: exercise?.movementPattern ?? selection.movementPattern,
+    role,
     slotLabel: formatMovementSlotLabel(selection.movementPattern),
+    targetMuscles: exercise?.primaryMuscleGroups ?? [],
   };
 }
 
-function createDefaultExerciseSlot(slotKey: DefaultExerciseSlotKey): TrainingPlanSlot {
+function createDefaultExerciseSlot(
+  slotKey: DefaultExerciseSlotKey,
+  role: TrainingPlanSlot["role"],
+): TrainingPlanSlot {
   const defaultExercise = defaultExerciseBySlot[slotKey];
 
   return {
     exerciseId: defaultExercise.id,
     exerciseName: defaultExercise.name,
     kind: "exercise",
+    movementPattern: defaultExercise.movementPattern,
+    role,
     slotLabel: defaultExercise.slotLabel,
+    targetMuscles: defaultExercise.targetMuscles,
   };
 }
 
@@ -372,22 +506,47 @@ function createIsolationGroup(
   const slots =
     slotLabel === "Lower isolation"
       ? [
-          createDefaultExerciseSlot("lower_isolation"),
-          createDefaultExerciseSlot("lower_isolation_2"),
+          createDefaultExerciseSlot("lower_isolation", "isolation"),
+          createDefaultExerciseSlot("lower_isolation_2", "isolation"),
         ]
       : [
-          createDefaultExerciseSlot("upper_isolation_1"),
-          createDefaultExerciseSlot("upper_isolation_2"),
+          createDefaultExerciseSlot("upper_isolation_1", "isolation"),
+          createDefaultExerciseSlot("upper_isolation_2", "isolation"),
         ];
 
   if (includeAbs) {
-    slots.push(createDefaultExerciseSlot("abs_2"));
+    slots.push(createDefaultExerciseSlot("abs_2", "abs"));
   }
 
   return {
     id: `${templateId}-isolation`,
     slots,
     title: "Isolation finisher",
+    type: "isolation",
+  };
+}
+
+function createFullBodyIsolationGroup(templateId: string): SupersetGroup {
+  const slots = [
+    createDefaultExerciseSlot("upper_isolation_1", "isolation"),
+    createDefaultExerciseSlot("upper_isolation_2", "isolation"),
+    createDefaultExerciseSlot("lower_isolation_2", "isolation"),
+  ];
+
+  return {
+    id: `${templateId}-isolation`,
+    slots,
+    title: "Isolation finisher",
+    type: "isolation",
+  };
+}
+
+function createAbsFinisherGroup(templateId: string): SupersetGroup {
+  return {
+    id: `${templateId}-abs-finisher`,
+    slots: [createDefaultExerciseSlot("abs_1", "abs"), createDefaultExerciseSlot("abs_2", "abs")],
+    title: "Abs finisher",
+    type: "abs",
   };
 }
 
@@ -411,8 +570,8 @@ const defaultExerciseBySlot = {
   abs_1: createDefaultExercise("cable-crunches", "Cable Crunches", "Abs"),
   abs_2: createDefaultExercise("hanging-leg-raises", "Hanging Leg Raises", "Abs"),
   hip_hamstring_dominant: createDefaultExercise(
-    "barbell-or-dumbbell-romanian-deadlifts",
-    "Barbell or Dumbbell Romanian Deadlifts",
+    "barbell-romanian-deadlifts",
+    "Barbell Romanian Deadlifts",
     "Hip/hamstring dominant",
   ),
   hip_hamstring_secondary: createDefaultExercise(
@@ -421,8 +580,8 @@ const defaultExerciseBySlot = {
     "Hip/hamstring secondary",
   ),
   horizontal_push: createDefaultExercise(
-    "flat-barbell-or-dumbbell-bench-press",
-    "Flat Barbell or Dumbbell Bench Press",
+    "flat-barbell-bench-press",
+    "Flat Barbell Bench Press",
     "Horizontal push",
   ),
   lower_isolation: createDefaultExercise("leg-extensions", "Leg Extensions", "Lower isolation"),
@@ -431,33 +590,31 @@ const defaultExerciseBySlot = {
     "Standing Calf Raises",
     "Lower isolation",
   ),
-  quad_dominant: createDefaultExercise(
-    "barbell-or-dumbbell-squats",
-    "Barbell or Dumbbell Squats",
-    "Quad dominant",
-  ),
+  quad_dominant: createDefaultExercise("barbell-squats", "Barbell Squats", "Quad dominant"),
   quad_secondary: createDefaultExercise("leg-press", "Leg Press", "Quad secondary"),
   upper_isolation_1: createDefaultExercise(
-    "standing-barbell-or-dumbbell-curls",
-    "Standing Barbell or Dumbbell Curls",
+    "standing-barbell-curls",
+    "Standing Barbell Curls",
     "Biceps",
   ),
   upper_isolation_2: createDefaultExercise("cable-press-downs", "Cable Press-Downs", "Triceps"),
   upper_pull_1: createDefaultExercise("pull-ups", "Pull-Ups", "Vertical pull"),
   upper_pull_2: createDefaultExercise(
-    "bent-over-barbell-or-dumbbell-rows",
-    "Bent Over Barbell or Dumbbell Rows",
+    "bent-over-barbell-rows",
+    "Bent Over Barbell Rows",
     "Horizontal pull",
   ),
   vertical_push: createDefaultExercise(
-    "standing-overhead-barbell-or-dumbbell-press",
-    "Standing Overhead Barbell or Dumbbell Press",
+    "standing-overhead-barbell-press",
+    "Standing Overhead Barbell Press",
     "Vertical push",
   ),
 } as const satisfies Record<DefaultExerciseSlotKey, DefaultExerciseSlot>;
 
 type DefaultExerciseSlot = Pick<ExerciseCatalogExercise, "id" | "name"> & {
+  movementPattern: MovementPatternId;
   slotLabel: string;
+  targetMuscles: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
 };
 
 function createDefaultExercise(
@@ -469,10 +626,37 @@ function createDefaultExercise(
 
   return {
     id: exercise?.id ?? exerciseId,
+    movementPattern: getFallbackMovementPattern(slotLabel, exercise?.movementPattern),
     name: exercise?.name ?? fallbackName,
     slotLabel,
+    targetMuscles: exercise?.primaryMuscleGroups ?? [],
   };
 }
+
+function getFallbackMovementPattern(
+  slotLabel: string,
+  movementPattern?: MovementPatternId,
+): MovementPatternId {
+  if (movementPattern) {
+    return movementPattern;
+  }
+
+  return fallbackMovementPatternBySlotLabel[slotLabel] ?? "horizontal_pull";
+}
+
+const fallbackMovementPatternBySlotLabel: Record<string, MovementPatternId> = {
+  Abs: "core",
+  Biceps: "elbow_flexion",
+  "Hip/hamstring dominant": "hip_hamstring_dominant",
+  "Hip/hamstring secondary": "hip_hamstring_dominant",
+  "Horizontal push": "horizontal_push",
+  "Lower isolation": "calves_accessories",
+  "Quad dominant": "quad_dominant",
+  "Quad secondary": "quad_dominant",
+  Triceps: "elbow_extension",
+  "Vertical pull": "vertical_pull",
+  "Vertical push": "vertical_push",
+};
 
 function formatMovementSlotLabel(
   movementPattern: MainCompoundSelection["movementPattern"],

@@ -139,7 +139,7 @@ describe("exercise selection preferences", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(81);
+    ).toBe(95);
     expect(exerciseCatalogMuscleGroups[0]?.exercises).toContain(
       "Flat Barbell or Dumbbell Bench Press",
     );

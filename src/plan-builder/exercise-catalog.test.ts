@@ -11,9 +11,9 @@ import {
 
 describe("exercise catalog", () => {
   it("keeps one rich exercise catalog without duplicate ids or names", () => {
-    expect(exerciseCatalogExercises).toHaveLength(81);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(81);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(81);
+    expect(exerciseCatalogExercises).toHaveLength(95);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(95);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(95);
   });
 
   it("derives the muscle-group browsing view from the rich catalog", () => {
@@ -36,7 +36,7 @@ describe("exercise catalog", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(81);
+    ).toBe(95);
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "chest")?.exercises,
     ).toContain("Flat Barbell or Dumbbell Bench Press");
