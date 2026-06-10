@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarCheck, ClipboardList, Dumbbell } from "lucide-react";
+import { Bell, CalendarCheck, ClipboardList, Dumbbell, UserCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -35,13 +35,13 @@ const appShellNavigationItems = [
 export function AppShell({ children, currentPathname }: AppShellProps) {
   return (
     <div className="app-shell min-h-screen text-[#162325]">
-      <div className="app-shell-frame mx-auto min-h-screen w-full max-w-[1200px] px-2 sm:px-2">
-        <div className="app-shell-surface min-h-screen border-x border-stone-950/12">
+      <div className="app-shell-frame mx-auto w-full max-w-[1200px]">
+        <div className="app-shell-surface border border-stone-950/10">
           <header className="app-shell-topbar sticky top-0 z-40 flex items-stretch justify-between border-b border-stone-950/10 backdrop-blur-md">
             <div className="flex min-w-0 items-stretch">
               <Link
                 aria-label="Just Workout"
-                className="app-shell-brand flex min-w-0 items-center gap-2 px-4 pr-3 transition-colors hover:bg-stone-950/5 sm:px-5"
+                className="app-shell-brand flex min-w-0 items-center gap-3 px-4 pr-3 transition-colors hover:bg-stone-950/5 sm:px-5"
                 to="/plan-builder"
               >
                 <span className="app-shell-brand-mark flex shrink-0 items-center justify-center bg-[#00636a] text-white">
@@ -61,6 +61,19 @@ export function AppShell({ children, currentPathname }: AppShellProps) {
                   />
                 ))}
               </nav>
+            </div>
+
+            <div className="app-shell-actions flex shrink-0 items-center">
+              <button className="app-shell-icon-button" type="button" aria-label="Notifications">
+                <Bell aria-hidden="true" className="app-shell-action-icon" strokeWidth={1.8} />
+              </button>
+              <button className="app-shell-profile-button" type="button" aria-label="Profile">
+                <UserCircle
+                  aria-hidden="true"
+                  className="app-shell-profile-icon"
+                  strokeWidth={1.9}
+                />
+              </button>
             </div>
           </header>
 
@@ -84,7 +97,7 @@ function AppShellNavigationLink({
     <Link
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "app-shell-navigation-link group flex items-center justify-center px-2 text-sm font-medium leading-none text-stone-950 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#007780]/55",
+        "app-shell-navigation-link group flex items-center justify-center text-sm font-medium leading-none text-stone-950 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#007780]/55",
       )}
       to={item.href}
     >

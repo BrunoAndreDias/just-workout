@@ -115,6 +115,73 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expectWorkoutHasNoDuplicateExercises(fullBodyTemplate);
   });
 
+  it("builds alternating Full Body A/B templates with concrete blueprint exercise variation", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        split: "alternating-full-body-a-b",
+        trainingFrequencyDaysPerWeek: 3,
+      }),
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(trainingPlan.workoutTemplates.map((template) => template.label)).toEqual([
+      "Full Body A",
+      "Full Body B",
+    ]);
+
+    const fullBodyA = trainingPlan.workoutTemplates.find(
+      (template) => template.label === "Full Body A",
+    );
+    const fullBodyB = trainingPlan.workoutTemplates.find(
+      (template) => template.label === "Full Body B",
+    );
+
+    expect(fullBodyA?.supersetGroups.map((group) => group.type)).toEqual([
+      "superset",
+      "superset",
+      "isolation",
+    ]);
+    expect(fullBodyA?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Flat Dumbbell Bench Press",
+      "Pull-Ups",
+      "Barbell or Dumbbell Lunges",
+    ]);
+    expect(fullBodyA?.supersetGroups[1]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Bent Over Barbell Rows",
+      "Standing Overhead Barbell or Dumbbell Press",
+      "Barbell Romanian Deadlifts",
+    ]);
+    expect(fullBodyA?.supersetGroups[2]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Standing Barbell Curls",
+      "Cable Press-Downs",
+      "Standing Calf Raises",
+    ]);
+
+    expect(fullBodyB?.supersetGroups.map((group) => group.type)).toEqual([
+      "superset",
+      "superset",
+      "isolation",
+    ]);
+    expect(fullBodyB?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Flat Barbell Bench Press",
+      "Bent Over Barbell Rows",
+      "Barbell Squats",
+    ]);
+    expect(fullBodyB?.supersetGroups[1]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Pull-Ups",
+      "Standing Overhead Barbell Press",
+      "Hyperextensions",
+    ]);
+    expect(fullBodyB?.supersetGroups[2]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Standing Barbell Curls",
+      "Cable Press-Downs",
+      "Standing Calf Raises",
+    ]);
+    expectWorkoutHasNoDuplicateExercises(fullBodyA);
+    expectWorkoutHasNoDuplicateExercises(fullBodyB);
+  });
+
   it("builds lower templates as two alternating main supersets plus one isolation superset", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint({

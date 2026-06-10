@@ -1,14 +1,15 @@
 .app-shell {
-  --app-shell-gutter: #ebe4d8;
-  --app-shell-gutter-edge: #ded4c5;
+  --app-shell-gutter: #f3eee5;
+  --app-shell-gutter-edge: #e6ddcf;
   --app-shell-frame-max-width: 1200px;
-  --app-shell-frame-padding-x: clamp(0.5rem, 2.8vw, 3rem);
-  --app-shell-surface: #fbf8f3;
-  --app-shell-surface-strong: #fffdfa;
+  --app-shell-frame-padding-x: clamp(0rem, 1.75vw, 1rem);
+  --app-shell-frame-padding-y: clamp(0rem, 1.7vw, 1rem);
+  --app-shell-surface: #fffdf9;
+  --app-shell-surface-strong: #ffffff;
   --app-shell-border: rgba(28, 25, 23, 0.12);
   --app-shell-accent: #007780;
   background:
-    linear-gradient(90deg, rgba(0, 119, 128, 0.07), transparent 18% 82%, rgba(0, 119, 128, 0.045)),
+    radial-gradient(circle at top left, rgba(0, 119, 128, 0.055), transparent 30rem),
     linear-gradient(
       90deg,
       var(--app-shell-gutter-edge),
@@ -19,46 +20,56 @@
 }
 
 .app-shell-frame {
+  min-height: 100dvh;
   padding-right: var(--app-shell-frame-padding-x);
   padding-left: var(--app-shell-frame-padding-x);
+  padding-top: var(--app-shell-frame-padding-y);
+  padding-bottom: var(--app-shell-frame-padding-y);
 }
 
 .app-shell-surface {
+  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)));
+  overflow: clip;
+  border-radius: 0.875rem;
   background:
-    linear-gradient(180deg, rgba(255, 253, 250, 0.92), rgba(250, 248, 244, 0.98)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 253, 249, 0.98)),
     var(--app-shell-surface);
 }
 
 .app-shell-topbar {
-  min-height: 3.75rem;
+  min-height: 4.875rem;
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .app-shell-brand {
-  min-height: 3.75rem;
+  min-height: 4.875rem;
 }
 
 .app-shell-brand-mark {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.375rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
 }
 
 .app-shell-brand-icon {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .app-shell-brand-name {
-  font-size: 1.05rem;
+  font-size: 1.125rem;
 }
 
 .app-shell-navigation-link {
-  min-height: 3.75rem;
+  min-height: 4.875rem;
+  padding-right: 0.375rem;
+  padding-left: 0.375rem;
 }
 
 .app-shell-navigation-pill {
-  gap: 0.35rem;
+  gap: 0.5rem;
   color: #1d1a16;
+  min-height: 2.625rem;
 }
 
 .app-shell-navigation-icon {
@@ -68,8 +79,67 @@
   color: var(--app-shell-accent);
 }
 
+.app-shell-actions {
+  gap: 0.625rem;
+  padding-right: 1.75rem;
+  padding-left: 1rem;
+}
+
+.app-shell-icon-button,
+.app-shell-profile-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  color: #3b4146;
+  background: transparent;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.app-shell-icon-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+}
+
+.app-shell-icon-button:hover,
+.app-shell-profile-button:hover {
+  color: #075d63;
+  background: rgba(0, 119, 128, 0.08);
+}
+
+.app-shell-icon-button:focus-visible,
+.app-shell-profile-button:focus-visible {
+  outline: 2px solid rgba(0, 119, 128, 0.55);
+  outline-offset: 2px;
+}
+
+.app-shell-action-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.app-shell-profile-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+}
+
+.app-shell-profile-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
 .app-shell-main {
-  min-height: calc(100dvh - 3.8125rem);
+  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
+  background: transparent;
+}
+
+.active-training-plan-page-shell {
+  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
+  padding: clamp(1.25rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
 }
 
 @media (min-width: 1280px) {
@@ -81,7 +151,7 @@
 @media (min-width: 1600px) {
   .app-shell {
     --app-shell-frame-max-width: 1280px;
-    --app-shell-frame-padding-x: 2.5rem;
+    --app-shell-frame-padding-x: 1rem;
   }
 
   .app-shell-frame {
@@ -92,10 +162,73 @@
 @media (min-width: 2200px) {
   .app-shell {
     --app-shell-frame-max-width: 1320px;
-    --app-shell-frame-padding-x: 3rem;
+    --app-shell-frame-padding-x: 1.25rem;
   }
 
   .app-shell-frame {
     max-width: var(--app-shell-frame-max-width);
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell-navigation-pill span {
+    display: none;
+  }
+
+  .app-shell-brand-name {
+    display: none;
+  }
+
+  .app-shell:has(.active-training-plan-page-shell) .app-shell-navigation {
+    display: none;
+  }
+
+  .app-shell:has(.active-training-plan-page-shell) .app-shell-brand-name {
+    display: inline;
+    max-width: 9.5rem;
+  }
+
+  .app-shell-actions {
+    gap: 0.25rem;
+    padding-right: 0.75rem;
+    padding-left: 0.5rem;
+  }
+
+  .app-shell-brand {
+    padding-right: 0.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-shell:has(.active-training-plan-page-shell) .app-shell-icon-button {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell-frame {
+    padding: 0;
+  }
+
+  .app-shell-surface {
+    min-height: 100dvh;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .app-shell-topbar,
+  .app-shell-brand,
+  .app-shell-navigation-link {
+    min-height: 4.25rem;
+  }
+
+  .app-shell-main,
+  .active-training-plan-page-shell {
+    min-height: calc(100dvh - 4.3125rem);
+  }
+
+  .active-training-plan-page-shell {
+    padding: 1.125rem 1rem calc(6.75rem + env(safe-area-inset-bottom));
   }
 }

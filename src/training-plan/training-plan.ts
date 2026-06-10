@@ -132,6 +132,7 @@ export function generateTrainingPlanFromBlueprint({
       label: template.label,
       supersetGroups: createSupersetGroups({
         fullBodyFocus: "upper",
+        isAlternatingFullBodyAB: blueprint.split === "alternating-full-body-a-b",
         isAllFullBodyPlan: isAllFullBodySplit(blueprint.split),
         template,
       }),
@@ -154,18 +155,28 @@ function createTemplateDrafts(
     return counts;
   }, new Map<string, number>());
   const seenLabels = new Map<string, number>();
+  const templateDrafts: TemplateDraft[] = [];
+  const templateLabels = new Set<string>();
 
-  return sessionLabels.map((sessionLabel, index) => {
+  for (const sessionLabel of sessionLabels) {
     const seenCount = seenLabels.get(sessionLabel) ?? 0;
     seenLabels.set(sessionLabel, seenCount + 1);
+    const label = getTemplateLabel(sessionLabel, seenCount, labelCounts.get(sessionLabel) ?? 1);
 
-    return {
+    if (templateLabels.has(label)) {
+      continue;
+    }
+
+    templateLabels.add(label);
+    templateDrafts.push({
       assignedSelections: [],
       bucket: getTemplateBucket(sessionLabel),
-      id: `template-${index + 1}`,
-      label: getTemplateLabel(sessionLabel, seenCount, labelCounts.get(sessionLabel) ?? 1),
-    };
-  });
+      id: `template-${templateDrafts.length + 1}`,
+      label,
+    });
+  }
+
+  return templateDrafts;
 }
 
 function getTemplateBucket(sessionLabel: string): string {
@@ -193,6 +204,10 @@ function getTemplateBucket(sessionLabel: string): string {
 }
 
 function getTemplateLabel(sessionLabel: string, seenCount: number, totalCount: number): string {
+  if (hasExplicitTemplateSuffix(sessionLabel)) {
+    return sessionLabel;
+  }
+
   if (totalCount === 1 && !/^full body$/i.test(sessionLabel)) {
     return sessionLabel;
   }
@@ -202,6 +217,10 @@ function getTemplateLabel(sessionLabel: string, seenCount: number, totalCount: n
   }
 
   return `${sessionLabel} ${String.fromCharCode(65 + seenCount)}`;
+}
+
+function hasExplicitTemplateSuffix(sessionLabel: string): boolean {
+  return /\s[A-Z]$/.test(sessionLabel);
 }
 
 function shouldAssignSelectionToTemplate(template: TemplateDraft, bucket?: string): boolean {
@@ -235,11 +254,13 @@ function isAllFullBodySplit(split: PlanBlueprint["split"]): boolean {
 
 function createSupersetGroups({
   fullBodyFocus,
+  isAlternatingFullBodyAB,
   isAllFullBodyPlan,
   template,
 }: {
   // TODO: expose Full-Body Template Focus as a Plan Builder configuration once the UI supports it.
   fullBodyFocus: FullBodyFocus;
+  isAlternatingFullBodyAB: boolean;
   isAllFullBodyPlan: boolean;
   template: TemplateDraft;
 }): ReadonlyArray<SupersetGroup> {
@@ -248,9 +269,11 @@ function createSupersetGroups({
   if (template.bucket === "Full Body") {
     return createFullBodySupersetGroups({
       fullBodyFocus,
+      isAlternatingFullBodyAB,
       isAllFullBodyPlan,
       selections,
       templateId: template.id,
+      templateLabel: template.label,
     });
   }
 
@@ -293,17 +316,29 @@ function getTemplateSelections(
 
 function createFullBodySupersetGroups({
   fullBodyFocus,
+  isAlternatingFullBodyAB,
   isAllFullBodyPlan,
   selections,
   templateId,
+  templateLabel,
 }: {
   fullBodyFocus: FullBodyFocus;
+  isAlternatingFullBodyAB: boolean;
   isAllFullBodyPlan: boolean;
   selections: TemplateSelections;
   templateId: string;
+  templateLabel: string;
 }): ReadonlyArray<SupersetGroup> {
   if (fullBodyFocus === "lower") {
     // TODO: implement lower-focused Full Body defaults when full-body focus becomes configurable.
+  }
+
+  const alternatingFullBodyGroups = isAlternatingFullBodyAB
+    ? createAlternatingFullBodySupersetGroups(templateId, templateLabel)
+    : null;
+
+  if (alternatingFullBodyGroups) {
+    return alternatingFullBodyGroups;
   }
 
   const groups = [
@@ -339,6 +374,125 @@ function createFullBodySupersetGroups({
   }
 
   return groups;
+}
+
+function createAlternatingFullBodySupersetGroups(
+  templateId: string,
+  templateLabel: string,
+): ReadonlyArray<SupersetGroup> | null {
+  if (templateLabel === "Full Body A") {
+    return [
+      createWorkoutBlock({
+        id: `${templateId}-full-body-superset-1`,
+        slots: [
+          createNamedExerciseSlot({
+            exerciseId: "flat-dumbbell-bench-press",
+            exerciseName: "Flat Dumbbell Bench Press",
+            role: "main_compound",
+            slotLabel: "Horizontal push",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            role: "secondary_compound",
+            slotLabel: "Vertical pull",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "barbell-or-dumbbell-lunges",
+            exerciseName: "Barbell or Dumbbell Lunges",
+            role: "main_compound",
+            slotLabel: "Quad dominant",
+          }),
+        ],
+        title: "Full-body superset 1",
+        type: "superset",
+      }),
+      createWorkoutBlock({
+        id: `${templateId}-full-body-superset-2`,
+        slots: [
+          createNamedExerciseSlot({
+            exerciseId: "bent-over-barbell-rows",
+            exerciseName: "Bent Over Barbell Rows",
+            role: "main_compound",
+            slotLabel: "Horizontal pull",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+            exerciseName: "Standing Overhead Barbell or Dumbbell Press",
+            role: "secondary_compound",
+            slotLabel: "Vertical push",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "barbell-romanian-deadlifts",
+            exerciseName: "Barbell Romanian Deadlifts",
+            role: "main_compound",
+            slotLabel: "Hip/hamstring dominant",
+          }),
+        ],
+        title: "Full-body superset 2",
+        type: "superset",
+      }),
+      createFullBodyIsolationGroup(templateId),
+    ];
+  }
+
+  if (templateLabel === "Full Body B") {
+    return [
+      createWorkoutBlock({
+        id: `${templateId}-full-body-superset-1`,
+        slots: [
+          createNamedExerciseSlot({
+            exerciseId: "flat-barbell-bench-press",
+            exerciseName: "Flat Barbell Bench Press",
+            role: "main_compound",
+            slotLabel: "Horizontal push",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "bent-over-barbell-rows",
+            exerciseName: "Bent Over Barbell Rows",
+            role: "secondary_compound",
+            slotLabel: "Horizontal pull",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "barbell-squats",
+            exerciseName: "Barbell Squats",
+            role: "main_compound",
+            slotLabel: "Quad dominant",
+          }),
+        ],
+        title: "Full-body superset 1",
+        type: "superset",
+      }),
+      createWorkoutBlock({
+        id: `${templateId}-full-body-superset-2`,
+        slots: [
+          createNamedExerciseSlot({
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            role: "main_compound",
+            slotLabel: "Vertical pull",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "standing-overhead-barbell-press",
+            exerciseName: "Standing Overhead Barbell Press",
+            role: "secondary_compound",
+            slotLabel: "Vertical push",
+          }),
+          createNamedExerciseSlot({
+            exerciseId: "hyperextensions",
+            exerciseName: "Hyperextensions",
+            role: "main_compound",
+            slotLabel: "Hip/hamstring dominant",
+          }),
+        ],
+        title: "Full-body superset 2",
+        type: "superset",
+      }),
+      createFullBodyIsolationGroup(templateId),
+    ];
+  }
+
+  return null;
 }
 
 function createLowerSupersetGroups(
@@ -495,6 +649,30 @@ function createDefaultExerciseSlot(
     role,
     slotLabel: defaultExercise.slotLabel,
     targetMuscles: defaultExercise.targetMuscles,
+  };
+}
+
+function createNamedExerciseSlot({
+  exerciseId,
+  exerciseName,
+  role,
+  slotLabel,
+}: {
+  exerciseId: string;
+  exerciseName: string;
+  role: TrainingPlanSlot["role"];
+  slotLabel: string;
+}): TrainingPlanSlot {
+  const exercise = getExerciseCatalogExercise(exerciseId);
+
+  return {
+    exerciseId: exercise?.id ?? exerciseId,
+    exerciseName,
+    kind: "exercise",
+    movementPattern: getFallbackMovementPattern(slotLabel, exercise?.movementPattern),
+    role,
+    slotLabel,
+    targetMuscles: exercise?.primaryMuscleGroups ?? [],
   };
 }
 
