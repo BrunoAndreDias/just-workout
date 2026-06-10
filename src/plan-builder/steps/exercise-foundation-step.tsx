@@ -84,15 +84,7 @@ type AccessoryMuscleGroupFilterId =
   | "hips"
   | "shoulders";
 
-type AccessoryEquipmentFilterId =
-  | "all"
-  | "bodyweight"
-  | "cable"
-  | "dumbbells"
-  | "loaded"
-  | "machine";
-
-type AccessoryBeginnerFilterId = "all" | "beginner_friendly";
+type AccessoryEquipmentFilterId = "bodyweight" | "cable" | "dumbbells" | "loaded" | "machine";
 
 type AccessoryExercise = {
   beginnerFriendly: boolean;
@@ -116,16 +108,16 @@ const mainCompoundPickerFilters = [
 ] as const satisfies ReadonlyArray<MainCompoundPickerFilter>;
 
 const fullBodySuggestedFoundation: SuggestedFoundationByPattern = {
-  hip_hamstring_dominant: "barbell-or-dumbbell-romanian-deadlifts",
-  horizontal_pull: "bent-over-barbell-or-dumbbell-rows",
-  horizontal_push: "flat-barbell-or-dumbbell-bench-press",
-  quad_dominant: "barbell-or-dumbbell-squats",
+  hip_hamstring_dominant: "barbell-romanian-deadlifts",
+  horizontal_pull: "bent-over-barbell-rows",
+  horizontal_push: "flat-barbell-bench-press",
+  quad_dominant: "barbell-squats",
   vertical_pull: "pull-ups",
 };
 
 const allPatternSuggestedFoundation: SuggestedFoundationByPattern = {
   ...fullBodySuggestedFoundation,
-  vertical_push: "standing-overhead-barbell-or-dumbbell-press",
+  vertical_push: "standing-overhead-barbell-press",
 };
 
 const suggestedFoundationBySplit = {
@@ -221,20 +213,6 @@ const accessoryMuscleGroupFilters = [
   { id: "hips", label: "Hips" },
 ] as const;
 
-const accessoryEquipmentFilters = [
-  { id: "all", label: "Equipment" },
-  { id: "dumbbells", label: "Dumbbells" },
-  { id: "machine", label: "Machine" },
-  { id: "bodyweight", label: "Bodyweight" },
-  { id: "cable", label: "Cable" },
-  { id: "loaded", label: "Loaded" },
-] as const;
-
-const accessoryBeginnerFilters = [
-  { id: "all", label: "Any level" },
-  { id: "beginner_friendly", label: "Beginner-friendly" },
-] as const;
-
 function getEnabledOptionalVolumeMuscleGroups(
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>,
 ): ReadonlySet<OptionalVolumeMuscleGroupId> {
@@ -262,16 +240,6 @@ function getAvailableAccessoryExercises(
     (exercise) =>
       exercise.optionalVolumeMuscleGroup === undefined ||
       enabledOptionalVolumeMuscleGroups.has(exercise.optionalVolumeMuscleGroup),
-  );
-}
-
-function getAvailableAccessoryMuscleGroupFilters(
-  exercises: ReadonlyArray<AccessoryExercise>,
-): ReadonlyArray<{ id: AccessoryMuscleGroupFilterId; label: string }> {
-  const availableMuscleGroupIds = new Set(exercises.map((exercise) => exercise.muscleGroup));
-
-  return accessoryMuscleGroupFilters.filter(
-    (filter) => filter.id === "all" || availableMuscleGroupIds.has(filter.id),
   );
 }
 
@@ -1027,58 +995,7 @@ function IsolationExercisesDrawer({
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
 }) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeMuscleGroupFilterId, setActiveMuscleGroupFilterId] =
-    useState<AccessoryMuscleGroupFilterId>("all");
-  const [activeEquipmentFilterId, setActiveEquipmentFilterId] =
-    useState<AccessoryEquipmentFilterId>("all");
-  const [activeBeginnerFilterId, setActiveBeginnerFilterId] =
-    useState<AccessoryBeginnerFilterId>("all");
   const titleId = "optional-accessories-drawer-title";
-  const availableMuscleGroupFilters = useMemo(
-    () => getAvailableAccessoryMuscleGroupFilters(accessoryExercises),
-    [accessoryExercises],
-  );
-
-  useEffect(() => {
-    if (availableMuscleGroupFilters.some((filter) => filter.id === activeMuscleGroupFilterId)) {
-      return;
-    }
-
-    setActiveMuscleGroupFilterId("all");
-  }, [activeMuscleGroupFilterId, availableMuscleGroupFilters]);
-
-  const filteredAccessories = useMemo(
-    () =>
-      accessoryExercises.filter((exercise) => {
-        const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-        const matchesSearch =
-          normalizedSearchQuery.length === 0 ||
-          exercise.name.toLowerCase().includes(normalizedSearchQuery) ||
-          exercise.id.includes(normalizedSearchQuery.replace(/\s+/g, "-")) ||
-          (exercise.rationale?.toLowerCase().includes(normalizedSearchQuery) ?? false);
-        const matchesMuscleGroup =
-          activeMuscleGroupFilterId === "all" || exercise.muscleGroup === activeMuscleGroupFilterId;
-        const matchesEquipment =
-          activeEquipmentFilterId === "all" || exercise.equipment === activeEquipmentFilterId;
-        const matchesBeginner = activeBeginnerFilterId === "all" || exercise.beginnerFriendly;
-
-        return matchesSearch && matchesMuscleGroup && matchesEquipment && matchesBeginner;
-      }),
-    [
-      accessoryExercises,
-      activeBeginnerFilterId,
-      activeEquipmentFilterId,
-      activeMuscleGroupFilterId,
-      searchQuery,
-    ],
-  );
-  const recommendedAccessories = filteredAccessories.filter(
-    (exercise) => exercise.group === "recommended",
-  );
-  const optionalAccessories = filteredAccessories.filter(
-    (exercise) => exercise.group === "optional",
-  );
 
   return (
     <div className="main-compound-drawer-shell">
@@ -1116,111 +1033,25 @@ function IsolationExercisesDrawer({
           </p>
         </div>
 
-        <div className="main-compound-drawer__controls">
-          <label className="main-compound-drawer__search">
-            <Search aria-hidden="true" size={18} strokeWidth={2} />
-            <span className="sr-only">Search isolation exercises</span>
-            <input
-              onChange={(event) => setSearchQuery(event.currentTarget.value)}
-              placeholder="Search isolation exercises..."
-              type="search"
-              value={searchQuery}
-            />
-          </label>
-          <div className="optional-accessories-drawer__filter-stack">
-            <AccessoryFilterGroup
-              activeFilterId={activeMuscleGroupFilterId}
-              filters={availableMuscleGroupFilters}
-              legend="Muscle group"
-              onFilterChange={setActiveMuscleGroupFilterId}
-            />
-            <AccessoryFilterGroup
-              activeFilterId={activeEquipmentFilterId}
-              filters={accessoryEquipmentFilters}
-              legend="Equipment"
-              onFilterChange={setActiveEquipmentFilterId}
-            />
-            <AccessoryFilterGroup
-              activeFilterId={activeBeginnerFilterId}
-              filters={accessoryBeginnerFilters}
-              legend="Beginner-friendly"
-              onFilterChange={setActiveBeginnerFilterId}
-            />
-          </div>
-        </div>
-
-        <div className="main-compound-drawer__options optional-accessories-drawer__options">
-          <AccessoryExerciseGroup
-            exercises={recommendedAccessories}
-            groupLabel="Recommended"
+        <fieldset className="main-compound-drawer__options optional-accessories-drawer__options">
+          <legend className="sr-only">Isolation exercises</legend>
+          <AccessoryExerciseList
+            exercises={accessoryExercises}
             onSelectionChange={onSelectionChange}
             selectedAccessoryIds={selectedAccessoryIds}
           />
-          <AccessoryExerciseGroup
-            exercises={optionalAccessories}
-            groupLabel="Additional"
-            onSelectionChange={onSelectionChange}
-            selectedAccessoryIds={selectedAccessoryIds}
-          />
-          {filteredAccessories.length === 0 ? (
-            <p className="main-compound-drawer__empty">
-              No isolation exercises match the current search and filters.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="main-compound-drawer__footer">
-          <p>
-            Isolation exercises are non-blocking. Continue to Generate only depends on required main
-            compound coverage.
-          </p>
-        </div>
+        </fieldset>
       </section>
     </div>
   );
 }
 
-function AccessoryFilterGroup<TFilterId extends string>({
-  activeFilterId,
-  filters,
-  legend,
-  onFilterChange,
-}: {
-  activeFilterId: TFilterId;
-  filters: ReadonlyArray<{ id: TFilterId; label: string }>;
-  legend: string;
-  onFilterChange: (filterId: TFilterId) => void;
-}) {
-  return (
-    <fieldset className="main-compound-drawer__filters">
-      <legend className="optional-accessories-drawer__filter-legend">{legend}</legend>
-      {filters.map((filter) => {
-        const isActive = activeFilterId === filter.id;
-
-        return (
-          <button
-            aria-pressed={isActive}
-            className={cn("main-compound-drawer__filter", isActive && "is-active")}
-            key={filter.id}
-            onClick={() => onFilterChange(filter.id)}
-            type="button"
-          >
-            {filter.label}
-          </button>
-        );
-      })}
-    </fieldset>
-  );
-}
-
-function AccessoryExerciseGroup({
+function AccessoryExerciseList({
   exercises,
-  groupLabel,
   onSelectionChange,
   selectedAccessoryIds,
 }: {
   exercises: ReadonlyArray<AccessoryExercise>;
-  groupLabel: "Additional" | "Recommended";
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
 }) {
@@ -1229,64 +1060,43 @@ function AccessoryExerciseGroup({
   }
 
   return (
-    <section
-      aria-label={`${groupLabel} isolation exercises`}
-      className="optional-accessories-drawer__group"
-    >
-      <h4 className="optional-accessories-drawer__group-title">{groupLabel}</h4>
-      <div className="optional-accessories-drawer__group-options">
-        {exercises.map((exercise) => {
-          const isSelected = selectedAccessoryIds.has(exercise.id);
+    <div className="optional-accessories-drawer__list">
+      {exercises.map((exercise) => {
+        const isSelected = selectedAccessoryIds.has(exercise.id);
 
-          return (
-            <label
-              className={cn(
-                "main-compound-drawer__option optional-accessories-drawer__option",
-                isSelected && "is-selected",
-              )}
-              key={exercise.id}
+        return (
+          <label
+            className={cn(
+              "main-compound-drawer__option optional-accessories-drawer__option",
+              isSelected && "is-selected",
+            )}
+            key={exercise.id}
+          >
+            <input
+              checked={isSelected}
+              name={`optional-accessory-${exercise.id}`}
+              onChange={(event) => onSelectionChange(exercise.id, event.currentTarget.checked)}
+              type="checkbox"
+            />
+            <span
+              aria-hidden="true"
+              className="main-compound-drawer__option-icon optional-accessories-drawer__option-icon"
             >
-              <input
-                checked={isSelected}
-                name={`optional-accessory-${exercise.id}`}
-                onChange={(event) => onSelectionChange(exercise.id, event.currentTarget.checked)}
-                type="checkbox"
-              />
-              <span
-                aria-hidden="true"
-                className="main-compound-drawer__option-icon optional-accessories-drawer__option-icon"
-              >
-                <Dumbbell size={18} strokeWidth={2} />
+              <Dumbbell size={16} strokeWidth={2} />
+            </span>
+            <span className="main-compound-drawer__option-copy">
+              <span className="main-compound-drawer__option-name">{exercise.name}</span>
+              <span className="main-compound-drawer__option-meta">
+                {exercise.rationale ?? "Direct isolation option"}
               </span>
-              <span className="main-compound-drawer__option-copy">
-                <span className="main-compound-drawer__option-name">{exercise.name}</span>
-                <span className="main-compound-drawer__option-meta">
-                  {exercise.rationale ?? "Direct isolation option"}
-                </span>
-              </span>
-              <span className="main-compound-drawer__option-tags" aria-hidden="true">
-                <span className="main-compound-drawer__tag">
-                  {getAccessoryFilterLabel(accessoryMuscleGroupFilters, exercise.muscleGroup)}
-                </span>
-                <span className="main-compound-drawer__tag">
-                  {getAccessoryFilterLabel(accessoryEquipmentFilters, exercise.equipment)}
-                </span>
-              </span>
-              <span className="main-compound-drawer__option-state" aria-hidden="true">
-                {isSelected ? (
-                  <Check size={16} strokeWidth={2.4} />
-                ) : (
-                  <Plus size={14} strokeWidth={2.2} />
-                )}
-              </span>
-              <span className="optional-accessories-drawer__option-action" aria-hidden="true">
-                {isSelected ? "Added" : "Add"}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    </section>
+            </span>
+            <span className="main-compound-drawer__option-state" aria-hidden="true">
+              {isSelected ? <Check size={16} strokeWidth={2.4} /> : null}
+            </span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 

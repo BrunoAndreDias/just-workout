@@ -1,6 +1,7 @@
 import {
   type CompoundCapableMovementPatternId,
   compoundCapableMovementPatterns,
+  getConcreteExerciseCatalogExerciseId,
   getExerciseCatalogExercise,
   isCompoundCapableMovementPattern,
   isMainCompoundEligible,
@@ -45,6 +46,11 @@ type WeeklyMovementCoverageRule = {
   coverageRuleFamily: CoverageRuleFamilyId;
   recommendedPatterns: ReadonlyArray<CompoundCapableMovementPatternId>;
   requiredPatterns: ReadonlyArray<CompoundCapableMovementPatternId>;
+};
+
+type WeeklyMovementCoverageRuleConfig = {
+  compatibleFrequencies: ReadonlyArray<TrainingFrequencyDaysPerWeek>;
+  rule: WeeklyMovementCoverageRule;
 };
 
 const fullBodyRule = {
@@ -95,6 +101,33 @@ const pushPullLegsRule = {
   requiredPatterns: compoundCapableMovementPatterns,
 } as const satisfies WeeklyMovementCoverageRule;
 
+const weeklyMovementCoverageRuleBySplit = {
+  "alternating-full-body-a-b": {
+    compatibleFrequencies: [3],
+    rule: fullBodyRule,
+  },
+  "full-body-2-day": {
+    compatibleFrequencies: [2],
+    rule: fullBodyRule,
+  },
+  "full-body-3-day": {
+    compatibleFrequencies: [3],
+    rule: fullBodyRule,
+  },
+  "rotating-push-pull-legs": {
+    compatibleFrequencies: [4, 5],
+    rule: pushPullLegsRule,
+  },
+  "upper-lower-4-day": {
+    compatibleFrequencies: [4],
+    rule: upperLowerRule,
+  },
+  "upper-lower-full-body": {
+    compatibleFrequencies: [3],
+    rule: upperLowerRule,
+  },
+} as const satisfies Record<TrainingSplitId, WeeklyMovementCoverageRuleConfig>;
+
 export function normalizeMainCompoundSelections(
   mainCompoundSelections: unknown,
 ): ReadonlyArray<MainCompoundSelection> {
@@ -109,8 +142,10 @@ export function normalizeMainCompoundSelections(
       continue;
     }
 
+    const exerciseId = getConcreteExerciseCatalogExerciseId(selection.exerciseId);
+
     canonicalSelections.set(selection.movementPattern, {
-      exerciseId: selection.exerciseId,
+      exerciseId,
       movementPattern: selection.movementPattern,
       ...(typeof selection.updatedAt === "string" ? { updatedAt: selection.updatedAt } : {}),
     });
@@ -171,49 +206,15 @@ function getWeeklyMovementCoverageRule(
   split: TrainingSplitId,
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): WeeklyMovementCoverageRule {
-  switch (split) {
-    case "full-body-2-day":
-      if (trainingFrequencyDaysPerWeek !== 2) {
-        throw new Error(
-          `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
-        );
-      }
+  const config: WeeklyMovementCoverageRuleConfig = weeklyMovementCoverageRuleBySplit[split];
 
-      return fullBodyRule;
-    case "full-body-3-day":
-    case "alternating-full-body-a-b":
-      if (trainingFrequencyDaysPerWeek !== 3) {
-        throw new Error(
-          `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
-        );
-      }
-
-      return fullBodyRule;
-    case "upper-lower-full-body":
-      if (trainingFrequencyDaysPerWeek !== 3) {
-        throw new Error(
-          `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
-        );
-      }
-
-      return upperLowerRule;
-    case "upper-lower-4-day":
-      if (trainingFrequencyDaysPerWeek !== 4) {
-        throw new Error(
-          `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
-        );
-      }
-
-      return upperLowerRule;
-    case "rotating-push-pull-legs":
-      if (trainingFrequencyDaysPerWeek !== 4 && trainingFrequencyDaysPerWeek !== 5) {
-        throw new Error(
-          `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
-        );
-      }
-
-      return pushPullLegsRule;
+  if (!config.compatibleFrequencies.includes(trainingFrequencyDaysPerWeek)) {
+    throw new Error(
+      `Training Split "${split}" is not compatible with ${trainingFrequencyDaysPerWeek} days/week.`,
+    );
   }
+
+  return config.rule;
 }
 
 function doesMainCompoundSelectionCoverMovementPattern(selection: MainCompoundSelection): boolean {

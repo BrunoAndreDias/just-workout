@@ -10,11 +10,11 @@ describe("weekly movement coverage", () => {
     const coverage = getWeeklyMovementCoverage({
       mainCompoundSelections: [
         {
-          exerciseId: "flat-barbell-or-dumbbell-bench-press",
+          exerciseId: "flat-barbell-bench-press",
           movementPattern: "horizontal_push",
         },
         {
-          exerciseId: "bent-over-barbell-or-dumbbell-rows",
+          exerciseId: "bent-over-barbell-rows",
           movementPattern: "horizontal_pull",
         },
         {
@@ -22,7 +22,7 @@ describe("weekly movement coverage", () => {
           movementPattern: "vertical_pull",
         },
         {
-          exerciseId: "barbell-or-dumbbell-squats",
+          exerciseId: "barbell-squats",
           movementPattern: "quad_dominant",
         },
       ],
@@ -46,11 +46,11 @@ describe("weekly movement coverage", () => {
     const coverage = getWeeklyMovementCoverage({
       mainCompoundSelections: [
         {
-          exerciseId: "flat-barbell-or-dumbbell-bench-press",
+          exerciseId: "flat-barbell-bench-press",
           movementPattern: "horizontal_push",
         },
         {
-          exerciseId: "bent-over-barbell-or-dumbbell-rows",
+          exerciseId: "bent-over-barbell-rows",
           movementPattern: "horizontal_pull",
         },
         {
@@ -58,11 +58,11 @@ describe("weekly movement coverage", () => {
           movementPattern: "vertical_pull",
         },
         {
-          exerciseId: "barbell-or-dumbbell-squats",
+          exerciseId: "barbell-squats",
           movementPattern: "quad_dominant",
         },
         {
-          exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+          exerciseId: "barbell-romanian-deadlifts",
           movementPattern: "hip_hamstring_dominant",
         },
       ],
@@ -127,19 +127,19 @@ describe("weekly movement coverage", () => {
     const coverage = getWeeklyMovementCoverage({
       mainCompoundSelections: [
         {
-          exerciseId: "flat-barbell-or-dumbbell-bench-press",
+          exerciseId: "flat-barbell-bench-press",
           movementPattern: "horizontal_push",
         },
         {
-          exerciseId: "standing-overhead-barbell-or-dumbbell-press",
+          exerciseId: "standing-overhead-barbell-press",
           movementPattern: "vertical_push",
         },
         {
-          exerciseId: "barbell-or-dumbbell-squats",
+          exerciseId: "barbell-squats",
           movementPattern: "quad_dominant",
         },
         {
-          exerciseId: "barbell-or-dumbbell-romanian-deadlifts",
+          exerciseId: "barbell-romanian-deadlifts",
           movementPattern: "hip_hamstring_dominant",
         },
       ],
@@ -169,7 +169,7 @@ describe("weekly movement coverage", () => {
           movementPattern: "vertical_push",
         },
         {
-          exerciseId: "barbell-dumbbell-or-machine-upright-rows",
+          exerciseId: "barbell-upright-rows",
           movementPattern: "vertical_push",
         },
         {
@@ -195,7 +195,7 @@ describe("weekly movement coverage", () => {
     expect(
       normalizeMainCompoundSelections([
         {
-          exerciseId: "flat-barbell-or-dumbbell-bench-press",
+          exerciseId: "flat-barbell-bench-press",
           movementPattern: "horizontal_push",
           updatedAt: "2026-05-30T10:05:00.000Z",
         },

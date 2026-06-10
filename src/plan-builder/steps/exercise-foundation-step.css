@@ -862,39 +862,16 @@
   line-height: 1.2rem;
 }
 
-.optional-accessories-drawer__filter-stack {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.optional-accessories-drawer__filter-legend {
-  flex-basis: 100%;
-  color: #5a514a;
-  font-size: 0.76rem;
-  font-weight: 800;
-  line-height: 1rem;
-}
-
 .optional-accessories-drawer__options {
-  gap: 1rem;
-}
-
-.optional-accessories-drawer__group {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.optional-accessories-drawer__group-title {
+  gap: 0;
   margin: 0;
-  color: #3f3932;
-  font-size: 0.8rem;
-  font-weight: 850;
-  line-height: 1rem;
+  border: 0;
+  padding: 0.875rem 1rem 1.25rem;
 }
 
-.optional-accessories-drawer__group-options {
+.optional-accessories-drawer__list {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .optional-accessories-drawer__option-icon {
@@ -903,28 +880,31 @@
 }
 
 .optional-accessories-drawer__option {
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  min-height: 3.75rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.75rem;
 }
 
-.optional-accessories-drawer__option-action {
-  display: inline-flex;
-  min-width: 3.5rem;
-  min-height: 1.85rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(0, 119, 128, 0.26);
-  border-radius: 0.45rem;
-  background: #ffffff;
-  color: #00666e;
-  font-size: 0.75rem;
-  font-weight: 850;
-  line-height: 1rem;
+.optional-accessories-drawer__option:hover {
+  border-color: rgba(0, 119, 128, 0.16);
+  background: rgba(0, 119, 128, 0.035);
 }
 
-.optional-accessories-drawer__option.is-selected .optional-accessories-drawer__option-action {
-  border-color: rgba(0, 119, 128, 0.36);
-  background: #dff4f2;
-  color: #005d64;
+.optional-accessories-drawer__option .main-compound-drawer__option-state {
+  border-color: transparent;
+}
+
+.optional-accessories-drawer__option.is-selected {
+  border-color: rgba(0, 119, 128, 0.52);
+  background: #effafa;
+}
+
+.optional-accessories-drawer__option.is-selected .main-compound-drawer__option-state {
+  border-color: #007780;
+  background: #007780;
 }
 
 @media (min-width: 1280px) and (max-width: 1599px) {

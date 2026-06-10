@@ -139,10 +139,8 @@ describe("exercise selection preferences", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(95);
-    expect(exerciseCatalogMuscleGroups[0]?.exercises).toContain(
-      "Flat Barbell or Dumbbell Bench Press",
-    );
+    ).toBe(114);
+    expect(exerciseCatalogMuscleGroups[0]?.exercises).toContain("Flat Barbell Bench Press");
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "triceps")?.exercises,
     ).toContain("Cable Press-Downs");

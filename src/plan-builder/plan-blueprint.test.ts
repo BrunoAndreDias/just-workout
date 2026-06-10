@@ -152,7 +152,7 @@ describe("plan blueprint", () => {
         updatedAt: testBlueprintOptions.timestamp,
         mainCompoundSelections: [
           {
-            exerciseId: "flat-barbell-or-dumbbell-bench-press",
+            exerciseId: "flat-barbell-bench-press",
             movementPattern: "horizontal_push",
           },
           {
@@ -553,7 +553,7 @@ describe("plan blueprint", () => {
         "pull-ups",
         "chin-ups",
         "chin-ups",
-        "flat-barbell-or-dumbbell-bench-press",
+        "flat-barbell-bench-press",
         "lat-pull-downs",
       ],
       movementPattern: "vertical_pull",
@@ -577,12 +577,7 @@ describe("plan blueprint", () => {
       }),
       mainCompoundRotationPools: [
         {
-          exerciseIds: [
-            "chin-ups",
-            "pull-ups",
-            "flat-barbell-or-dumbbell-bench-press",
-            "barbell-or-dumbbell-squats",
-          ],
+          exerciseIds: ["chin-ups", "pull-ups", "flat-barbell-bench-press", "barbell-squats"],
           movementPattern: "vertical_pull",
           updatedAt: firstUpdateTimestamp,
         },
@@ -628,11 +623,11 @@ describe("plan blueprint", () => {
         blueprint: createConfirmedPlanBlueprint({
           mainCompoundSelections: [
             {
-              exerciseId: "flat-barbell-or-dumbbell-bench-press",
+              exerciseId: "flat-barbell-bench-press",
               movementPattern: "horizontal_push",
             },
             {
-              exerciseId: "bent-over-barbell-or-dumbbell-rows",
+              exerciseId: "bent-over-barbell-rows",
               movementPattern: "horizontal_pull",
             },
           ],

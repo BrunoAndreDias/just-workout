@@ -908,7 +908,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("listitem", {
-        name: /vertical push.*required movement pattern missing.*standing overhead barbell or dumbbell press/i,
+        name: /vertical push.*required movement pattern missing.*standing overhead barbell press/i,
       }),
     ).toBeVisible();
 
@@ -932,7 +932,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("listitem", {
-        name: /vertical push.*required movement pattern missing.*standing overhead barbell or dumbbell press/i,
+        name: /vertical push.*required movement pattern missing.*standing overhead barbell press/i,
       }),
     ).toBeVisible();
   });
@@ -1002,12 +1002,22 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(isolationExercisesDialog).toBeVisible();
-    expect(screen.getByRole("searchbox", { name: /search isolation exercises/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Muscle group" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Equipment" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Beginner-friendly" })).toBeVisible();
+    expect(
+      within(isolationExercisesDialog).queryByRole("searchbox", {
+        name: /search isolation exercises/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(isolationExercisesDialog).queryByRole("button", { name: "Muscle group" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(isolationExercisesDialog).queryByRole("button", { name: "Equipment" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(isolationExercisesDialog).queryByRole("button", { name: "Beginner-friendly" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /leg curl/i })).toBeVisible();
-    expect(screen.getAllByText("Add").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Add")).not.toBeInTheDocument();
     expect(screen.getByText("hamstring work")).toBeVisible();
     expect(screen.getByRole("checkbox", { name: /farmer walks/i })).toBeVisible();
     expect(screen.getByText("grip & core")).toBeVisible();
@@ -1019,7 +1029,7 @@ describe("PlanBuilderRoute", () => {
     await user.click(screen.getByRole("checkbox", { name: /lateral raise/i }));
 
     expect(screen.getByRole("checkbox", { name: /lateral raise/i })).toBeChecked();
-    expect(screen.getByText("Added")).toBeVisible();
+    expect(screen.queryByText("Added")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /continue to generate/i })).toBeEnabled();
 
     await user.click(
@@ -1065,10 +1075,12 @@ describe("PlanBuilderRoute", () => {
     expect(
       within(isolationExercisesDialog).getByRole("checkbox", { name: /calf raise/i }),
     ).toBeVisible();
-    expect(within(isolationExercisesDialog).getByRole("button", { name: /^core$/i })).toBeVisible();
     expect(
-      within(isolationExercisesDialog).getByRole("button", { name: /^calves$/i }),
-    ).toBeVisible();
+      within(isolationExercisesDialog).queryByRole("button", { name: /^core$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(isolationExercisesDialog).queryByRole("button", { name: /^calves$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("enables Generate only after persisted main compound selections cover every required pattern", async () => {

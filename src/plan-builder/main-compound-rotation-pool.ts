@@ -1,6 +1,7 @@
 import {
   type CompoundCapableMovementPatternId,
   compoundCapableMovementPatterns,
+  getConcreteExerciseCatalogExerciseId,
   getExerciseCatalogExercise,
   isMainCompoundEligible,
 } from "./exercise-catalog";
@@ -48,7 +49,11 @@ export function normalizeMainCompoundRotationPools({
     const startingExercise = startingExerciseByPattern.get(pool.movementPattern);
     const startingPrimaryMuscleGroups =
       startingExercise === undefined ? undefined : new Set(startingExercise.primaryMuscleGroups);
-    const exerciseIds = Array.from(new Set(pool.exerciseIds)).filter((exerciseId) => {
+    const exerciseIds = Array.from(
+      new Set(
+        pool.exerciseIds.map((exerciseId) => getConcreteExerciseCatalogExerciseId(exerciseId)),
+      ),
+    ).filter((exerciseId) => {
       const exercise = getExerciseCatalogExercise(exerciseId);
 
       if (

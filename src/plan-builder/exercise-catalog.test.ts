@@ -3,6 +3,7 @@ import {
   type ExerciseCatalogExercise,
   exerciseCatalogExercises,
   exerciseCatalogMuscleGroups,
+  getConcreteExerciseCatalogExerciseId,
   getExerciseCatalogExercise,
   getExerciseCatalogExercisesByMovementPattern,
   isCompoundCapableMovementPattern,
@@ -11,9 +12,14 @@ import {
 
 describe("exercise catalog", () => {
   it("keeps one rich exercise catalog without duplicate ids or names", () => {
-    expect(exerciseCatalogExercises).toHaveLength(95);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(95);
-    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(95);
+    expect(exerciseCatalogExercises).toHaveLength(114);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.id)).size).toBe(114);
+    expect(new Set(exerciseCatalogExercises.map((exercise) => exercise.name)).size).toBe(114);
+    expect(exerciseCatalogExercises.map((exercise) => exercise.name)).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/\b(?:barbell|dumbbell|cable|machine)\b.*\bor\b/i),
+      ]),
+    );
   });
 
   it("derives the muscle-group browsing view from the rich catalog", () => {
@@ -36,10 +42,10 @@ describe("exercise catalog", () => {
         (exerciseCount, muscleGroup) => exerciseCount + muscleGroup.exercises.length,
         0,
       ),
-    ).toBe(95);
+    ).toBe(114);
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "chest")?.exercises,
-    ).toContain("Flat Barbell or Dumbbell Bench Press");
+    ).toContain("Flat Barbell Bench Press");
     expect(
       exerciseCatalogMuscleGroups.find((muscleGroup) => muscleGroup.id === "triceps")?.exercises,
     ).toContain("Cable Press-Downs");
@@ -77,25 +83,25 @@ describe("exercise catalog", () => {
       getExerciseCatalogExercisesByMovementPattern("horizontal_push").map(
         (exercise) => exercise.name,
       ),
-    ).toContain("Flat Barbell or Dumbbell Bench Press");
+    ).toContain("Flat Barbell Bench Press");
   });
 
   it("classifies compound and isolation roles needed by exercise selection rules", () => {
-    expect(findExercise("flat-barbell-or-dumbbell-bench-press")).toMatchObject({
+    expect(findExercise("flat-barbell-bench-press")).toMatchObject({
       catalogMuscleGroup: "chest",
       movementPattern: "horizontal_push",
       primaryMuscleGroups: ["chest"],
       role: "compound",
       secondaryMuscleGroups: ["shoulders", "triceps"],
     });
-    expect(findExercise("bent-over-barbell-or-dumbbell-rows")).toMatchObject({
+    expect(findExercise("bent-over-barbell-rows")).toMatchObject({
       catalogMuscleGroup: "back",
       movementPattern: "horizontal_pull",
       primaryMuscleGroups: ["back"],
       role: "compound",
       secondaryMuscleGroups: ["biceps", "forearms"],
     });
-    expect(findExercise("standing-overhead-barbell-or-dumbbell-press")).toMatchObject({
+    expect(findExercise("standing-overhead-barbell-press")).toMatchObject({
       catalogMuscleGroup: "shoulders",
       movementPattern: "vertical_push",
       primaryMuscleGroups: ["shoulders"],
@@ -109,14 +115,14 @@ describe("exercise catalog", () => {
       role: "isolation",
       secondaryMuscleGroups: [],
     });
-    expect(findExercise("dumbbell-cable-or-machine-lateral-raises")).toMatchObject({
+    expect(findExercise("dumbbell-lateral-raises")).toMatchObject({
       catalogMuscleGroup: "shoulders",
       movementPattern: "vertical_push",
       primaryMuscleGroups: ["shoulders"],
       role: "isolation",
       secondaryMuscleGroups: [],
     });
-    expect(findExercise("standing-barbell-or-dumbbell-curls")).toMatchObject({
+    expect(findExercise("standing-barbell-curls")).toMatchObject({
       catalogMuscleGroup: "biceps",
       movementPattern: "elbow_flexion",
       primaryMuscleGroups: ["biceps"],
@@ -131,15 +137,27 @@ describe("exercise catalog", () => {
   });
 
   it("wraps main compound eligibility behind a domain helper", () => {
-    expect(
-      isMainCompoundEligible(findExistingExercise("flat-barbell-or-dumbbell-bench-press")),
-    ).toBe(true);
+    expect(isMainCompoundEligible(findExistingExercise("flat-barbell-bench-press"))).toBe(true);
     expect(isMainCompoundEligible(findExistingExercise("flat-dumbbell-flyes"))).toBe(false);
-    expect(
-      isMainCompoundEligible(findExistingExercise("barbell-dumbbell-or-machine-upright-rows")),
-    ).toBe(false);
+    expect(isMainCompoundEligible(findExistingExercise("barbell-upright-rows"))).toBe(false);
     expect(isCompoundCapableMovementPattern("vertical_push")).toBe(true);
     expect(isCompoundCapableMovementPattern("elbow_extension")).toBe(false);
+  });
+
+  it("resolves legacy combined exercise ids to concrete exercises", () => {
+    expect(getConcreteExerciseCatalogExerciseId("barbell-or-dumbbell-lunges")).toBe(
+      "barbell-lunges",
+    );
+    expect(getExerciseCatalogExercise("barbell-or-dumbbell-lunges")).toMatchObject({
+      id: "barbell-lunges",
+      name: "Barbell Lunges",
+    });
+    expect(getExerciseCatalogExercise("standing-overhead-barbell-or-dumbbell-press")).toMatchObject(
+      {
+        id: "standing-overhead-barbell-press",
+        name: "Standing Overhead Barbell Press",
+      },
+    );
   });
 });
 
