@@ -289,8 +289,8 @@ export function PlanBuilderExercisesRoute() {
       currentStep="exercises"
       intro={
         <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Choose the main compounds that anchor weekly coverage. Rotation pools can suggest similar
-          swaps after a 6-week Training Block.
+          Choose the main compounds for weekly coverage. Rotation pools stay separate as future
+          swaps.
         </PageLead>
       }
       summary={summary}

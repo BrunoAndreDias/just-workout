@@ -51,6 +51,8 @@ const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for 
 const isolationExercisesSummaryText = "2 recommended · 4 more available";
 const isolationExercisesUnavailableText =
   "Isolation exercises · available after main compounds are confirmed";
+const exerciseFoundationIntroText =
+  "Choose the main compounds for weekly coverage. Rotation pools stay separate as future swaps.";
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
@@ -662,11 +664,7 @@ describe("PlanBuilderRoute", () => {
 
     await expectPlanBuilderPath(router, planBuilderPaths.exercises);
     expect(await screen.findByRole("heading", { name: "Exercise foundation" })).toBeVisible();
-    expect(
-      screen.getByText(
-        "Choose the main compounds that anchor weekly coverage. Rotation pools can suggest similar swaps after a 6-week Training Block.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByText(exerciseFoundationIntroText)).toBeVisible();
     expect(
       within(await screen.findByRole("list", { name: /plan builder steps/i })).getByText(
         "Exercises",
@@ -697,6 +695,42 @@ describe("PlanBuilderRoute", () => {
     for (const pattern of exercisesStepExcludedContentPatterns) {
       expect(screen.queryByText(pattern)).not.toBeInTheDocument();
     }
+  });
+
+  it("separates confirmed main compounds from compact rotation pool summaries", async () => {
+    await saveConfirmedVolumeStepForTest({
+      repRangeStyle: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+    });
+    await saveMainCompoundSelectionsForTest(completeMainCompoundSelections);
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
+
+    const exerciseRows = await screen.findByRole("list", { name: "Exercise foundation rows" });
+    const horizontalPushRow = within(exerciseRows).getByRole("listitem", {
+      name: /horizontal push.*required movement pattern selected.*flat barbell bench press/i,
+    });
+    const rotationSummary = within(horizontalPushRow).getByRole("region", {
+      name: /horizontal push rotation pool summary/i,
+    });
+
+    expect(within(horizontalPushRow).getByText("Flat Barbell Bench Press")).toBeVisible();
+    expect(within(horizontalPushRow).getByText(/^Main compound · \d+ options$/)).toBeVisible();
+    expect(within(rotationSummary).getByText("Rotation pool")).toBeVisible();
+    expect(within(rotationSummary).getByText("3 suggested swaps")).toBeVisible();
+    expect(
+      within(rotationSummary).getByText("Future swaps, separate from main compound."),
+    ).toBeVisible();
+    expect(
+      within(rotationSummary).getByRole("button", {
+        name: /edit horizontal push rotation pool/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/after a 6-week training block, these can replace the main compound/i),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps Exercise foundation secondary sections compact and non-confirming", async () => {
@@ -1106,13 +1140,9 @@ describe("PlanBuilderRoute", () => {
     expect(
       screen.queryByText("Exercise selection will be editable in the next iteration."),
     ).not.toBeInTheDocument();
+    expect(screen.getByText("Rotation pools ready as future swaps.")).toBeVisible();
     expect(
-      screen.getByText("Rotation pools are ready. Edit them as future Training Block swaps."),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Rotation pools are available for each selected compound and can be proposed after the next Training Block.",
-      ),
+      screen.getByText("Rotation pools are optional swaps for selected compounds."),
     ).toBeVisible();
     expect(
       screen.queryByText("Complete main compounds to unlock rotation pools."),
@@ -2422,11 +2452,7 @@ async function expectReadOnlyExercisesStep() {
   expect(
     await screen.findByRole("heading", { level: 1, name: "Exercise foundation" }),
   ).toBeVisible();
-  expect(
-    screen.getByText(
-      "Choose the main compounds that anchor weekly coverage. Rotation pools can suggest similar swaps after a 6-week Training Block.",
-    ),
-  ).toBeVisible();
+  expect(screen.getByText(exerciseFoundationIntroText)).toBeVisible();
   expect(await screen.findByRole("button", { name: /choose .* exercise/i })).toBeDisabled();
   expect(screen.queryByText("Rotation pool preview")).not.toBeInTheDocument();
   expect(screen.queryByText("Exercise preferences · optional")).not.toBeInTheDocument();
@@ -2438,11 +2464,7 @@ async function expectConfirmableExercisesStep() {
   expect(
     await screen.findByRole("heading", { level: 1, name: "Exercise foundation" }),
   ).toBeVisible();
-  expect(
-    screen.getByText(
-      "Choose the main compounds that anchor weekly coverage. Rotation pools can suggest similar swaps after a 6-week Training Block.",
-    ),
-  ).toBeVisible();
+  expect(screen.getByText(exerciseFoundationIntroText)).toBeVisible();
   expect(
     await screen.findByText(/main compound coverage: \d+ of \d+ required patterns covered\./i),
   ).toBeVisible();

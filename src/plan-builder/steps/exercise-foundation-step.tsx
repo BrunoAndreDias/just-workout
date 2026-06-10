@@ -447,7 +447,7 @@ export function ExerciseFoundationStep({
                   <Lock aria-hidden="true" size={15} strokeWidth={2} />
                 )}
                 {canContinueToGenerate
-                  ? "Rotation pools are ready. Edit them as future Training Block swaps."
+                  ? "Rotation pools ready as future swaps."
                   : "Complete main compounds to unlock rotation pools."}
               </span>
             </div>
@@ -552,9 +552,6 @@ export function ExerciseFoundationStep({
                       {confirmedSelection ? (
                         <InlineRotationPoolEditor
                           movementPattern={row.movementPattern}
-                          onChange={(exerciseIds) =>
-                            handleRotationPoolChange(row.movementPattern, exerciseIds)
-                          }
                           onEdit={() => {
                             setActivePickerPattern(null);
                             setActiveRotationPoolPattern(row.movementPattern);
@@ -666,14 +663,12 @@ export function ExerciseFoundationStep({
 
 function InlineRotationPoolEditor({
   movementPattern,
-  onChange,
   onEdit,
   rotationPoolExerciseIds,
   selectedMainCompoundExerciseIds,
   startingExerciseId,
 }: {
   movementPattern: CompoundCapableMovementPatternId;
-  onChange: (exerciseIds: ReadonlyArray<string>) => Promise<void>;
   onEdit: () => void;
   rotationPoolExerciseIds: ReadonlyArray<string> | undefined;
   selectedMainCompoundExerciseIds: ReadonlySet<string>;
@@ -699,45 +694,26 @@ function InlineRotationPoolEditor({
     movementPattern,
     startingExerciseId,
   }).length;
+  const status = getRotationPoolSummaryStatus({
+    isSuggested: rotationPoolExerciseIds === undefined,
+    selectedExerciseCount: rotationPool.length,
+  });
 
   return (
-    <div className="rotation-pool-inline-preview">
+    <section
+      aria-label={`${movementPatternLabel} rotation pool summary`}
+      className="rotation-pool-inline-preview"
+    >
       <div className="rotation-pool-inline-preview__header">
         <span className="rotation-pool-inline-preview__label">Rotation pool</span>
-        <span className="rotation-pool-inline-preview__status">{rotationPool.length} selected</span>
+        <span className="rotation-pool-inline-preview__status">{status}</span>
       </div>
-      {rotationPool.length > 0 ? (
-        <ul
-          aria-label={`${movementPatternLabel} rotation pool compound exercises`}
-          className="rotation-pool-chip-list"
-        >
-          {rotationPool.map((exercise) => (
-            <li className="rotation-pool-chip" key={exercise.id}>
-              <span>{exercise.name}</span>
-              <button
-                aria-label={`Remove ${exercise.name} from ${movementPatternLabel} rotation pool`}
-                className="rotation-pool-chip__remove"
-                onClick={() => {
-                  void onChange(
-                    selectedExerciseIds.filter((exerciseId) => exerciseId !== exercise.id),
-                  );
-                }}
-                type="button"
-              >
-                <X aria-hidden="true" size={14} strokeWidth={2.2} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="rotation-pool-inline-preview__empty">No rotation exercises selected yet.</p>
-      )}
       <p className="rotation-pool-inline-preview__note">
-        After a 6-week Training Block, these can replace the main compound for the same movement and
-        muscles.
+        Future swaps, separate from main compound.
       </p>
       <div className="rotation-pool-inline-preview__actions">
         <Button
+          aria-label={`Edit ${movementPatternLabel} rotation pool`}
           disabled={availableOptionCount === 0}
           onClick={onEdit}
           size="sm"
@@ -745,11 +721,28 @@ function InlineRotationPoolEditor({
           variant="outline"
         >
           <Plus aria-hidden="true" size={16} strokeWidth={2} />
-          {rotationPool.length > 0 ? "Edit pool" : "Add exercises"}
+          {rotationPool.length > 0 ? "Edit swaps" : "Add swaps"}
         </Button>
       </div>
-    </div>
+    </section>
   );
+}
+
+function getRotationPoolSummaryStatus({
+  isSuggested,
+  selectedExerciseCount,
+}: {
+  isSuggested: boolean;
+  selectedExerciseCount: number;
+}): string {
+  if (selectedExerciseCount === 0) {
+    return "No swaps selected";
+  }
+
+  const noun = selectedExerciseCount === 1 ? "swap" : "swaps";
+  const state = isSuggested ? "suggested" : "selected";
+
+  return `${selectedExerciseCount} ${state} ${noun}`;
 }
 
 function ExerciseCoverageSummary({
@@ -789,8 +782,8 @@ function ExerciseCoverageSummary({
       ) : null}
       <p className="exercise-coverage-summary__note">
         {isRotationPoolUnlocked
-          ? "Rotation pools are available for each selected compound and can be proposed after the next Training Block."
-          : "Complete the missing required pattern to unlock rotation pools and finish this step."}
+          ? "Rotation pools are optional swaps for selected compounds."
+          : "Finish required main compounds to unlock rotation pools."}
       </p>
     </aside>
   );
@@ -864,11 +857,8 @@ function LockedRotationPoolSummary() {
         <Lock size={21} strokeWidth={2.2} />
       </span>
       <div>
-        <h3>Next: Rotation pools</h3>
-        <p>
-          Unlock after all required main compounds are selected. Rotation pools let you save future
-          replacements for each movement pattern.
-        </p>
+        <h3>Next: rotation pools</h3>
+        <p>Unlock after required main compounds. They save future swaps, not main lift choices.</p>
       </div>
     </section>
   );
@@ -1369,8 +1359,7 @@ function RotationPoolPicker({
             </Button>
           </div>
           <p className="main-compound-drawer__helper">
-            Choose alternative compounds for the next Training Block. Main compound exercises are
-            excluded from this list.
+            Choose future Training Block alternatives. Main compounds are excluded.
           </p>
         </div>
 
@@ -1461,10 +1450,7 @@ function RotationPoolPicker({
         </fieldset>
 
         <div className="main-compound-drawer__footer">
-          <p>
-            Selected pool exercises stay separate from the main compounds and can be proposed for a
-            later Training Block rotation.
-          </p>
+          <p>Pool exercises stay separate from main compounds.</p>
         </div>
       </section>
     </div>
@@ -1601,17 +1587,17 @@ function getMissingFoundationCopy(movementPattern: CompoundCapableMovementPatter
 function getFoundationRowHelperText(movementPattern: CompoundCapableMovementPatternId): string {
   switch (movementPattern) {
     case "horizontal_push":
-      return "Pressing work for chest, shoulders, and triceps.";
+      return "Chest, shoulders, triceps.";
     case "horizontal_pull":
-      return "Rowing work for mid-back and upper-back balance.";
+      return "Mid-back and upper-back balance.";
     case "vertical_pull":
-      return "Pull-down or pull-up work for lats and upper back.";
+      return "Lats and upper back.";
     case "vertical_push":
-      return "Overhead pressing work for push balance.";
+      return "Overhead push balance.";
     case "quad_dominant":
-      return "Squat or press pattern for knee-dominant leg work.";
+      return "Knee-dominant leg work.";
     case "hip_hamstring_dominant":
-      return "Hinge pattern for hamstrings, glutes, and posterior chain.";
+      return "Hamstrings, glutes, posterior chain.";
   }
 }
 
@@ -1667,11 +1653,9 @@ function getFoundationRowMetadata({
 }): string {
   const alternativeCount = shownExerciseId ? Math.max(optionCount - 1, 0) : optionCount;
   const prefix = status === "suggested" ? "Suggested, unconfirmed" : "Main compound";
+  const optionLabel = alternativeCount === 1 ? "option" : "options";
 
-  return `${prefix} · ${Math.min(alternativeCount, 2)} alternatives · ${Math.max(
-    alternativeCount - 2,
-    0,
-  )} more options`;
+  return `${prefix} · ${alternativeCount} ${optionLabel}`;
 }
 
 function getMainCompoundOptions(
