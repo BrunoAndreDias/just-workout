@@ -8,3 +8,9 @@ test-results
 .pnpm-store
 .sandcastle/logs
 .sandcastle/worktrees
+MISSION.md
+NOTES.md
+RESOURCES.md
+reference/
+lessons/
+.tmp-*.mjs
