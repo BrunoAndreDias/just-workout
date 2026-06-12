@@ -1,10 +1,11 @@
 import Dexie, { type Table } from "dexie";
 import type { PlanBlueprint } from "../plan-builder";
-import type { TrainingPlan } from "../training-plan";
+import type { TrainingPlan, TrainingSession } from "../training-plan";
 
 export class JustWorkoutDatabase extends Dexie {
   planBlueprints!: Table<PlanBlueprint, string>;
   trainingPlans!: Table<TrainingPlan, string>;
+  trainingSessions!: Table<TrainingSession, string>;
 
   constructor() {
     super("just-workout");
@@ -32,6 +33,12 @@ export class JustWorkoutDatabase extends Dexie {
     this.version(4).stores({
       planBlueprints: "id, updatedAt",
       trainingPlans: "id, active, sourceBlueprintId, updatedAt",
+    });
+
+    this.version(5).stores({
+      planBlueprints: "id, updatedAt",
+      trainingPlans: "id, active, sourceBlueprintId, updatedAt",
+      trainingSessions: "id, planId, templateId, status, completedAt, updatedAt",
     });
   }
 }

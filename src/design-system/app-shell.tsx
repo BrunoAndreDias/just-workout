@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Bell, CalendarCheck, ClipboardList, Dumbbell, UserCircle } from "lucide-react";
+import {
+  Bell,
+  CalendarCheck,
+  ClipboardList,
+  Dumbbell,
+  History,
+  Play,
+  UserCircle,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -7,6 +15,12 @@ import "./app-shell.css";
 type AppShellProps = {
   children: ReactNode;
   currentPathname: string;
+  trainingSessionTarget: AppShellTrainingSessionTarget | null;
+};
+
+type AppShellTrainingSessionTarget = {
+  planId: string;
+  templateId: string;
 };
 
 type AppShellNavigationItem = {
@@ -32,7 +46,7 @@ const appShellNavigationItems = [
   },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 
-export function AppShell({ children, currentPathname }: AppShellProps) {
+export function AppShell({ children, currentPathname, trainingSessionTarget }: AppShellProps) {
   return (
     <div className="app-shell min-h-screen text-[#162325]">
       <div className="app-shell-frame mx-auto w-full max-w-[1200px]">
@@ -61,6 +75,41 @@ export function AppShell({ children, currentPathname }: AppShellProps) {
                   />
                 ))}
               </nav>
+
+              {trainingSessionTarget ? (
+                <nav className="app-shell-session-navigation" aria-label="Training Session">
+                  <Link
+                    aria-label="Training history"
+                    className="app-shell-session-link"
+                    params={{ planId: trainingSessionTarget.planId }}
+                    to="/training-plans/$planId/sessions"
+                  >
+                    <History
+                      aria-hidden="true"
+                      className="app-shell-session-link__icon"
+                      strokeWidth={1.8}
+                    />
+                    <span>Training history</span>
+                  </Link>
+                  <Link
+                    aria-label="Start training"
+                    className="app-shell-session-link app-shell-session-link--primary"
+                    params={{
+                      planId: trainingSessionTarget.planId,
+                      templateId: trainingSessionTarget.templateId,
+                    }}
+                    to="/training-plans/$planId/sessions/new/$templateId"
+                  >
+                    <Play
+                      aria-hidden="true"
+                      className="app-shell-session-link__icon"
+                      fill="currentColor"
+                      strokeWidth={1.8}
+                    />
+                    <span>Start training</span>
+                  </Link>
+                </nav>
+              ) : null}
             </div>
 
             <div className="app-shell-actions flex shrink-0 items-center">

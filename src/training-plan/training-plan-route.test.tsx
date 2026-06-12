@@ -292,6 +292,139 @@ describe("TrainingPlanRoute", () => {
     expect(within(workoutPanel).queryByRole("spinbutton")).not.toBeInTheDocument();
     expect(within(workoutPanel).queryByRole("textbox")).not.toBeInTheDocument();
   });
+
+  it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    const startNextWorkoutButton = screen.getAllByRole("button", {
+      name: "Start next workout",
+    })[0];
+
+    if (!startNextWorkoutButton) {
+      throw new Error("Expected Start next workout button to be visible.");
+    }
+
+    await user.click(startNextWorkoutButton);
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Superset 1" })).toBeVisible();
+    expect(screen.getByText("Flat Dumbbell Bench Press")).toBeVisible();
+    expect(screen.getAllByText("3 x 8-12").length).toBeGreaterThan(0);
+
+    const benchPressRow = screen.getByRole("group", {
+      name: /Flat Dumbbell Bench Press Horizontal Push Main 3 x 8-12/i,
+    });
+
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
+
+    expect(screen.getByText("Horizontal Push")).toBeVisible();
+    expect(screen.getByText("400 kg")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Complete session" }));
+
+    expect(await screen.findByRole("heading", { name: "Session completed" })).toBeVisible();
+    expect(screen.getByText("Horizontal Push")).toBeVisible();
+    expect(screen.getByText("400 kg")).toBeVisible();
+
+    const completedSessions = await db.trainingSessions.toArray();
+
+    expect(completedSessions).toHaveLength(1);
+    expect(completedSessions[0]).toMatchObject({
+      planId: "training-plan-test",
+      status: "completed",
+      templateId: "template-1",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "horizontal_push",
+          movementPatternLabel: "Horizontal Push",
+          volume: 400,
+        },
+      ],
+    });
+  });
+
+  it("starts a session from the selected workout template tab", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Full Body B" }));
+    await user.click(screen.getByRole("button", { name: "Start Full Body B session" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body B session" })).toBeVisible();
+    expect(screen.getByText("Flat Barbell Bench Press")).toBeVisible();
+    expect(screen.getByText("Barbell Squats")).toBeVisible();
+  });
+
+  it("opens Training Session history from the active Training Plan", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View training history" }));
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+  });
+
+  it("opens Training Session history and starts training from the top bar", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "Training history" }));
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "Start training" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+  });
+
+  it("shows Training Session history with weekly report, session report, and new-session starts", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+    await seedCompletedTrainingSessions();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "This week" })).toBeVisible();
+    expect(screen.getByText("2 completed sessions")).toBeVisible();
+    expect(screen.getByRole("row", { name: /Horizontal Push 760 kg/ })).toBeVisible();
+    expect(screen.getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
+
+    expect(screen.getByRole("button", { name: "Start Full Body A session" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Start Full Body B session" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View Full Body B report" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body B report" })).toBeVisible();
+    expect(screen.getByText("Completed Jun 9, 2026")).toBeVisible();
+    const sessionReport = screen.getByRole("region", { name: "Full Body B report" });
+
+    expect(within(sessionReport).getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Start Full Body B session" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body B session" })).toBeVisible();
+  });
 });
 
 async function seedTrainingPlan(
@@ -304,6 +437,72 @@ async function seedTrainingPlan(
   });
 
   await db.trainingPlans.put(trainingPlan);
+}
+
+async function seedCompletedTrainingSessions() {
+  await db.trainingSessions.bulkPut([
+    {
+      completedAt: "2026-06-10T09:00:00.000Z",
+      createdAt: "2026-06-10T09:00:00.000Z",
+      exercises: [
+        {
+          exerciseId: "flat-dumbbell-bench-press",
+          exerciseName: "Flat Dumbbell Bench Press",
+          movementPattern: "horizontal_push",
+          sets: [{ reps: 10, setIndex: 1, weight: 40 }],
+        },
+      ],
+      id: "session-a",
+      planId: "training-plan-test",
+      status: "completed",
+      templateId: "template-1",
+      templateLabel: "Full Body A",
+      updatedAt: "2026-06-10T09:00:00.000Z",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "horizontal_push",
+          movementPatternLabel: "Horizontal Push",
+          volume: 400,
+        },
+      ],
+    },
+    {
+      completedAt: "2026-06-09T09:00:00.000Z",
+      createdAt: "2026-06-09T09:00:00.000Z",
+      exercises: [
+        {
+          exerciseId: "flat-barbell-bench-press",
+          exerciseName: "Flat Barbell Bench Press",
+          movementPattern: "horizontal_push",
+          sets: [{ reps: 9, setIndex: 1, weight: 40 }],
+        },
+        {
+          exerciseId: "barbell-squats",
+          exerciseName: "Barbell Squats",
+          movementPattern: "quad_dominant",
+          sets: [{ reps: 10, setIndex: 1, weight: 90 }],
+        },
+      ],
+      id: "session-b",
+      planId: "training-plan-test",
+      status: "completed",
+      templateId: "template-2",
+      templateLabel: "Full Body B",
+      updatedAt: "2026-06-09T09:00:00.000Z",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "horizontal_push",
+          movementPatternLabel: "Horizontal Push",
+          volume: 360,
+        },
+        {
+          movementPattern: "quad_dominant",
+          movementPatternLabel: "Quad Dominant",
+          volume: 900,
+        },
+      ],
+    },
+  ]);
 }
 
 function renderTrainingPlan({ initialEntries }: { initialEntries: Array<string> }) {

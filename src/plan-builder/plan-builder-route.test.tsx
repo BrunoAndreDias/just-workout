@@ -49,10 +49,8 @@ const repRangeStyleBoundaryCopy =
 
 const repRangeStyleNextStepCopy = "Next, you will set weekly volume targets for each muscle group.";
 const isolationExercisesSummaryText = "2 recommended · 4 more available";
-const isolationExercisesUnavailableText =
-  "Isolation exercises · available after main compounds are confirmed";
-const exerciseFoundationIntroText =
-  "Choose the main compounds for weekly coverage. Rotation pools stay separate as future swaps.";
+const isolationExercisesUnavailableText = "Isolation exercises unlock after main compounds.";
+const exerciseFoundationIntroText = "Choose main compounds and swaps.";
 
 const weeklyVolumeExcludedContentPatterns = [
   /strongplan/i,
@@ -671,16 +669,14 @@ describe("PlanBuilderRoute", () => {
       ),
     ).toHaveAttribute("aria-current", "step");
 
-    expect(screen.getByText(/suggested starting point/i)).toBeVisible();
+    expect(screen.getByText("5 suggested main compounds")).toBeVisible();
     expect(
       screen.getByRole("listitem", {
         name: /vertical pull.*suggested exercise preview, not confirmed.*pull-ups/i,
       }),
     ).toBeVisible();
     expect(screen.getAllByText("Suggested").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Suggested, unconfirmed", { exact: false }).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.getAllByText("Suggested ·", { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: "Choose" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /change/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /choose horizontal push exercise/i })).toBeDisabled();
@@ -717,17 +713,17 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(within(horizontalPushRow).getByText("Flat Barbell Bench Press")).toBeVisible();
-    expect(within(horizontalPushRow).getByText(/^Main compound · \d+ options$/)).toBeVisible();
+    expect(within(horizontalPushRow).getByText(/^Main · \d+ options$/)).toBeVisible();
     expect(within(rotationSummary).getByText("Rotation pool")).toBeVisible();
-    expect(within(rotationSummary).getByText("3 suggested swaps")).toBeVisible();
-    expect(
-      within(rotationSummary).getByText("Future swaps, separate from main compound."),
-    ).toBeVisible();
+    expect(within(rotationSummary).getByText("3 suggested")).toBeVisible();
     expect(
       within(rotationSummary).getByRole("button", {
         name: /edit horizontal push rotation pool/i,
       }),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("complementary", { name: "Coverage summary" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/after a 6-week training block, these can replace the main compound/i),
     ).not.toBeInTheDocument();
@@ -744,11 +740,12 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     expect(await screen.findByRole("heading", { name: "Exercise foundation" })).toBeVisible();
+    expect(await screen.findByText("5 suggested main compounds")).toBeVisible();
     expect(
-      await screen.findByText("Suggested starting point: would cover 5 of 5 required patterns"),
-    ).toBeVisible();
-    expect(screen.getByRole("complementary", { name: "Coverage summary" })).toBeVisible();
-    expect(screen.getByRole("region", { name: "Rotation pools locked" })).toBeVisible();
+      screen.queryByRole("complementary", { name: "Coverage summary" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Rotation pools locked" })).not.toBeInTheDocument();
+    expect(screen.getByText("Swaps unlock after required picks")).toBeVisible();
     expect(screen.queryByText("Rotation pool preview")).not.toBeInTheDocument();
     expect(screen.queryByText("Rotation pool")).not.toBeInTheDocument();
     expect(screen.getByText(isolationExercisesUnavailableText)).toBeVisible();
@@ -777,13 +774,9 @@ describe("PlanBuilderRoute", () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectPlanBuilderPath(router, planBuilderPaths.exercises);
-    expect(
-      await screen.findByText("Suggested starting point: would cover 5 of 5 required patterns"),
-    ).toBeVisible();
+    expect(await screen.findByText("5 suggested main compounds")).toBeVisible();
     expect(screen.getByText("Pull-Ups")).toBeVisible();
-    expect(screen.getAllByText("Suggested, unconfirmed", { exact: false }).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.getAllByText("Suggested ·", { exact: false }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Rotation pool preview")).not.toBeInTheDocument();
     expect(screen.queryByText("Rotation pool")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -876,16 +869,16 @@ describe("PlanBuilderRoute", () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     expect(await screen.findByRole("heading", { name: "Exercise foundation" })).toBeVisible();
-    expect(
-      await screen.findByText("Suggested starting point: would cover 5 of 5 required patterns"),
-    ).toBeVisible();
+    expect(await screen.findByText("5 suggested main compounds")).toBeVisible();
     expect(
       screen.getByRole("listitem", {
         name: /vertical pull.*suggested exercise preview, not confirmed.*pull-ups/i,
       }),
     ).toBeVisible();
-    expect(screen.getByRole("complementary", { name: "Coverage summary" })).toBeVisible();
-    expect(screen.getByRole("region", { name: "Rotation pools locked" })).toBeVisible();
+    expect(
+      screen.queryByRole("complementary", { name: "Coverage summary" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Rotation pools locked" })).not.toBeInTheDocument();
 
     const generateCta = screen.getByRole("button", {
       name: /choose horizontal push exercise/i,
@@ -917,10 +910,8 @@ describe("PlanBuilderRoute", () => {
 
     const fullBodyView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByText("Main compound coverage: 5 of 5 required patterns covered."),
-    ).toBeVisible();
-    expect(screen.getByText("Recommended push balance: add Vertical push.")).toBeVisible();
+    expect(await screen.findByText("5 of 5 main compounds selected")).toBeVisible();
+    expect(screen.getByText("Add Vertical push.")).toBeVisible();
 
     fullBodyView.unmount();
 
@@ -935,11 +926,7 @@ describe("PlanBuilderRoute", () => {
 
     const upperLowerView = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByText(
-        "Main compound coverage: 5 of 6 required patterns covered · 1 required still missing.",
-      ),
-    ).toBeVisible();
+    expect(await screen.findByText("5 of 6 main compounds selected, 1 missing")).toBeVisible();
     expect(
       screen.getByRole("listitem", {
         name: /vertical push.*required movement pattern missing.*standing overhead barbell press/i,
@@ -959,11 +946,7 @@ describe("PlanBuilderRoute", () => {
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByText(
-        "Main compound coverage: 5 of 6 required patterns covered · 1 required still missing.",
-      ),
-    ).toBeVisible();
+    expect(await screen.findByText("5 of 6 main compounds selected, 1 missing")).toBeVisible();
     expect(
       screen.getByRole("listitem", {
         name: /vertical push.*required movement pattern missing.*standing overhead barbell press/i,
@@ -1075,9 +1058,7 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("list", { name: "Selected isolation exercises" })).toBeVisible();
     expect(screen.getByText("Lateral raise")).toBeVisible();
     expect(screen.getByRole("button", { name: /^edit isolation exercises$/i })).toBeVisible();
-    expect(
-      screen.getByText("Main compound coverage: 6 of 6 required patterns covered."),
-    ).toBeVisible();
+    expect(screen.getByText("6 of 6 main compounds selected")).toBeVisible();
   });
 
   it("shows abs and calf isolation exercises only when their optional Volume Targets are enabled", async () => {
@@ -1130,9 +1111,7 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    expect(
-      await screen.findByText("Main compound coverage: 6 of 6 required patterns covered."),
-    ).toBeVisible();
+    expect(await screen.findByText("6 of 6 main compounds selected")).toBeVisible();
     expect(screen.queryByText("Suggested coverage preview")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Coverage is not confirmed until main compounds are selected."),
@@ -1140,13 +1119,11 @@ describe("PlanBuilderRoute", () => {
     expect(
       screen.queryByText("Exercise selection will be editable in the next iteration."),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Rotation pools ready as future swaps.")).toBeVisible();
+    expect(screen.getByText("Swaps ready")).toBeVisible();
     expect(
-      screen.getByText("Rotation pools are optional swaps for selected compounds."),
-    ).toBeVisible();
-    expect(
-      screen.queryByText("Complete main compounds to unlock rotation pools."),
+      screen.queryByRole("complementary", { name: "Coverage summary" }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText("Swaps unlock after required picks")).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Rotation pools locked" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Change" })).toHaveLength(6);
 
@@ -2354,6 +2331,21 @@ describe("PlanBuilderRoute", () => {
     expect(within(stepList).getByText("Generate")).toBeVisible();
     expect(await screen.findByRole("button", { name: /^back$/i })).toBeDisabled();
 
+    const lockedRepRangesStep = within(stepList).getByRole("button", {
+      name: /rep ranges step locked/i,
+    });
+
+    expect(lockedRepRangesStep).toHaveAttribute("aria-disabled", "true");
+
+    await user.click(lockedRepRangesStep);
+
+    expect(
+      await screen.findByText("Confirm Training schedule to unlock Rep ranges.", {
+        selector: ".plan-builder-stepper-notice",
+      }),
+    ).toBeVisible();
+    expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+
     await user.click(await screen.findByRole("button", { name: /continue to training style/i }));
 
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
@@ -2465,9 +2457,7 @@ async function expectConfirmableExercisesStep() {
     await screen.findByRole("heading", { level: 1, name: "Exercise foundation" }),
   ).toBeVisible();
   expect(screen.getByText(exerciseFoundationIntroText)).toBeVisible();
-  expect(
-    await screen.findByText(/main compound coverage: \d+ of \d+ required patterns covered\./i),
-  ).toBeVisible();
+  expect(await screen.findByText(/\d+ of \d+ main compounds selected/i)).toBeVisible();
   expect(screen.getAllByText("Rotation pool").length).toBeGreaterThan(0);
   expect(screen.queryByText("Suggested coverage preview")).not.toBeInTheDocument();
   expect(

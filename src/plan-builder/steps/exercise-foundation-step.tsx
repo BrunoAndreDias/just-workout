@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   Check,
   CircleCheck,
-  CircleX,
   Dumbbell,
   Lock,
   type LucideIcon,
@@ -396,42 +395,27 @@ export function ExerciseFoundationStep({
       <StepPanel aria-labelledby="exercise-foundation-title" className="exercise-foundation-panel">
         <div className="exercise-foundation-workspace">
           <div className="exercise-foundation-main">
-            <div
-              data-impeccable-variants="147b195f"
-              data-impeccable-variant-count="3"
-              style={{ display: "contents" }}
-            >
-              {/* impeccable-variants-start 147b195f */}
-              {/* Original */}
-              <div data-impeccable-variant="original">
-                <section
-                  aria-label="Exercise foundation status"
-                  className="exercise-foundation-status"
-                >
-                  <span aria-hidden="true" className="exercise-foundation-status__icon">
-                    <Check size={22} strokeWidth={2.4} />
-                  </span>
-                  <div>
-                    <h3 className="sr-only" id="exercise-foundation-title">
-                      Exercise foundation overview
-                    </h3>
-                    <p className="exercise-foundation-status__title">
-                      {hasConfirmedSelections
-                        ? getConfirmedCoverageSummary(coverage)
-                        : getSuggestedFoundationSummary({
-                            requiredPatternCount: coverage.requiredPatternCount,
-                            suggestedRequiredPatternCount,
-                          })}
-                    </p>
-                    {recommendedGuidance ? (
-                      <p className="exercise-foundation-status__body">{recommendedGuidance}</p>
-                    ) : null}
-                  </div>
-                </section>
+            <section aria-label="Exercise foundation status" className="exercise-foundation-status">
+              <span aria-hidden="true" className="exercise-foundation-status__icon">
+                <Check size={22} strokeWidth={2.4} />
+              </span>
+              <div>
+                <h3 className="sr-only" id="exercise-foundation-title">
+                  Exercise foundation overview
+                </h3>
+                <p className="exercise-foundation-status__title">
+                  {hasConfirmedSelections
+                    ? getConfirmedCoverageSummary(coverage)
+                    : getSuggestedFoundationSummary({
+                        requiredPatternCount: coverage.requiredPatternCount,
+                        suggestedRequiredPatternCount,
+                      })}
+                </p>
+                {recommendedGuidance ? (
+                  <p className="exercise-foundation-status__body">{recommendedGuidance}</p>
+                ) : null}
               </div>
-              {/* Variants: insert below this line */}
-              {/* impeccable-variants-end 147b195f */}
-            </div>
+            </section>
 
             <div className="exercise-foundation-tabbar">
               <span className="exercise-foundation-tabbar__active">Main compounds</span>
@@ -446,9 +430,7 @@ export function ExerciseFoundationStep({
                 ) : (
                   <Lock aria-hidden="true" size={15} strokeWidth={2} />
                 )}
-                {canContinueToGenerate
-                  ? "Rotation pools ready as future swaps."
-                  : "Complete main compounds to unlock rotation pools."}
+                {canContinueToGenerate ? "Swaps ready" : "Swaps unlock after required picks"}
               </span>
             </div>
 
@@ -568,16 +550,7 @@ export function ExerciseFoundationStep({
                 })}
               </ul>
             </section>
-
-            {!canContinueToGenerate ? <LockedRotationPoolSummary /> : null}
           </div>
-
-          <ExerciseCoverageSummary
-            coverage={coverage}
-            hasConfirmedSelections={hasConfirmedSelections}
-            isRotationPoolUnlocked={canContinueToGenerate}
-            suggestedFoundation={suggestedFoundation}
-          />
         </div>
 
         <div>
@@ -708,9 +681,6 @@ function InlineRotationPoolEditor({
         <span className="rotation-pool-inline-preview__label">Rotation pool</span>
         <span className="rotation-pool-inline-preview__status">{status}</span>
       </div>
-      <p className="rotation-pool-inline-preview__note">
-        Future swaps, separate from main compound.
-      </p>
       <div className="rotation-pool-inline-preview__actions">
         <Button
           aria-label={`Edit ${movementPatternLabel} rotation pool`}
@@ -721,7 +691,7 @@ function InlineRotationPoolEditor({
           variant="outline"
         >
           <Plus aria-hidden="true" size={16} strokeWidth={2} />
-          {rotationPool.length > 0 ? "Edit swaps" : "Add swaps"}
+          Swaps
         </Button>
       </div>
     </section>
@@ -736,132 +706,12 @@ function getRotationPoolSummaryStatus({
   selectedExerciseCount: number;
 }): string {
   if (selectedExerciseCount === 0) {
-    return "No swaps selected";
+    return "No swaps";
   }
 
-  const noun = selectedExerciseCount === 1 ? "swap" : "swaps";
   const state = isSuggested ? "suggested" : "selected";
 
-  return `${selectedExerciseCount} ${state} ${noun}`;
-}
-
-function ExerciseCoverageSummary({
-  coverage,
-  hasConfirmedSelections,
-  isRotationPoolUnlocked,
-  suggestedFoundation,
-}: {
-  coverage: ReturnType<typeof getWeeklyMovementCoverage>;
-  hasConfirmedSelections: boolean;
-  isRotationPoolUnlocked: boolean;
-  suggestedFoundation: SuggestedFoundationByPattern;
-}) {
-  const requiredRows = coverage.rows.filter((row) => row.requirement === "required");
-  const recommendedRows = coverage.rows.filter((row) => row.requirement === "recommended");
-  const requiredCoveredCount = requiredRows.filter((row) => row.isCovered).length;
-  const recommendedCoveredCount = recommendedRows.filter(
-    (row) => row.isCovered || (!hasConfirmedSelections && suggestedFoundation[row.movementPattern]),
-  );
-
-  return (
-    <aside aria-label="Coverage summary" className="exercise-coverage-summary">
-      <h3>Coverage summary</h3>
-      <ExerciseCoverageSummaryGroup
-        rows={requiredRows}
-        selectedCount={requiredCoveredCount}
-        suggestedFoundation={suggestedFoundation}
-        title={`Required (${requiredRows.length})`}
-      />
-      {recommendedRows.length > 0 ? (
-        <ExerciseCoverageSummaryGroup
-          rows={recommendedRows}
-          selectedCount={recommendedCoveredCount.length}
-          suggestedFoundation={suggestedFoundation}
-          title={`Recommended (${recommendedRows.length})`}
-        />
-      ) : null}
-      <p className="exercise-coverage-summary__note">
-        {isRotationPoolUnlocked
-          ? "Rotation pools are optional swaps for selected compounds."
-          : "Finish required main compounds to unlock rotation pools."}
-      </p>
-    </aside>
-  );
-}
-
-function ExerciseCoverageSummaryGroup({
-  rows,
-  selectedCount,
-  suggestedFoundation,
-  title,
-}: {
-  rows: ReadonlyArray<WeeklyMovementCoverageRow>;
-  selectedCount: number;
-  suggestedFoundation: SuggestedFoundationByPattern;
-  title: string;
-}) {
-  return (
-    <section className="exercise-coverage-summary__group">
-      <p className="exercise-coverage-summary__group-title">{title}</p>
-      <ul className="exercise-coverage-summary__list">
-        {rows.map((row) => {
-          const isSuggested =
-            !row.isCovered && suggestedFoundation[row.movementPattern] !== undefined;
-          const isCovered = row.isCovered || isSuggested;
-
-          return (
-            <li className="exercise-coverage-summary__row" key={row.movementPattern}>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "exercise-coverage-summary__state",
-                  isCovered
-                    ? "exercise-coverage-summary__state--covered"
-                    : "exercise-coverage-summary__state--missing",
-                )}
-              >
-                {isCovered ? (
-                  <CircleCheck size={15} strokeWidth={2.4} />
-                ) : (
-                  <CircleX size={15} strokeWidth={2.4} />
-                )}
-              </span>
-              <span>
-                <span className="exercise-coverage-summary__label">
-                  {formatMovementPatternLabel(row.movementPattern)}
-                </span>
-                <span
-                  className={cn(
-                    "exercise-coverage-summary__meta",
-                    !isCovered ? "exercise-coverage-summary__meta--missing" : null,
-                  )}
-                >
-                  {isCovered ? "Selected" : "Missing"}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="sr-only">
-        {selectedCount} of {rows.length} patterns selected in {title}.
-      </p>
-    </section>
-  );
-}
-
-function LockedRotationPoolSummary() {
-  return (
-    <section aria-label="Rotation pools locked" className="exercise-rotation-locked">
-      <span aria-hidden="true" className="exercise-rotation-locked__icon">
-        <Lock size={21} strokeWidth={2.2} />
-      </span>
-      <div>
-        <h3>Next: rotation pools</h3>
-        <p>Unlock after required main compounds. They save future swaps, not main lift choices.</p>
-      </div>
-    </section>
-  );
+  return `${selectedExerciseCount} ${state}`;
 }
 
 function getRotationPoolOptions({
@@ -914,9 +764,7 @@ function IsolationExercisesSummary({
       <div className="exercise-accessories-summary__header">
         <div className="min-w-0">
           <h3 className="text-sm font-black text-stone-950">Isolation exercises</h3>
-          <p className="mt-1 text-sm text-stone-600">
-            Add targeted isolation work if you want more direct muscle coverage.
-          </p>
+          <p className="mt-1 text-sm text-stone-600">Optional direct muscle work.</p>
           <p className="mt-2 text-sm font-semibold text-stone-700">
             {selectedExerciseCount > 0
               ? `${selectedExerciseCount} selected · ${recommendedAccessoryCount} recommended · ${optionalAccessoryCount} more available`
@@ -968,7 +816,7 @@ function IsolationExercisesUnavailableSummary() {
       className="exercise-accessories-summary exercise-accessories-summary--muted"
     >
       <p className="text-sm font-semibold text-stone-600">
-        Isolation exercises · available after main compounds are confirmed
+        Isolation exercises unlock after main compounds.
       </p>
     </section>
   );
@@ -1652,7 +1500,7 @@ function getFoundationRowMetadata({
   status: FoundationRowStatus;
 }): string {
   const alternativeCount = shownExerciseId ? Math.max(optionCount - 1, 0) : optionCount;
-  const prefix = status === "suggested" ? "Suggested, unconfirmed" : "Main compound";
+  const prefix = status === "suggested" ? "Suggested" : "Main";
   const optionLabel = alternativeCount === 1 ? "option" : "options";
 
   return `${prefix} · ${alternativeCount} ${optionLabel}`;
@@ -1769,7 +1617,11 @@ function getSuggestedFoundationSummary({
   requiredPatternCount: number;
   suggestedRequiredPatternCount: number;
 }): string {
-  return `Suggested starting point: would cover ${suggestedRequiredPatternCount} of ${requiredPatternCount} required patterns`;
+  if (suggestedRequiredPatternCount === requiredPatternCount) {
+    return `${requiredPatternCount} suggested main compounds`;
+  }
+
+  return `${suggestedRequiredPatternCount} of ${requiredPatternCount} suggested main compounds`;
 }
 
 function getConfirmedCoverageSummary({
@@ -1782,10 +1634,10 @@ function getConfirmedCoverageSummary({
   const missingRequiredCount = requiredPatternCount - coveredRequiredPatternCount;
 
   if (missingRequiredCount === 0) {
-    return `Main compound coverage: ${coveredRequiredPatternCount} of ${requiredPatternCount} required patterns covered.`;
+    return `${coveredRequiredPatternCount} of ${requiredPatternCount} main compounds selected`;
   }
 
-  return `Main compound coverage: ${coveredRequiredPatternCount} of ${requiredPatternCount} required patterns covered · ${missingRequiredCount} required still missing.`;
+  return `${coveredRequiredPatternCount} of ${requiredPatternCount} main compounds selected, ${missingRequiredCount} missing`;
 }
 
 function getNextMissingRequiredPattern(
@@ -1840,7 +1692,7 @@ function getRecommendedGuidance(
       !row.isCovered,
   );
 
-  return missingRecommendedVerticalPush ? "Recommended push balance: add Vertical push." : null;
+  return missingRecommendedVerticalPush ? "Add Vertical push." : null;
 }
 
 function getMissingRequiredGuidance(
@@ -1848,16 +1700,16 @@ function getMissingRequiredGuidance(
 ): string | null {
   switch (movementPattern) {
     case "horizontal_push":
-      return "Next action: choose a horizontal push, such as Bench Press or Chest Press.";
+      return "Choose horizontal push next.";
     case "horizontal_pull":
-      return "Next action: choose a horizontal pull, such as Barbell Row or Seated Row.";
+      return "Choose horizontal pull next.";
     case "vertical_pull":
-      return "Next action: choose a vertical pull, such as Pull-Up, Chin-Up, or Lat Pulldown.";
+      return "Choose vertical pull next.";
     case "quad_dominant":
-      return "Next action: choose a quad-dominant lift, such as Back Squat or Leg Press.";
+      return "Choose quad-dominant lift next.";
     case "hip_hamstring_dominant":
-      return "Next action: choose a hip / hamstring lift, such as Romanian Deadlift or Hip Thrust.";
+      return "Choose hip / hamstring lift next.";
     case "vertical_push":
-      return "Next action: choose a vertical push, such as Overhead Press or Shoulder Press.";
+      return "Choose vertical push next.";
   }
 }

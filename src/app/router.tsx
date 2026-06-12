@@ -12,6 +12,8 @@ import {
   planBuilderService,
 } from "../plan-builder";
 import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
+import { TrainingSessionHistoryRoute } from "../training-plan/training-session-history-route";
+import { TrainingSessionRoute } from "../training-plan/training-session-route";
 import { RootLayout } from "./root-layout";
 
 const rootRoute = createRootRoute({
@@ -118,6 +120,18 @@ const trainingPlanRoute = createRoute({
   path: "/training-plans/$planId",
 });
 
+const trainingSessionRoute = createRoute({
+  component: TrainingSessionRoute,
+  getParentRoute: () => rootRoute,
+  path: "/training-plans/$planId/sessions/new/$templateId",
+});
+
+const trainingSessionHistoryRoute = createRoute({
+  component: TrainingSessionHistoryRoute,
+  getParentRoute: () => rootRoute,
+  path: "/training-plans/$planId/sessions",
+});
+
 const trainingPlansRoute = createRoute({
   component: TrainingPlansRoute,
   getParentRoute: () => rootRoute,
@@ -133,6 +147,8 @@ const routeTree = rootRoute.addChildren([
   planBuilderExercisesRoute,
   planBuilderGenerateRoute,
   trainingPlansRoute,
+  trainingSessionHistoryRoute,
+  trainingSessionRoute,
   trainingPlanRoute,
 ]);
 

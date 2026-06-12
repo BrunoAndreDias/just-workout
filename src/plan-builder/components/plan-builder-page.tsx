@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { cn } from "../../design-system/cn";
 import { StepNotice } from "../../design-system/step-screen";
-import { Stepper } from "../../design-system/stepper";
+import { Stepper, type StepperItem } from "../../design-system/stepper";
 import { PageTitle } from "../../design-system/typography";
 import type { PlanBlueprintSummary } from "../plan-blueprint";
 import { planBuilderPaths } from "../plan-builder-paths";
@@ -40,9 +40,15 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
   const shouldShowExerciseBlueprintSummary =
     currentStep === "exercises" && shouldShowPlanBuilderRail;
   const pageTitle = getPlanBuilderPageTitle(currentStep);
+  const stepperItems = getPlanBuilderStepperItems(summary, currentStep);
+  const [stepperNotice, setStepperNotice] = useState<{
+    message: string;
+    step: PlanBuilderStep;
+  } | null>(null);
   const navigateToPlanBuilderStep = (step: PlanBuilderStep) => {
     void navigate({ to: getPlanBuilderPathByStep(step) });
   };
+  const visibleStepperNotice = stepperNotice?.step === currentStep ? stepperNotice.message : null;
 
   if (currentStep === "frequency" && prototypeVariant) {
     return (
@@ -85,12 +91,28 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
             <Stepper
               currentIndex={currentStepIndex}
               density="compact"
-              items={planBuilderSteps}
+              items={stepperItems}
               label="Plan Builder"
               onItemSelect={(item) => {
+                setStepperNotice(null);
                 void navigate({ to: getPlanBuilderPathByStep(item.id) });
               }}
+              onLockedItemSelect={(item) => {
+                setStepperNotice(
+                  item.disabledReason
+                    ? {
+                        message: item.disabledReason,
+                        step: currentStep,
+                      }
+                    : null,
+                );
+              }}
             />
+            {visibleStepperNotice ? (
+              <p aria-live="polite" className="plan-builder-stepper-notice">
+                {visibleStepperNotice}
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -98,6 +120,60 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
       </section>
     </section>
   );
+}
+
+function getPlanBuilderStepperItems(
+  summary: PlanBlueprintSummary | null,
+  currentStep: PlanBuilderStep,
+): ReadonlyArray<StepperItem> {
+  const furthestAvailableIndex = summary
+    ? getFurthestAvailablePlanBuilderStepIndex(summary)
+    : getPlanBuilderStepDetails(currentStep).index;
+
+  return planBuilderSteps.map((step, index) => {
+    const isCurrent = step.id === currentStep;
+    const disabledReason =
+      !isCurrent && index > furthestAvailableIndex
+        ? getPlanBuilderLockedStepReason(step.id)
+        : undefined;
+
+    return {
+      ...step,
+      disabledReason,
+    };
+  });
+}
+
+function getFurthestAvailablePlanBuilderStepIndex(summary: PlanBlueprintSummary): number {
+  switch (summary.nextStep) {
+    case "Rep ranges":
+      return 1;
+    case "Volume":
+      return 2;
+    case "Exercises":
+      return 3;
+    case "Generate":
+      return 4;
+  }
+
+  return 0;
+}
+
+function getPlanBuilderLockedStepReason(step: PlanBuilderStep): string {
+  switch (step) {
+    case "rep-ranges":
+      return "Confirm Training schedule to unlock Rep ranges.";
+    case "volume":
+      return "Choose a Rep Range Style to unlock Volume.";
+    case "exercises":
+      return "Set training volume to unlock Exercises.";
+    case "generate":
+      return "Choose exercises to unlock Generate.";
+    case "frequency":
+      return "Start with Training schedule.";
+  }
+
+  return "Complete the earlier Plan Builder steps first.";
 }
 
 function getPlanBuilderPathByStep(step: string) {

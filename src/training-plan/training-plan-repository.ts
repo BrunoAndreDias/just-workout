@@ -1,5 +1,6 @@
 import { db } from "../app/local-database";
 import type { TrainingPlan } from "./training-plan";
+import type { TrainingSession } from "./training-session";
 
 export async function getTrainingPlan(trainingPlanId: string): Promise<TrainingPlan | null> {
   return (await db.trainingPlans.get(trainingPlanId)) ?? null;
@@ -10,6 +11,19 @@ export async function getTrainingPlans(): Promise<ReadonlyArray<TrainingPlan>> {
 
   return trainingPlans.sort((firstPlan, secondPlan) =>
     secondPlan.updatedAt.localeCompare(firstPlan.updatedAt),
+  );
+}
+
+export async function getTrainingSessionsForPlan(
+  trainingPlanId: string,
+): Promise<ReadonlyArray<TrainingSession>> {
+  const trainingSessions = await db.trainingSessions
+    .where("planId")
+    .equals(trainingPlanId)
+    .toArray();
+
+  return trainingSessions.sort((firstSession, secondSession) =>
+    secondSession.updatedAt.localeCompare(firstSession.updatedAt),
   );
 }
 
@@ -30,4 +44,12 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
   });
 
   return trainingPlan;
+}
+
+export async function saveCompletedTrainingSession(
+  trainingSession: TrainingSession,
+): Promise<TrainingSession> {
+  await db.trainingSessions.put(trainingSession);
+
+  return trainingSession;
 }
