@@ -23,10 +23,11 @@ type TrainingHistorySessionDateRange = {
 };
 
 type TrainingSessionExercise = TrainingSession["exercises"][number];
+type TrainingSessionMovementPattern = TrainingSessionMovementVolume["movementPattern"];
 
 type TrainingSessionExerciseSummary = {
   loadedSetCount: number;
-  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  movementPattern: TrainingSessionMovementPattern;
   movementPatternLabel: string;
   totalVolume: number;
 };
@@ -44,7 +45,7 @@ export type TrainingHistoryMovementPatternComparison = {
   changePercentage: number | null;
   currentVolume: number;
   deltaVolume: number;
-  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  movementPattern: TrainingSessionMovementPattern;
   movementPatternLabel: string;
   previousVolume: number;
   relativeVolumePercentage: number;
@@ -113,7 +114,7 @@ function summarizeTrainingSessions(
 ): TrainingHistoryWeekMetrics {
   let loadedSetCount = 0;
   let totalVolume = 0;
-  const volumeByPattern = new Map<string, TrainingSessionMovementVolume>();
+  const volumeByPattern = new Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>();
 
   for (const trainingSession of trainingSessions) {
     for (const exercise of trainingSession.exercises) {
@@ -234,7 +235,7 @@ function createMovementPatternComparisons(
 
 function createVolumeByPatternIndex(
   rows: ReadonlyArray<TrainingSessionMovementVolume>,
-): Map<TrainingSessionMovementVolume["movementPattern"], TrainingSessionMovementVolume> {
+): Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume> {
   return new Map(rows.map((row) => [row.movementPattern, row] as const));
 }
 
@@ -249,7 +250,7 @@ function createMovementPatternComparison({
   selectedRow,
 }: {
   maxCurrentVolume: number;
-  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  movementPattern: TrainingSessionMovementPattern;
   previousRow: TrainingSessionMovementVolume | undefined;
   selectedRow: TrainingSessionMovementVolume | undefined;
 }): TrainingHistoryMovementPatternComparison {
@@ -313,7 +314,7 @@ function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionEx
 }
 
 function updateMovementPatternVolume(
-  volumeByPattern: Map<string, TrainingSessionMovementVolume>,
+  volumeByPattern: Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>,
   exerciseSummary: TrainingSessionExerciseSummary,
 ) {
   if (exerciseSummary.totalVolume <= 0) {

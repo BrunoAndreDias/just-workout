@@ -290,88 +290,91 @@ function WeeklyMovementVolumeReport({
   emptyMessage: string;
   rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
 }) {
-  if (rows.length === 0) {
-    return (
-      <section
-        className="training-history-comparison"
-        aria-labelledby="training-history-comparison-title"
-      >
-        <div className="training-history-section-heading">
-          <div>
-            <h2 id="training-history-comparison-title">Weekly movement volume</h2>
-            <p>Compare Completed Load Volume against the previous Training Week.</p>
-          </div>
-        </div>
-        <p className="training-history-empty">{emptyMessage}</p>
-      </section>
-    );
-  }
-
   return (
     <section
       className="training-history-comparison"
       aria-labelledby="training-history-comparison-title"
     >
-      <div className="training-history-section-heading">
-        <div>
-          <h2 id="training-history-comparison-title">Weekly movement volume</h2>
-          <p>Compare Completed Load Volume against the previous Training Week.</p>
-        </div>
-      </div>
-      <div className="training-history-comparison-table-scroll">
-        <table className="training-history-comparison-table">
-          <thead>
-            <tr>
-              <th scope="col">Movement pattern</th>
-              <th scope="col">Completed Load Volume</th>
-              <th scope="col">Delta</th>
-              <th scope="col">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => {
-              const tone = getMovementPatternChangeTone(row.change);
-
-              return (
-                <tr key={row.movementPattern}>
-                  <td>
-                    <div className="training-history-comparison-table__pattern">
-                      <span className="training-history-comparison-table__pattern-label">
-                        {row.movementPatternLabel}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className="training-history-comparison-table__bar-track"
-                      >
-                        <span
-                          className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
-                          style={{ width: `${row.relativeVolumePercentage}%` }}
-                        />
-                      </span>
-                    </div>
-                  </td>
-                  <td className="training-history-comparison-table__metric">
-                    {formatWeight(row.currentVolume)} kg
-                  </td>
-                  <td
-                    className={`training-history-comparison-table__delta training-history-comparison-table__delta--${tone}`}
-                  >
-                    {formatWeightDelta(row.deltaVolume)}
-                  </td>
-                  <td>
-                    <span
-                      className={`training-history-comparison-table__chip training-history-comparison-table__chip--${tone}`}
-                    >
-                      {formatMovementPatternChange(row)}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <WeeklyMovementVolumeHeading />
+      {rows.length === 0 ? (
+        <p className="training-history-empty">{emptyMessage}</p>
+      ) : (
+        <WeeklyMovementVolumeTable rows={rows} />
+      )}
     </section>
+  );
+}
+
+function WeeklyMovementVolumeHeading() {
+  return (
+    <div className="training-history-section-heading">
+      <div>
+        <h2 id="training-history-comparison-title">Weekly movement volume</h2>
+        <p>Compare Completed Load Volume against the previous Training Week.</p>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyMovementVolumeTable({
+  rows,
+}: {
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
+}) {
+  return (
+    <div className="training-history-comparison-table-scroll">
+      <table className="training-history-comparison-table">
+        <thead>
+          <tr>
+            <th scope="col">Movement pattern</th>
+            <th scope="col">Completed Load Volume</th>
+            <th scope="col">Delta</th>
+            <th scope="col">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const changeTone = getMovementPatternChangeTone(row.change);
+
+            return (
+              <tr key={row.movementPattern}>
+                <td>
+                  <div className="training-history-comparison-table__pattern">
+                    <span className="training-history-comparison-table__pattern-label">
+                      {row.movementPatternLabel}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="training-history-comparison-table__bar-track"
+                    >
+                      <span
+                        className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${changeTone}`}
+                        style={{ width: `${row.relativeVolumePercentage}%` }}
+                      />
+                    </span>
+                  </div>
+                </td>
+                <td className="training-history-comparison-table__metric">
+                  {formatWeight(row.currentVolume)} kg
+                </td>
+                <td
+                  className={`training-history-comparison-table__delta training-history-comparison-table__delta--${changeTone}`}
+                >
+                  {formatWeightDelta(row.deltaVolume)}
+                </td>
+                <td>
+                  <span
+                    className={`training-history-comparison-table__chip training-history-comparison-table__chip--${changeTone}`}
+                  >
+                    {formatMovementPatternChange(row)}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
