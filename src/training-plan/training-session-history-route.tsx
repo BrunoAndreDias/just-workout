@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
+  type TrainingHistoryMovementPatternComparison,
   type TrainingHistoryWeekReport,
   type TrainingHistoryWeekSummary,
 } from "./training-history-week";
@@ -134,9 +135,9 @@ function TrainingWeekSection({
         />
       </div>
       <TrainingWeekSummaryStrip summary={trainingWeekReport.summary} />
-      <MovementVolumeTable
+      <WeeklyMovementVolumeReport
         emptyMessage="Complete a Training Session to build a weekly report."
-        rows={trainingWeekReport.volumeByMovementPattern}
+        rows={trainingWeekReport.movementPatternComparisons}
       />
     </section>
   );
@@ -282,6 +283,98 @@ function SessionReport({ session }: { session: TrainingSession | undefined }) {
   );
 }
 
+function WeeklyMovementVolumeReport({
+  emptyMessage,
+  rows,
+}: {
+  emptyMessage: string;
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
+}) {
+  if (rows.length === 0) {
+    return (
+      <section
+        className="training-history-comparison"
+        aria-labelledby="training-history-comparison-title"
+      >
+        <div className="training-history-section-heading">
+          <div>
+            <h2 id="training-history-comparison-title">Weekly movement volume</h2>
+            <p>Compare Completed Load Volume against the previous Training Week.</p>
+          </div>
+        </div>
+        <p className="training-history-empty">{emptyMessage}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className="training-history-comparison"
+      aria-labelledby="training-history-comparison-title"
+    >
+      <div className="training-history-section-heading">
+        <div>
+          <h2 id="training-history-comparison-title">Weekly movement volume</h2>
+          <p>Compare Completed Load Volume against the previous Training Week.</p>
+        </div>
+      </div>
+      <div className="training-history-comparison-table-scroll">
+        <table className="training-history-comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Movement pattern</th>
+              <th scope="col">Completed Load Volume</th>
+              <th scope="col">Delta</th>
+              <th scope="col">Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const tone = getMovementPatternChangeTone(row.change);
+
+              return (
+                <tr key={row.movementPattern}>
+                  <td>
+                    <div className="training-history-comparison-table__pattern">
+                      <span className="training-history-comparison-table__pattern-label">
+                        {row.movementPatternLabel}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="training-history-comparison-table__bar-track"
+                      >
+                        <span
+                          className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
+                          style={{ width: `${row.relativeVolumePercentage}%` }}
+                        />
+                      </span>
+                    </div>
+                  </td>
+                  <td className="training-history-comparison-table__metric">
+                    {formatWeight(row.currentVolume)} kg
+                  </td>
+                  <td
+                    className={`training-history-comparison-table__delta training-history-comparison-table__delta--${tone}`}
+                  >
+                    {formatWeightDelta(row.deltaVolume)}
+                  </td>
+                  <td>
+                    <span
+                      className={`training-history-comparison-table__chip training-history-comparison-table__chip--${tone}`}
+                    >
+                      {formatMovementPatternChange(row)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function MovementVolumeTable({
   emptyMessage,
   rows,
@@ -349,4 +442,44 @@ function formatProgress(value: number | null): string {
 
 function formatWeight(value: number): string {
   return weightFormatter.format(value);
+}
+
+function formatWeightDelta(value: number): string {
+  if (value === 0) {
+    return "0 kg";
+  }
+
+  const prefix = value > 0 ? "+" : "-";
+
+  return `${prefix}${formatWeight(Math.abs(value))} kg`;
+}
+
+function formatMovementPatternChange(row: TrainingHistoryMovementPatternComparison): string {
+  switch (row.change) {
+    case "increase":
+      return `Up ${Math.abs(row.changePercentage ?? 0)}%`;
+    case "decrease":
+      return `Down ${Math.abs(row.changePercentage ?? 0)}%`;
+    case "same":
+      return "Same";
+    case "new":
+      return "New this week";
+    case "dropped":
+      return "No volume this week";
+  }
+}
+
+function getMovementPatternChangeTone(
+  change: TrainingHistoryMovementPatternComparison["change"],
+): "neutral" | "positive" | "regression" {
+  switch (change) {
+    case "increase":
+    case "new":
+      return "positive";
+    case "decrease":
+    case "dropped":
+      return "regression";
+    case "same":
+      return "neutral";
+  }
 }

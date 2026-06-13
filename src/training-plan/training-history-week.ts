@@ -39,13 +39,24 @@ export type TrainingHistoryWeekSummary = {
   totalVolume: number;
 };
 
+export type TrainingHistoryMovementPatternComparison = {
+  change: "decrease" | "dropped" | "increase" | "new" | "same";
+  changePercentage: number | null;
+  currentVolume: number;
+  deltaVolume: number;
+  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  movementPatternLabel: string;
+  previousVolume: number;
+  relativeVolumePercentage: number;
+};
+
 export type TrainingHistoryWeekReport = {
+  movementPatternComparisons: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
   nextWeekEndKey: string | null;
   previousWeekEndKey: string | null;
   selectedSessions: ReadonlyArray<TrainingSession>;
   selectedWeek: TrainingHistoryWeek | null;
   summary: TrainingHistoryWeekSummary;
-  volumeByMovementPattern: ReadonlyArray<TrainingSessionMovementVolume>;
 };
 
 export function buildTrainingHistoryWeekReport({
@@ -80,6 +91,10 @@ export function buildTrainingHistoryWeekReport({
   const previousMetrics = summarizeTrainingSessions(previousSessions);
 
   return {
+    movementPatternComparisons: createMovementPatternComparisons(
+      selectedMetrics.volumeByMovementPattern,
+      previousMetrics.volumeByMovementPattern,
+    ),
     nextWeekEndKey: getNextWeekEndKey(selectedWeek, dateRange.latestSessionDay),
     previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, dateRange.oldestSessionDay),
     selectedSessions,
@@ -90,7 +105,6 @@ export function buildTrainingHistoryWeekReport({
       selectedMetrics,
       previousMetrics,
     ),
-    volumeByMovementPattern: selectedMetrics.volumeByMovementPattern,
   };
 }
 
@@ -124,6 +138,7 @@ function createEmptyTrainingHistoryWeekReport(
   trainingPlan: TrainingPlan,
 ): TrainingHistoryWeekReport {
   return {
+    movementPatternComparisons: [],
     nextWeekEndKey: null,
     previousWeekEndKey: null,
     selectedSessions: [],
@@ -135,7 +150,6 @@ function createEmptyTrainingHistoryWeekReport(
       progressPercentage: null,
       totalVolume: 0,
     },
-    volumeByMovementPattern: [],
   };
 }
 
@@ -194,6 +208,89 @@ function createTrainingHistoryWeekSummary(
   };
 }
 
+function createMovementPatternComparisons(
+  selectedWeekVolumes: ReadonlyArray<TrainingSessionMovementVolume>,
+  previousWeekVolumes: ReadonlyArray<TrainingSessionMovementVolume>,
+): ReadonlyArray<TrainingHistoryMovementPatternComparison> {
+  const selectedVolumeByPattern = createVolumeByPatternIndex(selectedWeekVolumes);
+  const previousVolumeByPattern = createVolumeByPatternIndex(previousWeekVolumes);
+  const movementPatterns = new Set([
+    ...selectedVolumeByPattern.keys(),
+    ...previousVolumeByPattern.keys(),
+  ]);
+  const maxCurrentVolume = getMaxMovementPatternVolume(selectedWeekVolumes);
+
+  return Array.from(movementPatterns)
+    .map((movementPattern) =>
+      createMovementPatternComparison({
+        maxCurrentVolume,
+        movementPattern,
+        previousRow: previousVolumeByPattern.get(movementPattern),
+        selectedRow: selectedVolumeByPattern.get(movementPattern),
+      }),
+    )
+    .sort(compareMovementPatternComparisons);
+}
+
+function createVolumeByPatternIndex(
+  rows: ReadonlyArray<TrainingSessionMovementVolume>,
+): Map<TrainingSessionMovementVolume["movementPattern"], TrainingSessionMovementVolume> {
+  return new Map(rows.map((row) => [row.movementPattern, row] as const));
+}
+
+function getMaxMovementPatternVolume(rows: ReadonlyArray<TrainingSessionMovementVolume>): number {
+  return Math.max(0, ...rows.map((row) => row.volume));
+}
+
+function createMovementPatternComparison({
+  maxCurrentVolume,
+  movementPattern,
+  previousRow,
+  selectedRow,
+}: {
+  maxCurrentVolume: number;
+  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  previousRow: TrainingSessionMovementVolume | undefined;
+  selectedRow: TrainingSessionMovementVolume | undefined;
+}): TrainingHistoryMovementPatternComparison {
+  const currentVolume = selectedRow?.volume ?? 0;
+  const previousVolume = previousRow?.volume ?? 0;
+
+  return {
+    change: resolveMovementPatternChange(currentVolume, previousVolume),
+    changePercentage: calculateProgressPercentage(currentVolume, previousVolume),
+    currentVolume,
+    deltaVolume: currentVolume - previousVolume,
+    movementPattern,
+    movementPatternLabel:
+      selectedRow?.movementPatternLabel ?? previousRow?.movementPatternLabel ?? "",
+    previousVolume,
+    relativeVolumePercentage: calculateRelativeVolumePercentage(currentVolume, maxCurrentVolume),
+  };
+}
+
+function calculateRelativeVolumePercentage(
+  currentVolume: number,
+  maxCurrentVolume: number,
+): number {
+  if (maxCurrentVolume <= 0) {
+    return 0;
+  }
+
+  return Math.round((currentVolume / maxCurrentVolume) * 100);
+}
+
+function compareMovementPatternComparisons(
+  firstRow: TrainingHistoryMovementPatternComparison,
+  secondRow: TrainingHistoryMovementPatternComparison,
+): number {
+  return (
+    secondRow.currentVolume - firstRow.currentVolume ||
+    secondRow.previousVolume - firstRow.previousVolume ||
+    firstRow.movementPatternLabel.localeCompare(secondRow.movementPatternLabel)
+  );
+}
+
 function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionExerciseSummary {
   let loadedSetCount = 0;
   let totalVolume = 0;
@@ -231,6 +328,25 @@ function updateMovementPatternVolume(
       currentPattern?.movementPatternLabel ?? exerciseSummary.movementPatternLabel,
     volume: (currentPattern?.volume ?? 0) + exerciseSummary.totalVolume,
   });
+}
+
+function resolveMovementPatternChange(
+  currentVolume: number,
+  previousVolume: number,
+): TrainingHistoryMovementPatternComparison["change"] {
+  if (previousVolume <= 0) {
+    return "new";
+  }
+
+  if (currentVolume <= 0) {
+    return "dropped";
+  }
+
+  if (currentVolume === previousVolume) {
+    return "same";
+  }
+
+  return currentVolume > previousVolume ? "increase" : "decrease";
 }
 
 function calculateProgressPercentage(

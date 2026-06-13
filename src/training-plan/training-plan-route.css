@@ -1188,6 +1188,131 @@
   line-height: 1.25;
 }
 
+.training-history-comparison {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.training-history-comparison-table-scroll {
+  overflow-x: auto;
+}
+
+.training-history-comparison-table {
+  width: 100%;
+  min-width: 40rem;
+  border-collapse: collapse;
+  color: #293236;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.training-history-comparison-table th,
+.training-history-comparison-table td {
+  border-bottom: 1px solid rgba(28, 25, 23, 0.09);
+  padding: 0.75rem 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.training-history-comparison-table th {
+  color: #58656a;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.training-history-comparison-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.training-history-comparison-table__pattern {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 12rem;
+}
+
+.training-history-comparison-table__pattern-label {
+  color: #11181b;
+  font-weight: 800;
+}
+
+.training-history-comparison-table__bar-track {
+  display: block;
+  width: 100%;
+  max-width: 16rem;
+  height: 0.3rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.08);
+}
+
+.training-history-comparison-table__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.training-history-comparison-table__bar-fill--positive {
+  background: #0a6c73;
+}
+
+.training-history-comparison-table__bar-fill--regression {
+  background: #b5791d;
+}
+
+.training-history-comparison-table__bar-fill--neutral {
+  background: #8f9aa0;
+}
+
+.training-history-comparison-table__metric {
+  color: #11181b;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.training-history-comparison-table__delta {
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.training-history-comparison-table__delta--positive {
+  color: #075d63;
+}
+
+.training-history-comparison-table__delta--regression {
+  color: #9a6417;
+}
+
+.training-history-comparison-table__delta--neutral {
+  color: #58656a;
+}
+
+.training-history-comparison-table__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.training-history-comparison-table__chip--positive {
+  color: #075d63;
+  background: rgba(0, 119, 128, 0.11);
+}
+
+.training-history-comparison-table__chip--regression {
+  color: #8c5a15;
+  background: rgba(191, 140, 54, 0.15);
+}
+
+.training-history-comparison-table__chip--neutral {
+  color: #4f5b60;
+  background: rgba(88, 101, 106, 0.12);
+}
+
 .training-history-section-heading {
   display: flex;
   align-items: flex-start;
@@ -1400,6 +1525,10 @@
 
   .training-history-session-button {
     width: 100%;
+  }
+
+  .training-history-comparison-table {
+    min-width: 34rem;
   }
 
   .training-history-session-button,

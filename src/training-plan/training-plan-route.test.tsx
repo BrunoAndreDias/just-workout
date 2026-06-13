@@ -490,16 +490,28 @@ describe("TrainingPlanRoute", () => {
     expect(within(weekSelector).getByText("Jun 4-10, 2026")).toBeVisible();
     expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeDisabled();
 
+    expect(screen.getByRole("heading", { name: "Weekly movement volume" })).toBeVisible();
     expect(screen.getByText("Completion")).toBeVisible();
     expect(screen.getByText("2 / 3 sessions")).toBeVisible();
     expect(screen.getByText("Total volume")).toBeVisible();
-    expect(screen.getByText("1,660 kg")).toBeVisible();
+    expect(screen.getByText("2,160 kg")).toBeVisible();
     expect(screen.getByText("Progress")).toBeVisible();
-    expect(screen.getByText("+11% vs previous week")).toBeVisible();
+    expect(screen.getByText("-10% vs previous week")).toBeVisible();
     expect(screen.getByText("Loaded sets")).toBeVisible();
-    expect(screen.getByText("3 loaded sets")).toBeVisible();
-    expect(screen.getByRole("row", { name: /Horizontal Push 760 kg/ })).toBeVisible();
-    expect(screen.getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
+    expect(screen.getByText("5 loaded sets")).toBeVisible();
+    expect(
+      screen.getByRole("row", { name: /Horizontal Push 760 kg \+260 kg Up 52%/i }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("row", { name: /Quad Dominant 900 kg -100 kg Down 10%/i }),
+    ).toBeVisible();
+    expect(screen.getByRole("row", { name: /Horizontal Pull 300 kg 0 kg Same/i })).toBeVisible();
+    expect(
+      screen.getByRole("row", { name: /Vertical Push 200 kg \+200 kg New this week/i }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("row", { name: /Vertical Pull 0 kg -600 kg No volume this week/i }),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "View Full Body A report" })).toBeVisible();
     expect(screen.getByRole("button", { name: "View Full Body B report" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "View Upper report" })).not.toBeInTheDocument();
@@ -518,9 +530,9 @@ describe("TrainingPlanRoute", () => {
     expect(within(weekSelector).getByText("May 28-Jun 3, 2026")).toBeVisible();
     expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeEnabled();
     expect(screen.getByText("1 / 3 sessions")).toBeVisible();
-    expect(screen.getByText("1,500 kg")).toBeVisible();
-    expect(screen.getByText("+50% vs previous week")).toBeVisible();
-    expect(screen.getByText("2 loaded sets")).toBeVisible();
+    expect(screen.getByText("2,400 kg")).toBeVisible();
+    expect(screen.getByText("+140% vs previous week")).toBeVisible();
+    expect(screen.getByText("4 loaded sets")).toBeVisible();
     expect(screen.getByRole("button", { name: "View Upper report" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "View Full Body A report" }),
@@ -532,7 +544,7 @@ describe("TrainingPlanRoute", () => {
     expect(screen.getByText("Completed Jun 3, 2026")).toBeVisible();
     const sessionReport = screen.getByRole("region", { name: "Upper report" });
 
-    expect(within(sessionReport).getByRole("row", { name: /Quad Dominant 1000 kg/ })).toBeVisible();
+    expect(within(sessionReport).getByRole("row", { name: /Vertical Pull 600 kg/ })).toBeVisible();
   });
 });
 
@@ -602,6 +614,18 @@ async function seedCompletedTrainingSessions() {
           movementPattern: "quad_dominant",
           sets: [{ reps: 10, setIndex: 1, weight: 100 }],
         },
+        {
+          exerciseId: "bent-over-barbell-rows",
+          exerciseName: "Bent Over Barbell Rows",
+          movementPattern: "horizontal_pull",
+          sets: [{ reps: 10, setIndex: 1, weight: 30 }],
+        },
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 10, setIndex: 1, weight: 60 }],
+        },
       ],
       id: "session-c",
       planId: "training-plan-test",
@@ -620,6 +644,16 @@ async function seedCompletedTrainingSessions() {
           movementPatternLabel: "Quad Dominant",
           volume: 1000,
         },
+        {
+          movementPattern: "horizontal_pull",
+          movementPatternLabel: "Horizontal Pull",
+          volume: 300,
+        },
+        {
+          movementPattern: "vertical_pull",
+          movementPatternLabel: "Vertical Pull",
+          volume: 600,
+        },
       ],
     },
     {
@@ -631,6 +665,12 @@ async function seedCompletedTrainingSessions() {
           exerciseName: "Flat Dumbbell Bench Press",
           movementPattern: "horizontal_push",
           sets: [{ reps: 10, setIndex: 1, weight: 40 }],
+        },
+        {
+          exerciseId: "bent-over-barbell-rows",
+          exerciseName: "Bent Over Barbell Rows",
+          movementPattern: "horizontal_pull",
+          sets: [{ reps: 10, setIndex: 1, weight: 30 }],
         },
       ],
       id: "session-a",
@@ -644,6 +684,11 @@ async function seedCompletedTrainingSessions() {
           movementPattern: "horizontal_push",
           movementPatternLabel: "Horizontal Push",
           volume: 400,
+        },
+        {
+          movementPattern: "horizontal_pull",
+          movementPatternLabel: "Horizontal Pull",
+          volume: 300,
         },
       ],
     },
@@ -663,6 +708,12 @@ async function seedCompletedTrainingSessions() {
           movementPattern: "quad_dominant",
           sets: [{ reps: 10, setIndex: 1, weight: 90 }],
         },
+        {
+          exerciseId: "standing-overhead-barbell-press",
+          exerciseName: "Standing Overhead Barbell Press",
+          movementPattern: "vertical_push",
+          sets: [{ reps: 10, setIndex: 1, weight: 20 }],
+        },
       ],
       id: "session-b",
       planId: "training-plan-test",
@@ -680,6 +731,11 @@ async function seedCompletedTrainingSessions() {
           movementPattern: "quad_dominant",
           movementPatternLabel: "Quad Dominant",
           volume: 900,
+        },
+        {
+          movementPattern: "vertical_push",
+          movementPatternLabel: "Vertical Push",
+          volume: 200,
         },
       ],
     },
