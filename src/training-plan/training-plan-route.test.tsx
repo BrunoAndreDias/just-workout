@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
@@ -11,12 +11,17 @@ import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
 import { generateTrainingPlanFromBlueprint } from "./training-plan";
 
 const defaultMatchMedia = window.matchMedia;
+const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 
 describe("TrainingPlanRoute", () => {
   beforeEach(async () => {
     restoreDefaultMatchMedia();
     await db.delete();
     await db.open();
+  });
+
+  afterEach(() => {
+    restoreDefaultMatchMedia();
   });
 
   it("renders the Compare tab as a readable template comparison without editing controls", async () => {
@@ -632,21 +637,17 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
 
-    const weeklyMovementSection = screen
-      .getByRole("heading", { name: "Weekly movement volume" })
-      .closest("section");
-    const weeklyMovementCards = within(weeklyMovementSection as HTMLElement).getAllByRole(
-      "listitem",
+    const weeklyMovementSection = getClosestSection(
+      screen.getByRole("heading", { name: "Weekly movement volume" }),
     );
+    const weeklyMovementCards = within(weeklyMovementSection).getAllByRole("listitem");
+    const firstWeeklyMovementCard = getFirstElement(weeklyMovementCards);
 
-    expect(weeklyMovementSection).not.toBeNull();
-    expect(
-      within(weeklyMovementSection as HTMLElement).queryByRole("table"),
-    ).not.toBeInTheDocument();
+    expect(within(weeklyMovementSection).queryByRole("table")).not.toBeInTheDocument();
     expect(weeklyMovementCards.length).toBeGreaterThan(0);
-    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Current volume")).toBeVisible();
-    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Delta")).toBeVisible();
-    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Change")).toBeVisible();
+    expect(within(firstWeeklyMovementCard).getByText("Current volume")).toBeVisible();
+    expect(within(firstWeeklyMovementCard).getByText("Delta")).toBeVisible();
+    expect(within(firstWeeklyMovementCard).getByText("Change")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
 
@@ -654,17 +655,14 @@ describe("TrainingPlanRoute", () => {
       name: "Full Body A session details",
     });
     const sessionDetailCards = within(sessionDetails).getAllByRole("listitem");
+    const firstSessionDetailCard = getFirstElement(sessionDetailCards);
 
     expect(within(sessionDetails).queryByRole("table")).not.toBeInTheDocument();
     expect(sessionDetailCards.length).toBeGreaterThan(0);
-    expect(within(sessionDetailCards[0] as HTMLElement).getByText("Exercise")).toBeVisible();
-    expect(
-      within(sessionDetailCards[0] as HTMLElement).getByText("Movement pattern"),
-    ).toBeVisible();
-    expect(within(sessionDetailCards[0] as HTMLElement).getByText("Loaded sets")).toBeVisible();
-    expect(
-      within(sessionDetailCards[0] as HTMLElement).getByText("Completed load volume"),
-    ).toBeVisible();
+    expect(within(firstSessionDetailCard).getByText("Exercise")).toBeVisible();
+    expect(within(firstSessionDetailCard).getByText("Movement pattern")).toBeVisible();
+    expect(within(firstSessionDetailCard).getByText("Loaded sets")).toBeVisible();
+    expect(within(firstSessionDetailCard).getByText("Completed load volume")).toBeVisible();
   });
 });
 
@@ -912,7 +910,7 @@ function mockTrainingHistoryCompactLayout(isCompactLayout: boolean) {
       addEventListener: () => {},
       addListener: () => {},
       dispatchEvent: () => false,
-      matches: query.includes("720px") ? isCompactLayout : false,
+      matches: query === trainingHistoryCompactLayoutQuery ? isCompactLayout : false,
       media: query,
       onchange: null,
       removeEventListener: () => {},
@@ -928,6 +926,26 @@ function restoreDefaultMatchMedia() {
     value: defaultMatchMedia,
     writable: true,
   });
+}
+
+function getClosestSection(element: HTMLElement): HTMLElement {
+  const section = element.closest("section");
+
+  if (!section) {
+    throw new Error("Expected element to have a section ancestor.");
+  }
+
+  return section;
+}
+
+function getFirstElement<T>(elements: Array<T>): T {
+  const firstElement = elements[0];
+
+  if (!firstElement) {
+    throw new Error("Expected at least one element.");
+  }
+
+  return firstElement;
 }
 
 function createCompleteBlueprint({

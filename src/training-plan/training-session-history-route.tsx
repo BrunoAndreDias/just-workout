@@ -428,18 +428,46 @@ function WeeklyMovementVolumeReport({
     >
       <WeeklyMovementVolumeHeading />
       <div className="training-history-comparison__body">
-        <div>
-          {rows.length === 0 ? (
-            <p className="training-history-empty">{emptyMessage}</p>
-          ) : isCompactLayout ? (
-            <WeeklyMovementVolumeCards rows={rows} />
-          ) : (
-            <WeeklyMovementVolumeTable rows={rows} />
-          )}
-        </div>
+        <WeeklyMovementVolumeContent
+          emptyMessage={emptyMessage}
+          isCompactLayout={isCompactLayout}
+          rows={rows}
+        />
         <TrainingProgressInsightsPanel hasRows={rows.length > 0} insights={insights} />
       </div>
     </section>
+  );
+}
+
+function WeeklyMovementVolumeContent({
+  emptyMessage,
+  isCompactLayout,
+  rows,
+}: {
+  emptyMessage: string;
+  isCompactLayout: boolean;
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
+}) {
+  if (rows.length === 0) {
+    return (
+      <div>
+        <p className="training-history-empty">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  if (isCompactLayout) {
+    return (
+      <div>
+        <WeeklyMovementVolumeCards rows={rows} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <WeeklyMovementVolumeTable rows={rows} />
+    </div>
   );
 }
 
@@ -550,15 +578,10 @@ function WeeklyMovementVolumeTable({
                     <span className="training-history-comparison-table__pattern-label">
                       {row.movementPatternLabel}
                     </span>
-                    <span
-                      aria-hidden="true"
-                      className="training-history-comparison-table__bar-track"
-                    >
-                      <span
-                        className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${changeTone}`}
-                        style={{ width: `${row.relativeVolumePercentage}%` }}
-                      />
-                    </span>
+                    <MovementPatternVolumeBar
+                      relativeVolumePercentage={row.relativeVolumePercentage}
+                      tone={changeTone}
+                    />
                   </div>
                 </td>
                 <td className="training-history-comparison-table__metric">
@@ -570,11 +593,7 @@ function WeeklyMovementVolumeTable({
                   {formatWeightDelta(row.deltaVolume)}
                 </td>
                 <td>
-                  <span
-                    className={`training-history-comparison-table__chip training-history-comparison-table__chip--${changeTone}`}
-                  >
-                    {formatMovementPatternChange(row)}
-                  </span>
+                  <MovementPatternChangeChip row={row} tone={changeTone} />
                 </td>
               </tr>
             );
@@ -602,18 +621,12 @@ function WeeklyMovementVolumeCards({
                 <span className="training-history-comparison-card__pattern-label">
                   {row.movementPatternLabel}
                 </span>
-                <span aria-hidden="true" className="training-history-comparison-table__bar-track">
-                  <span
-                    className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${changeTone}`}
-                    style={{ width: `${row.relativeVolumePercentage}%` }}
-                  />
-                </span>
+                <MovementPatternVolumeBar
+                  relativeVolumePercentage={row.relativeVolumePercentage}
+                  tone={changeTone}
+                />
               </div>
-              <span
-                className={`training-history-comparison-table__chip training-history-comparison-table__chip--${changeTone}`}
-              >
-                {formatMovementPatternChange(row)}
-              </span>
+              <MovementPatternChangeChip row={row} tone={changeTone} />
             </div>
             <dl className="training-history-comparison-card__metrics">
               <div>
@@ -637,6 +650,39 @@ function WeeklyMovementVolumeCards({
         );
       })}
     </ul>
+  );
+}
+
+function MovementPatternVolumeBar({
+  relativeVolumePercentage,
+  tone,
+}: {
+  relativeVolumePercentage: number;
+  tone: TrainingProgressInsightTone;
+}) {
+  return (
+    <span aria-hidden="true" className="training-history-comparison-table__bar-track">
+      <span
+        className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
+        style={{ width: `${relativeVolumePercentage}%` }}
+      />
+    </span>
+  );
+}
+
+function MovementPatternChangeChip({
+  row,
+  tone,
+}: {
+  row: TrainingHistoryMovementPatternComparison;
+  tone: TrainingProgressInsightTone;
+}) {
+  return (
+    <span
+      className={`training-history-comparison-table__chip training-history-comparison-table__chip--${tone}`}
+    >
+      {formatMovementPatternChange(row)}
+    </span>
   );
 }
 
