@@ -15,6 +15,22 @@ type TrainingHistoryWeekMetrics = {
   volumeByMovementPattern: TrainingSessionMovementVolume[];
 };
 
+type CompletedTrainingSession = TrainingSession & { completedAt: string };
+
+type TrainingHistorySessionDateRange = {
+  latestSessionDay: Date;
+  oldestSessionDay: Date;
+};
+
+type TrainingSessionExercise = TrainingSession["exercises"][number];
+
+type TrainingSessionExerciseSummary = {
+  loadedSetCount: number;
+  movementPattern: TrainingSessionMovementVolume["movementPattern"];
+  movementPatternLabel: string;
+  totalVolume: number;
+};
+
 export type TrainingHistoryWeekSummary = {
   completedSessions: number;
   completionTarget: number;
@@ -41,20 +57,16 @@ export function buildTrainingHistoryWeekReport({
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }): TrainingHistoryWeekReport {
-  const completedSessions = trainingSessions.filter(
-    (trainingSession): trainingSession is TrainingSession & { completedAt: string } =>
-      trainingSession.completedAt !== null,
-  );
-  const latestSessionDay = getLatestSessionDay(completedSessions);
-  const oldestSessionDay = getOldestSessionDay(completedSessions);
+  const completedSessions = trainingSessions.filter(isCompletedTrainingSession);
+  const dateRange = getCompletedSessionDateRange(completedSessions);
 
-  if (!latestSessionDay || !oldestSessionDay) {
+  if (!dateRange) {
     return createEmptyTrainingHistoryWeekReport(trainingPlan);
   }
 
   const selectedWeek = getSelectedTrainingWeek({
-    latestSessionDay,
-    oldestSessionDay,
+    latestSessionDay: dateRange.latestSessionDay,
+    oldestSessionDay: dateRange.oldestSessionDay,
     selectedWeekEndKey,
   });
   const previousWeek = createTrainingHistoryWeek(addUtcDays(selectedWeek.end, -7));
@@ -68,8 +80,8 @@ export function buildTrainingHistoryWeekReport({
   const previousMetrics = summarizeTrainingSessions(previousSessions);
 
   return {
-    nextWeekEndKey: getNextWeekEndKey(selectedWeek, latestSessionDay),
-    previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, oldestSessionDay),
+    nextWeekEndKey: getNextWeekEndKey(selectedWeek, dateRange.latestSessionDay),
+    previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, dateRange.oldestSessionDay),
     selectedSessions,
     selectedWeek,
     summary: createTrainingHistoryWeekSummary(
@@ -87,14 +99,7 @@ function summarizeTrainingSessions(
 ): TrainingHistoryWeekMetrics {
   let loadedSetCount = 0;
   let totalVolume = 0;
-  const volumeByPattern = new Map<
-    string,
-    {
-      movementPattern: TrainingSessionMovementVolume["movementPattern"];
-      movementPatternLabel: string;
-      volume: number;
-    }
-  >();
+  const volumeByPattern = new Map<string, TrainingSessionMovementVolume>();
 
   for (const trainingSession of trainingSessions) {
     for (const exercise of trainingSession.exercises) {
@@ -189,7 +194,7 @@ function createTrainingHistoryWeekSummary(
   };
 }
 
-function summarizeExercise(exercise: TrainingSession["exercises"][number]) {
+function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionExerciseSummary {
   let loadedSetCount = 0;
   let totalVolume = 0;
 
@@ -211,15 +216,8 @@ function summarizeExercise(exercise: TrainingSession["exercises"][number]) {
 }
 
 function updateMovementPatternVolume(
-  volumeByPattern: Map<
-    string,
-    {
-      movementPattern: TrainingSessionMovementVolume["movementPattern"];
-      movementPatternLabel: string;
-      volume: number;
-    }
-  >,
-  exerciseSummary: ReturnType<typeof summarizeExercise>,
+  volumeByPattern: Map<string, TrainingSessionMovementVolume>,
+  exerciseSummary: TrainingSessionExerciseSummary,
 ) {
   if (exerciseSummary.totalVolume <= 0) {
     return;
@@ -258,7 +256,7 @@ function createTrainingHistoryWeek(end: Date): TrainingHistoryWeek {
 }
 
 function isSessionInWeek(
-  trainingSession: TrainingSession & { completedAt: string },
+  trainingSession: CompletedTrainingSession,
   trainingHistoryWeek: TrainingHistoryWeek,
 ): boolean {
   const completedDay = toUtcDay(trainingSession.completedAt);
@@ -289,32 +287,35 @@ function clampWeekEnd({
   return requestedWeekEnd;
 }
 
-function getLatestSessionDay(
-  trainingSessions: ReadonlyArray<TrainingSession & { completedAt: string }>,
-): Date | null {
-  return trainingSessions.reduce<Date | null>((latestSessionDay, trainingSession) => {
+function isCompletedTrainingSession(
+  trainingSession: TrainingSession,
+): trainingSession is CompletedTrainingSession {
+  return trainingSession.completedAt !== null;
+}
+
+function getCompletedSessionDateRange(
+  trainingSessions: ReadonlyArray<CompletedTrainingSession>,
+): TrainingHistorySessionDateRange | null {
+  let latestSessionDay: Date | null = null;
+  let oldestSessionDay: Date | null = null;
+
+  for (const trainingSession of trainingSessions) {
     const completedDay = toUtcDay(trainingSession.completedAt);
 
     if (!latestSessionDay || completedDay.getTime() > latestSessionDay.getTime()) {
-      return completedDay;
+      latestSessionDay = completedDay;
     }
-
-    return latestSessionDay;
-  }, null);
-}
-
-function getOldestSessionDay(
-  trainingSessions: ReadonlyArray<TrainingSession & { completedAt: string }>,
-): Date | null {
-  return trainingSessions.reduce<Date | null>((oldestSessionDay, trainingSession) => {
-    const completedDay = toUtcDay(trainingSession.completedAt);
 
     if (!oldestSessionDay || completedDay.getTime() < oldestSessionDay.getTime()) {
-      return completedDay;
+      oldestSessionDay = completedDay;
     }
+  }
 
-    return oldestSessionDay;
-  }, null);
+  if (!latestSessionDay || !oldestSessionDay) {
+    return null;
+  }
+
+  return { latestSessionDay, oldestSessionDay };
 }
 
 function formatTrainingWeekRange(start: Date, end: Date): string {

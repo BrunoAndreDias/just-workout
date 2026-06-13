@@ -2,9 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
-import { buildTrainingHistoryWeekReport } from "./training-history-week";
+import {
+  buildTrainingHistoryWeekReport,
+  type TrainingHistoryWeekReport,
+  type TrainingHistoryWeekSummary,
+} from "./training-history-week";
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionMovementVolume } from "./training-session";
+
+const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+
+const weightFormatter = new Intl.NumberFormat("en-US");
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
@@ -24,10 +37,6 @@ export function TrainingSessionHistoryRoute() {
         : null,
     [selectedWeekEndKey, trainingPlan, trainingSessions],
   );
-  const selectedSessions = trainingWeekReport?.selectedSessions ?? [];
-  const selectedSession =
-    selectedSessions.find((session) => session.id === selectedSessionId) ?? selectedSessions[0];
-  const weeklyVolume = trainingWeekReport?.volumeByMovementPattern ?? [];
 
   if (trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading) {
     return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
@@ -36,6 +45,14 @@ export function TrainingSessionHistoryRoute() {
   if (!trainingPlan) {
     return <TrainingSessionHistoryShell>Training Plan not found.</TrainingSessionHistoryShell>;
   }
+
+  if (!trainingWeekReport) {
+    return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
+  }
+
+  const selectedSessions = trainingWeekReport.selectedSessions;
+  const selectedSession =
+    selectedSessions.find((session) => session.id === selectedSessionId) ?? selectedSessions[0];
 
   return (
     <section className="training-history-page" aria-label="Training history">
@@ -46,11 +63,7 @@ export function TrainingSessionHistoryRoute() {
       <PageMain className="training-history-layout">
         <TrainingWeekSection
           trainingWeekReport={trainingWeekReport}
-          weeklyVolume={weeklyVolume}
-          onSelectNextWeek={() => setSelectedWeekEndKey(trainingWeekReport?.nextWeekEndKey ?? null)}
-          onSelectPreviousWeek={() =>
-            setSelectedWeekEndKey(trainingWeekReport?.previousWeekEndKey ?? null)
-          }
+          onSelectWeek={setSelectedWeekEndKey}
         />
         <CompletedSessionsSection
           selectedSession={selectedSession}
@@ -99,57 +112,72 @@ function useTrainingHistoryData(planId: string | null) {
 }
 
 function TrainingWeekSection({
-  onSelectNextWeek,
-  onSelectPreviousWeek,
+  onSelectWeek,
   trainingWeekReport,
-  weeklyVolume,
 }: {
-  onSelectNextWeek: () => void;
-  onSelectPreviousWeek: () => void;
-  trainingWeekReport: ReturnType<typeof buildTrainingHistoryWeekReport> | null;
-  weeklyVolume: ReadonlyArray<TrainingSessionMovementVolume>;
+  onSelectWeek: (weekEndKey: string | null) => void;
+  trainingWeekReport: TrainingHistoryWeekReport;
 }) {
+  const previousWeekEndKey = trainingWeekReport.previousWeekEndKey;
+  const nextWeekEndKey = trainingWeekReport.nextWeekEndKey;
+  const selectedWeekLabel = trainingWeekReport.selectedWeek?.label ?? "No completed sessions yet";
+
   return (
     <section className="training-history-week" aria-label="Selected Training Week">
       <div className="training-history-week__header">
         <p className="training-history-week__label">Selected Training Week</p>
-        <fieldset className="training-history-week-selector">
-          <legend className="training-history-week-selector__legend">Training Week selector</legend>
-          <button
-            className="training-history-week-selector__button"
-            disabled={!trainingWeekReport?.previousWeekEndKey}
-            onClick={onSelectPreviousWeek}
-            type="button"
-          >
-            Previous week
-          </button>
-          <p className="training-history-week-selector__range">
-            {trainingWeekReport?.selectedWeek?.label ?? "No completed sessions yet"}
-          </p>
-          <button
-            className="training-history-week-selector__button"
-            disabled={!trainingWeekReport?.nextWeekEndKey}
-            onClick={onSelectNextWeek}
-            type="button"
-          >
-            Next week
-          </button>
-        </fieldset>
+        <TrainingWeekSelector
+          nextWeekEndKey={nextWeekEndKey}
+          previousWeekEndKey={previousWeekEndKey}
+          selectedWeekLabel={selectedWeekLabel}
+          onSelectWeek={onSelectWeek}
+        />
       </div>
-      <TrainingWeekSummaryStrip summary={trainingWeekReport?.summary ?? null} />
+      <TrainingWeekSummaryStrip summary={trainingWeekReport.summary} />
       <MovementVolumeTable
         emptyMessage="Complete a Training Session to build a weekly report."
-        rows={weeklyVolume}
+        rows={trainingWeekReport.volumeByMovementPattern}
       />
     </section>
   );
 }
 
-function TrainingWeekSummaryStrip({
-  summary,
+function TrainingWeekSelector({
+  nextWeekEndKey,
+  onSelectWeek,
+  previousWeekEndKey,
+  selectedWeekLabel,
 }: {
-  summary: ReturnType<typeof buildTrainingHistoryWeekReport>["summary"] | null;
+  nextWeekEndKey: string | null;
+  onSelectWeek: (weekEndKey: string | null) => void;
+  previousWeekEndKey: string | null;
+  selectedWeekLabel: string;
 }) {
+  return (
+    <fieldset className="training-history-week-selector">
+      <legend className="training-history-week-selector__legend">Training Week selector</legend>
+      <button
+        className="training-history-week-selector__button"
+        disabled={!previousWeekEndKey}
+        onClick={() => onSelectWeek(previousWeekEndKey)}
+        type="button"
+      >
+        Previous week
+      </button>
+      <p className="training-history-week-selector__range">{selectedWeekLabel}</p>
+      <button
+        className="training-history-week-selector__button"
+        disabled={!nextWeekEndKey}
+        onClick={() => onSelectWeek(nextWeekEndKey)}
+        type="button"
+      >
+        Next week
+      </button>
+    </fieldset>
+  );
+}
+
+function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSummary }) {
   return (
     <dl className="training-history-summary-strip">
       <div>
@@ -158,15 +186,15 @@ function TrainingWeekSummaryStrip({
       </div>
       <div>
         <dt>Total volume</dt>
-        <dd>{formatWeight(summary?.totalVolume ?? 0)} kg</dd>
+        <dd>{formatWeight(summary.totalVolume)} kg</dd>
       </div>
       <div>
         <dt>Progress</dt>
-        <dd>{formatProgress(summary?.progressPercentage ?? null)}</dd>
+        <dd>{formatProgress(summary.progressPercentage)}</dd>
       </div>
       <div>
         <dt>Loaded sets</dt>
-        <dd>{formatLoadedSetCount(summary?.loadedSetCount ?? 0)}</dd>
+        <dd>{formatLoadedSetCount(summary.loadedSetCount)}</dd>
       </div>
     </dl>
   );
@@ -298,22 +326,15 @@ function formatCompletedDate(value: string | null): string {
     return "Unknown date";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-    year: "numeric",
-  }).format(new Date(value));
+  return completedDateFormatter.format(new Date(value));
 }
 
 function formatLoadedSetCount(count: number): string {
   return `${count} loaded set${count === 1 ? "" : "s"}`;
 }
 
-function formatCompletion(
-  summary: ReturnType<typeof buildTrainingHistoryWeekReport>["summary"] | null,
-): string {
-  return `${summary?.completedSessions ?? 0} / ${summary?.completionTarget ?? 0} sessions`;
+function formatCompletion(summary: TrainingHistoryWeekSummary): string {
+  return `${summary.completedSessions} / ${summary.completionTarget} sessions`;
 }
 
 function formatProgress(value: number | null): string {
@@ -327,5 +348,5 @@ function formatProgress(value: number | null): string {
 }
 
 function formatWeight(value: number): string {
-  return new Intl.NumberFormat("en-US").format(value);
+  return weightFormatter.format(value);
 }
