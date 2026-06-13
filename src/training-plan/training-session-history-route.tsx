@@ -1,13 +1,77 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import { BarChart3 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
+import { buildTrainingHistoryWeekReport } from "./training-history-week";
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionMovementVolume } from "./training-session";
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
+  const { trainingPlanQuery, trainingSessionsQuery } = useTrainingHistoryData(planId);
+  const trainingPlan = trainingPlanQuery.data;
+  const trainingSessions = trainingSessionsQuery.data ?? [];
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedWeekEndKey, setSelectedWeekEndKey] = useState<string | null>(null);
+  const trainingWeekReport = useMemo(
+    () =>
+      trainingPlan
+        ? buildTrainingHistoryWeekReport({
+            selectedWeekEndKey,
+            trainingPlan,
+            trainingSessions,
+          })
+        : null,
+    [selectedWeekEndKey, trainingPlan, trainingSessions],
+  );
+  const selectedSessions = trainingWeekReport?.selectedSessions ?? [];
+  const selectedSession =
+    selectedSessions.find((session) => session.id === selectedSessionId) ?? selectedSessions[0];
+  const weeklyVolume = trainingWeekReport?.volumeByMovementPattern ?? [];
+
+  if (trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading) {
+    return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
+  }
+
+  if (!trainingPlan) {
+    return <TrainingSessionHistoryShell>Training Plan not found.</TrainingSessionHistoryShell>;
+  }
+
+  return (
+    <section className="training-history-page" aria-label="Training history">
+      <PageHeader
+        description="Review weekly training volume, compare progress, and inspect completed sessions."
+        title="Training history"
+      />
+      <PageMain className="training-history-layout">
+        <TrainingWeekSection
+          trainingWeekReport={trainingWeekReport}
+          weeklyVolume={weeklyVolume}
+          onSelectNextWeek={() => setSelectedWeekEndKey(trainingWeekReport?.nextWeekEndKey ?? null)}
+          onSelectPreviousWeek={() =>
+            setSelectedWeekEndKey(trainingWeekReport?.previousWeekEndKey ?? null)
+          }
+        />
+        <CompletedSessionsSection
+          selectedSession={selectedSession}
+          selectedSessions={selectedSessions}
+          onSelectSession={setSelectedSessionId}
+        />
+        <SessionReport session={selectedSession} />
+      </PageMain>
+    </section>
+  );
+}
+
+function TrainingSessionHistoryShell({ children }: { children: string }) {
+  return (
+    <section className="training-history-page" aria-label="Training history">
+      <p className="active-training-plan-loading">{children}</p>
+    </section>
+  );
+}
+
+function useTrainingHistoryData(planId: string | null) {
   const trainingPlanQuery = useQuery({
     enabled: planId !== null,
     queryFn: () => {
@@ -30,86 +94,124 @@ export function TrainingSessionHistoryRoute() {
     },
     queryKey: ["training-sessions", planId],
   });
-  const trainingPlan = trainingPlanQuery.data;
-  const trainingSessions = trainingSessionsQuery.data ?? [];
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const selectedSession =
-    trainingSessions.find((session) => session.id === selectedSessionId) ?? trainingSessions[0];
-  const weeklyVolume = useMemo(
-    () => calculateWeeklyVolumeByMovementPattern(trainingSessions),
-    [trainingSessions],
-  );
 
-  if (trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading) {
-    return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
-  }
+  return { trainingPlanQuery, trainingSessionsQuery };
+}
 
-  if (!trainingPlan) {
-    return <TrainingSessionHistoryShell>Training Plan not found.</TrainingSessionHistoryShell>;
-  }
-
+function TrainingWeekSection({
+  onSelectNextWeek,
+  onSelectPreviousWeek,
+  trainingWeekReport,
+  weeklyVolume,
+}: {
+  onSelectNextWeek: () => void;
+  onSelectPreviousWeek: () => void;
+  trainingWeekReport: ReturnType<typeof buildTrainingHistoryWeekReport> | null;
+  weeklyVolume: ReadonlyArray<TrainingSessionMovementVolume>;
+}) {
   return (
-    <section className="training-history-page" aria-label="Training history">
-      <PageHeader
-        description="Review completed Training Sessions and inspect movement-pattern volume from your recent work."
-        title="Training history"
+    <section className="training-history-week" aria-label="Selected Training Week">
+      <div className="training-history-week__header">
+        <p className="training-history-week__label">Selected Training Week</p>
+        <fieldset className="training-history-week-selector">
+          <legend className="training-history-week-selector__legend">Training Week selector</legend>
+          <button
+            className="training-history-week-selector__button"
+            disabled={!trainingWeekReport?.previousWeekEndKey}
+            onClick={onSelectPreviousWeek}
+            type="button"
+          >
+            Previous week
+          </button>
+          <p className="training-history-week-selector__range">
+            {trainingWeekReport?.selectedWeek?.label ?? "No completed sessions yet"}
+          </p>
+          <button
+            className="training-history-week-selector__button"
+            disabled={!trainingWeekReport?.nextWeekEndKey}
+            onClick={onSelectNextWeek}
+            type="button"
+          >
+            Next week
+          </button>
+        </fieldset>
+      </div>
+      <TrainingWeekSummaryStrip summary={trainingWeekReport?.summary ?? null} />
+      <MovementVolumeTable
+        emptyMessage="Complete a Training Session to build a weekly report."
+        rows={weeklyVolume}
       />
-
-      <PageMain className="training-history-layout">
-        <section className="training-history-week" aria-labelledby="training-history-week-title">
-          <div className="training-history-section-heading">
-            <div>
-              <h2 id="training-history-week-title">This week</h2>
-              <p>{formatCompletedSessionCount(trainingSessions.length)}</p>
-            </div>
-            <BarChart3 aria-hidden="true" />
-          </div>
-          <MovementVolumeTable
-            emptyMessage="Complete a Training Session to build a weekly report."
-            rows={weeklyVolume}
-          />
-        </section>
-
-        <section className="training-history-list" aria-labelledby="training-history-list-title">
-          <h2 id="training-history-list-title">Completed sessions</h2>
-          {trainingSessions.length > 0 ? (
-            <div className="training-history-list__items">
-              {trainingSessions.map((session) => (
-                <button
-                  aria-label={`View ${session.templateLabel} report`}
-                  aria-pressed={session.id === selectedSession?.id}
-                  className="training-history-session-button"
-                  key={session.id}
-                  onClick={() => setSelectedSessionId(session.id)}
-                  type="button"
-                >
-                  <span>
-                    <strong>{session.templateLabel}</strong>
-                    <small className="training-history-session-button__date">
-                      {formatCompletedDate(session.completedAt)}
-                    </small>
-                  </span>
-                  <span className="training-history-session-button__action">
-                    View {session.templateLabel} report
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="training-history-empty">No completed Training Sessions yet.</p>
-          )}
-        </section>
-
-        <SessionReport session={selectedSession} />
-      </PageMain>
     </section>
   );
 }
 
-function TrainingSessionHistoryShell({ children }: { children: string }) {
+function TrainingWeekSummaryStrip({
+  summary,
+}: {
+  summary: ReturnType<typeof buildTrainingHistoryWeekReport>["summary"] | null;
+}) {
   return (
-    <section className="training-history-page" aria-label="Training history">
-      <p className="active-training-plan-loading">{children}</p>
+    <dl className="training-history-summary-strip">
+      <div>
+        <dt>Completion</dt>
+        <dd>{formatCompletion(summary)}</dd>
+      </div>
+      <div>
+        <dt>Total volume</dt>
+        <dd>{formatWeight(summary?.totalVolume ?? 0)} kg</dd>
+      </div>
+      <div>
+        <dt>Progress</dt>
+        <dd>{formatProgress(summary?.progressPercentage ?? null)}</dd>
+      </div>
+      <div>
+        <dt>Loaded sets</dt>
+        <dd>{formatLoadedSetCount(summary?.loadedSetCount ?? 0)}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function CompletedSessionsSection({
+  onSelectSession,
+  selectedSession,
+  selectedSessions,
+}: {
+  onSelectSession: (sessionId: string) => void;
+  selectedSession: TrainingSession | undefined;
+  selectedSessions: ReadonlyArray<TrainingSession>;
+}) {
+  return (
+    <section className="training-history-list" aria-labelledby="training-history-list-title">
+      <h2 id="training-history-list-title">Completed sessions</h2>
+      {selectedSessions.length > 0 ? (
+        <div className="training-history-list__items">
+          {selectedSessions.map((session) => (
+            <button
+              aria-label={`View ${session.templateLabel} report`}
+              aria-pressed={session.id === selectedSession?.id}
+              className="training-history-session-button"
+              key={session.id}
+              onClick={() => onSelectSession(session.id)}
+              type="button"
+            >
+              <span>
+                <strong>{session.templateLabel}</strong>
+                <small className="training-history-session-button__date">
+                  {formatCompletedDate(session.completedAt)}
+                </small>
+              </span>
+              <span className="training-history-session-button__action">
+                View {session.templateLabel} report
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="training-history-empty">
+          No completed Training Sessions in this Training Week.
+        </p>
+      )}
     </section>
   );
 }
@@ -191,46 +293,6 @@ function useTrainingSessionHistoryPlanId(): string | null {
   return planId ? decodeURIComponent(planId) : null;
 }
 
-function calculateWeeklyVolumeByMovementPattern(
-  trainingSessions: ReadonlyArray<TrainingSession>,
-): TrainingSessionMovementVolume[] {
-  const weekStart = getCurrentWeekStart();
-  const volumeByPattern = new Map<string, TrainingSessionMovementVolume>();
-
-  for (const session of trainingSessions) {
-    if (!session.completedAt || new Date(session.completedAt) < weekStart) {
-      continue;
-    }
-
-    for (const row of session.volumeByMovementPattern) {
-      const currentRow = volumeByPattern.get(row.movementPattern);
-
-      volumeByPattern.set(row.movementPattern, {
-        movementPattern: row.movementPattern,
-        movementPatternLabel: row.movementPatternLabel,
-        volume: (currentRow?.volume ?? 0) + row.volume,
-      });
-    }
-  }
-
-  return Array.from(volumeByPattern.values());
-}
-
-function getCurrentWeekStart(): Date {
-  const now = new Date();
-  const weekStart = new Date(now);
-  const daysSinceMonday = (weekStart.getDay() + 6) % 7;
-
-  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
-  weekStart.setHours(0, 0, 0, 0);
-
-  return weekStart;
-}
-
-function formatCompletedSessionCount(count: number): string {
-  return `${count} completed ${count === 1 ? "session" : "sessions"}`;
-}
-
 function formatCompletedDate(value: string | null): string {
   if (!value) {
     return "Unknown date";
@@ -242,4 +304,28 @@ function formatCompletedDate(value: string | null): string {
     timeZone: "UTC",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatLoadedSetCount(count: number): string {
+  return `${count} loaded set${count === 1 ? "" : "s"}`;
+}
+
+function formatCompletion(
+  summary: ReturnType<typeof buildTrainingHistoryWeekReport>["summary"] | null,
+): string {
+  return `${summary?.completedSessions ?? 0} / ${summary?.completionTarget ?? 0} sessions`;
+}
+
+function formatProgress(value: number | null): string {
+  if (value === null) {
+    return "No prior volume";
+  }
+
+  const prefix = value > 0 ? "+" : "";
+
+  return `${prefix}${value}% vs previous week`;
+}
+
+function formatWeight(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
 }

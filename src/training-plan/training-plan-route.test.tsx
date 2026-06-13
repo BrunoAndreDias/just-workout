@@ -469,7 +469,7 @@ describe("TrainingPlanRoute", () => {
     expect(screen.getByRole("link", { name: "Start training" })).toBeVisible();
   });
 
-  it("shows Training Session history with weekly report and session report", async () => {
+  it("shows the latest available Training Week header and summary strip", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
     await seedCompletedTrainingSessions();
@@ -477,10 +477,32 @@ describe("TrainingPlanRoute", () => {
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
 
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "This week" })).toBeVisible();
-    expect(screen.getByText("2 completed sessions")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Review weekly training volume, compare progress, and inspect completed sessions.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "This week" })).not.toBeInTheDocument();
+
+    const weekSelector = screen.getByRole("group", { name: "Training Week selector" });
+
+    expect(within(weekSelector).getByRole("button", { name: "Previous week" })).toBeEnabled();
+    expect(within(weekSelector).getByText("Jun 4-10, 2026")).toBeVisible();
+    expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeDisabled();
+
+    expect(screen.getByText("Completion")).toBeVisible();
+    expect(screen.getByText("2 / 3 sessions")).toBeVisible();
+    expect(screen.getByText("Total volume")).toBeVisible();
+    expect(screen.getByText("1,660 kg")).toBeVisible();
+    expect(screen.getByText("Progress")).toBeVisible();
+    expect(screen.getByText("+11% vs previous week")).toBeVisible();
+    expect(screen.getByText("Loaded sets")).toBeVisible();
+    expect(screen.getByText("3 loaded sets")).toBeVisible();
     expect(screen.getByRole("row", { name: /Horizontal Push 760 kg/ })).toBeVisible();
     expect(screen.getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: "View Full Body A report" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "View Full Body B report" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "View Upper report" })).not.toBeInTheDocument();
 
     expect(
       screen.queryByRole("button", { name: "Start Full Body A session" }),
@@ -491,13 +513,26 @@ describe("TrainingPlanRoute", () => {
     expect(screen.getByRole("link", { name: "Start training" })).toBeVisible();
     expect(screen.queryByText("3 days/week")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "View Full Body B report" }));
+    await user.click(within(weekSelector).getByRole("button", { name: "Previous week" }));
 
-    expect(await screen.findByRole("heading", { name: "Full Body B report" })).toBeVisible();
-    expect(screen.getByText("Completed Jun 9, 2026")).toBeVisible();
-    const sessionReport = screen.getByRole("region", { name: "Full Body B report" });
+    expect(within(weekSelector).getByText("May 28-Jun 3, 2026")).toBeVisible();
+    expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeEnabled();
+    expect(screen.getByText("1 / 3 sessions")).toBeVisible();
+    expect(screen.getByText("1,500 kg")).toBeVisible();
+    expect(screen.getByText("+50% vs previous week")).toBeVisible();
+    expect(screen.getByText("2 loaded sets")).toBeVisible();
+    expect(screen.getByRole("button", { name: "View Upper report" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "View Full Body A report" }),
+    ).not.toBeInTheDocument();
 
-    expect(within(sessionReport).getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "View Upper report" }));
+
+    expect(await screen.findByRole("heading", { name: "Upper report" })).toBeVisible();
+    expect(screen.getByText("Completed Jun 3, 2026")).toBeVisible();
+    const sessionReport = screen.getByRole("region", { name: "Upper report" });
+
+    expect(within(sessionReport).getByRole("row", { name: /Quad Dominant 1000 kg/ })).toBeVisible();
   });
 });
 
@@ -515,6 +550,78 @@ async function seedTrainingPlan(
 
 async function seedCompletedTrainingSessions() {
   await db.trainingSessions.bulkPut([
+    {
+      completedAt: "2026-05-27T09:00:00.000Z",
+      createdAt: "2026-05-27T09:00:00.000Z",
+      exercises: [
+        {
+          exerciseId: "flat-dumbbell-bench-press",
+          exerciseName: "Flat Dumbbell Bench Press",
+          movementPattern: "horizontal_push",
+          sets: [{ reps: 10, setIndex: 1, weight: 40 }],
+        },
+        {
+          exerciseId: "barbell-squats",
+          exerciseName: "Barbell Squats",
+          movementPattern: "quad_dominant",
+          sets: [{ reps: 10, setIndex: 1, weight: 60 }],
+        },
+      ],
+      id: "session-d",
+      planId: "training-plan-test",
+      status: "completed",
+      templateId: "template-2",
+      templateLabel: "Lower",
+      updatedAt: "2026-05-27T09:00:00.000Z",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "horizontal_push",
+          movementPatternLabel: "Horizontal Push",
+          volume: 400,
+        },
+        {
+          movementPattern: "quad_dominant",
+          movementPatternLabel: "Quad Dominant",
+          volume: 600,
+        },
+      ],
+    },
+    {
+      completedAt: "2026-06-03T09:00:00.000Z",
+      createdAt: "2026-06-03T09:00:00.000Z",
+      exercises: [
+        {
+          exerciseId: "flat-barbell-bench-press",
+          exerciseName: "Flat Barbell Bench Press",
+          movementPattern: "horizontal_push",
+          sets: [{ reps: 10, setIndex: 1, weight: 50 }],
+        },
+        {
+          exerciseId: "barbell-squats",
+          exerciseName: "Barbell Squats",
+          movementPattern: "quad_dominant",
+          sets: [{ reps: 10, setIndex: 1, weight: 100 }],
+        },
+      ],
+      id: "session-c",
+      planId: "training-plan-test",
+      status: "completed",
+      templateId: "template-1",
+      templateLabel: "Upper",
+      updatedAt: "2026-06-03T09:00:00.000Z",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "horizontal_push",
+          movementPatternLabel: "Horizontal Push",
+          volume: 500,
+        },
+        {
+          movementPattern: "quad_dominant",
+          movementPatternLabel: "Quad Dominant",
+          volume: 1000,
+        },
+      ],
+    },
     {
       completedAt: "2026-06-10T09:00:00.000Z",
       createdAt: "2026-06-10T09:00:00.000Z",
