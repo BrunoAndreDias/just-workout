@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { PageLead } from "../design-system/typography";
 import {
   useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
@@ -94,11 +93,7 @@ export function PlanBuilderRoute() {
   return (
     <PlanBuilderPage
       currentStep="frequency"
-      intro={
-        <PageLead>
-          Choose how often you can train and confirm the weekly split Just Workout should use.
-        </PageLead>
-      }
+      description="Choose how often you can train and confirm the weekly split Just Workout should use."
       summary={summary}
     >
       {blueprint ? (
@@ -165,11 +160,7 @@ export function PlanBuilderRepRangesRoute() {
   return (
     <PlanBuilderPage
       currentStep="rep-ranges"
-      intro={
-        <PageLead className="text-[1.05rem] leading-6">
-          Select the Rep Range Style that should shape main lifts, secondary work, and accessories.
-        </PageLead>
-      }
+      description="Select the Rep Range Style that should shape main lifts, secondary work, and accessories."
       summary={summary}
     >
       {blueprint && selectedRepRangeStyle ? (
@@ -243,11 +234,7 @@ export function PlanBuilderVolumeRoute() {
   return (
     <PlanBuilderPage
       currentStep="volume"
-      intro={
-        <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Set weekly rep targets before exercises are selected.
-        </PageLead>
-      }
+      description="Set weekly rep targets before exercises are selected."
       summary={summary}
     >
       <WeeklyVolumeTargetsStep
@@ -287,11 +274,7 @@ export function PlanBuilderExercisesRoute() {
   return (
     <PlanBuilderPage
       currentStep="exercises"
-      intro={
-        <PageLead className="max-w-2xl text-sm leading-6 text-stone-700 sm:text-base">
-          Choose main compounds and swaps.
-        </PageLead>
-      }
+      description="Choose main compounds and swaps."
       summary={summary}
     >
       {isExerciseSelectionStepReady ? (
@@ -342,11 +325,7 @@ export function PlanBuilderGenerateRoute() {
   return (
     <PlanBuilderPage
       currentStep="generate"
-      intro={
-        <p className="max-w-2xl text-sm font-medium leading-6 text-stone-700 sm:text-base">
-          Create the Active Training Plan from the completed Plan Blueprint.
-        </p>
-      }
+      description="Create the Active Training Plan from the completed Plan Blueprint."
       summary={summary}
     >
       <GenerateTrainingPlanStep

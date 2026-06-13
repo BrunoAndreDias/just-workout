@@ -235,21 +235,20 @@ function TrainingFrequencyRecommendationCard({
                 <p>{split.cardDescription}</p>
               </div>
 
-              {isSelected ? (
-                <ul
-                  className="training-schedule-split__benefits"
-                  aria-label={`${split.label} benefits`}
-                >
-                  {benefits.map((benefit) => (
-                    <li key={benefit}>
-                      <Check aria-hidden="true" size={15} strokeWidth={2.4} />
-                      <span>{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span className="training-schedule-split__select-affordance">Select</span>
-              )}
+              <ul
+                className={cn(
+                  "training-schedule-split__benefits",
+                  isSelected ? "training-schedule-split__benefits--selected" : null,
+                )}
+                aria-label={`${split.label} benefits`}
+              >
+                {benefits.map((benefit) => (
+                  <li key={benefit}>
+                    <Check aria-hidden="true" size={15} strokeWidth={2.4} />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
             </label>
           );
         })}

@@ -24,6 +24,10 @@
   --jw-page-title-line-height: 2.375rem;
   --jw-page-lead-size: 0.875rem;
   --jw-page-lead-line-height: 1.3125rem;
+  --jw-page-header-title-size: 2rem;
+  --jw-page-header-title-line-height: 2.375rem;
+  --jw-page-header-lead-size: 0.875rem;
+  --jw-page-header-lead-line-height: 1.3125rem;
   --jw-page-padding-x: 1.75rem;
   --jw-page-padding-y: 1.25rem;
   --jw-content-gap: 1.25rem;
@@ -69,6 +73,10 @@
     --jw-page-title-line-height: 2.5rem;
     --jw-page-lead-size: 0.9375rem;
     --jw-page-lead-line-height: 1.4375rem;
+    --jw-page-header-title-size: 2.125rem;
+    --jw-page-header-title-line-height: 2.5rem;
+    --jw-page-header-lead-size: 0.9375rem;
+    --jw-page-header-lead-line-height: 1.4375rem;
     --jw-page-padding-x: 2rem;
     --jw-page-padding-y: 1.5rem;
     --jw-content-gap: 1.5rem;
@@ -97,6 +105,10 @@
     --jw-page-title-line-height: 2.625rem;
     --jw-page-lead-size: 1rem;
     --jw-page-lead-line-height: 1.5rem;
+    --jw-page-header-title-size: 2.25rem;
+    --jw-page-header-title-line-height: 2.625rem;
+    --jw-page-header-lead-size: 1rem;
+    --jw-page-header-lead-line-height: 1.5rem;
     --jw-page-padding-x: 2.5rem;
     --jw-page-padding-y: 1.75rem;
     --jw-content-gap: 1.75rem;
@@ -160,6 +172,20 @@ h4 {
 
 .jw-body-font {
   font-family: var(--jw-font-body);
+}
+
+.jw-page-title {
+  margin: 0;
+  color: #120f0d;
+  font-size: var(--jw-page-header-title-size);
+  line-height: var(--jw-page-header-title-line-height);
+}
+
+.jw-page-lead {
+  margin: 0;
+  color: #31505d;
+  font-size: var(--jw-page-header-lead-size);
+  line-height: var(--jw-page-header-lead-line-height);
 }
 
 #root {

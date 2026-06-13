@@ -1,6 +1,7 @@
 import {
   CalendarCheck,
   CalendarDays,
+  ChevronDown,
   Clock3,
   Dumbbell,
   Grid2X2,
@@ -10,7 +11,7 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { cn } from "../../design-system/cn";
 import { RailPanelSection } from "../../design-system/rail-panel";
 import type { PlanBlueprintSummary } from "../plan-blueprint";
@@ -129,12 +130,55 @@ type PlanBlueprintHeaderField = {
 };
 export function PlanBlueprintHeaderBar({ summary }: { summary: PlanBlueprintSummary | null }) {
   const fields = summary ? getPlanBlueprintHeaderFields(summary) : [];
+  const mobileFields = summary ? getPlanBlueprintMobileHeaderFields(summary) : [];
+  const mobileSummaryLine = summary ? getPlanBlueprintMobileSummaryLine(summary) : null;
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+  const mobileDetailsId = useId();
 
   return (
     <aside
       aria-label="Plan blueprint summary"
       className="plan-blueprint-header mt-4 flex min-w-0 items-center rounded-lg border border-stone-950/10 bg-white/76 px-4 py-3 shadow-[0_1px_0_rgba(29,26,22,0.04)]"
     >
+      <button
+        aria-controls={mobileDetailsId}
+        aria-expanded={isMobileExpanded}
+        aria-label={
+          mobileSummaryLine
+            ? `Plan blueprint Draft. ${mobileSummaryLine}. ${
+                isMobileExpanded ? "Hide details" : "View details"
+              }`
+            : "Plan blueprint Draft. Loading Plan Blueprint."
+        }
+        className="plan-blueprint-header__mobile-toggle"
+        onClick={() => setIsMobileExpanded((expanded) => !expanded)}
+        type="button"
+      >
+        <span className="plan-blueprint-header__mobile-copy">
+          <span className="plan-blueprint-header__mobile-title-line">
+            <span>Plan blueprint</span>
+            <span className="plan-blueprint-header__badge">Draft</span>
+          </span>
+          {mobileSummaryLine ? (
+            <span className="plan-blueprint-header__mobile-summary">{mobileSummaryLine}</span>
+          ) : (
+            <span className="plan-blueprint-header__mobile-summary">Loading Plan Blueprint...</span>
+          )}
+        </span>
+        <span className="plan-blueprint-header__mobile-action">
+          <span>{isMobileExpanded ? "Hide details" : "View details"}</span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "plan-blueprint-header__mobile-chevron",
+              isMobileExpanded ? "plan-blueprint-header__mobile-chevron--expanded" : null,
+            )}
+            size={17}
+            strokeWidth={2.2}
+          />
+        </span>
+      </button>
+
       <div className="plan-blueprint-header__title flex min-w-0 shrink-0 items-center gap-3 pr-5">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center text-stone-950">
           <CalendarCheck aria-hidden="true" size={24} strokeWidth={1.7} />
@@ -142,30 +186,45 @@ export function PlanBlueprintHeaderBar({ summary }: { summary: PlanBlueprintSumm
         <h2 className="truncate text-base font-black leading-none text-stone-950">
           Plan blueprint
         </h2>
-        <span className="rounded-full bg-[#007780] px-3 py-1 text-xs font-black leading-none text-white">
-          Draft
-        </span>
+        <span className="plan-blueprint-header__badge">Draft</span>
       </div>
 
       {summary ? (
-        <dl className="plan-blueprint-header__fields min-w-0 flex-1 items-center">
-          {fields.map((field) => (
-            <div
-              className="plan-blueprint-header__field grid min-w-0 grid-cols-1 content-center gap-1 border-l border-stone-950/18 px-5"
-              key={field.label}
-            >
-              <dt className="text-xs font-black leading-none text-[#007780]">{field.label}</dt>
-              <dd
-                className={cn(
-                  "min-w-0 text-sm font-bold leading-tight",
-                  field.isPending ? "text-stone-500" : "text-stone-950",
-                )}
+        <>
+          <dl className="plan-blueprint-header__fields min-w-0 flex-1 items-center">
+            {fields.map((field) => (
+              <div
+                className="plan-blueprint-header__field grid min-w-0 grid-cols-1 content-center gap-1 border-l border-stone-950/18 px-5"
+                key={field.label}
               >
-                {field.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
+                <dt className="text-xs font-black leading-none text-[#007780]">{field.label}</dt>
+                <dd
+                  className={cn(
+                    "min-w-0 text-sm font-bold leading-tight",
+                    field.isPending ? "text-stone-500" : "text-stone-950",
+                  )}
+                >
+                  {field.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <dl
+            className={cn(
+              "plan-blueprint-header__mobile-details",
+              isMobileExpanded ? "plan-blueprint-header__mobile-details--expanded" : null,
+            )}
+            hidden={!isMobileExpanded}
+            id={mobileDetailsId}
+          >
+            {mobileFields.map((field) => (
+              <div className="plan-blueprint-header__mobile-detail" key={field.label}>
+                <dt>{field.label}</dt>
+                <dd>{field.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
       ) : (
         <p className="min-w-0 truncate border-l border-stone-950/18 pl-5 text-sm font-bold text-stone-600">
           Loading Plan Blueprint...
@@ -173,6 +232,51 @@ export function PlanBlueprintHeaderBar({ summary }: { summary: PlanBlueprintSumm
       )}
     </aside>
   );
+}
+
+function getPlanBlueprintMobileSummaryLine(summary: PlanBlueprintSummary): string {
+  return `${summary.trainingGoal} · ${summary.trainingFrequency} · ${getPlanBlueprintDisplaySplit(
+    summary,
+  )}`;
+}
+
+function getPlanBlueprintMobileHeaderFields(
+  summary: PlanBlueprintSummary,
+): ReadonlyArray<PlanBlueprintHeaderField> {
+  return [
+    {
+      isPending: false,
+      label: "Goal",
+      value: summary.trainingGoal,
+    },
+    {
+      isPending: false,
+      label: "Frequency",
+      value: summary.trainingFrequency,
+    },
+    {
+      isPending: false,
+      label: "Split",
+      value: getPlanBlueprintDisplaySplit(summary),
+    },
+    {
+      isPending: false,
+      label: "Rep ranges",
+      value: summary.repRanges === "Choose Rep ranges" ? "Balanced hypertrophy" : summary.repRanges,
+    },
+    {
+      isPending: false,
+      label: "Volume preset",
+      value:
+        summary.volumePreset === planBlueprintSummaryNotChosenValue
+          ? "Balanced"
+          : summary.volumePreset,
+    },
+  ];
+}
+
+function getPlanBlueprintDisplaySplit(summary: PlanBlueprintSummary): string {
+  return summary.split === "Choose a Training Split" ? "Upper / Lower / Full Body" : summary.split;
 }
 
 function getPlanBlueprintHeaderFields(

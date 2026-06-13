@@ -72,6 +72,10 @@ _Avoid_: Invalid generated data, broken state
 The number of days per week the user can realistically train. In the first version, valid choices are 2, 3, 4, or 5 days/week; it constrains valid later choices in the **Plan Builder** without forcing a single split for every frequency, and it does not describe which weekdays the user trains.
 _Avoid_: Schedule, availability
 
+**Training Week**:
+A selected seven-day span used to review completed Training Sessions for an Active Training Plan. A **Training Week** can be anchored to the plan's training rhythm rather than a calendar week, and can be compared with the previous **Training Week**.
+_Avoid_: Calendar week, reporting period
+
 **Training Split**:
 The high-level pattern for distributing training sessions across a week within a **Plan Blueprint** or generated **Training Plan**. A **Training Split** is selected after **Training Frequency** and can imply a suggested weekly layout without generating workout details.
 _Avoid_: Split string, routine type
@@ -87,6 +91,14 @@ _Avoid_: Intensity setting, rep scheme, programming controls
 **Training Volume**:
 The planned amount of training work per muscle group across workouts and weeks. **Training Volume** is canonically expressed as **Weekly Rep Targets** and works with **Rep Range Style** when a later **Training Plan** translates that work into set and rep targets.
 _Avoid_: Workload, weekly set target
+
+**Completed Load Volume**:
+The amount of completed loaded work from Training Sessions, calculated from weight multiplied by reps and grouped by session, week, or Movement Pattern.
+_Avoid_: Training Volume, workload, tonnage
+
+**Loaded Set**:
+A completed set with positive external weight and positive reps. Bodyweight-only work can be part of a Training Session, but it is not a **Loaded Set** unless external weight is recorded.
+_Avoid_: Completed set, bodyweight set
 
 **Volume Preset**:
 A **Plan Builder** choice that positions **Weekly Rep Targets** within the source-backed optimal volume range. The Balanced **Volume Preset** is the recommended default for the current intermediate Build Muscle profile.

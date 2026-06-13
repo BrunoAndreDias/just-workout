@@ -106,7 +106,12 @@ button.plan-builder-stepper-control {
 }
 
 .plan-builder-stepper-label--locked {
+  color: #8a827a;
   font-weight: 600;
+}
+
+.plan-builder-stepper-label--upcoming {
+  color: #7f8b86;
 }
 
 .plan-builder-stepper-notice {
@@ -117,7 +122,7 @@ button.plan-builder-stepper-control {
   line-height: 1.125rem;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .plan-builder-stepper {
     margin-top: 0.625rem;
   }
@@ -132,13 +137,26 @@ button.plan-builder-stepper-control {
   }
 
   .plan-builder-stepper-label {
-    display: none;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    color: #8a827a;
+    font-size: 0.6875rem;
+    font-weight: 650;
+    line-height: 0.875rem;
   }
 
   .plan-builder-stepper-label--current {
-    display: block;
-    width: max-content;
-    max-width: min(11rem, calc(100vw - 2rem));
+    color: var(--jw-step-selected-ink, #075d63);
+  }
+
+  .plan-builder-stepper-item--completed .plan-builder-stepper-label {
+    color: #7f8b86;
+  }
+
+  .plan-builder-stepper-label--locked,
+  .plan-builder-stepper-label--upcoming {
+    color: #8a827a;
   }
 }
 

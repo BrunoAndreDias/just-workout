@@ -1,13 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Bell,
-  CalendarCheck,
-  ClipboardList,
-  Dumbbell,
-  History,
-  Play,
-  UserCircle,
-} from "lucide-react";
+import { CalendarCheck, ClipboardList, Dumbbell, History, Play } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -46,7 +38,20 @@ const appShellNavigationItems = [
   },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 
+const appShellNavigationLinkClassName =
+  "app-shell-navigation-link group flex items-center justify-center text-sm font-medium leading-none text-stone-950 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#007780]/55";
+
+const appShellNavigationPillClassName =
+  "app-shell-navigation-pill inline-flex items-center rounded-full px-3 py-1.5 transition-colors duration-200";
+
 export function AppShell({ children, currentPathname, trainingSessionTarget }: AppShellProps) {
+  const trainingHistoryPath = trainingSessionTarget
+    ? `/training-plans/${trainingSessionTarget.planId}/sessions`
+    : null;
+  const startTrainingPath = trainingSessionTarget
+    ? `/training-plans/${trainingSessionTarget.planId}/sessions/new/${trainingSessionTarget.templateId}`
+    : null;
+
   return (
     <div className="app-shell min-h-screen text-[#162325]">
       <div className="app-shell-frame mx-auto w-full max-w-[1200px]">
@@ -80,49 +85,50 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                 <nav className="app-shell-session-navigation" aria-label="Training Session">
                   <Link
                     aria-label="Training history"
-                    className="app-shell-session-link"
+                    aria-current={currentPathname === trainingHistoryPath ? "page" : undefined}
+                    activeOptions={{ exact: true }}
+                    className={appShellNavigationLinkClassName}
                     params={{ planId: trainingSessionTarget.planId }}
                     to="/training-plans/$planId/sessions"
                   >
-                    <History
-                      aria-hidden="true"
-                      className="app-shell-session-link__icon"
-                      strokeWidth={1.8}
+                    <AppShellNavigationPill
+                      icon={
+                        <History
+                          aria-hidden="true"
+                          className="app-shell-navigation-icon"
+                          strokeWidth={1.8}
+                        />
+                      }
+                      isActive={currentPathname === trainingHistoryPath}
+                      label="Training history"
                     />
-                    <span>Training history</span>
                   </Link>
                   <Link
                     aria-label="Start training"
-                    className="app-shell-session-link app-shell-session-link--primary"
+                    aria-current={currentPathname === startTrainingPath ? "page" : undefined}
+                    activeOptions={{ exact: true }}
+                    className={appShellNavigationLinkClassName}
                     params={{
                       planId: trainingSessionTarget.planId,
                       templateId: trainingSessionTarget.templateId,
                     }}
                     to="/training-plans/$planId/sessions/new/$templateId"
                   >
-                    <Play
-                      aria-hidden="true"
-                      className="app-shell-session-link__icon"
-                      fill="currentColor"
-                      strokeWidth={1.8}
+                    <AppShellNavigationPill
+                      icon={
+                        <Play
+                          aria-hidden="true"
+                          className="app-shell-navigation-icon"
+                          fill="currentColor"
+                          strokeWidth={1.8}
+                        />
+                      }
+                      isActive={currentPathname === startTrainingPath}
+                      label="Start training"
                     />
-                    <span>Start training</span>
                   </Link>
                 </nav>
               ) : null}
-            </div>
-
-            <div className="app-shell-actions flex shrink-0 items-center">
-              <button className="app-shell-icon-button" type="button" aria-label="Notifications">
-                <Bell aria-hidden="true" className="app-shell-action-icon" strokeWidth={1.8} />
-              </button>
-              <button className="app-shell-profile-button" type="button" aria-label="Profile">
-                <UserCircle
-                  aria-hidden="true"
-                  className="app-shell-profile-icon"
-                  strokeWidth={1.9}
-                />
-              </button>
             </div>
           </header>
 
@@ -140,25 +146,50 @@ function AppShellNavigationLink({
   currentPathname: string;
   item: AppShellNavigationItem;
 }) {
-  const isActive = currentPathname.startsWith(item.href);
+  const isActive = isAppShellNavigationItemActive(currentPathname, item.href);
 
   return (
     <Link
       aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "app-shell-navigation-link group flex items-center justify-center text-sm font-medium leading-none text-stone-950 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#007780]/55",
-      )}
+      className={appShellNavigationLinkClassName}
+      activeOptions={item.href === "/training-plans" ? { exact: true } : undefined}
       to={item.href}
     >
-      <span
-        className={cn(
-          "app-shell-navigation-pill inline-flex items-center rounded-full px-3 py-1.5 transition-colors duration-200",
-          isActive ? "bg-stone-950/8 text-[#075d63]" : "group-hover:bg-stone-950/6",
-        )}
-      >
-        {item.icon}
-        <span className="min-w-0 truncate">{item.label}</span>
-      </span>
+      <AppShellNavigationPill icon={item.icon} isActive={isActive} label={item.label} />
     </Link>
+  );
+}
+
+function isAppShellNavigationItemActive(currentPathname: string, href: string) {
+  if (href === "/plan-builder") {
+    return currentPathname.startsWith(href);
+  }
+
+  if (href === "/training-plans") {
+    return currentPathname === href || /^\/training-plans\/[^/]+$/.test(currentPathname);
+  }
+
+  return currentPathname === href;
+}
+
+function AppShellNavigationPill({
+  icon,
+  isActive,
+  label,
+}: {
+  icon: ReactNode;
+  isActive: boolean;
+  label: string;
+}) {
+  return (
+    <span
+      className={cn(
+        appShellNavigationPillClassName,
+        isActive ? "bg-stone-950/8 text-[#075d63]" : "group-hover:bg-stone-950/6",
+      )}
+    >
+      {icon}
+      <span className="min-w-0 truncate">{label}</span>
+    </span>
   );
 }

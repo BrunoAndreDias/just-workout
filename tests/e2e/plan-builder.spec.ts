@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { planBuilderPaths } from "../../src/plan-builder";
+import { planBuilderPaths } from "../../src/plan-builder/plan-builder-paths";
 
 type PlanBuilderLocators = {
   frequencyGroup: Locator;
@@ -221,17 +221,63 @@ test.describe("laptop plan builder layout", () => {
 test.describe("mobile plan builder layout", () => {
   test.skip(({ browserName }) => browserName !== "webkit", "Mobile-only layout assertions");
 
+  test("shows the Plan Blueprint as a collapsed expandable strip before the stepper", async ({
+    page,
+  }) => {
+    const locators = await openPlanBuilder(page);
+    const blueprintToggle = locators.summary.getByRole("button", {
+      name: /plan blueprint draft/i,
+    });
+    const stepper = page.locator(".plan-builder-stepper");
+
+    await expect(blueprintToggle).toBeVisible();
+    await expect(blueprintToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(blueprintToggle).toContainText("Build muscle · 3 days/week");
+    await expect(blueprintToggle).toContainText("Upper / Lower / Full Body");
+    await expect(locators.summary.getByText("Balanced hypertrophy")).toBeHidden();
+    await expectLocatorHeightAtMost(locators.summary, 88, "Collapsed Plan Blueprint strip");
+
+    const summaryBox = await getRequiredBoundingBox(locators.summary, "Plan Blueprint Summary");
+    const stepperBox = await getRequiredBoundingBox(stepper, "Plan Builder stepper");
+    expect(summaryBox.y + summaryBox.height).toBeLessThanOrEqual(stepperBox.y);
+
+    await blueprintToggle.click();
+
+    await expect(blueprintToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(locators.summary.getByText("Balanced hypertrophy")).toBeVisible();
+    await expect(locators.summary.getByText("Balanced", { exact: true })).toBeVisible();
+  });
+
   test("stacks the workspace above the summary without overflow", async ({ page }) => {
     const locators = await openPlanBuilder(page);
     await expectMobilePlanBuilderLayout(locators);
 
     await selectTrainingFrequency(locators.frequencyGroup, 4);
-    await expect(locators.summary.getByText("4 days/week")).toBeVisible();
+    await expect(
+      locators.summary.getByRole("button", { name: /plan blueprint draft/i }),
+    ).toContainText("4 days/week");
 
     await continueToTrainingStyle(page, trainingSplitLabels.upperLower4Day);
 
-    await expect(locators.summary.getByText("4 days/week")).toBeVisible();
+    await expect(
+      locators.summary.getByRole("button", { name: /plan blueprint draft/i }),
+    ).toContainText("4 days/week");
     await expectNoHorizontalOverflow(page);
+  });
+
+  test("keeps the stepper visible on the Exercises step", async ({ page }) => {
+    await openPlanBuilder(page);
+    await continueToExercises(page);
+
+    const stepper = page.locator(".plan-builder-stepper");
+
+    await expect(stepper).toBeVisible();
+    await expectLocatorHeightAtMost(stepper, 48, "Plan Builder stepper");
+    await expect(stepper.locator(".plan-builder-stepper-label--current")).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+    await expect(stepper.locator(".plan-builder-stepper-label--current")).toHaveText("Exercises");
   });
 });
 
@@ -257,7 +303,7 @@ async function expectPlanBuilderShell(page: Page, locators: PlanBuilderLocators)
   await expect(locators.workspace).toBeVisible();
   await expect(locators.summary).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.frequency}$`));
-  await expect(page.getByRole("radio", { name: /3 days\/week/i })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /3 days per week/i })).toBeChecked();
   await expect(page.locator("body")).not.toContainText(/strongplan/i);
   await expectNoHorizontalOverflow(page);
 }
@@ -410,22 +456,38 @@ function getBlueprintValueLocator(summary: Locator, value: string) {
 }
 
 async function selectTrainingFrequency(frequencyGroup: Locator, daysPerWeek: number) {
-  const label = `${daysPerWeek} days/week`;
+  const label = `${daysPerWeek} days per week`;
+  const radio = frequencyGroup.getByRole("radio", { name: getLabelMatcher(label) });
 
-  await frequencyGroup.getByText(label).click();
-  await expect(frequencyGroup.getByRole("radio", { name: getLabelMatcher(label) })).toBeChecked();
+  await radio.check({ force: true });
+  await expect(radio).toBeChecked();
 }
 
 async function continueToTrainingStyle(page: Page, expectedSplitLabel: string) {
   await page.getByRole("button", { name: /continue to training style/i }).click();
 
   await expect(page.getByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
-  await expect(
-    page
-      .getByRole("complementary", { name: /plan blueprint summary/i })
-      .getByText(expectedSplitLabel),
-  ).toBeVisible();
+  const summary = page.getByRole("complementary", { name: /plan blueprint summary/i });
+  const mobileBlueprintToggle = summary.getByRole("button", { name: /plan blueprint draft/i });
+
+  if ((await mobileBlueprintToggle.count()) > 0) {
+    await expect(mobileBlueprintToggle).toContainText(expectedSplitLabel);
+  } else {
+    await expect(summary.getByText(expectedSplitLabel).first()).toBeVisible();
+  }
   await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.repRanges}$`));
+}
+
+async function continueToExercises(page: Page) {
+  await page.getByRole("button", { name: /continue to training style/i }).click();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.repRanges}$`));
+
+  await page.getByRole("button", { name: /continue to volume/i }).click();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.volume}$`));
+
+  await page.getByRole("button", { name: /continue to exercises/i }).click();
+  await expect(page).toHaveURL(new RegExp(`${planBuilderPaths.exercises}$`));
+  await expect(page.getByRole("heading", { level: 1, name: "Exercise foundation" })).toBeVisible();
 }
 
 async function expectNoHorizontalOverflow(page: Page) {

@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { CircleCheck, History, Play, Settings } from "lucide-react";
+import { History, Play } from "lucide-react";
 import { useState } from "react";
+import { PageHeader, PageMain } from "../../design-system/typography";
 import type { TrainingPlan } from "../index";
 import {
   type ActiveTrainingPlanTab,
@@ -22,13 +23,19 @@ export function ActiveTrainingPlanPage({ trainingPlan }: { trainingPlan: Trainin
 
   return (
     <section className="active-training-plan-page-shell" aria-label="Active Training Plan">
-      <ActiveTrainingPlanHero trainingPlan={trainingPlan} />
-      <ActiveTrainingPlanTabs
-        activeTabId={activeTabId}
-        setActiveTabId={setActiveTabId}
-        trainingPlan={trainingPlan}
+      <PageHeader
+        description={`${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`}
+        title={trainingPlan.split}
       />
-      <MobileStartWorkoutCta trainingPlan={trainingPlan} />
+      <PageMain>
+        <ActiveTrainingPlanActions trainingPlan={trainingPlan} />
+        <ActiveTrainingPlanTabs
+          activeTabId={activeTabId}
+          setActiveTabId={setActiveTabId}
+          trainingPlan={trainingPlan}
+        />
+        <MobileStartWorkoutCta trainingPlan={trainingPlan} />
+      </PageMain>
     </section>
   );
 }
@@ -41,7 +48,7 @@ export function ActiveTrainingPlanLoading({ children }: { children: string }) {
   );
 }
 
-function ActiveTrainingPlanHero({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+function ActiveTrainingPlanActions({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   const navigate = useNavigate();
   const blockWeek = getCurrentBlockWeek();
   const blockProgressPercent = getBlockProgressPercent({
@@ -50,65 +57,50 @@ function ActiveTrainingPlanHero({ trainingPlan }: { trainingPlan: TrainingPlan }
   });
 
   return (
-    <header className="active-training-plan-hero">
-      <div className="active-training-plan-hero__copy">
-        <p className="active-training-plan-hero__label">Active Training Plan</p>
-        <h1 className="active-training-plan-hero__title">{trainingPlan.split}</h1>
-        <p className="active-training-plan-hero__status">
-          <CircleCheck aria-hidden="true" className="active-training-plan-hero__status-icon" />
-          <span>Rotation pools configured</span>
-        </p>
+    <div className="active-training-plan-actions-panel">
+      <div className="active-training-plan-hero__actions">
+        <button
+          className="active-training-plan-hero__cta"
+          onClick={() => {
+            void navigate({
+              params: {
+                planId: trainingPlan.id,
+                templateId: getNextWorkoutTemplateId(trainingPlan),
+              },
+              to: "/training-plans/$planId/sessions/new/$templateId",
+            });
+          }}
+          type="button"
+        >
+          <Play
+            aria-hidden="true"
+            className="active-training-plan-hero__cta-icon"
+            fill="currentColor"
+          />
+          <span>Start next workout</span>
+        </button>
+        <button
+          className="active-training-plan-hero__settings"
+          onClick={() => {
+            void navigate({
+              params: {
+                planId: trainingPlan.id,
+              },
+              to: "/training-plans/$planId/sessions",
+            });
+          }}
+          type="button"
+        >
+          <History aria-hidden="true" className="active-training-plan-hero__settings-icon" />
+          <span>View training history</span>
+        </button>
       </div>
-
-      <div className="active-training-plan-hero__side">
-        <div className="active-training-plan-hero__actions">
-          <button
-            className="active-training-plan-hero__cta"
-            onClick={() => {
-              void navigate({
-                params: {
-                  planId: trainingPlan.id,
-                  templateId: getNextWorkoutTemplateId(trainingPlan),
-                },
-                to: "/training-plans/$planId/sessions/new/$templateId",
-              });
-            }}
-            type="button"
-          >
-            <Play
-              aria-hidden="true"
-              className="active-training-plan-hero__cta-icon"
-              fill="currentColor"
-            />
-            <span>Start next workout</span>
-          </button>
-          <button className="active-training-plan-hero__settings" type="button">
-            <Settings aria-hidden="true" className="active-training-plan-hero__settings-icon" />
-            <span>View plan settings</span>
-          </button>
-          <button
-            className="active-training-plan-hero__settings"
-            onClick={() => {
-              void navigate({
-                params: {
-                  planId: trainingPlan.id,
-                },
-                to: "/training-plans/$planId/sessions",
-              });
-            }}
-            type="button"
-          >
-            <History aria-hidden="true" className="active-training-plan-hero__settings-icon" />
-            <span>View training history</span>
-          </button>
-        </div>
-        <TrainingBlockProgress
-          blockProgressPercent={blockProgressPercent}
-          blockWeek={blockWeek}
-          trainingBlockWeeks={trainingPlan.trainingBlockWeeks}
-        />
-      </div>
-    </header>
+      <TrainingBlockProgress
+        blockProgressPercent={blockProgressPercent}
+        blockWeek={blockWeek}
+        trainingBlockWeeks={trainingPlan.trainingBlockWeeks}
+      />
+    </div>
   );
 }
 

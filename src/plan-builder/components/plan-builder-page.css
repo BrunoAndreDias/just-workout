@@ -864,7 +864,7 @@
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
 }
 
-.plan-builder-page .plan-builder-workspace-card > header {
+.plan-builder-page .plan-builder-workspace-card > .plan-builder-header {
   display: grid;
   gap: 0.5rem;
 }
@@ -1007,7 +1007,7 @@
   min-width: 0;
 }
 
-.plan-builder-page .plan-builder-workspace-card > header {
+.plan-builder-page .plan-builder-workspace-card > .plan-builder-header {
   gap: 0.375rem;
 }
 
@@ -1081,7 +1081,7 @@
     padding: 1.25rem clamp(1.25rem, 1.8vw, 2rem) 1rem;
   }
 
-  .plan-builder-page .plan-builder-workspace-card > header {
+  .plan-builder-page .plan-builder-workspace-card > .plan-builder-header {
     gap: 0.25rem;
   }
 
@@ -1495,7 +1495,7 @@
   line-height: var(--jw-builder-body-line-height);
 }
 
-.plan-builder-page.plan-builder-page .plan-builder-workspace-card > header {
+.plan-builder-page.plan-builder-page .plan-builder-workspace-card > .plan-builder-header {
   gap: 0.25rem;
 }
 
@@ -1543,6 +1543,10 @@
   .plan-builder-page {
     --jw-builder-page-title-size: 1.5rem;
     --jw-builder-page-title-line-height: 1.75rem;
+    --jw-builder-body-size: 0.875rem;
+    --jw-builder-body-line-height: 1.3125rem;
+    --jw-page-header-lead-size: var(--jw-builder-body-size);
+    --jw-page-header-lead-line-height: var(--jw-builder-body-line-height);
   }
 }
 
@@ -1559,38 +1563,60 @@
     --jw-body-size: 0.875rem;
     --jw-body-line-height: 1.25rem;
     --jw-builder-body-size: 0.875rem;
-    --jw-builder-body-line-height: 1.25rem;
+    --jw-builder-body-line-height: 1.3125rem;
     --jw-builder-content-gap: 0.625rem;
   }
 
   .plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
-    padding: 0.75rem 0.875rem 8.5rem;
-  }
-
-  .plan-builder-page.plan-builder-page--exercises .plan-builder-header {
-    gap: 0.25rem;
-  }
-
-  .plan-builder-page.plan-builder-page--exercises .plan-builder-title {
-    font-size: 1.375rem;
-    line-height: 1.625rem;
-  }
-
-  .plan-builder-page.plan-builder-page--exercises .plan-builder-title + p,
-  .plan-builder-page.plan-builder-page--exercises .plan-blueprint-header {
-    display: none;
-  }
-
-  .plan-builder-page.plan-builder-page--exercises .plan-builder-stepper {
-    margin-top: 0.375rem;
-  }
-
-  .plan-builder-page.plan-builder-page--exercises .plan-builder-step-content {
-    margin-top: 0.625rem;
+    padding: 1rem 0.875rem 8.5rem;
   }
 
   .plan-builder-page.plan-builder-page--exercises .step-actions {
     gap: 0.5rem;
     margin-top: 0.875rem;
+  }
+}
+
+/* Current PageHeader markup uses shared jw-* classes. Keep its mobile rhythm
+   aligned with the Plan Builder scale so step changes do not remeasure copy. */
+.plan-builder-page.plan-builder-page .jw-page-header {
+  width: min(100%, 58ch);
+  max-width: 58ch;
+  gap: 0.25rem;
+}
+
+.plan-builder-page.plan-builder-page .jw-page-title {
+  max-width: 22ch;
+  font-size: var(--jw-builder-page-title-size);
+  line-height: var(--jw-builder-page-title-line-height);
+}
+
+.plan-builder-page.plan-builder-page .jw-page-lead {
+  width: min(100%, 58ch);
+  max-width: 58ch;
+  color: var(--jw-step-copy);
+  font-size: var(--jw-builder-body-size);
+  line-height: var(--jw-builder-body-line-height);
+}
+
+@media (max-width: 767px) {
+  .plan-builder-page.plan-builder-page .jw-page-header {
+    width: 100%;
+    max-width: 58ch;
+  }
+
+  .plan-builder-page.plan-builder-page .jw-page-title {
+    max-width: 22ch;
+  }
+
+  .plan-builder-page.plan-builder-page .jw-page-lead {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .plan-builder-page.plan-builder-page .plan-blueprint-header {
+    display: none;
   }
 }

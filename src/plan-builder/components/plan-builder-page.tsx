@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { cn } from "../../design-system/cn";
 import { StepNotice } from "../../design-system/step-screen";
 import { Stepper, type StepperItem } from "../../design-system/stepper";
-import { PageTitle } from "../../design-system/typography";
+import { PageHeader, PageLead, PageMain } from "../../design-system/typography";
 import type { PlanBlueprintSummary } from "../plan-blueprint";
 import { planBuilderPaths } from "../plan-builder-paths";
 import { PlanBlueprintHeaderBar, PlanBlueprintProgressSummary } from "./plan-blueprint-summary";
@@ -19,7 +19,7 @@ import "./plan-builder-page.css";
 type PlanBuilderPageProps = {
   children: ReactNode;
   currentStep: PlanBuilderStep;
-  intro: ReactNode;
+  description: ReactNode;
   summary: PlanBlueprintSummary | null;
 };
 
@@ -31,7 +31,12 @@ export type PlanBuilderStepStatusCardProps = {
 };
 
 type PlanBuilderStepStatusCardTitleDisplay = "screen-reader-only" | "visible";
-export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanBuilderPageProps) {
+export function PlanBuilderPage({
+  children,
+  currentStep,
+  description,
+  summary,
+}: PlanBuilderPageProps) {
   const navigate = useNavigate();
   const currentStepIndex = getPlanBuilderStepDetails(currentStep).index;
   const prototypeVariant = usePlanBuilderPrototypeVariant();
@@ -54,7 +59,7 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
     return (
       <PlanBuilderPrototypePage
         currentStepIndex={currentStepIndex}
-        intro={intro}
+        intro={<PageLead>{description}</PageLead>}
         summary={summary}
         variant={prototypeVariant}
       >
@@ -72,9 +77,8 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
       )}
     >
       <section aria-label="Plan Builder workspace" className="plan-builder-workspace-card">
-        <header className="plan-builder-header">
-          <PageTitle className="plan-builder-title">{pageTitle}</PageTitle>
-          {intro}
+        <PageHeader description={description} title={pageTitle} />
+        <PageMain>
           {shouldShowWideDesktopBlueprintSummary || shouldShowExerciseBlueprintSummary ? (
             <PlanBlueprintProgressSummary
               currentStep={currentStep}
@@ -84,39 +88,39 @@ export function PlanBuilderPage({ children, currentStep, intro, summary }: PlanB
           ) : !shouldShowPlanBuilderRail ? (
             <PlanBlueprintHeaderBar summary={summary} />
           ) : null}
-        </header>
 
-        {!shouldShowPlanBuilderRail ? (
-          <div className="plan-builder-stepper">
-            <Stepper
-              currentIndex={currentStepIndex}
-              density="compact"
-              items={stepperItems}
-              label="Plan Builder"
-              onItemSelect={(item) => {
-                setStepperNotice(null);
-                void navigate({ to: getPlanBuilderPathByStep(item.id) });
-              }}
-              onLockedItemSelect={(item) => {
-                setStepperNotice(
-                  item.disabledReason
-                    ? {
-                        message: item.disabledReason,
-                        step: currentStep,
-                      }
-                    : null,
-                );
-              }}
-            />
-            {visibleStepperNotice ? (
-              <p aria-live="polite" className="plan-builder-stepper-notice">
-                {visibleStepperNotice}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+          {!shouldShowPlanBuilderRail ? (
+            <div className="plan-builder-stepper">
+              <Stepper
+                currentIndex={currentStepIndex}
+                density="compact"
+                items={stepperItems}
+                label="Plan Builder"
+                onItemSelect={(item) => {
+                  setStepperNotice(null);
+                  void navigate({ to: getPlanBuilderPathByStep(item.id) });
+                }}
+                onLockedItemSelect={(item) => {
+                  setStepperNotice(
+                    item.disabledReason
+                      ? {
+                          message: item.disabledReason,
+                          step: currentStep,
+                        }
+                      : null,
+                  );
+                }}
+              />
+              {visibleStepperNotice ? (
+                <p aria-live="polite" className="plan-builder-stepper-notice">
+                  {visibleStepperNotice}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
-        <div className="plan-builder-step-content">{children}</div>
+          <div className="plan-builder-step-content">{children}</div>
+        </PageMain>
       </section>
     </section>
   );

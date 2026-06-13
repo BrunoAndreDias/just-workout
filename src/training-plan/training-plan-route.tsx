@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Button } from "../design-system/button";
-import { PageLead, PageTitle } from "../design-system/typography";
+import { PageHeader, PageMain } from "../design-system/typography";
 import {
   ActiveTrainingPlanLoading,
   ActiveTrainingPlanPage,
@@ -26,34 +26,31 @@ export function TrainingPlansRoute() {
   }
 
   return (
-    <section className="training-plan-page px-6 py-8 sm:px-8 lg:px-10">
-      <header className="max-w-4xl">
-        <p className="text-sm font-black uppercase tracking-[0.14em] text-[#007780]">
-          Training Plans
-        </p>
-        <PageTitle className="mt-2">Generated training plans</PageTitle>
-        <PageLead className="mt-3 max-w-2xl">
-          Open the active Training Plan or generate a new one from the Plan Builder.
-        </PageLead>
-      </header>
+    <section className="training-plan-page px-[var(--jw-page-padding-x)] py-[var(--jw-page-padding-y)]">
+      <PageHeader
+        description="Open the active Training Plan or generate a new one from the Plan Builder."
+        title="Generated training plans"
+      />
 
-      {trainingPlans.length === 0 ? (
-        <div className="mt-6 max-w-2xl rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm">
-          <h2 className="text-lg font-black text-stone-950">No Training Plans yet</h2>
-          <p className="mt-2 text-sm font-semibold text-stone-600">
-            Complete the Plan Builder to generate your first Training Plan.
-          </p>
-          <Button asChild className="mt-4" variant="builderPrimary">
-            <Link to="/plan-builder/generate">Go to Generate</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="mt-6 grid max-w-4xl gap-3">
-          {trainingPlans.map((trainingPlan) => (
-            <TrainingPlanListItem key={trainingPlan.id} trainingPlan={trainingPlan} />
-          ))}
-        </div>
-      )}
+      <PageMain>
+        {trainingPlans.length === 0 ? (
+          <div className="max-w-2xl rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm">
+            <h2 className="text-lg font-black text-stone-950">No Training Plans yet</h2>
+            <p className="mt-2 text-sm font-semibold text-stone-600">
+              Complete the Plan Builder to generate your first Training Plan.
+            </p>
+            <Button asChild className="mt-4" variant="builderPrimary">
+              <Link to="/plan-builder/generate">Go to Generate</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid max-w-4xl gap-3">
+            {trainingPlans.map((trainingPlan) => (
+              <TrainingPlanListItem key={trainingPlan.id} trainingPlan={trainingPlan} />
+            ))}
+          </div>
+        )}
+      </PageMain>
     </section>
   );
 }

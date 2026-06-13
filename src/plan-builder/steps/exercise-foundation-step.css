@@ -993,10 +993,6 @@
 
 /* Phone layout: fewer repeated labels, flatter rows, larger touch targets. */
 @media (max-width: 639px) {
-  .plan-builder-page--exercises .plan-builder-stepper {
-    display: none;
-  }
-
   .plan-builder-page--exercises .exercise-foundation-workspace,
   .plan-builder-page--exercises .exercise-foundation-main {
     gap: 0.5rem;

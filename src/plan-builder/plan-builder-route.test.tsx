@@ -1196,7 +1196,7 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
     });
     expect(await screen.findByRole("heading", { name: "4-Day Upper/Lower" })).toBeVisible();
-    expect(screen.getByText("Active Training Plan")).toBeVisible();
+    expect(screen.getByText("4 days/week with 4 workout templates configured.")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Upper A" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Lower A" })).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Upper A" }));
@@ -2199,7 +2199,7 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("shows full split benefits only for the selected Training Split", async () => {
+  it("shows split benefits for every compatible Training Split", async () => {
     const user = userEvent.setup();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
@@ -2208,8 +2208,9 @@ describe("PlanBuilderRoute", () => {
 
     expect(within(splitGroup).getByRole("radio", { name: /3-day full body/i })).toBeChecked();
     expect(within(splitGroup).getByText("Muscles trained 3x/week")).toBeVisible();
-    expect(within(splitGroup).queryByText("More variety")).not.toBeInTheDocument();
-    expect(within(splitGroup).getAllByText("Select")).toHaveLength(2);
+    expect(within(splitGroup).getByText("More variety")).toBeVisible();
+    expect(within(splitGroup).getByText("Mixed emphasis")).toBeVisible();
+    expect(within(splitGroup).queryByText("Select")).not.toBeInTheDocument();
 
     await user.click(within(splitGroup).getByText(trainingSplitLabels.alternatingFullBodyAB));
 
@@ -2222,7 +2223,7 @@ describe("PlanBuilderRoute", () => {
     });
 
     expect(within(splitGroup).getByText("More variety")).toBeVisible();
-    expect(within(splitGroup).queryByText("Muscles trained 3x/week")).not.toBeInTheDocument();
+    expect(within(splitGroup).getByText("Muscles trained 3x/week")).toBeVisible();
   });
 
   it.each(

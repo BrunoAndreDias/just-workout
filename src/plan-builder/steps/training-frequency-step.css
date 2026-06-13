@@ -3744,6 +3744,19 @@ button.training-frequency-action-button {
   color: var(--jw-step-selected-strong);
 }
 
+.plan-builder-page--frequency
+  .training-schedule-split__benefits:not(.training-schedule-split__benefits--selected)
+  li {
+  color: var(--jw-step-muted);
+  font-weight: 600;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__benefits:not(.training-schedule-split__benefits--selected)
+  svg {
+  color: rgba(83, 104, 115, 0.72);
+}
+
 .training-schedule-split__select-affordance {
   display: inline-flex;
   width: fit-content;
@@ -3810,5 +3823,152 @@ button.training-frequency-action-button {
 @media (min-width: 1280px) {
   .plan-builder-page--frequency .plan-builder-title + p {
     white-space: nowrap;
+  }
+}
+
+/* Mid-desktop density pass: laptops and 24-inch displays should read as one compact task. */
+@media (min-width: 1024px) and (max-width: 1799px) and (min-height: 700px) {
+  .plan-builder-page--frequency .training-frequency-options {
+    gap: 0.55rem;
+    margin-top: 0.5rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option {
+    min-height: 3.7rem;
+    padding: 0.58rem 2.6rem 0.58rem 0.72rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option__check {
+    right: 0.72rem;
+    width: 1.18rem;
+    height: 1.18rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option__label {
+    font-size: 0.86rem;
+    line-height: 1.05rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split {
+    margin-top: 0.8rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__section-title,
+  .plan-builder-page--frequency .training-schedule-split__layout > h3 {
+    font-size: 0.95rem;
+    line-height: 1.18rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__cards {
+    gap: 0.55rem;
+    margin-top: 0.5rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__card {
+    min-height: 0;
+    padding: 0.68rem 0.76rem 0.64rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__selected-check {
+    top: 0.68rem;
+    right: 0.68rem;
+    width: 1.16rem;
+    height: 1.16rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__selected-check svg {
+    width: 0.78rem;
+    height: 0.78rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split h3 {
+    font-size: 0.84rem;
+    line-height: 1.05rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__badge {
+    min-height: 1.05rem;
+    padding: 0 0.36rem;
+    font-size: 0.66rem;
+    line-height: 0.9rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__heading p {
+    display: -webkit-box;
+    margin-top: 0.32rem;
+    overflow: hidden;
+    font-size: 0.74rem;
+    line-height: 0.96rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem 0.55rem;
+    margin-top: 0.5rem;
+    padding-top: 0.46rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits li {
+    gap: 0.28rem;
+    min-height: 0;
+    font-size: 0.7rem;
+    line-height: 0.9rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits svg {
+    width: 0.72rem;
+    height: 0.72rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout {
+    margin-top: 0.72rem;
+    padding-top: 0.58rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout ol {
+    gap: 0.32rem;
+    margin-top: 0.42rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout li {
+    min-height: 2.7rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.18rem 0.3rem;
+    justify-items: start;
+    padding: 0.34rem 0.46rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout svg {
+    display: none;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout strong {
+    font-size: 0.68rem;
+    line-height: 0.86rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout span {
+    font-size: 0.72rem;
+    line-height: 0.9rem;
+    text-align: left;
+  }
+
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 0;
+  }
+
+  .plan-builder-page--frequency .step-actions.training-frequency-actions {
+    position: static;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    margin-top: 0.72rem;
+    transform: none;
+    background: transparent;
+    padding: 0;
   }
 }

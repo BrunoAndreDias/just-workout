@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, CalendarDays, Play } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
+import { BarChart3 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { PageLead, PageTitle } from "../design-system/typography";
+import { PageHeader, PageMain } from "../design-system/typography";
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionMovementVolume } from "./training-session";
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
-  const navigate = useNavigate();
   const trainingPlanQuery = useQuery({
     enabled: planId !== null,
     queryFn: () => {
@@ -51,44 +50,12 @@ export function TrainingSessionHistoryRoute() {
 
   return (
     <section className="training-history-page" aria-label="Training history">
-      <header className="training-history-hero">
-        <div>
-          <p className="training-history-hero__label">Training history</p>
-          <PageTitle>Training history</PageTitle>
-          <PageLead className="training-history-hero__lead">
-            Review completed Training Sessions, inspect movement-pattern volume, or start the next
-            Workout Template.
-          </PageLead>
-        </div>
-        <div className="training-history-hero__metric">
-          <CalendarDays aria-hidden="true" />
-          <span>{trainingPlan.trainingFrequencyDaysPerWeek} days/week</span>
-        </div>
-      </header>
+      <PageHeader
+        description="Review completed Training Sessions and inspect movement-pattern volume from your recent work."
+        title="Training history"
+      />
 
-      <section className="training-history-starts" aria-label="Start Training Sessions">
-        {trainingPlan.workoutTemplates.map((template) => (
-          <button
-            className="training-history-starts__button"
-            key={template.id}
-            onClick={() => {
-              void navigate({
-                params: {
-                  planId: trainingPlan.id,
-                  templateId: template.id,
-                },
-                to: "/training-plans/$planId/sessions/new/$templateId",
-              });
-            }}
-            type="button"
-          >
-            <Play aria-hidden="true" fill="currentColor" />
-            <span>Start {template.label} session</span>
-          </button>
-        ))}
-      </section>
-
-      <div className="training-history-layout">
+      <PageMain className="training-history-layout">
         <section className="training-history-week" aria-labelledby="training-history-week-title">
           <div className="training-history-section-heading">
             <div>
@@ -134,7 +101,7 @@ export function TrainingSessionHistoryRoute() {
         </section>
 
         <SessionReport session={selectedSession} />
-      </div>
+      </PageMain>
     </section>
   );
 }

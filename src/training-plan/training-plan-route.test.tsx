@@ -257,7 +257,7 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
     expect(screen.getAllByRole("button", { name: "Start next workout" }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "View plan settings" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "View training history" })).toBeVisible();
 
     await user.click(screen.getByRole("tab", { name: "Full Body A" }));
 
@@ -313,26 +313,36 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Superset 1" })).toBeVisible();
-    expect(screen.getByText("Flat Dumbbell Bench Press")).toBeVisible();
-    expect(screen.getAllByText("3 x 8-12").length).toBeGreaterThan(0);
 
-    const benchPressRow = screen.getByRole("group", {
-      name: /Flat Dumbbell Bench Press Horizontal Push Main 3 x 8-12/i,
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
     });
+
+    expect(benchPressRow).toBeVisible();
+    expect(
+      within(firstRound).getByRole("row", {
+        name: /1 Pull-Ups.*Vertical pull/i,
+      }),
+    ).toBeVisible();
 
     await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
     await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
     await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
     await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
+    await user.click(
+      within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
+    );
 
-    expect(screen.getByText("Horizontal Push")).toBeVisible();
-    expect(screen.getByText("400 kg")).toBeVisible();
+    expect(
+      within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 not done/i),
+    ).toBeChecked();
+    expect(screen.getByText(/1\/\d+ planned sets completed/i)).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Complete session" }));
 
     expect(await screen.findByRole("heading", { name: "Session completed" })).toBeVisible();
-    expect(screen.getByText("Horizontal Push")).toBeVisible();
-    expect(screen.getByText("400 kg")).toBeVisible();
+    expect(screen.getAllByText(/Horizontal push/i).length).toBeGreaterThan(0);
 
     const completedSessions = await db.trainingSessions.toArray();
 
@@ -345,10 +355,44 @@ describe("TrainingPlanRoute", () => {
         {
           movementPattern: "horizontal_push",
           movementPatternLabel: "Horizontal Push",
-          volume: 400,
         },
       ],
     });
+    expect(completedSessions[0]?.volumeByMovementPattern[0]?.volume).toBeGreaterThan(0);
+  });
+
+  it("opens the next superset after the current superset is completed and closed", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const secondSuperset = screen.getByRole("region", { name: "Superset 2" });
+
+    expect(
+      within(firstSuperset).getByRole("button", { name: "Collapse Upper superset 1" }),
+    ).toBeVisible();
+    expect(
+      within(secondSuperset).getByRole("button", { name: "Expand Upper superset 2" }),
+    ).toBeVisible();
+
+    for (const checkbox of within(firstSuperset).getAllByRole("checkbox")) {
+      await user.click(checkbox);
+    }
+
+    expect(
+      within(firstSuperset).getByRole("button", { name: "Expand Upper superset 1" }),
+    ).toBeVisible();
+    expect(within(firstSuperset).getByText("Complete")).toBeVisible();
+    expect(within(firstSuperset).getByText(/9 sets logged/)).toBeVisible();
+    expect(
+      within(secondSuperset).getByRole("button", { name: "Collapse Upper superset 2" }),
+    ).toBeVisible();
   });
 
   it("starts a session from the selected workout template tab", async () => {
@@ -363,8 +407,18 @@ describe("TrainingPlanRoute", () => {
     await user.click(screen.getByRole("button", { name: "Start Full Body B session" }));
 
     expect(await screen.findByRole("heading", { name: "Full Body B session" })).toBeVisible();
-    expect(screen.getByText("Flat Barbell Bench Press")).toBeVisible();
-    expect(screen.getByText("Barbell Squats")).toBeVisible();
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+
+    expect(
+      within(firstRound).getByRole("row", {
+        name: /1 Flat Barbell Bench Press.*Horizontal push/i,
+      }),
+    ).toBeVisible();
+    expect(
+      within(firstRound).getByRole("row", {
+        name: /1 Barbell Squats.*Quad dominant/i,
+      }),
+    ).toBeVisible();
   });
 
   it("opens Training Session history from the active Training Plan", async () => {
@@ -380,7 +434,24 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
   });
 
-  it("opens Training Session history and starts training from the top bar", async () => {
+  it("starts training from the top bar outside Training Session history", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "Start training" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Start training", current: "page" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Training history" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
+  it("opens Training Session history from the top bar with the start action available", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
 
@@ -391,13 +462,14 @@ describe("TrainingPlanRoute", () => {
     await user.click(screen.getByRole("link", { name: "Training history" }));
 
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
-
-    await user.click(screen.getByRole("link", { name: "Start training" }));
-
-    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Training history", current: "page" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Training Plans" })).not.toHaveAttribute(
+      "aria-current",
+    );
+    expect(screen.getByRole("link", { name: "Start training" })).toBeVisible();
   });
 
-  it("shows Training Session history with weekly report, session report, and new-session starts", async () => {
+  it("shows Training Session history with weekly report and session report", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
     await seedCompletedTrainingSessions();
@@ -410,8 +482,14 @@ describe("TrainingPlanRoute", () => {
     expect(screen.getByRole("row", { name: /Horizontal Push 760 kg/ })).toBeVisible();
     expect(screen.getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
 
-    expect(screen.getByRole("button", { name: "Start Full Body A session" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Start Full Body B session" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Start Full Body A session" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Start Full Body B session" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start training" })).toBeVisible();
+    expect(screen.queryByText("3 days/week")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "View Full Body B report" }));
 
@@ -420,10 +498,6 @@ describe("TrainingPlanRoute", () => {
     const sessionReport = screen.getByRole("region", { name: "Full Body B report" });
 
     expect(within(sessionReport).getByRole("row", { name: /Quad Dominant 900 kg/ })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Start Full Body B session" }));
-
-    expect(await screen.findByRole("heading", { name: "Full Body B session" })).toBeVisible();
   });
 });
 
