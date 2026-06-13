@@ -22,6 +22,14 @@ const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const weightFormatter = new Intl.NumberFormat("en-US");
 
+type TrainingProgressInsightTone = "neutral" | "positive" | "regression";
+
+type TrainingProgressInsightItem = {
+  key: string;
+  text: string;
+  tone: TrainingProgressInsightTone;
+};
+
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
   const { trainingPlanQuery, trainingSessionsQuery } = useTrainingHistoryData(planId);
@@ -333,35 +341,7 @@ function TrainingProgressInsightsPanel({
   hasRows: boolean;
   insights: TrainingHistoryProgressInsights;
 }) {
-  const insightItems = hasRows
-    ? [
-        {
-          key: "increases",
-          text: formatIncreaseInsight(insights),
-          tone: getIncreaseInsightTone(insights),
-        },
-        {
-          key: "best-progress",
-          text: formatBestProgressInsight(insights.bestProgress),
-          tone: insights.bestProgress ? "positive" : "neutral",
-        },
-        {
-          key: "needs-attention",
-          text: formatNeedsAttentionInsight(insights.needsAttention),
-          tone: insights.needsAttention ? "regression" : "neutral",
-        },
-        ...(insights.pushPullBalance
-          ? [
-              {
-                key: "push-pull-balance",
-                text: formatPushPullBalanceInsight(insights.pushPullBalance),
-                tone:
-                  insights.pushPullBalance.leadingPatternGroup === "even" ? "positive" : "neutral",
-              },
-            ]
-          : []),
-      ]
-    : [];
+  const insightItems = hasRows ? createTrainingProgressInsightItems(insights) : [];
 
   return (
     <aside className="training-history-insights" aria-labelledby="training-history-insights-title">
@@ -389,6 +369,38 @@ function TrainingProgressInsightsPanel({
       )}
     </aside>
   );
+}
+
+function createTrainingProgressInsightItems(
+  insights: TrainingHistoryProgressInsights,
+): TrainingProgressInsightItem[] {
+  const items: TrainingProgressInsightItem[] = [
+    {
+      key: "increases",
+      text: formatIncreaseInsight(insights),
+      tone: getIncreaseInsightTone(insights),
+    },
+    {
+      key: "best-progress",
+      text: formatBestProgressInsight(insights.bestProgress),
+      tone: insights.bestProgress ? "positive" : "neutral",
+    },
+    {
+      key: "needs-attention",
+      text: formatNeedsAttentionInsight(insights.needsAttention),
+      tone: insights.needsAttention ? "regression" : "neutral",
+    },
+  ];
+
+  if (insights.pushPullBalance) {
+    items.push({
+      key: "push-pull-balance",
+      text: formatPushPullBalanceInsight(insights.pushPullBalance),
+      tone: getPushPullBalanceInsightTone(insights.pushPullBalance),
+    });
+  }
+
+  return items;
 }
 
 function WeeklyMovementVolumeTable({
@@ -581,10 +593,22 @@ function formatPushPullBalanceInsight(balance: TrainingHistoryPushPullBalanceIns
   return `${leadingLabel} volume led ${trailingPatternGroup} volume by ${formatWeight(balance.deltaVolume)} kg this week.`;
 }
 
-function getIncreaseInsightTone(insights: TrainingHistoryProgressInsights): "neutral" | "positive" {
+function getIncreaseInsightTone(
+  insights: TrainingHistoryProgressInsights,
+): TrainingProgressInsightTone {
   return insights.increasedMovementPatternCount > 0 || insights.newMovementPatternCount > 0
     ? "positive"
     : "neutral";
+}
+
+function getPushPullBalanceInsightTone(
+  balance: TrainingHistoryPushPullBalanceInsight,
+): TrainingProgressInsightTone {
+  if (balance.leadingPatternGroup === "even") {
+    return "positive";
+  }
+
+  return "neutral";
 }
 
 function formatInsightCount(value: number, noun: string): string {
