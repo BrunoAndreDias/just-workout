@@ -51,14 +51,40 @@ export type TrainingHistoryMovementPatternComparison = {
   relativeVolumePercentage: number;
 };
 
+export type TrainingHistoryPushPullBalanceInsight = {
+  deltaVolume: number;
+  leadingPatternGroup: "even" | "pull" | "push";
+  pullVolume: number;
+  pushVolume: number;
+};
+
+export type TrainingHistoryProgressInsights = {
+  bestProgress: TrainingHistoryMovementPatternComparison | null;
+  increasedMovementPatternCount: number;
+  needsAttention: TrainingHistoryMovementPatternComparison | null;
+  newMovementPatternCount: number;
+  pushPullBalance: TrainingHistoryPushPullBalanceInsight | null;
+};
+
 export type TrainingHistoryWeekReport = {
   movementPatternComparisons: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
   nextWeekEndKey: string | null;
   previousWeekEndKey: string | null;
+  progressInsights: TrainingHistoryProgressInsights;
   selectedSessions: ReadonlyArray<TrainingSession>;
   selectedWeek: TrainingHistoryWeek | null;
   summary: TrainingHistoryWeekSummary;
 };
+
+const pushMovementPatterns = new Set<TrainingSessionMovementPattern>([
+  "horizontal_push",
+  "vertical_push",
+]);
+
+const pullMovementPatterns = new Set<TrainingSessionMovementPattern>([
+  "horizontal_pull",
+  "vertical_pull",
+]);
 
 export function buildTrainingHistoryWeekReport({
   selectedWeekEndKey,
@@ -90,14 +116,16 @@ export function buildTrainingHistoryWeekReport({
   );
   const selectedMetrics = summarizeTrainingSessions(selectedSessions);
   const previousMetrics = summarizeTrainingSessions(previousSessions);
+  const movementPatternComparisons = createMovementPatternComparisons(
+    selectedMetrics.volumeByMovementPattern,
+    previousMetrics.volumeByMovementPattern,
+  );
 
   return {
-    movementPatternComparisons: createMovementPatternComparisons(
-      selectedMetrics.volumeByMovementPattern,
-      previousMetrics.volumeByMovementPattern,
-    ),
+    movementPatternComparisons,
     nextWeekEndKey: getNextWeekEndKey(selectedWeek, dateRange.latestSessionDay),
     previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, dateRange.oldestSessionDay),
+    progressInsights: createTrainingHistoryProgressInsights(movementPatternComparisons),
     selectedSessions,
     selectedWeek,
     summary: createTrainingHistoryWeekSummary(
@@ -142,6 +170,7 @@ function createEmptyTrainingHistoryWeekReport(
     movementPatternComparisons: [],
     nextWeekEndKey: null,
     previousWeekEndKey: null,
+    progressInsights: createEmptyTrainingHistoryProgressInsights(),
     selectedSessions: [],
     selectedWeek: null,
     summary: {
@@ -151,6 +180,16 @@ function createEmptyTrainingHistoryWeekReport(
       progressPercentage: null,
       totalVolume: 0,
     },
+  };
+}
+
+function createEmptyTrainingHistoryProgressInsights(): TrainingHistoryProgressInsights {
+  return {
+    bestProgress: null,
+    increasedMovementPatternCount: 0,
+    needsAttention: null,
+    newMovementPatternCount: 0,
+    pushPullBalance: null,
   };
 }
 
@@ -290,6 +329,93 @@ function compareMovementPatternComparisons(
     secondRow.previousVolume - firstRow.previousVolume ||
     firstRow.movementPatternLabel.localeCompare(secondRow.movementPatternLabel)
   );
+}
+
+function createTrainingHistoryProgressInsights(
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>,
+): TrainingHistoryProgressInsights {
+  const bestProgress = getBestProgress(rows);
+  const needsAttention = getNeedsAttention(rows);
+
+  return {
+    bestProgress,
+    increasedMovementPatternCount: rows.filter((row) => row.change === "increase").length,
+    needsAttention,
+    newMovementPatternCount: rows.filter((row) => row.change === "new").length,
+    pushPullBalance: createPushPullBalanceInsight(rows),
+  };
+}
+
+function getBestProgress(
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>,
+): TrainingHistoryMovementPatternComparison | null {
+  const progressRows = rows.filter((row) => row.deltaVolume > 0);
+
+  if (progressRows.length === 0) {
+    return null;
+  }
+
+  const [bestProgress] = [...progressRows].sort(
+    (firstRow, secondRow) =>
+      secondRow.deltaVolume - firstRow.deltaVolume ||
+      secondRow.currentVolume - firstRow.currentVolume ||
+      firstRow.movementPatternLabel.localeCompare(secondRow.movementPatternLabel),
+  );
+
+  return bestProgress ?? null;
+}
+
+function getNeedsAttention(
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>,
+): TrainingHistoryMovementPatternComparison | null {
+  const regressionRows = rows.filter((row) => row.deltaVolume < 0);
+
+  if (regressionRows.length === 0) {
+    return null;
+  }
+
+  const [needsAttention] = [...regressionRows].sort(
+    (firstRow, secondRow) =>
+      firstRow.deltaVolume - secondRow.deltaVolume ||
+      secondRow.previousVolume - firstRow.previousVolume ||
+      firstRow.movementPatternLabel.localeCompare(secondRow.movementPatternLabel),
+  );
+
+  return needsAttention ?? null;
+}
+
+function createPushPullBalanceInsight(
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>,
+): TrainingHistoryPushPullBalanceInsight | null {
+  const pushRows = rows.filter((row) => pushMovementPatterns.has(row.movementPattern));
+  const pullRows = rows.filter((row) => pullMovementPatterns.has(row.movementPattern));
+
+  if (pushRows.length === 0 || pullRows.length === 0) {
+    return null;
+  }
+
+  const pushVolume = pushRows.reduce((total, row) => total + row.currentVolume, 0);
+  const pullVolume = pullRows.reduce((total, row) => total + row.currentVolume, 0);
+
+  if (pushVolume <= 0 && pullVolume <= 0) {
+    return null;
+  }
+
+  if (pushVolume === pullVolume) {
+    return {
+      deltaVolume: 0,
+      leadingPatternGroup: "even",
+      pullVolume,
+      pushVolume,
+    };
+  }
+
+  return {
+    deltaVolume: Math.abs(pushVolume - pullVolume),
+    leadingPatternGroup: pushVolume > pullVolume ? "push" : "pull",
+    pullVolume,
+    pushVolume,
+  };
 }
 
 function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionExerciseSummary {

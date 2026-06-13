@@ -1193,6 +1193,13 @@
   gap: 0.875rem;
 }
 
+.training-history-comparison__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .training-history-comparison-table-scroll {
   overflow-x: auto;
 }
@@ -1322,6 +1329,7 @@
 }
 
 .training-history-section-heading h2,
+.training-history-section-heading h3,
 .training-history-list h2,
 .training-history-report h2 {
   margin: 0;
@@ -1345,6 +1353,49 @@
   height: 1.125rem;
   color: #007780;
   stroke-width: 2;
+}
+
+.training-history-section-heading--compact {
+  margin-bottom: 0.625rem;
+}
+
+.training-history-insights {
+  min-width: 0;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.training-history-insights__list {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-history-insights__item {
+  border-radius: 0.625rem;
+  padding: 0.75rem 0.8125rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.training-history-insights__item--positive {
+  color: #075d63;
+  background: rgba(0, 119, 128, 0.08);
+}
+
+.training-history-insights__item--regression {
+  color: #8c5a15;
+  background: rgba(191, 140, 54, 0.13);
+}
+
+.training-history-insights__item--neutral {
+  color: #4f5b60;
+  background: rgba(88, 101, 106, 0.1);
 }
 
 .training-history-volume-table {
@@ -1492,6 +1543,10 @@
 
   .training-history-summary-strip > div:nth-child(n + 3) {
     border-top: 1px solid rgba(28, 25, 23, 0.08);
+  }
+
+  .training-history-comparison__body {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

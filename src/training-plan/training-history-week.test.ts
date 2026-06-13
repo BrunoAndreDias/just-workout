@@ -77,6 +77,18 @@ describe("buildTrainingHistoryWeekReport", () => {
         relativeVolumePercentage: 0,
       }),
     );
+    expect(report.progressInsights).toEqual({
+      bestProgress: comparisonByPattern.get("vertical_push"),
+      increasedMovementPatternCount: 1,
+      needsAttention: comparisonByPattern.get("vertical_pull"),
+      newMovementPatternCount: 1,
+      pushPullBalance: {
+        deltaVolume: 1150,
+        leadingPatternGroup: "push",
+        pullVolume: 400,
+        pushVolume: 1550,
+      },
+    });
   });
 });
 

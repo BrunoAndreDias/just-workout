@@ -5,6 +5,8 @@ import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
   type TrainingHistoryMovementPatternComparison,
+  type TrainingHistoryProgressInsights,
+  type TrainingHistoryPushPullBalanceInsight,
   type TrainingHistoryWeekReport,
   type TrainingHistoryWeekSummary,
 } from "./training-history-week";
@@ -137,6 +139,7 @@ function TrainingWeekSection({
       <TrainingWeekSummaryStrip summary={trainingWeekReport.summary} />
       <WeeklyMovementVolumeReport
         emptyMessage="Complete a Training Session to build a weekly report."
+        insights={trainingWeekReport.progressInsights}
         rows={trainingWeekReport.movementPatternComparisons}
       />
     </section>
@@ -285,9 +288,11 @@ function SessionReport({ session }: { session: TrainingSession | undefined }) {
 
 function WeeklyMovementVolumeReport({
   emptyMessage,
+  insights,
   rows,
 }: {
   emptyMessage: string;
+  insights: TrainingHistoryProgressInsights;
   rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
 }) {
   return (
@@ -296,11 +301,16 @@ function WeeklyMovementVolumeReport({
       aria-labelledby="training-history-comparison-title"
     >
       <WeeklyMovementVolumeHeading />
-      {rows.length === 0 ? (
-        <p className="training-history-empty">{emptyMessage}</p>
-      ) : (
-        <WeeklyMovementVolumeTable rows={rows} />
-      )}
+      <div className="training-history-comparison__body">
+        <div>
+          {rows.length === 0 ? (
+            <p className="training-history-empty">{emptyMessage}</p>
+          ) : (
+            <WeeklyMovementVolumeTable rows={rows} />
+          )}
+        </div>
+        <TrainingProgressInsightsPanel hasRows={rows.length > 0} insights={insights} />
+      </div>
     </section>
   );
 }
@@ -313,6 +323,71 @@ function WeeklyMovementVolumeHeading() {
         <p>Compare Completed Load Volume against the previous Training Week.</p>
       </div>
     </div>
+  );
+}
+
+function TrainingProgressInsightsPanel({
+  hasRows,
+  insights,
+}: {
+  hasRows: boolean;
+  insights: TrainingHistoryProgressInsights;
+}) {
+  const insightItems = hasRows
+    ? [
+        {
+          key: "increases",
+          text: formatIncreaseInsight(insights),
+          tone: getIncreaseInsightTone(insights),
+        },
+        {
+          key: "best-progress",
+          text: formatBestProgressInsight(insights.bestProgress),
+          tone: insights.bestProgress ? "positive" : "neutral",
+        },
+        {
+          key: "needs-attention",
+          text: formatNeedsAttentionInsight(insights.needsAttention),
+          tone: insights.needsAttention ? "regression" : "neutral",
+        },
+        ...(insights.pushPullBalance
+          ? [
+              {
+                key: "push-pull-balance",
+                text: formatPushPullBalanceInsight(insights.pushPullBalance),
+                tone:
+                  insights.pushPullBalance.leadingPatternGroup === "even" ? "positive" : "neutral",
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  return (
+    <aside className="training-history-insights" aria-labelledby="training-history-insights-title">
+      <div className="training-history-section-heading training-history-section-heading--compact">
+        <div>
+          <h3 id="training-history-insights-title">Progress vs previous week</h3>
+          <p>Interpret the biggest changes instead of scanning another table.</p>
+        </div>
+      </div>
+      {hasRows ? (
+        <ul className="training-history-insights__list">
+          {insightItems.map((item) => (
+            <li
+              className={`training-history-insights__item training-history-insights__item--${item.tone}`}
+              key={item.key}
+            >
+              {item.text}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="training-history-empty">
+          Complete a Training Session to unlock progress insights.
+        </p>
+      )}
+    </aside>
   );
 }
 
@@ -455,6 +530,69 @@ function formatWeightDelta(value: number): string {
   const prefix = value > 0 ? "+" : "-";
 
   return `${prefix}${formatWeight(Math.abs(value))} kg`;
+}
+
+function formatIncreaseInsight(insights: TrainingHistoryProgressInsights): string {
+  const increasedLabel = formatInsightCount(
+    insights.increasedMovementPatternCount,
+    "movement pattern",
+  );
+  const newLabel = formatInsightCount(insights.newMovementPatternCount, "new pattern");
+
+  if (insights.increasedMovementPatternCount > 0 && insights.newMovementPatternCount > 0) {
+    return `${increasedLabel} increased, and ${newLabel} appeared this week.`;
+  }
+
+  if (insights.increasedMovementPatternCount > 0) {
+    return `${increasedLabel} increased versus the previous week.`;
+  }
+
+  if (insights.newMovementPatternCount > 0) {
+    return `No movement patterns increased, and ${newLabel} appeared this week.`;
+  }
+
+  return "No movement patterns increased versus the previous week.";
+}
+
+function formatBestProgressInsight(row: TrainingHistoryMovementPatternComparison | null): string {
+  if (!row) {
+    return "Best progress: No positive volume delta this week.";
+  }
+
+  return `Best progress: ${row.movementPatternLabel} added ${formatWeight(row.deltaVolume)} kg versus the previous week.`;
+}
+
+function formatNeedsAttentionInsight(row: TrainingHistoryMovementPatternComparison | null): string {
+  if (!row) {
+    return "Needs attention: No regressions versus the previous week.";
+  }
+
+  return `Needs attention: ${row.movementPatternLabel} dropped by ${formatWeight(Math.abs(row.deltaVolume))} kg from the previous week.`;
+}
+
+function formatPushPullBalanceInsight(balance: TrainingHistoryPushPullBalanceInsight): string {
+  if (balance.leadingPatternGroup === "even") {
+    return "Push and pull volume were even this week.";
+  }
+
+  const trailingPatternGroup = balance.leadingPatternGroup === "push" ? "pull" : "push";
+  const leadingLabel = capitalizeWord(balance.leadingPatternGroup);
+
+  return `${leadingLabel} volume led ${trailingPatternGroup} volume by ${formatWeight(balance.deltaVolume)} kg this week.`;
+}
+
+function getIncreaseInsightTone(insights: TrainingHistoryProgressInsights): "neutral" | "positive" {
+  return insights.increasedMovementPatternCount > 0 || insights.newMovementPatternCount > 0
+    ? "positive"
+    : "neutral";
+}
+
+function formatInsightCount(value: number, noun: string): string {
+  return `${value} ${noun}${value === 1 ? "" : "s"}`;
+}
+
+function capitalizeWord(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function formatMovementPatternChange(row: TrainingHistoryMovementPatternComparison): string {

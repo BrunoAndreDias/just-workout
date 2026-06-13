@@ -512,6 +512,17 @@ describe("TrainingPlanRoute", () => {
     expect(
       screen.getByRole("row", { name: /Vertical Pull 0 kg -600 kg No volume this week/i }),
     ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Progress vs previous week" })).toBeVisible();
+    expect(
+      screen.getByText("1 movement pattern increased, and 1 new pattern appeared this week."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Best progress: Horizontal Push added 260 kg versus the previous week."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Needs attention: Vertical Pull dropped by 600 kg from the previous week."),
+    ).toBeVisible();
+    expect(screen.getByText("Push volume led pull volume by 660 kg this week.")).toBeVisible();
     expect(screen.getByRole("button", { name: "View Full Body A report" })).toBeVisible();
     expect(screen.getByRole("button", { name: "View Full Body B report" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "View Upper report" })).not.toBeInTheDocument();
