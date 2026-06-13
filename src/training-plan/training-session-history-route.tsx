@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
@@ -22,6 +22,7 @@ const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
 });
 
 const weightFormatter = new Intl.NumberFormat("en-US");
+const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 
 type TrainingProgressInsightTone = "neutral" | "positive" | "regression";
 
@@ -33,6 +34,7 @@ type TrainingProgressInsightItem = {
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
+  const isCompactLayout = useTrainingHistoryCompactLayout();
   const { trainingPlanQuery, trainingSessionsQuery } = useTrainingHistoryData(planId);
   const trainingPlan = trainingPlanQuery.data;
   const trainingSessions = trainingSessionsQuery.data ?? [];
@@ -74,10 +76,12 @@ export function TrainingSessionHistoryRoute() {
       />
       <PageMain className="training-history-layout">
         <TrainingWeekSection
+          isCompactLayout={isCompactLayout}
           trainingWeekReport={trainingWeekReport}
           onSelectWeek={setSelectedWeekEndKey}
         />
         <CompletedSessionsSection
+          isCompactLayout={isCompactLayout}
           selectedSession={selectedSession}
           selectedSessions={selectedSessions}
           onToggleSession={(sessionId) =>
@@ -127,9 +131,11 @@ function useTrainingHistoryData(planId: string | null) {
 }
 
 function TrainingWeekSection({
+  isCompactLayout,
   onSelectWeek,
   trainingWeekReport,
 }: {
+  isCompactLayout: boolean;
   onSelectWeek: (weekEndKey: string | null) => void;
   trainingWeekReport: TrainingHistoryWeekReport;
 }) {
@@ -151,6 +157,7 @@ function TrainingWeekSection({
       <TrainingWeekSummaryStrip summary={trainingWeekReport.summary} />
       <WeeklyMovementVolumeReport
         emptyMessage="Complete a Training Session to build a weekly report."
+        isCompactLayout={isCompactLayout}
         insights={trainingWeekReport.progressInsights}
         rows={trainingWeekReport.movementPatternComparisons}
       />
@@ -217,10 +224,12 @@ function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSum
 }
 
 function CompletedSessionsSection({
+  isCompactLayout,
   onToggleSession,
   selectedSession,
   selectedSessions,
 }: {
+  isCompactLayout: boolean;
   onToggleSession: (sessionId: string) => void;
   selectedSession: TrainingHistorySessionReport | null;
   selectedSessions: ReadonlyArray<TrainingHistorySessionReport>;
@@ -237,6 +246,7 @@ function CompletedSessionsSection({
         <div className="training-history-list__items">
           {selectedSessions.map((session) => (
             <CompletedSessionRow
+              isCompactLayout={isCompactLayout}
               isExpanded={session.id === selectedSession?.id}
               key={session.id}
               session={session}
@@ -254,10 +264,12 @@ function CompletedSessionsSection({
 }
 
 function CompletedSessionRow({
+  isCompactLayout,
   isExpanded,
   onToggleSession,
   session,
 }: {
+  isCompactLayout: boolean;
   isExpanded: boolean;
   onToggleSession: (sessionId: string) => void;
   session: TrainingHistorySessionReport;
@@ -295,12 +307,20 @@ function CompletedSessionRow({
           {isExpanded ? "Hide session" : "View session"}
         </button>
       </div>
-      {isExpanded ? <CompletedSessionDetails session={session} /> : null}
+      {isExpanded ? (
+        <CompletedSessionDetails isCompactLayout={isCompactLayout} session={session} />
+      ) : null}
     </article>
   );
 }
 
-function CompletedSessionDetails({ session }: { session: TrainingHistorySessionReport }) {
+function CompletedSessionDetails({
+  isCompactLayout,
+  session,
+}: {
+  isCompactLayout: boolean;
+  session: TrainingHistorySessionReport;
+}) {
   return (
     <section
       className="training-history-session-details"
@@ -309,22 +329,69 @@ function CompletedSessionDetails({ session }: { session: TrainingHistorySessionR
       {session.loadedSetCount === 0 ? (
         <p className="training-history-empty">No loaded sets recorded for this session.</p>
       ) : null}
-      <table className="training-history-volume-table">
-        <thead>
-          <tr>
-            <th scope="col">Exercise</th>
-            <th scope="col">Movement pattern</th>
-            <th scope="col">Loaded Sets</th>
-            <th scope="col">Completed Load Volume</th>
-          </tr>
-        </thead>
-        <tbody>
-          {session.exercises.map((exercise) => (
-            <CompletedSessionExerciseRow key={exercise.exerciseId} exercise={exercise} />
-          ))}
-        </tbody>
-      </table>
+      {isCompactLayout ? (
+        <CompletedSessionExerciseCards exercises={session.exercises} />
+      ) : (
+        <table className="training-history-volume-table">
+          <thead>
+            <tr>
+              <th scope="col">Exercise</th>
+              <th scope="col">Movement pattern</th>
+              <th scope="col">Loaded Sets</th>
+              <th scope="col">Completed Load Volume</th>
+            </tr>
+          </thead>
+          <tbody>
+            {session.exercises.map((exercise) => (
+              <CompletedSessionExerciseRow key={exercise.exerciseId} exercise={exercise} />
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
+  );
+}
+
+function CompletedSessionExerciseCards({
+  exercises,
+}: {
+  exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>;
+}) {
+  return (
+    <ul className="training-history-session-details-cards">
+      {exercises.map((exercise) => (
+        <CompletedSessionExerciseCard exercise={exercise} key={exercise.exerciseId} />
+      ))}
+    </ul>
+  );
+}
+
+function CompletedSessionExerciseCard({
+  exercise,
+}: {
+  exercise: TrainingHistorySessionExerciseReport;
+}) {
+  return (
+    <li className="training-history-session-detail-card">
+      <dl className="training-history-session-detail-card__metrics">
+        <div>
+          <dt>Exercise</dt>
+          <dd>{exercise.exerciseName}</dd>
+        </div>
+        <div>
+          <dt>Movement pattern</dt>
+          <dd>{exercise.movementPatternLabel}</dd>
+        </div>
+        <div>
+          <dt>Loaded sets</dt>
+          <dd>{formatLoadedSetCount(exercise.loadedSetCount)}</dd>
+        </div>
+        <div>
+          <dt>Completed load volume</dt>
+          <dd>{formatWeight(exercise.completedLoadVolume)} kg</dd>
+        </div>
+      </dl>
+    </li>
   );
 }
 
@@ -345,10 +412,12 @@ function CompletedSessionExerciseRow({
 
 function WeeklyMovementVolumeReport({
   emptyMessage,
+  isCompactLayout,
   insights,
   rows,
 }: {
   emptyMessage: string;
+  isCompactLayout: boolean;
   insights: TrainingHistoryProgressInsights;
   rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
 }) {
@@ -362,6 +431,8 @@ function WeeklyMovementVolumeReport({
         <div>
           {rows.length === 0 ? (
             <p className="training-history-empty">{emptyMessage}</p>
+          ) : isCompactLayout ? (
+            <WeeklyMovementVolumeCards rows={rows} />
           ) : (
             <WeeklyMovementVolumeTable rows={rows} />
           )}
@@ -514,6 +585,61 @@ function WeeklyMovementVolumeTable({
   );
 }
 
+function WeeklyMovementVolumeCards({
+  rows,
+}: {
+  rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
+}) {
+  return (
+    <ul className="training-history-comparison-cards">
+      {rows.map((row) => {
+        const changeTone = getMovementPatternChangeTone(row.change);
+
+        return (
+          <li className="training-history-comparison-card" key={row.movementPattern}>
+            <div className="training-history-comparison-card__header">
+              <div className="training-history-comparison-card__pattern">
+                <span className="training-history-comparison-card__pattern-label">
+                  {row.movementPatternLabel}
+                </span>
+                <span aria-hidden="true" className="training-history-comparison-table__bar-track">
+                  <span
+                    className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${changeTone}`}
+                    style={{ width: `${row.relativeVolumePercentage}%` }}
+                  />
+                </span>
+              </div>
+              <span
+                className={`training-history-comparison-table__chip training-history-comparison-table__chip--${changeTone}`}
+              >
+                {formatMovementPatternChange(row)}
+              </span>
+            </div>
+            <dl className="training-history-comparison-card__metrics">
+              <div>
+                <dt>Current volume</dt>
+                <dd>{formatWeight(row.currentVolume)} kg</dd>
+              </div>
+              <div>
+                <dt>Delta</dt>
+                <dd
+                  className={`training-history-comparison-card__delta training-history-comparison-card__delta--${changeTone}`}
+                >
+                  {formatWeightDelta(row.deltaVolume)}
+                </dd>
+              </div>
+              <div>
+                <dt>Change</dt>
+                <dd>{formatMovementPatternChange(row)}</dd>
+              </div>
+            </dl>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function useTrainingSessionHistoryPlanId(): string | null {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const match = /^\/training-plans\/([^/]+)\/sessions$/.exec(pathname);
@@ -528,6 +654,31 @@ function formatCompletedDate(value: string | null): string {
   }
 
   return completedDateFormatter.format(new Date(value));
+}
+
+function useTrainingHistoryCompactLayout() {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+
+    return window.matchMedia(trainingHistoryCompactLayoutQuery).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(trainingHistoryCompactLayoutQuery);
+    const handleChange = () => setMatches(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return matches;
 }
 
 function formatLoadedSetCount(count: number): string {

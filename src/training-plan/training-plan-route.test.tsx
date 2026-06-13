@@ -10,8 +10,11 @@ import { completeMainCompoundSelections } from "../plan-builder/plan-builder-tes
 import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
 import { generateTrainingPlanFromBlueprint } from "./training-plan";
 
+const defaultMatchMedia = window.matchMedia;
+
 describe("TrainingPlanRoute", () => {
   beforeEach(async () => {
+    restoreDefaultMatchMedia();
     await db.delete();
     await db.open();
   });
@@ -618,6 +621,51 @@ describe("TrainingPlanRoute", () => {
       }),
     ).toBeVisible();
   });
+
+  it("uses compact cards for weekly comparison and expanded session details on small screens", async () => {
+    const user = userEvent.setup();
+    mockTrainingHistoryCompactLayout(true);
+    await seedTrainingPlan();
+    await seedCompletedTrainingSessions();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+
+    const weeklyMovementSection = screen
+      .getByRole("heading", { name: "Weekly movement volume" })
+      .closest("section");
+    const weeklyMovementCards = within(weeklyMovementSection as HTMLElement).getAllByRole(
+      "listitem",
+    );
+
+    expect(weeklyMovementSection).not.toBeNull();
+    expect(
+      within(weeklyMovementSection as HTMLElement).queryByRole("table"),
+    ).not.toBeInTheDocument();
+    expect(weeklyMovementCards.length).toBeGreaterThan(0);
+    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Current volume")).toBeVisible();
+    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Delta")).toBeVisible();
+    expect(within(weeklyMovementCards[0] as HTMLElement).getByText("Change")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
+
+    const sessionDetails = await screen.findByRole("region", {
+      name: "Full Body A session details",
+    });
+    const sessionDetailCards = within(sessionDetails).getAllByRole("listitem");
+
+    expect(within(sessionDetails).queryByRole("table")).not.toBeInTheDocument();
+    expect(sessionDetailCards.length).toBeGreaterThan(0);
+    expect(within(sessionDetailCards[0] as HTMLElement).getByText("Exercise")).toBeVisible();
+    expect(
+      within(sessionDetailCards[0] as HTMLElement).getByText("Movement pattern"),
+    ).toBeVisible();
+    expect(within(sessionDetailCards[0] as HTMLElement).getByText("Loaded sets")).toBeVisible();
+    expect(
+      within(sessionDetailCards[0] as HTMLElement).getByText("Completed load volume"),
+    ).toBeVisible();
+  });
 });
 
 async function seedTrainingPlan(
@@ -855,6 +903,31 @@ function renderTrainingPlan({ initialEntries }: { initialEntries: Array<string> 
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+}
+
+function mockTrainingHistoryCompactLayout(isCompactLayout: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
+      matches: query.includes("720px") ? isCompactLayout : false,
+      media: query,
+      onchange: null,
+      removeEventListener: () => {},
+      removeListener: () => {},
+    }),
+    writable: true,
+  });
+}
+
+function restoreDefaultMatchMedia() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: defaultMatchMedia,
+    writable: true,
+  });
 }
 
 function createCompleteBlueprint({
