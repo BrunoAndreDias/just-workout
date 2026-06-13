@@ -177,16 +177,16 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("heading", { name: "Training schedule" })).toBeVisible();
     expect(await screen.findByRole("region", { name: /plan builder workspace/i })).toBeVisible();
     expect(screen.getByRole("link", { name: /just workout/i })).toBeVisible();
-    expect(await screen.findByText("Build muscle")).toBeVisible();
-    expect(await screen.findAllByText("3 days/week")).toHaveLength(1);
     expect(within(summary).getByRole("heading", { name: "Plan blueprint" })).toBeVisible();
-    expect(within(summary).getByText("Draft")).toBeVisible();
-    expectBlueprintSummaryField(summary, "Goal", "Build muscle");
-    expectBlueprintSummaryField(summary, "Frequency", "3 days/week");
-    expectBlueprintSummaryField(summary, "Split", "Pending");
-    expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
-    expect(within(summary).queryByText("Experience")).not.toBeInTheDocument();
-    expect(within(summary).queryByText("Generation status")).not.toBeInTheDocument();
+    expectBlueprintSummaryBadge(summary, "Draft");
+    await waitFor(() => {
+      expectBlueprintSummaryField(summary, "Goal", "Build muscle");
+      expectBlueprintSummaryField(summary, "Frequency", "3 days/week");
+      expectBlueprintSummaryField(summary, "Split", "Pending");
+      expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
+      expectBlueprintSummaryValueAbsent(summary, "Experience");
+      expectBlueprintSummaryValueAbsent(summary, "Generation status");
+    });
   });
 
   it("renders the Training Frequency step in the blueprint builder layout", async () => {
@@ -208,6 +208,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(stepList).getByText("Generate")).toBeVisible();
 
     const frequencyGroup = await screen.findByRole("group", { name: /training frequency/i });
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     expect(within(frequencyGroup).getByRole("radio", { name: /3 days per week/i })).toBeChecked();
     expect(within(frequencyGroup).queryByText("Full Body A/B")).not.toBeInTheDocument();
@@ -218,7 +219,7 @@ describe("PlanBuilderRoute", () => {
     expect(screen.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
     expect(screen.getByText("Selected weekly layout")).toBeVisible();
     expect(screen.getByText("Alternating Full Body A/B")).toBeVisible();
-    expect(screen.getByText("Upper / Lower / Full Body")).toBeVisible();
+    expect(within(splitGroup).getByText("Upper / Lower / Full Body")).toBeVisible();
     expect(
       screen.queryByText(/6-day plans are not available in this first version/i),
     ).not.toBeInTheDocument();
@@ -226,10 +227,10 @@ describe("PlanBuilderRoute", () => {
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expect(within(summary).getByRole("heading", { name: "Plan blueprint" })).toBeVisible();
-    expect(within(summary).getByText("Goal")).toBeVisible();
-    expect(within(summary).getByText("Build muscle")).toBeVisible();
-    expect(within(summary).getByText("Frequency")).toBeVisible();
-    expect(within(summary).getByText("3 days/week")).toBeVisible();
+    expectBlueprintSummaryLabel(summary, "Goal");
+    expectBlueprintSummaryValue(summary, "Build muscle");
+    expectBlueprintSummaryLabel(summary, "Frequency");
+    expectBlueprintSummaryValue(summary, "3 days/week");
     expectBlueprintSummaryField(summary, "Split", "Pending");
     expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
     expect(screen.getByRole("button", { name: /^back$/i })).toBeDisabled();
@@ -266,7 +267,7 @@ describe("PlanBuilderRoute", () => {
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     await waitFor(() => {
-      expect(within(summary).getAllByText("5 days/week")).toHaveLength(1);
+      expectBlueprintSummaryField(summary, "Frequency", "5 days/week");
     });
 
     expect(screen.getByRole("heading", { name: "Rotating Push/Pull/Legs" })).toBeVisible();
@@ -283,11 +284,11 @@ describe("PlanBuilderRoute", () => {
         within(resumedFrequencyGroup).getByRole("radio", { name: /5 days per week/i }),
       ).toBeChecked();
     });
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "5 days/week",
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Frequency",
+      "5 days/week",
+    );
   });
 
   it("defaults 4 days/week to 4-Day Upper/Lower and lets the user switch to Rotating Push/Pull/Legs", async () => {
@@ -351,7 +352,7 @@ describe("PlanBuilderRoute", () => {
       ).toBeChecked();
     });
 
-    expect(within(summary).queryByText("4-Day Upper/Lower")).not.toBeInTheDocument();
+    expectBlueprintSummaryValueAbsent(summary, "4-Day Upper/Lower");
   });
 
   it("confirms Training schedule before navigating from Frequency to Rep ranges", async () => {
@@ -378,12 +379,13 @@ describe("PlanBuilderRoute", () => {
   it("lets the user choose another compatible split from Training schedule before continuing", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
+    const splitGroup = await getTrainingScheduleSplitSection();
 
     expect(
       await screen.findByRole("radio", { name: getLabelMatcher(trainingSplitLabels.fullBody3Day) }),
     ).toBeChecked();
 
-    await user.click(screen.getByText(trainingSplitLabels.upperLowerFullBody));
+    await user.click(within(splitGroup).getByText(trainingSplitLabels.upperLowerFullBody));
 
     await waitFor(() => {
       expect(
@@ -427,11 +429,11 @@ describe("PlanBuilderRoute", () => {
     expect(within(repRangeGroup).getByText(repRangeStyleLabels.controlledHigherReps)).toBeVisible();
     expect(within(repRangeGroup).getAllByText("Recommended")).toHaveLength(1);
     expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        repRangeStyleLabels.balancedHypertrophy,
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Rep ranges",
+      repRangeStyleLabels.balancedHypertrophy,
+    );
 
     await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.strengthLeaning));
 
@@ -443,11 +445,11 @@ describe("PlanBuilderRoute", () => {
         "strength_leaning",
       );
     });
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        repRangeStyleLabels.strengthLeaning,
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Rep ranges",
+      repRangeStyleLabels.strengthLeaning,
+    );
   });
 
   it("persists Balanced hypertrophy as the Recommended Default when Rep ranges opens without a saved selection", async () => {
@@ -464,7 +466,7 @@ describe("PlanBuilderRoute", () => {
         repRanges: "balanced_hypertrophy",
       });
     });
-    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
+    expectBlueprintSummaryField(summary, "Rep ranges", repRangeStyleLabels.balancedHypertrophy);
   });
 
   it("redirects direct access to Rep ranges back to Training schedule when no compatible Training Split is saved", async () => {
@@ -476,11 +478,11 @@ describe("PlanBuilderRoute", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
     });
     expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        "4 days/week",
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Frequency",
+      "4 days/week",
+    );
   });
 
   it("confirms Rep ranges before navigating from Rep ranges to Volume", async () => {
@@ -1262,7 +1264,7 @@ describe("PlanBuilderRoute", () => {
     });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
-    expect(within(summary).getByText("Balanced")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Balanced");
   });
 
   it("continues from Rep ranges into the Volume step without redundant explanatory copy", async () => {
@@ -1450,7 +1452,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(chestRow).getByText("8-12 sets/week")).toBeVisible();
     expect(within(shouldersRow).getByText("45 reps/week")).toBeVisible();
     expect(within(shouldersRow).getByText("4-6 sets/week")).toBeVisible();
-    expect(within(summary).getByText("Balanced")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Balanced");
 
     await user.click(within(volumePresetGroup).getByText("Conservative"));
 
@@ -1461,7 +1463,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(chestRow).getByText("5-8 sets/week")).toBeVisible();
     expect(within(shouldersRow).getByText("30 reps/week")).toBeVisible();
     expect(within(shouldersRow).getByText("3-4 sets/week")).toBeVisible();
-    expect(within(summary).getByText("Conservative")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Conservative");
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
         volumePreset: "conservative",
@@ -1480,7 +1482,7 @@ describe("PlanBuilderRoute", () => {
     expect(within(chestRow).getByText("10-15 sets/week")).toBeVisible();
     expect(within(shouldersRow).getByText("60 reps/week")).toBeVisible();
     expect(within(shouldersRow).getByText("5-8 sets/week")).toBeVisible();
-    expect(within(summary).getByText("Higher volume")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Higher volume");
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
         volumePreset: "higher_volume",
@@ -1730,8 +1732,8 @@ describe("PlanBuilderRoute", () => {
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
     expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
-    expect(within(summary).getByText(trainingSplitLabels.rotatingPushPullLegs)).toBeVisible();
-    expect(within(summary).getByText("Higher volume")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Split", trainingSplitLabels.rotatingPushPullLegs);
+    expectBlueprintSummaryField(summary, "Volume preset", "Higher volume");
 
     guardedExercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
@@ -1795,7 +1797,7 @@ describe("PlanBuilderRoute", () => {
     expect(volumeView).toBeVisible();
     expect(within(chestRow).getByText("120 reps/week")).toBeVisible();
     expect(within(chestRow).getByText("8-12 sets/week")).toBeVisible();
-    expect(within(summary).getByText("Higher volume")).toBeVisible();
+    expectBlueprintSummaryField(summary, "Volume preset", "Higher volume");
 
     guardedExercisesView.unmount();
 
@@ -1994,7 +1996,7 @@ describe("PlanBuilderRoute", () => {
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
-    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
+    expectBlueprintSummaryField(summary, "Rep ranges", repRangeStyleLabels.balancedHypertrophy);
 
     await user.click(within(repRangeGroup).getByText(repRangeStyleLabels.balancedHypertrophy));
 
@@ -2003,7 +2005,7 @@ describe("PlanBuilderRoute", () => {
         "balanced_hypertrophy",
       );
     });
-    expect(within(summary).getByText(repRangeStyleLabels.balancedHypertrophy)).toBeVisible();
+    expectBlueprintSummaryField(summary, "Rep ranges", repRangeStyleLabels.balancedHypertrophy);
   });
 
   it("shows a single active Rep Range Style card and moves it when the choice changes", async () => {
@@ -2046,11 +2048,11 @@ describe("PlanBuilderRoute", () => {
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
 
     expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        repRangeStyleLabels.controlledHigherReps,
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Rep ranges",
+      repRangeStyleLabels.controlledHigherReps,
+    );
     expect(
       within(repRangeGroup).getByRole("radio", { name: /balanced hypertrophy/i }),
     ).not.toBeChecked();
@@ -2061,11 +2063,11 @@ describe("PlanBuilderRoute", () => {
     const resumedRepRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
 
     expectRepRangeStyleChecked(resumedRepRangeGroup, repRangeStyleLabels.controlledHigherReps);
-    expect(
-      within(screen.getByRole("complementary", { name: /plan blueprint summary/i })).getByText(
-        repRangeStyleLabels.controlledHigherReps,
-      ),
-    ).toBeVisible();
+    expectBlueprintSummaryField(
+      screen.getByRole("complementary", { name: /plan blueprint summary/i }),
+      "Rep ranges",
+      repRangeStyleLabels.controlledHigherReps,
+    );
   });
 
   it("shows data-driven Rep Range Style notes and targets without rendering advanced programming controls", async () => {
@@ -2306,9 +2308,7 @@ describe("PlanBuilderRoute", () => {
 
     await expectTrainingFrequencyChecked(resumedFrequencyGroup, 3);
     await expectPersistedTrainingSplit(null);
-    expect(
-      within(summary).queryByText(trainingSplitLabels.rotatingPushPullLegs),
-    ).not.toBeInTheDocument();
+    expectBlueprintSummaryValueAbsent(summary, trainingSplitLabels.rotatingPushPullLegs);
     expectBlueprintSummaryField(summary, "Split", "Pending");
 
     const resumedSplitGroup = await getTrainingScheduleSplitSection();
@@ -2484,7 +2484,7 @@ async function expectGenerateStepComingNext() {
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {
-  const labelNode = within(summary).getByText(label);
+  const labelNode = within(getBlueprintSummaryFields(summary)).getByText(label);
   const fieldNode = labelNode.closest("div");
 
   if (!fieldNode) {
@@ -2492,6 +2492,42 @@ function expectBlueprintSummaryField(summary: HTMLElement, label: string, value:
   }
 
   expect(within(fieldNode).getByText(value)).toBeVisible();
+}
+
+function expectBlueprintSummaryBadge(summary: HTMLElement, value: string) {
+  expect(within(getBlueprintSummaryTitle(summary)).getByText(value)).toBeVisible();
+}
+
+function expectBlueprintSummaryLabel(summary: HTMLElement, label: string) {
+  expect(within(getBlueprintSummaryFields(summary)).getByText(label)).toBeVisible();
+}
+
+function expectBlueprintSummaryValue(summary: HTMLElement, value: string) {
+  expect(within(getBlueprintSummaryFields(summary)).getByText(value)).toBeVisible();
+}
+
+function expectBlueprintSummaryValueAbsent(summary: HTMLElement, value: string) {
+  expect(within(getBlueprintSummaryFields(summary)).queryByText(value)).not.toBeInTheDocument();
+}
+
+function getBlueprintSummaryFields(summary: HTMLElement) {
+  const fields = summary.querySelector(".plan-blueprint-header__fields");
+
+  if (!(fields instanceof HTMLElement)) {
+    throw new Error("Plan Blueprint summary fields were not found.");
+  }
+
+  return fields;
+}
+
+function getBlueprintSummaryTitle(summary: HTMLElement) {
+  const title = summary.querySelector(".plan-blueprint-header__title");
+
+  if (!(title instanceof HTMLElement)) {
+    throw new Error("Plan Blueprint summary title was not found.");
+  }
+
+  return title;
 }
 
 async function saveConfirmedFourDayTrainingFrequency() {
