@@ -78,6 +78,59 @@ describe("buildTrainingHistoryWeekReport", () => {
       }),
     );
   });
+
+  it("keeps bodyweight-only exercises visible in selected session summaries without counting loaded work", () => {
+    const trainingPlan = createTrainingPlan();
+    const trainingSessions: ReadonlyArray<TrainingSession> = [
+      {
+        completedAt: "2026-06-06T09:00:00.000Z",
+        createdAt: "2026-06-06T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+          },
+        ],
+        id: "bodyweight-session",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        updatedAt: "2026-06-06T09:00:00.000Z",
+        volumeByMovementPattern: [],
+      },
+    ];
+
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan,
+      trainingSessions,
+    });
+
+    expect(report.summary.loadedSetCount).toBe(0);
+    expect(report.summary.totalVolume).toBe(0);
+    expect(report.selectedSessions).toEqual([
+      {
+        completedAt: "2026-06-06T09:00:00.000Z",
+        completedLoadVolume: 0,
+        exercises: [
+          {
+            completedLoadVolume: 0,
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            loadedSetCount: 0,
+            movementPattern: "vertical_pull",
+            movementPatternLabel: "Vertical Pull",
+          },
+        ],
+        id: "bodyweight-session",
+        loadedSetCount: 0,
+        templateLabel: "Full Body A",
+      },
+    ]);
+  });
 });
 
 function createTrainingPlan(): TrainingPlan {

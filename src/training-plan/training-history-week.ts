@@ -26,10 +26,30 @@ type TrainingSessionExercise = TrainingSession["exercises"][number];
 type TrainingSessionMovementPattern = TrainingSessionMovementVolume["movementPattern"];
 
 type TrainingSessionExerciseSummary = {
+  exerciseId: string;
+  exerciseName: string;
   loadedSetCount: number;
   movementPattern: TrainingSessionMovementPattern;
   movementPatternLabel: string;
   totalVolume: number;
+};
+
+export type TrainingHistorySessionExerciseReport = {
+  completedLoadVolume: number;
+  exerciseId: string;
+  exerciseName: string;
+  loadedSetCount: number;
+  movementPattern: TrainingSessionMovementPattern;
+  movementPatternLabel: string;
+};
+
+export type TrainingHistorySessionReport = {
+  completedAt: string;
+  completedLoadVolume: number;
+  exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>;
+  id: string;
+  loadedSetCount: number;
+  templateLabel: string;
 };
 
 export type TrainingHistoryWeekSummary = {
@@ -55,7 +75,7 @@ export type TrainingHistoryWeekReport = {
   movementPatternComparisons: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
   nextWeekEndKey: string | null;
   previousWeekEndKey: string | null;
-  selectedSessions: ReadonlyArray<TrainingSession>;
+  selectedSessions: ReadonlyArray<TrainingHistorySessionReport>;
   selectedWeek: TrainingHistoryWeek | null;
   summary: TrainingHistoryWeekSummary;
 };
@@ -82,13 +102,13 @@ export function buildTrainingHistoryWeekReport({
     selectedWeekEndKey,
   });
   const previousWeek = createTrainingHistoryWeek(addUtcDays(selectedWeek.end, -7));
-  const selectedSessions = completedSessions.filter((session) =>
+  const selectedTrainingSessions = completedSessions.filter((session) =>
     isSessionInWeek(session, selectedWeek),
   );
   const previousSessions = completedSessions.filter((session) =>
     isSessionInWeek(session, previousWeek),
   );
-  const selectedMetrics = summarizeTrainingSessions(selectedSessions);
+  const selectedMetrics = summarizeTrainingSessions(selectedTrainingSessions);
   const previousMetrics = summarizeTrainingSessions(previousSessions);
 
   return {
@@ -98,11 +118,11 @@ export function buildTrainingHistoryWeekReport({
     ),
     nextWeekEndKey: getNextWeekEndKey(selectedWeek, dateRange.latestSessionDay),
     previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, dateRange.oldestSessionDay),
-    selectedSessions,
+    selectedSessions: selectedTrainingSessions.map(createTrainingHistorySessionReport),
     selectedWeek,
     summary: createTrainingHistoryWeekSummary(
       trainingPlan,
-      selectedSessions,
+      selectedTrainingSessions,
       selectedMetrics,
       previousMetrics,
     ),
@@ -306,10 +326,45 @@ function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionEx
   }
 
   return {
+    exerciseId: exercise.exerciseId,
+    exerciseName: exercise.exerciseName,
     loadedSetCount,
     movementPattern: exercise.movementPattern,
     movementPatternLabel: formatSessionMovementPattern(exercise.movementPattern),
     totalVolume,
+  };
+}
+
+function createTrainingHistorySessionReport(
+  trainingSession: CompletedTrainingSession,
+): TrainingHistorySessionReport {
+  const exercises = trainingSession.exercises.map(createTrainingHistorySessionExerciseReport);
+
+  return {
+    completedAt: trainingSession.completedAt,
+    completedLoadVolume: exercises.reduce(
+      (total, exercise) => total + exercise.completedLoadVolume,
+      0,
+    ),
+    exercises,
+    id: trainingSession.id,
+    loadedSetCount: exercises.reduce((total, exercise) => total + exercise.loadedSetCount, 0),
+    templateLabel: trainingSession.templateLabel,
+  };
+}
+
+function createTrainingHistorySessionExerciseReport(
+  exercise: TrainingSessionExercise,
+): TrainingHistorySessionExerciseReport {
+  const summary = summarizeExercise(exercise);
+
+  return {
+    completedLoadVolume: summary.totalVolume,
+    exerciseId: summary.exerciseId,
+    exerciseName: summary.exerciseName,
+    loadedSetCount: summary.loadedSetCount,
+    movementPattern: summary.movementPattern,
+    movementPatternLabel: summary.movementPatternLabel,
   };
 }
 

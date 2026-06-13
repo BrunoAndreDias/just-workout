@@ -5,11 +5,12 @@ import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
   type TrainingHistoryMovementPatternComparison,
+  type TrainingHistorySessionExerciseReport,
+  type TrainingHistorySessionReport,
   type TrainingHistoryWeekReport,
   type TrainingHistoryWeekSummary,
 } from "./training-history-week";
 import { trainingPlanService } from "./training-plan-service";
-import type { TrainingSession, TrainingSessionMovementVolume } from "./training-session";
 
 const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
@@ -53,7 +54,7 @@ export function TrainingSessionHistoryRoute() {
 
   const selectedSessions = trainingWeekReport.selectedSessions;
   const selectedSession =
-    selectedSessions.find((session) => session.id === selectedSessionId) ?? selectedSessions[0];
+    selectedSessions.find((session) => session.id === selectedSessionId) ?? null;
 
   return (
     <section className="training-history-page" aria-label="Training history">
@@ -69,9 +70,12 @@ export function TrainingSessionHistoryRoute() {
         <CompletedSessionsSection
           selectedSession={selectedSession}
           selectedSessions={selectedSessions}
-          onSelectSession={setSelectedSessionId}
+          onToggleSession={(sessionId) =>
+            setSelectedSessionId((currentSessionId) =>
+              currentSessionId === sessionId ? null : sessionId,
+            )
+          }
         />
-        <SessionReport session={selectedSession} />
       </PageMain>
     </section>
   );
@@ -202,38 +206,31 @@ function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSum
 }
 
 function CompletedSessionsSection({
-  onSelectSession,
+  onToggleSession,
   selectedSession,
   selectedSessions,
 }: {
-  onSelectSession: (sessionId: string) => void;
-  selectedSession: TrainingSession | undefined;
-  selectedSessions: ReadonlyArray<TrainingSession>;
+  onToggleSession: (sessionId: string) => void;
+  selectedSession: TrainingHistorySessionReport | null;
+  selectedSessions: ReadonlyArray<TrainingHistorySessionReport>;
 }) {
   return (
     <section className="training-history-list" aria-labelledby="training-history-list-title">
-      <h2 id="training-history-list-title">Completed sessions</h2>
+      <div className="training-history-section-heading">
+        <div>
+          <h2 id="training-history-list-title">Completed sessions</h2>
+          <p>Open a completed Training Session only when you need session-level detail.</p>
+        </div>
+      </div>
       {selectedSessions.length > 0 ? (
         <div className="training-history-list__items">
           {selectedSessions.map((session) => (
-            <button
-              aria-label={`View ${session.templateLabel} report`}
-              aria-pressed={session.id === selectedSession?.id}
-              className="training-history-session-button"
+            <CompletedSessionRow
+              isExpanded={session.id === selectedSession?.id}
               key={session.id}
-              onClick={() => onSelectSession(session.id)}
-              type="button"
-            >
-              <span>
-                <strong>{session.templateLabel}</strong>
-                <small className="training-history-session-button__date">
-                  {formatCompletedDate(session.completedAt)}
-                </small>
-              </span>
-              <span className="training-history-session-button__action">
-                View {session.templateLabel} report
-              </span>
-            </button>
+              session={session}
+              onToggleSession={onToggleSession}
+            />
           ))}
         </div>
       ) : (
@@ -245,41 +242,93 @@ function CompletedSessionsSection({
   );
 }
 
-function SessionReport({ session }: { session: TrainingSession | undefined }) {
-  if (!session) {
-    return (
-      <section className="training-history-report" aria-labelledby="training-history-report-title">
-        <h2 id="training-history-report-title">Session report</h2>
-        <p className="training-history-empty">
-          Select or complete a Training Session to see a report.
-        </p>
-      </section>
-    );
-  }
+function CompletedSessionRow({
+  isExpanded,
+  onToggleSession,
+  session,
+}: {
+  isExpanded: boolean;
+  onToggleSession: (sessionId: string) => void;
+  session: TrainingHistorySessionReport;
+}) {
+  const actionLabel = isExpanded
+    ? `Hide session ${session.templateLabel}`
+    : `View session ${session.templateLabel}`;
 
   return (
-    <section className="training-history-report" aria-labelledby="training-history-report-title">
-      <div className="training-history-section-heading">
-        <div>
-          <h2 id="training-history-report-title">{session.templateLabel} report</h2>
-          <p>Completed {formatCompletedDate(session.completedAt)}</p>
+    <article className="training-history-session-row">
+      <div className="training-history-session-row__summary">
+        <div className="training-history-session-row__identity">
+          <strong>{session.templateLabel}</strong>
+          <small className="training-history-session-row__date">
+            {formatCompletedDate(session.completedAt)}
+          </small>
         </div>
-      </div>
-      <MovementVolumeTable
-        emptyMessage="No loaded sets were recorded for this Training Session."
-        rows={session.volumeByMovementPattern}
-      />
-      <div className="training-history-report__exercises">
-        {session.exercises.map((exercise) => (
-          <div className="training-history-report__exercise" key={exercise.exerciseId}>
-            <span>{exercise.exerciseName}</span>
-            <strong>
-              {exercise.sets.filter((set) => set.weight > 0 && set.reps > 0).length} loaded sets
-            </strong>
+        <dl className="training-history-session-row__metrics">
+          <div>
+            <dt>Completed Load Volume</dt>
+            <dd>{formatWeight(session.completedLoadVolume)} kg</dd>
           </div>
-        ))}
+          <div>
+            <dt>Loaded Sets</dt>
+            <dd>{formatLoadedSetCount(session.loadedSetCount)}</dd>
+          </div>
+        </dl>
+        <button
+          aria-expanded={isExpanded}
+          aria-label={actionLabel}
+          className="training-history-session-row__action"
+          onClick={() => onToggleSession(session.id)}
+          type="button"
+        >
+          {isExpanded ? "Hide session" : "View session"}
+        </button>
       </div>
+      {isExpanded ? <CompletedSessionDetails session={session} /> : null}
+    </article>
+  );
+}
+
+function CompletedSessionDetails({ session }: { session: TrainingHistorySessionReport }) {
+  return (
+    <section
+      className="training-history-session-details"
+      aria-label={`${session.templateLabel} session details`}
+    >
+      {session.loadedSetCount === 0 ? (
+        <p className="training-history-empty">No loaded sets recorded for this session.</p>
+      ) : null}
+      <table className="training-history-volume-table">
+        <thead>
+          <tr>
+            <th scope="col">Exercise</th>
+            <th scope="col">Movement pattern</th>
+            <th scope="col">Loaded Sets</th>
+            <th scope="col">Completed Load Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+          {session.exercises.map((exercise) => (
+            <CompletedSessionExerciseRow key={exercise.exerciseId} exercise={exercise} />
+          ))}
+        </tbody>
+      </table>
     </section>
+  );
+}
+
+function CompletedSessionExerciseRow({
+  exercise,
+}: {
+  exercise: TrainingHistorySessionExerciseReport;
+}) {
+  return (
+    <tr>
+      <td>{exercise.exerciseName}</td>
+      <td>{exercise.movementPatternLabel}</td>
+      <td>{formatLoadedSetCount(exercise.loadedSetCount)}</td>
+      <td>{formatWeight(exercise.completedLoadVolume)} kg</td>
+    </tr>
   );
 }
 
@@ -375,37 +424,6 @@ function WeeklyMovementVolumeTable({
         </tbody>
       </table>
     </div>
-  );
-}
-
-function MovementVolumeTable({
-  emptyMessage,
-  rows,
-}: {
-  emptyMessage: string;
-  rows: ReadonlyArray<TrainingSessionMovementVolume>;
-}) {
-  if (rows.length === 0) {
-    return <p className="training-history-empty">{emptyMessage}</p>;
-  }
-
-  return (
-    <table className="training-history-volume-table">
-      <thead>
-        <tr>
-          <th scope="col">Movement pattern</th>
-          <th scope="col">Volume</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.movementPattern}>
-            <td>{row.movementPatternLabel}</td>
-            <td>{row.volume} kg</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
