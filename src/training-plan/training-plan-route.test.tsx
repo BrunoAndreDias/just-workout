@@ -509,29 +509,26 @@ describe("TrainingPlanRoute", () => {
     expect(within(selectedTrainingWeek).getByText("Loaded sets")).toBeVisible();
     expect(within(selectedTrainingWeek).getByText("5 loaded sets")).toBeVisible();
     expect(
-      screen.getByRole("row", { name: /Horizontal Push 760 kg \+260 kg Up 52%/i }),
+      screen.getByRole("row", { name: /Horizontal Push 760 kg \+260 kg, up 52%/i }),
     ).toBeVisible();
     expect(
-      screen.getByRole("row", { name: /Quad Dominant 900 kg -100 kg Down 10%/i }),
+      screen.getByRole("row", { name: /Quad Dominant 900 kg -100 kg, down 10%/i }),
     ).toBeVisible();
-    expect(screen.getByRole("row", { name: /Horizontal Pull 300 kg 0 kg Same/i })).toBeVisible();
+    expect(screen.getByRole("row", { name: /Horizontal Pull 300 kg 0 kg, same/i })).toBeVisible();
     expect(
-      screen.getByRole("row", { name: /Vertical Push 200 kg \+200 kg New this week/i }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("row", { name: /Vertical Pull 0 kg -600 kg No volume this week/i }),
-    ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Progress vs previous week" })).toBeVisible();
-    expect(
-      screen.getByText("1 movement pattern increased, and 1 new pattern appeared this week."),
+      screen.getByRole("row", {
+        name: /Vertical Push 200 kg No comparison, not done last week/i,
+      }),
     ).toBeVisible();
     expect(
-      screen.getByText("Best progress: Horizontal Push added 260 kg versus the previous week."),
+      screen.getByRole("row", { name: /Vertical Pull 0 kg -600 kg, no volume this week/i }),
     ).toBeVisible();
     expect(
-      screen.getByText("Needs attention: Vertical Pull dropped by 600 kg from the previous week."),
-    ).toBeVisible();
-    expect(screen.getByText("Push volume led pull volume by 660 kg this week.")).toBeVisible();
+      screen.queryByRole("heading", { name: "Progress vs previous week" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("1 movement pattern increased, and 1 new pattern appeared this week."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("No loaded sets recorded for this session.")).not.toBeInTheDocument();
 
     const completedSessionsSection = screen.getByRole("region", { name: "Completed sessions" });
@@ -577,10 +574,14 @@ describe("TrainingPlanRoute", () => {
       screen.queryByRole("button", { name: "View session Full Body A" }),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "View session Upper" }));
+    const upperSessionToggle = screen.getByRole("button", { name: "View session Upper" });
+
+    await user.click(upperSessionToggle);
 
     expect(await screen.findByText("Flat Barbell Bench Press")).toBeVisible();
     const upperSessionDetails = screen.getByRole("region", { name: "Upper session details" });
+
+    expect(upperSessionToggle).toHaveAttribute("aria-controls", upperSessionDetails.id);
 
     expect(
       within(upperSessionDetails).getByRole("row", {
@@ -613,11 +614,15 @@ describe("TrainingPlanRoute", () => {
     expect(within(completedSessionsSection).getByText("0 loaded sets")).toBeVisible();
     expect(within(completedSessionsSection).getByText("0 kg")).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
+    const fullBodySessionToggle = screen.getByRole("button", { name: "View session Full Body A" });
+
+    await user.click(fullBodySessionToggle);
 
     const sessionDetails = await screen.findByRole("region", {
       name: "Full Body A session details",
     });
+
+    expect(fullBodySessionToggle).toHaveAttribute("aria-controls", sessionDetails.id);
 
     expect(screen.getByText("No loaded sets recorded for this session.")).toBeVisible();
     expect(
@@ -646,8 +651,8 @@ describe("TrainingPlanRoute", () => {
     expect(within(weeklyMovementSection).queryByRole("table")).not.toBeInTheDocument();
     expect(weeklyMovementCards.length).toBeGreaterThan(0);
     expect(within(firstWeeklyMovementCard).getByText("Current volume")).toBeVisible();
-    expect(within(firstWeeklyMovementCard).getByText("Delta")).toBeVisible();
-    expect(within(firstWeeklyMovementCard).getByText("Change")).toBeVisible();
+    expect(within(firstWeeklyMovementCard).getByText("Compared with last week")).toBeVisible();
+    expect(within(firstWeeklyMovementCard).queryByText("Change")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
 

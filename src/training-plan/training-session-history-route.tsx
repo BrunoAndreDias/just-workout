@@ -5,8 +5,6 @@ import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
   type TrainingHistoryMovementPatternComparison,
-  type TrainingHistoryProgressInsights,
-  type TrainingHistoryPushPullBalanceInsight,
   type TrainingHistorySessionExerciseReport,
   type TrainingHistorySessionReport,
   type TrainingHistoryWeekReport,
@@ -24,13 +22,7 @@ const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
 const weightFormatter = new Intl.NumberFormat("en-US");
 const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 
-type TrainingProgressInsightTone = "neutral" | "positive" | "regression";
-
-type TrainingProgressInsightItem = {
-  key: string;
-  text: string;
-  tone: TrainingProgressInsightTone;
-};
+type TrainingHistoryTone = "neutral" | "positive" | "regression";
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
@@ -53,15 +45,27 @@ export function TrainingSessionHistoryRoute() {
   );
 
   if (trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading) {
-    return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
+    return (
+      <TrainingSessionHistoryShell kind="loading">
+        Loading Training history...
+      </TrainingSessionHistoryShell>
+    );
   }
 
   if (!trainingPlan) {
-    return <TrainingSessionHistoryShell>Training Plan not found.</TrainingSessionHistoryShell>;
+    return (
+      <TrainingSessionHistoryShell kind="not-found">
+        Training Plan not found.
+      </TrainingSessionHistoryShell>
+    );
   }
 
   if (!trainingWeekReport) {
-    return <TrainingSessionHistoryShell>Loading Training history...</TrainingSessionHistoryShell>;
+    return (
+      <TrainingSessionHistoryShell kind="loading">
+        Loading Training history...
+      </TrainingSessionHistoryShell>
+    );
   }
 
   const selectedSessions = trainingWeekReport.selectedSessions;
@@ -95,10 +99,18 @@ export function TrainingSessionHistoryRoute() {
   );
 }
 
-function TrainingSessionHistoryShell({ children }: { children: string }) {
+function TrainingSessionHistoryShell({
+  children,
+  kind,
+}: {
+  children: string;
+  kind: "loading" | "not-found";
+}) {
   return (
     <section className="training-history-page" aria-label="Training history">
-      <p className="active-training-plan-loading">{children}</p>
+      <p className="active-training-plan-loading" role={kind === "loading" ? "status" : undefined}>
+        {children}
+      </p>
     </section>
   );
 }
@@ -158,7 +170,6 @@ function TrainingWeekSection({
       <WeeklyMovementVolumeReport
         emptyMessage="Complete a Training Session to build a weekly report."
         isCompactLayout={isCompactLayout}
-        insights={trainingWeekReport.progressInsights}
         rows={trainingWeekReport.movementPatternComparisons}
       />
     </section>
@@ -243,17 +254,25 @@ function CompletedSessionsSection({
         </div>
       </div>
       {selectedSessions.length > 0 ? (
-        <div className="training-history-list__items">
-          {selectedSessions.map((session) => (
-            <CompletedSessionRow
-              isCompactLayout={isCompactLayout}
-              isExpanded={session.id === selectedSession?.id}
-              key={session.id}
-              session={session}
-              onToggleSession={onToggleSession}
-            />
-          ))}
-        </div>
+        <>
+          <div className="training-history-list__header" aria-hidden="true">
+            <span>Session</span>
+            <span>Completed Load Volume</span>
+            <span>Loaded Sets</span>
+            <span>Details</span>
+          </div>
+          <div className="training-history-list__items">
+            {selectedSessions.map((session) => (
+              <CompletedSessionRow
+                isCompactLayout={isCompactLayout}
+                isExpanded={session.id === selectedSession?.id}
+                key={session.id}
+                session={session}
+                onToggleSession={onToggleSession}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <p className="training-history-empty">
           No completed Training Sessions in this Training Week.
@@ -277,6 +296,7 @@ function CompletedSessionRow({
   const actionLabel = isExpanded
     ? `Hide session ${session.templateLabel}`
     : `View session ${session.templateLabel}`;
+  const detailsId = `training-history-session-details-${session.id}`;
 
   return (
     <article className="training-history-session-row">
@@ -298,6 +318,7 @@ function CompletedSessionRow({
           </div>
         </dl>
         <button
+          aria-controls={detailsId}
           aria-expanded={isExpanded}
           aria-label={actionLabel}
           className="training-history-session-row__action"
@@ -308,23 +329,30 @@ function CompletedSessionRow({
         </button>
       </div>
       {isExpanded ? (
-        <CompletedSessionDetails isCompactLayout={isCompactLayout} session={session} />
+        <CompletedSessionDetails
+          detailsId={detailsId}
+          isCompactLayout={isCompactLayout}
+          session={session}
+        />
       ) : null}
     </article>
   );
 }
 
 function CompletedSessionDetails({
+  detailsId,
   isCompactLayout,
   session,
 }: {
+  detailsId: string;
   isCompactLayout: boolean;
   session: TrainingHistorySessionReport;
 }) {
   return (
     <section
-      className="training-history-session-details"
       aria-label={`${session.templateLabel} session details`}
+      className="training-history-session-details"
+      id={detailsId}
     >
       {session.loadedSetCount === 0 ? (
         <p className="training-history-empty">No loaded sets recorded for this session.</p>
@@ -413,12 +441,10 @@ function CompletedSessionExerciseRow({
 function WeeklyMovementVolumeReport({
   emptyMessage,
   isCompactLayout,
-  insights,
   rows,
 }: {
   emptyMessage: string;
   isCompactLayout: boolean;
-  insights: TrainingHistoryProgressInsights;
   rows: ReadonlyArray<TrainingHistoryMovementPatternComparison>;
 }) {
   return (
@@ -433,7 +459,6 @@ function WeeklyMovementVolumeReport({
           isCompactLayout={isCompactLayout}
           rows={rows}
         />
-        <TrainingProgressInsightsPanel hasRows={rows.length > 0} insights={insights} />
       </div>
     </section>
   );
@@ -482,75 +507,6 @@ function WeeklyMovementVolumeHeading() {
   );
 }
 
-function TrainingProgressInsightsPanel({
-  hasRows,
-  insights,
-}: {
-  hasRows: boolean;
-  insights: TrainingHistoryProgressInsights;
-}) {
-  const insightItems = hasRows ? createTrainingProgressInsightItems(insights) : [];
-
-  return (
-    <aside className="training-history-insights" aria-labelledby="training-history-insights-title">
-      <div className="training-history-section-heading training-history-section-heading--compact">
-        <div>
-          <h3 id="training-history-insights-title">Progress vs previous week</h3>
-          <p>Interpret the biggest changes instead of scanning another table.</p>
-        </div>
-      </div>
-      {hasRows ? (
-        <ul className="training-history-insights__list">
-          {insightItems.map((item) => (
-            <li
-              className={`training-history-insights__item training-history-insights__item--${item.tone}`}
-              key={item.key}
-            >
-              {item.text}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="training-history-empty">
-          Complete a Training Session to unlock progress insights.
-        </p>
-      )}
-    </aside>
-  );
-}
-
-function createTrainingProgressInsightItems(
-  insights: TrainingHistoryProgressInsights,
-): TrainingProgressInsightItem[] {
-  const items: TrainingProgressInsightItem[] = [
-    {
-      key: "increases",
-      text: formatIncreaseInsight(insights),
-      tone: getIncreaseInsightTone(insights),
-    },
-    {
-      key: "best-progress",
-      text: formatBestProgressInsight(insights.bestProgress),
-      tone: insights.bestProgress ? "positive" : "neutral",
-    },
-    {
-      key: "needs-attention",
-      text: formatNeedsAttentionInsight(insights.needsAttention),
-      tone: insights.needsAttention ? "regression" : "neutral",
-    },
-  ];
-
-  if (insights.pushPullBalance) {
-    items.push({
-      key: "push-pull-balance",
-      text: formatPushPullBalanceInsight(insights.pushPullBalance),
-      tone: getPushPullBalanceInsightTone(insights.pushPullBalance),
-    });
-  }
-
-  return items;
-}
-
 function WeeklyMovementVolumeTable({
   rows,
 }: {
@@ -563,8 +519,7 @@ function WeeklyMovementVolumeTable({
           <tr>
             <th scope="col">Movement pattern</th>
             <th scope="col">Completed Load Volume</th>
-            <th scope="col">Delta</th>
-            <th scope="col">Change</th>
+            <th scope="col">Compared with last week</th>
           </tr>
         </thead>
         <tbody>
@@ -590,10 +545,7 @@ function WeeklyMovementVolumeTable({
                 <td
                   className={`training-history-comparison-table__delta training-history-comparison-table__delta--${changeTone}`}
                 >
-                  {formatWeightDelta(row.deltaVolume)}
-                </td>
-                <td>
-                  <MovementPatternChangeChip row={row} tone={changeTone} />
+                  {formatMovementPatternComparison(row)}
                 </td>
               </tr>
             );
@@ -626,7 +578,6 @@ function WeeklyMovementVolumeCards({
                   tone={changeTone}
                 />
               </div>
-              <MovementPatternChangeChip row={row} tone={changeTone} />
             </div>
             <dl className="training-history-comparison-card__metrics">
               <div>
@@ -634,16 +585,12 @@ function WeeklyMovementVolumeCards({
                 <dd>{formatWeight(row.currentVolume)} kg</dd>
               </div>
               <div>
-                <dt>Delta</dt>
+                <dt>Compared with last week</dt>
                 <dd
                   className={`training-history-comparison-card__delta training-history-comparison-card__delta--${changeTone}`}
                 >
-                  {formatWeightDelta(row.deltaVolume)}
+                  {formatMovementPatternComparison(row)}
                 </dd>
-              </div>
-              <div>
-                <dt>Change</dt>
-                <dd>{formatMovementPatternChange(row)}</dd>
               </div>
             </dl>
           </li>
@@ -658,7 +605,7 @@ function MovementPatternVolumeBar({
   tone,
 }: {
   relativeVolumePercentage: number;
-  tone: TrainingProgressInsightTone;
+  tone: TrainingHistoryTone;
 }) {
   return (
     <span aria-hidden="true" className="training-history-comparison-table__bar-track">
@@ -666,22 +613,6 @@ function MovementPatternVolumeBar({
         className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
         style={{ width: `${relativeVolumePercentage}%` }}
       />
-    </span>
-  );
-}
-
-function MovementPatternChangeChip({
-  row,
-  tone,
-}: {
-  row: TrainingHistoryMovementPatternComparison;
-  tone: TrainingProgressInsightTone;
-}) {
-  return (
-    <span
-      className={`training-history-comparison-table__chip training-history-comparison-table__chip--${tone}`}
-    >
-      {formatMovementPatternChange(row)}
     </span>
   );
 }
@@ -759,93 +690,26 @@ function formatWeightDelta(value: number): string {
   return `${prefix}${formatWeight(Math.abs(value))} kg`;
 }
 
-function formatIncreaseInsight(insights: TrainingHistoryProgressInsights): string {
-  const increasedLabel = formatInsightCount(
-    insights.increasedMovementPatternCount,
-    "movement pattern",
-  );
-  const newLabel = formatInsightCount(insights.newMovementPatternCount, "new pattern");
-
-  if (insights.increasedMovementPatternCount > 0 && insights.newMovementPatternCount > 0) {
-    return `${increasedLabel} increased, and ${newLabel} appeared this week.`;
+function formatMovementPatternComparison(row: TrainingHistoryMovementPatternComparison): string {
+  if (row.change === "new") {
+    return "No comparison, not done last week";
   }
 
-  if (insights.increasedMovementPatternCount > 0) {
-    return `${increasedLabel} increased versus the previous week.`;
-  }
-
-  if (insights.newMovementPatternCount > 0) {
-    return `No movement patterns increased, and ${newLabel} appeared this week.`;
-  }
-
-  return "No movement patterns increased versus the previous week.";
-}
-
-function formatBestProgressInsight(row: TrainingHistoryMovementPatternComparison | null): string {
-  if (!row) {
-    return "Best progress: No positive volume delta this week.";
-  }
-
-  return `Best progress: ${row.movementPatternLabel} added ${formatWeight(row.deltaVolume)} kg versus the previous week.`;
-}
-
-function formatNeedsAttentionInsight(row: TrainingHistoryMovementPatternComparison | null): string {
-  if (!row) {
-    return "Needs attention: No regressions versus the previous week.";
-  }
-
-  return `Needs attention: ${row.movementPatternLabel} dropped by ${formatWeight(Math.abs(row.deltaVolume))} kg from the previous week.`;
-}
-
-function formatPushPullBalanceInsight(balance: TrainingHistoryPushPullBalanceInsight): string {
-  if (balance.leadingPatternGroup === "even") {
-    return "Push and pull volume were even this week.";
-  }
-
-  const trailingPatternGroup = balance.leadingPatternGroup === "push" ? "pull" : "push";
-  const leadingLabel = capitalizeWord(balance.leadingPatternGroup);
-
-  return `${leadingLabel} volume led ${trailingPatternGroup} volume by ${formatWeight(balance.deltaVolume)} kg this week.`;
-}
-
-function getIncreaseInsightTone(
-  insights: TrainingHistoryProgressInsights,
-): TrainingProgressInsightTone {
-  return insights.increasedMovementPatternCount > 0 || insights.newMovementPatternCount > 0
-    ? "positive"
-    : "neutral";
-}
-
-function getPushPullBalanceInsightTone(
-  balance: TrainingHistoryPushPullBalanceInsight,
-): TrainingProgressInsightTone {
-  if (balance.leadingPatternGroup === "even") {
-    return "positive";
-  }
-
-  return "neutral";
-}
-
-function formatInsightCount(value: number, noun: string): string {
-  return `${value} ${noun}${value === 1 ? "" : "s"}`;
-}
-
-function capitalizeWord(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return `${formatWeightDelta(row.deltaVolume)}, ${formatMovementPatternChange(row)}`;
 }
 
 function formatMovementPatternChange(row: TrainingHistoryMovementPatternComparison): string {
   switch (row.change) {
     case "increase":
-      return `Up ${Math.abs(row.changePercentage ?? 0)}%`;
+      return `up ${Math.abs(row.changePercentage ?? 0)}%`;
     case "decrease":
-      return `Down ${Math.abs(row.changePercentage ?? 0)}%`;
+      return `down ${Math.abs(row.changePercentage ?? 0)}%`;
     case "same":
-      return "Same";
+      return "same";
     case "new":
-      return "New this week";
+      return "not done last week";
     case "dropped":
-      return "No volume this week";
+      return "no volume this week";
   }
 }
 
