@@ -22,6 +22,11 @@ type TrainingHistorySessionDateRange = {
   oldestSessionDay: Date;
 };
 
+type TrainingHistorySessionTotals = {
+  completedLoadVolume: number;
+  loadedSetCount: number;
+};
+
 type TrainingSessionExercise = TrainingSession["exercises"][number];
 type TrainingSessionMovementPattern = TrainingSessionMovementVolume["movementPattern"];
 
@@ -30,11 +35,22 @@ type MovementPatternGroupVolume = {
   totalVolume: number;
 };
 
-type TrainingSessionExerciseSummary = {
+export type TrainingHistorySessionExerciseReport = {
+  completedLoadVolume: number;
+  exerciseId: string;
+  exerciseName: string;
   loadedSetCount: number;
   movementPattern: TrainingSessionMovementPattern;
   movementPatternLabel: string;
-  totalVolume: number;
+};
+
+export type TrainingHistorySessionReport = {
+  completedAt: string;
+  completedLoadVolume: number;
+  exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>;
+  id: string;
+  loadedSetCount: number;
+  templateLabel: string;
 };
 
 export type TrainingHistoryWeekSummary = {
@@ -76,7 +92,7 @@ export type TrainingHistoryWeekReport = {
   nextWeekEndKey: string | null;
   previousWeekEndKey: string | null;
   progressInsights: TrainingHistoryProgressInsights;
-  selectedSessions: ReadonlyArray<TrainingSession>;
+  selectedSessions: ReadonlyArray<TrainingHistorySessionReport>;
   selectedWeek: TrainingHistoryWeek | null;
   summary: TrainingHistoryWeekSummary;
 };
@@ -113,14 +129,16 @@ export function buildTrainingHistoryWeekReport({
     selectedWeekEndKey,
   });
   const previousWeek = createTrainingHistoryWeek(addUtcDays(selectedWeek.end, -7));
-  const selectedSessions = completedSessions.filter((session) =>
+  const selectedTrainingSessions = completedSessions.filter((session) =>
     isSessionInWeek(session, selectedWeek),
   );
   const previousSessions = completedSessions.filter((session) =>
     isSessionInWeek(session, previousWeek),
   );
-  const selectedMetrics = summarizeTrainingSessions(selectedSessions);
-  const previousMetrics = summarizeTrainingSessions(previousSessions);
+  const selectedSessionReports = selectedTrainingSessions.map(createTrainingHistorySessionReport);
+  const previousSessionReports = previousSessions.map(createTrainingHistorySessionReport);
+  const selectedMetrics = summarizeTrainingSessionReports(selectedSessionReports);
+  const previousMetrics = summarizeTrainingSessionReports(previousSessionReports);
   const movementPatternComparisons = createMovementPatternComparisons(
     selectedMetrics.volumeByMovementPattern,
     previousMetrics.volumeByMovementPattern,
@@ -131,31 +149,29 @@ export function buildTrainingHistoryWeekReport({
     nextWeekEndKey: getNextWeekEndKey(selectedWeek, dateRange.latestSessionDay),
     previousWeekEndKey: getPreviousWeekEndKey(selectedWeek, dateRange.oldestSessionDay),
     progressInsights: createTrainingHistoryProgressInsights(movementPatternComparisons),
-    selectedSessions,
+    selectedSessions: selectedSessionReports,
     selectedWeek,
     summary: createTrainingHistoryWeekSummary(
       trainingPlan,
-      selectedSessions,
+      selectedSessionReports,
       selectedMetrics,
       previousMetrics,
     ),
   };
 }
 
-function summarizeTrainingSessions(
-  trainingSessions: ReadonlyArray<TrainingSession>,
+function summarizeTrainingSessionReports(
+  sessionReports: ReadonlyArray<TrainingHistorySessionReport>,
 ): TrainingHistoryWeekMetrics {
   let loadedSetCount = 0;
   let totalVolume = 0;
   const volumeByPattern = new Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>();
 
-  for (const trainingSession of trainingSessions) {
-    for (const exercise of trainingSession.exercises) {
-      const exerciseSummary = summarizeExercise(exercise);
-
-      loadedSetCount += exerciseSummary.loadedSetCount;
-      totalVolume += exerciseSummary.totalVolume;
-      updateMovementPatternVolume(volumeByPattern, exerciseSummary);
+  for (const sessionReport of sessionReports) {
+    for (const exerciseReport of sessionReport.exercises) {
+      loadedSetCount += exerciseReport.loadedSetCount;
+      totalVolume += exerciseReport.completedLoadVolume;
+      updateMovementPatternVolume(volumeByPattern, exerciseReport);
     }
   }
 
@@ -227,7 +243,7 @@ function getPreviousWeekEndKey(
 
 function createTrainingHistoryWeekSummary(
   trainingPlan: TrainingPlan,
-  selectedSessions: ReadonlyArray<TrainingSession>,
+  selectedSessions: ReadonlyArray<TrainingHistorySessionReport>,
   selectedMetrics: TrainingHistoryWeekMetrics,
   previousMetrics: TrainingHistoryWeekMetrics,
 ): TrainingHistoryWeekSummary {
@@ -454,42 +470,76 @@ function resolveLeadingPushPullPatternGroup(
   return pushVolume > pullVolume ? "push" : "pull";
 }
 
-function summarizeExercise(exercise: TrainingSessionExercise): TrainingSessionExerciseSummary {
+function createTrainingHistorySessionReport(
+  trainingSession: CompletedTrainingSession,
+): TrainingHistorySessionReport {
+  const exercises = trainingSession.exercises.map(createTrainingHistorySessionExerciseReport);
+  const totals = sumTrainingHistorySessionExercises(exercises);
+
+  return {
+    completedAt: trainingSession.completedAt,
+    completedLoadVolume: totals.completedLoadVolume,
+    exercises,
+    id: trainingSession.id,
+    loadedSetCount: totals.loadedSetCount,
+    templateLabel: trainingSession.templateLabel,
+  };
+}
+
+function createTrainingHistorySessionExerciseReport(
+  exercise: TrainingSessionExercise,
+): TrainingHistorySessionExerciseReport {
+  let completedLoadVolume = 0;
   let loadedSetCount = 0;
-  let totalVolume = 0;
 
   for (const set of exercise.sets) {
     if (set.weight <= 0 || set.reps <= 0) {
       continue;
     }
 
+    completedLoadVolume += set.weight * set.reps;
     loadedSetCount += 1;
-    totalVolume += set.weight * set.reps;
   }
 
   return {
+    completedLoadVolume,
+    exerciseId: exercise.exerciseId,
+    exerciseName: exercise.exerciseName,
     loadedSetCount,
     movementPattern: exercise.movementPattern,
     movementPatternLabel: formatSessionMovementPattern(exercise.movementPattern),
-    totalVolume,
   };
+}
+
+function sumTrainingHistorySessionExercises(
+  exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>,
+): TrainingHistorySessionTotals {
+  let completedLoadVolume = 0;
+  let loadedSetCount = 0;
+
+  for (const exercise of exercises) {
+    completedLoadVolume += exercise.completedLoadVolume;
+    loadedSetCount += exercise.loadedSetCount;
+  }
+
+  return { completedLoadVolume, loadedSetCount };
 }
 
 function updateMovementPatternVolume(
   volumeByPattern: Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>,
-  exerciseSummary: TrainingSessionExerciseSummary,
+  exerciseReport: TrainingHistorySessionExerciseReport,
 ) {
-  if (exerciseSummary.totalVolume <= 0) {
+  if (exerciseReport.completedLoadVolume <= 0) {
     return;
   }
 
-  const currentPattern = volumeByPattern.get(exerciseSummary.movementPattern);
+  const currentPattern = volumeByPattern.get(exerciseReport.movementPattern);
 
-  volumeByPattern.set(exerciseSummary.movementPattern, {
-    movementPattern: exerciseSummary.movementPattern,
+  volumeByPattern.set(exerciseReport.movementPattern, {
+    movementPattern: exerciseReport.movementPattern,
     movementPatternLabel:
-      currentPattern?.movementPatternLabel ?? exerciseSummary.movementPatternLabel,
-    volume: (currentPattern?.volume ?? 0) + exerciseSummary.totalVolume,
+      currentPattern?.movementPatternLabel ?? exerciseReport.movementPatternLabel,
+    volume: (currentPattern?.volume ?? 0) + exerciseReport.completedLoadVolume,
   });
 }
 

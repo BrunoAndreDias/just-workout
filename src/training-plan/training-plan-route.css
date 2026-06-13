@@ -1046,14 +1046,12 @@
 
 .training-history-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(16rem, 0.85fr);
   gap: 1.25rem;
   align-items: start;
 }
 
 .training-history-week,
-.training-history-list,
-.training-history-report {
+.training-history-list {
   min-width: 0;
   border: 1px solid rgba(28, 25, 23, 0.12);
   border-radius: 0.5rem;
@@ -1437,79 +1435,102 @@
 .training-history-list__items {
   display: grid;
   gap: 0.5rem;
-  margin-top: 0.875rem;
 }
 
-.training-history-session-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: 100%;
+.training-history-session-row {
   border: 1px solid rgba(28, 25, 23, 0.12);
   border-radius: 0.5rem;
   padding: 0.75rem;
-  color: #11181b;
   background: rgba(255, 255, 255, 0.7);
-  text-align: left;
 }
 
-.training-history-session-button:hover {
-  border-color: rgba(0, 119, 128, 0.36);
-  background: #ffffff;
+.training-history-session-row__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
 }
 
-.training-history-session-button:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.58);
-  outline-offset: 2px;
-}
-
-.training-history-session-button[aria-pressed="true"] {
-  border-color: rgba(0, 119, 128, 0.42);
-  background: rgba(0, 119, 128, 0.06);
-}
-
-.training-history-session-button span:first-child {
+.training-history-session-row__identity {
   display: grid;
   gap: 0.25rem;
   min-width: 0;
 }
 
-.training-history-session-button strong {
+.training-history-session-row__identity strong {
   color: #11181b;
   font-size: 0.9375rem;
   font-weight: 850;
 }
 
-.training-history-session-button__date,
-.training-history-session-button__action {
+.training-history-session-row__date {
   color: #58656a;
   font-size: 0.75rem;
   font-weight: 750;
 }
 
-.training-history-report__exercises {
+.training-history-session-row__metrics {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.training-history-report__exercise {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: repeat(2, minmax(0, auto));
   gap: 1rem;
-  border-top: 1px solid rgba(28, 25, 23, 0.09);
-  padding-top: 0.625rem;
-  color: #3f474b;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  margin: 0;
 }
 
-.training-history-report__exercise strong {
-  color: #075d63;
+.training-history-session-row__metrics > div {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.training-history-session-row__metrics dt {
+  color: #58656a;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.training-history-session-row__metrics dd {
+  margin: 0;
+  color: #11181b;
+  font-size: 0.875rem;
   font-weight: 850;
   white-space: nowrap;
+}
+
+.training-history-session-row__action {
+  appearance: none;
+  min-height: 2.5rem;
+  border: 1px solid rgba(0, 119, 128, 0.2);
+  border-radius: 999px;
+  padding: 0 0.875rem;
+  color: #075d63;
+  background: rgba(0, 119, 128, 0.06);
+  font-size: 0.8125rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.training-history-session-row__action:hover {
+  border-color: rgba(0, 119, 128, 0.38);
+  background: rgba(0, 119, 128, 0.1);
+}
+
+.training-history-session-row__action:focus-visible {
+  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline-offset: 2px;
+}
+
+.training-history-session-details {
+  overflow-x: auto;
+  margin-top: 0.875rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.09);
+  padding-top: 0.875rem;
+}
+
+.training-history-session-details .training-history-volume-table {
+  min-width: 30rem;
 }
 
 .training-history-empty {
@@ -1578,19 +1599,22 @@
     border-left: 0;
   }
 
-  .training-history-session-button {
-    width: 100%;
-  }
-
   .training-history-comparison-table {
     min-width: 34rem;
   }
 
-  .training-history-session-button,
-  .training-history-report__exercise {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.375rem;
+  .training-history-session-row__summary {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .training-history-session-row__metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+
+  .training-history-session-row__metrics dd {
+    white-space: normal;
   }
 }
 

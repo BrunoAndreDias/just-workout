@@ -484,6 +484,7 @@ describe("TrainingPlanRoute", () => {
     ).toBeVisible();
     expect(screen.queryByRole("heading", { name: "This week" })).not.toBeInTheDocument();
 
+    const selectedTrainingWeek = screen.getByRole("region", { name: "Selected Training Week" });
     const weekSelector = screen.getByRole("group", { name: "Training Week selector" });
 
     expect(within(weekSelector).getByRole("button", { name: "Previous week" })).toBeEnabled();
@@ -491,14 +492,14 @@ describe("TrainingPlanRoute", () => {
     expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeDisabled();
 
     expect(screen.getByRole("heading", { name: "Weekly movement volume" })).toBeVisible();
-    expect(screen.getByText("Completion")).toBeVisible();
-    expect(screen.getByText("2 / 3 sessions")).toBeVisible();
-    expect(screen.getByText("Total volume")).toBeVisible();
-    expect(screen.getByText("2,160 kg")).toBeVisible();
-    expect(screen.getByText("Progress")).toBeVisible();
-    expect(screen.getByText("-10% vs previous week")).toBeVisible();
-    expect(screen.getByText("Loaded sets")).toBeVisible();
-    expect(screen.getByText("5 loaded sets")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("Completion")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("2 / 3 sessions")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("Total volume")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("2,160 kg")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("Progress")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("-10% vs previous week")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("Loaded sets")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("5 loaded sets")).toBeVisible();
     expect(
       screen.getByRole("row", { name: /Horizontal Push 760 kg \+260 kg Up 52%/i }),
     ).toBeVisible();
@@ -523,9 +524,28 @@ describe("TrainingPlanRoute", () => {
       screen.getByText("Needs attention: Vertical Pull dropped by 600 kg from the previous week."),
     ).toBeVisible();
     expect(screen.getByText("Push volume led pull volume by 660 kg this week.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "View Full Body A report" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "View Full Body B report" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "View Upper report" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No loaded sets recorded for this session.")).not.toBeInTheDocument();
+
+    const completedSessionsSection = screen.getByRole("region", { name: "Completed sessions" });
+
+    expect(within(completedSessionsSection).getByText("Full Body A")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("Jun 10, 2026")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("700 kg")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("2 loaded sets")).toBeVisible();
+    expect(
+      within(completedSessionsSection).getByRole("button", { name: "View session Full Body A" }),
+    ).toBeVisible();
+    expect(within(completedSessionsSection).getByText("Full Body B")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("Jun 9, 2026")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("1,460 kg")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("3 loaded sets")).toBeVisible();
+    expect(
+      within(completedSessionsSection).getByRole("button", { name: "View session Full Body B" }),
+    ).toBeVisible();
+    expect(
+      within(completedSessionsSection).queryByText("Flat Dumbbell Bench Press"),
+    ).not.toBeInTheDocument();
+    expect(within(completedSessionsSection).queryByText("Barbell Squats")).not.toBeInTheDocument();
 
     expect(
       screen.queryByRole("button", { name: "Start Full Body A session" }),
@@ -540,22 +560,63 @@ describe("TrainingPlanRoute", () => {
 
     expect(within(weekSelector).getByText("May 28-Jun 3, 2026")).toBeVisible();
     expect(within(weekSelector).getByRole("button", { name: "Next week" })).toBeEnabled();
-    expect(screen.getByText("1 / 3 sessions")).toBeVisible();
-    expect(screen.getByText("2,400 kg")).toBeVisible();
-    expect(screen.getByText("+140% vs previous week")).toBeVisible();
-    expect(screen.getByText("4 loaded sets")).toBeVisible();
-    expect(screen.getByRole("button", { name: "View Upper report" })).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("1 / 3 sessions")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("2,400 kg")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("+140% vs previous week")).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("4 loaded sets")).toBeVisible();
+    expect(screen.getByRole("button", { name: "View session Upper" })).toBeVisible();
     expect(
-      screen.queryByRole("button", { name: "View Full Body A report" }),
+      screen.queryByRole("button", { name: "View session Full Body A" }),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "View Upper report" }));
+    await user.click(screen.getByRole("button", { name: "View session Upper" }));
 
-    expect(await screen.findByRole("heading", { name: "Upper report" })).toBeVisible();
-    expect(screen.getByText("Completed Jun 3, 2026")).toBeVisible();
-    const sessionReport = screen.getByRole("region", { name: "Upper report" });
+    expect(await screen.findByText("Flat Barbell Bench Press")).toBeVisible();
+    const upperSessionDetails = screen.getByRole("region", { name: "Upper session details" });
 
-    expect(within(sessionReport).getByRole("row", { name: /Vertical Pull 600 kg/ })).toBeVisible();
+    expect(
+      within(upperSessionDetails).getByRole("row", {
+        name: /Flat Barbell Bench Press Horizontal Push 1 loaded set 500 kg/i,
+      }),
+    ).toBeVisible();
+    expect(
+      within(upperSessionDetails).getByRole("row", {
+        name: /Pull-Ups Vertical Pull 1 loaded set 600 kg/i,
+      }),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Hide session Upper" }));
+
+    expect(screen.queryByText("Flat Barbell Bench Press")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pull-Ups")).not.toBeInTheDocument();
+  });
+
+  it("shows the exact no-loaded-sets message while keeping bodyweight-only exercises visible", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+    await seedBodyweightOnlyTrainingSession();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+    expect(screen.queryByText("No loaded sets recorded for this session.")).not.toBeInTheDocument();
+    const completedSessionsSection = screen.getByRole("region", { name: "Completed sessions" });
+
+    expect(within(completedSessionsSection).getByText("0 loaded sets")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("0 kg")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
+
+    const sessionDetails = await screen.findByRole("region", {
+      name: "Full Body A session details",
+    });
+
+    expect(screen.getByText("No loaded sets recorded for this session.")).toBeVisible();
+    expect(
+      within(sessionDetails).getByRole("row", {
+        name: /Pull-Ups Vertical Pull 0 loaded sets 0 kg/i,
+      }),
+    ).toBeVisible();
   });
 });
 
@@ -751,6 +812,28 @@ async function seedCompletedTrainingSessions() {
       ],
     },
   ]);
+}
+
+async function seedBodyweightOnlyTrainingSession() {
+  await db.trainingSessions.put({
+    completedAt: "2026-06-10T09:00:00.000Z",
+    createdAt: "2026-06-10T09:00:00.000Z",
+    exercises: [
+      {
+        exerciseId: "pull-ups",
+        exerciseName: "Pull-Ups",
+        movementPattern: "vertical_pull",
+        sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+      },
+    ],
+    id: "session-bodyweight-only",
+    planId: "training-plan-test",
+    status: "completed",
+    templateId: "template-1",
+    templateLabel: "Full Body A",
+    updatedAt: "2026-06-10T09:00:00.000Z",
+    volumeByMovementPattern: [],
+  });
 }
 
 function renderTrainingPlan({ initialEntries }: { initialEntries: Array<string> }) {
