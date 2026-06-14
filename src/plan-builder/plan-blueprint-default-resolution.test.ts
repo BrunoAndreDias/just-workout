@@ -9,6 +9,12 @@ import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 import { getWeeklyMovementCoverage } from "./weekly-movement-coverage";
 
+type MainCompoundCoverageExpectation = {
+  mainCompoundSelections: PlanBlueprint["mainCompoundSelections"];
+  split: NonNullable<PlanBlueprint["split"]>;
+  trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"];
+};
+
 const testBlueprintOptions = {
   id: "blueprint-1",
   timestamp: "2026-06-14T10:00:00.000Z",
@@ -56,10 +62,7 @@ describe("plan blueprint default resolution", () => {
           equipmentPreset: "full_gym",
           kind: "equipment_preset",
         },
-        ...completeMainCompoundSelections.map((selection) => ({
-          ...selection,
-          kind: "main_compound_selection",
-        })),
+        ...completeMainCompoundRecommendedDefaults,
       ],
       resolvedBlueprint: {
         ...blueprint,
@@ -177,22 +180,17 @@ describe("plan blueprint default resolution", () => {
 
     expect(resolution).toMatchObject({
       isReady: false,
-      recommendedDefaults: completeMainCompoundSelections.map((selection) => ({
-        ...selection,
-        kind: "main_compound_selection",
-      })),
+      recommendedDefaults: completeMainCompoundRecommendedDefaults,
       resolvedBlueprint: {
         ...blueprint,
         mainCompoundSelections: completeMainCompoundSelections,
       },
     });
-    expect(
-      getWeeklyMovementCoverage({
-        mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
-        split: "full-body-3-day",
-        trainingFrequencyDaysPerWeek: 3,
-      }).canConfirmExercises,
-    ).toBe(true);
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+    });
   });
 
   it("preserves configured main compounds and only recommends the missing Upper/Lower coverage patterns", () => {
@@ -239,13 +237,11 @@ describe("plan blueprint default resolution", () => {
         mainCompoundSelections: completeMainCompoundSelections,
       },
     });
-    expect(
-      getWeeklyMovementCoverage({
-        mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
-        split: "upper-lower-4-day",
-        trainingFrequencyDaysPerWeek: 4,
-      }).canConfirmExercises,
-    ).toBe(true);
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
   });
 
   it("recommends only the missing Pull coverage patterns for Push/Pull/Legs", () => {
@@ -278,12 +274,29 @@ describe("plan blueprint default resolution", () => {
         },
       ],
     });
-    expect(
-      getWeeklyMovementCoverage({
-        mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
-        split: "rotating-push-pull-legs",
-        trainingFrequencyDaysPerWeek: 4,
-      }).canConfirmExercises,
-    ).toBe(true);
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+    });
   });
 });
+
+const completeMainCompoundRecommendedDefaults = completeMainCompoundSelections.map((selection) => ({
+  ...selection,
+  kind: "main_compound_selection" as const,
+}));
+
+function expectMainCompoundCoverageCanConfirmExercises({
+  mainCompoundSelections,
+  split,
+  trainingFrequencyDaysPerWeek,
+}: MainCompoundCoverageExpectation): void {
+  expect(
+    getWeeklyMovementCoverage({
+      mainCompoundSelections,
+      split,
+      trainingFrequencyDaysPerWeek,
+    }).canConfirmExercises,
+  ).toBe(true);
+}

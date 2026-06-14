@@ -6,6 +6,7 @@ import {
 } from "./exercise-catalog";
 import {
   type EquipmentPresetId,
+  type ExerciseSelectionPreferenceItem,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import { normalizeMainCompoundRotationPools } from "./main-compound-rotation-pool";
@@ -30,6 +31,9 @@ import {
   type MainCompoundSelection,
   normalizeMainCompoundSelections,
 } from "./weekly-movement-coverage";
+
+type MainCompoundMovementPattern = MainCompoundSelection["movementPattern"];
+type PlanBlueprintWithSplit = PlanBlueprint & { split: NonNullable<PlanBlueprint["split"]> };
 
 export type PlanBlueprintRecommendedDefault =
   | {
@@ -130,11 +134,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
 
     if (missingMainCompoundSelections.length > 0) {
       recommendedDefaults.push(
-        ...missingMainCompoundSelections.map((selection) => ({
-          exerciseId: selection.exerciseId,
-          kind: "main_compound_selection" as const,
-          movementPattern: selection.movementPattern,
-        })),
+        ...missingMainCompoundSelections.map(createMainCompoundSelectionRecommendedDefault),
       );
       const mainCompoundSelections = normalizeMainCompoundSelections([
         ...resolvedBlueprint.mainCompoundSelections,
@@ -160,7 +160,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
 }
 
 function recommendMissingMainCompoundSelections(
-  blueprint: PlanBlueprint & { split: NonNullable<PlanBlueprint["split"]> },
+  blueprint: PlanBlueprintWithSplit,
 ): ReadonlyArray<MainCompoundSelection> {
   const existingSelections = normalizeMainCompoundSelections(blueprint.mainCompoundSelections);
   const selectedPatterns = new Set(
@@ -186,29 +186,41 @@ function recommendMissingMainCompoundSelections(
   });
 }
 
+function createMainCompoundSelectionRecommendedDefault(
+  selection: MainCompoundSelection,
+): PlanBlueprintRecommendedDefault {
+  return {
+    exerciseId: selection.exerciseId,
+    kind: "main_compound_selection",
+    movementPattern: selection.movementPattern,
+  };
+}
+
 function getRecommendedMainCompoundExerciseId({
   blueprint,
   movementPattern,
 }: {
   blueprint: PlanBlueprint;
-  movementPattern: MainCompoundSelection["movementPattern"];
+  movementPattern: MainCompoundMovementPattern;
 }): string | null {
   const availableExercises =
     getExerciseCatalogExercisesByMovementPattern(movementPattern).filter(isMainCompoundEligible);
+  const availableExerciseIds = new Set(availableExercises.map((exercise) => exercise.id));
   const avoidedExerciseIds = new Set(
     blueprint.exerciseSelectionPreferences.avoidedExercises
-      .map(getPreferredOrAvoidedExerciseId)
+      .map(getExerciseSelectionPreferenceExerciseId)
       .filter((exerciseId): exerciseId is string => exerciseId !== null),
   );
   const preferredExerciseIds = blueprint.exerciseSelectionPreferences.preferredExercises
-    .map(getPreferredOrAvoidedExerciseId)
+    .map(getExerciseSelectionPreferenceExerciseId)
     .filter((exerciseId): exerciseId is string => exerciseId !== null);
 
   for (const preferredExerciseId of preferredExerciseIds) {
-    const preferredExercise = availableExercises.find(({ id }) => id === preferredExerciseId);
-
-    if (preferredExercise && !avoidedExerciseIds.has(preferredExercise.id)) {
-      return preferredExercise.id;
+    if (
+      availableExerciseIds.has(preferredExerciseId) &&
+      !avoidedExerciseIds.has(preferredExerciseId)
+    ) {
+      return preferredExerciseId;
     }
   }
 
@@ -217,7 +229,7 @@ function getRecommendedMainCompoundExerciseId({
 
   if (
     recommendedExerciseId &&
-    availableExercises.some(({ id }) => id === recommendedExerciseId) &&
+    availableExerciseIds.has(recommendedExerciseId) &&
     !avoidedExerciseIds.has(recommendedExerciseId)
   ) {
     return recommendedExerciseId;
@@ -226,8 +238,8 @@ function getRecommendedMainCompoundExerciseId({
   return availableExercises.find((exercise) => !avoidedExerciseIds.has(exercise.id))?.id ?? null;
 }
 
-function getPreferredOrAvoidedExerciseId(
-  preference: PlanBlueprint["exerciseSelectionPreferences"]["avoidedExercises"][number],
+function getExerciseSelectionPreferenceExerciseId(
+  preference: ExerciseSelectionPreferenceItem,
 ): string | null {
   if (typeof preference.matchedExerciseId === "string") {
     return getConcreteExerciseCatalogExerciseId(preference.matchedExerciseId);
