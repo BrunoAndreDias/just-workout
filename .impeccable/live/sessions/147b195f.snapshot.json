@@ -18,9 +18,7 @@
     "element": {
       "tagName": "section",
       "id": null,
-      "classes": [
-        "exercise-foundation-status"
-      ],
+      "classes": ["exercise-foundation-status"],
       "textContent": "Exercise foundation overviewSuggested starting point: would cover 5 of 5 required patternsNext action: choose a horizontal push, such as Bench Press or Chest Press.",
       "outerHTML": "<section aria-label=\"Exercise foundation status\" class=\"exercise-foundation-status\"><span aria-hidden=\"true\" class=\"exercise-foundation-status__icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"></path></svg></span><div><h3 class=\"sr-only\" id=\"exercise-foundation-title\">Exercise foundation overview</h3><p class=\"exercise-foundation-status__title\">Suggested starting point: would cover 5 of 5 required patterns</p><p class=\"exercise-foundation-status__body\">Next action: choose a horizontal push, such as Bench Press or Chest Press.</p></div></section>",
       "computedStyles": {

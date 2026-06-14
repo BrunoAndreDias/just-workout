@@ -29,7 +29,6 @@ import {
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
-import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
@@ -42,7 +41,13 @@ import {
   type RepRangeStyleId,
   type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
-import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
+import {
+  exerciseFoundationSetupCopy,
+  getExerciseFoundationSetupGuidance,
+  type MainCompoundRotationPoolChange,
+  type MainCompoundSelectionChange,
+  PlanBuilderExerciseFoundationStep,
+} from "./plan-builder-exercise-foundation";
 import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
 import { RepRangeStyleStep } from "./steps/rep-range-style-step";
 import { TrainingFrequencyStep } from "./steps/training-frequency-step";
@@ -58,7 +63,6 @@ import {
   type TrainingVolumeConfiguration,
   type VolumePresetId,
 } from "./training-volume";
-import type { MainCompoundSelection } from "./weekly-movement-coverage";
 import "./plan-builder-one-page-route.css";
 
 const planBuilderOnePageSections = [
@@ -418,14 +422,17 @@ function renderOnePageActiveStep({
           {...volumeStep}
         />
       );
-    case "exercises":
-      if (!hasCompatibleSelectedTrainingSplit(blueprint) || !trainingVolumeConfiguration) {
+    case "exercises": {
+      const requiresTrainingSchedule = !hasCompatibleSelectedTrainingSplit(blueprint);
+      const requiresVolume = !trainingVolumeConfiguration;
+
+      if (requiresTrainingSchedule || requiresVolume) {
         return (
           <ExerciseFoundationSetupState
             onOpenTrainingSchedule={() => setActiveStep("frequency")}
             onOpenVolume={() => setActiveStep("volume")}
-            requiresTrainingSchedule={!hasCompatibleSelectedTrainingSplit(blueprint)}
-            requiresVolume={!trainingVolumeConfiguration}
+            requiresTrainingSchedule={requiresTrainingSchedule}
+            requiresVolume={requiresVolume}
           />
         );
       }
@@ -437,6 +444,7 @@ function renderOnePageActiveStep({
           {...exercisesStep}
         />
       );
+    }
     case "generate":
       return <GenerateTrainingPlanStep summary={summary} {...generateStep} />;
   }
@@ -603,10 +611,7 @@ function useOnePageExercisesStep({
     onMainCompoundSelectionChange: async ({
       exerciseId,
       movementPattern,
-    }: {
-      exerciseId: string;
-      movementPattern: MainCompoundSelection["movementPattern"];
-    }) =>
+    }: MainCompoundSelectionChange) =>
       updateMainCompoundSelection({
         exerciseId,
         movementPattern,
@@ -615,10 +620,7 @@ function useOnePageExercisesStep({
     onRotationPoolChange: async ({
       exerciseIds,
       movementPattern,
-    }: {
-      exerciseIds: ReadonlyArray<string>;
-      movementPattern: MainCompoundRotationPool["movementPattern"];
-    }) =>
+    }: MainCompoundRotationPoolChange) =>
       updateMainCompoundRotationPool({
         exerciseIds,
         movementPattern,
@@ -731,29 +733,16 @@ function OnePageExercisesStep({
 }: {
   blueprint: PlanBlueprint & { split: TrainingSplitId };
   onContinueToGenerate: () => Promise<void>;
-  onMainCompoundSelectionChange: (selection: {
-    exerciseId: string;
-    movementPattern: MainCompoundSelection["movementPattern"];
-  }) => Promise<unknown>;
-  onRotationPoolChange: (rotationPool: {
-    exerciseIds: ReadonlyArray<string>;
-    movementPattern: MainCompoundRotationPool["movementPattern"];
-  }) => Promise<unknown>;
+  onMainCompoundSelectionChange: (selection: MainCompoundSelectionChange) => Promise<unknown>;
+  onRotationPoolChange: (rotationPool: MainCompoundRotationPoolChange) => Promise<unknown>;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
 }) {
   return (
-    <ExerciseFoundationStep
-      mainCompoundSelections={blueprint.mainCompoundSelections}
-      mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+    <PlanBuilderExerciseFoundationStep
+      blueprint={blueprint}
       onContinueToGenerate={onContinueToGenerate}
-      onMainCompoundSelectionChange={async (selection) => {
-        await onMainCompoundSelectionChange(selection);
-      }}
-      onRotationPoolChange={async (rotationPool) => {
-        await onRotationPoolChange(rotationPool);
-      }}
-      split={blueprint.split}
-      trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+      onMainCompoundSelectionChange={onMainCompoundSelectionChange}
+      onRotationPoolChange={onRotationPoolChange}
       weeklyRepTargets={trainingVolumeConfiguration.weeklyRepTargets}
     />
   );
@@ -913,15 +902,15 @@ function ExerciseFoundationSetupState({
   requiresTrainingSchedule: boolean;
   requiresVolume: boolean;
 }) {
-  const guidance = [
-    requiresTrainingSchedule ? "Choose a compatible split in Training schedule." : null,
-    requiresVolume ? "Set weekly volume in Volume." : null,
-  ].filter((item): item is string => item !== null);
+  const guidance = getExerciseFoundationSetupGuidance({
+    requiresTrainingSchedule,
+    requiresVolume,
+  });
 
   return (
     <section className="plan-builder-one-page__loading">
-      <h3>Exercises needs setup</h3>
-      <p>Choose a compatible split and weekly volume before selecting exercises.</p>
+      <h3>{exerciseFoundationSetupCopy.heading}</h3>
+      <p>{exerciseFoundationSetupCopy.description}</p>
       <ul>
         {guidance.map((item) => (
           <li key={item}>{item}</li>

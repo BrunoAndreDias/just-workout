@@ -5,7 +5,6 @@ import {
 } from "./plan-blueprint-options";
 import {
   hasConfiguredExercises,
-  hasConfiguredRepRanges,
   hasConfiguredTrainingSchedule,
   hasConfiguredTrainingVolume,
 } from "./plan-blueprint-progress";
@@ -37,7 +36,6 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
-  const hasRepRangeStyle = hasConfiguredRepRanges(blueprint);
   const isTrainingScheduleConfigured = hasConfiguredTrainingSchedule(blueprint);
   const isExercisesConfigured = hasConfiguredExercises(blueprint);
   const isVolumeConfigured = hasConfiguredTrainingVolume(blueprint);
@@ -52,12 +50,12 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: getPlanBlueprintNextStep({
       hasCompatibleSplit: isTrainingScheduleConfigured,
-      hasConfiguredRepRangeStyle: hasRepRangeStyle,
+      hasConfiguredRepRangeStyle: selectedRepRangeStyleId !== null,
       hasConfiguredVolume: isVolumeConfigured,
       isExercisesConfigured,
     }),
-    repRanges: hasRepRangeStyle
-      ? formatRepRangeStyle(selectedRepRangeStyleId ?? "balanced_hypertrophy")
+    repRanges: selectedRepRangeStyleId
+      ? formatRepRangeStyle(selectedRepRangeStyleId)
       : planBlueprintSummaryFallbacks.repRanges,
     recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,

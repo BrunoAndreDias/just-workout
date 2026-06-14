@@ -95,16 +95,6 @@ export function hasConfiguredTrainingSchedule(
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
 }
 
-export function hasConfiguredRepRanges(
-  blueprint: Pick<PlanBlueprint, "repRanges"> | null | undefined,
-): boolean {
-  if (!blueprint) {
-    return false;
-  }
-
-  return isRepRangeStyleId(blueprint.repRanges);
-}
-
 export function hasConfiguredTrainingVolume(
   blueprint: VolumeStepCompletionCandidate | null | undefined,
 ): boolean {

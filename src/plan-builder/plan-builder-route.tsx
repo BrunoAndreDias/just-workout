@@ -18,7 +18,6 @@ import {
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
 import { PlanBuilderPage } from "./components/plan-builder-page";
-import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
@@ -27,8 +26,15 @@ import {
   type PlanBlueprint,
   type RepRangeStyleId,
 } from "./plan-blueprint";
+import {
+  type ExerciseFoundationReadyBlueprint,
+  exerciseFoundationSetupCopy,
+  getExerciseFoundationSetupGuidance,
+  type MainCompoundRotationPoolChange,
+  type MainCompoundSelectionChange,
+  PlanBuilderExerciseFoundationStep,
+} from "./plan-builder-exercise-foundation";
 import { planBuilderPaths } from "./plan-builder-paths";
-import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
 import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
 import { RepRangeStyleStep } from "./steps/rep-range-style-step";
 import { TrainingFrequencyStep } from "./steps/training-frequency-step";
@@ -44,7 +50,6 @@ import {
   type TrainingVolumeConfiguration,
   type VolumePresetId,
 } from "./training-volume";
-import type { MainCompoundSelection } from "./weekly-movement-coverage";
 
 export function PlanBuilderRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
@@ -300,23 +305,18 @@ function PlanBuilderExercisesStepContent({
   onMainCompoundSelectionChange,
   onRotationPoolChange,
 }: {
-  blueprint: PlanBlueprint & { split: TrainingSplitId } & TrainingVolumeConfiguration;
+  blueprint: ExerciseFoundationReadyBlueprint & TrainingVolumeConfiguration;
   onContinueToGenerate: () => Promise<void>;
-  onMainCompoundSelectionChange: (variables: {
-    exerciseId: string;
-    movementPattern: MainCompoundSelection["movementPattern"];
-    timestamp: string;
-  }) => Promise<unknown>;
-  onRotationPoolChange: (variables: {
-    exerciseIds: ReadonlyArray<string>;
-    movementPattern: MainCompoundRotationPool["movementPattern"];
-    timestamp: string;
-  }) => Promise<unknown>;
+  onMainCompoundSelectionChange: (
+    variables: MainCompoundSelectionChange & { timestamp: string },
+  ) => Promise<unknown>;
+  onRotationPoolChange: (
+    variables: MainCompoundRotationPoolChange & { timestamp: string },
+  ) => Promise<unknown>;
 }) {
   return (
-    <ExerciseFoundationStep
-      mainCompoundSelections={blueprint.mainCompoundSelections}
-      mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+    <PlanBuilderExerciseFoundationStep
+      blueprint={blueprint}
       onContinueToGenerate={onContinueToGenerate}
       onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
         await onMainCompoundSelectionChange({
@@ -332,27 +332,31 @@ function PlanBuilderExercisesStepContent({
           timestamp: new Date().toISOString(),
         });
       }}
-      split={blueprint.split}
-      trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
       weeklyRepTargets={blueprint.weeklyRepTargets}
     />
   );
 }
 
 function PlanBuilderExercisesSetupState({ blueprint }: { blueprint: PlanBlueprint | undefined }) {
+  const requiresTrainingSchedule = blueprint
+    ? !hasCompatibleSelectedTrainingSplit(blueprint)
+    : false;
+  const requiresVolume = !blueprint || !isTrainingVolumeConfiguration(blueprint);
+  const guidance = getExerciseFoundationSetupGuidance({
+    requiresTrainingSchedule,
+    requiresVolume,
+  });
+
   return (
     <section className="space-y-4 rounded-xl border border-dashed border-stone-900/15 bg-stone-50/70 p-5 text-sm text-stone-700">
       <div className="space-y-2">
-        <h2 className="text-lg font-black text-stone-950">Exercises needs setup</h2>
-        <p>Choose a compatible split and weekly volume before selecting exercises.</p>
+        <h2 className="text-lg font-black text-stone-950">{exerciseFoundationSetupCopy.heading}</h2>
+        <p>{exerciseFoundationSetupCopy.description}</p>
       </div>
       <ul className="list-disc space-y-1 pl-5">
-        {blueprint && !hasCompatibleSelectedTrainingSplit(blueprint) ? (
-          <li>Choose a compatible split in Training schedule.</li>
-        ) : null}
-        {!blueprint || !isTrainingVolumeConfiguration(blueprint) ? (
-          <li>Set weekly volume in Volume.</li>
-        ) : null}
+        {guidance.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
       </ul>
     </section>
   );
