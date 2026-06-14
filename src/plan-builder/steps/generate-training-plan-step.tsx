@@ -3,6 +3,7 @@ import { Wand2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
 import { PlanBuilderStepStatusCard } from "../components/plan-builder-page";
+import { getExerciseCatalogExercise } from "../exercise-catalog";
 import { getEquipmentPreset } from "../exercise-selection-preferences";
 import {
   getRepRangeStyle,
@@ -186,6 +187,8 @@ function getRecommendedDefaultKey(recommendedDefault: PlanBlueprintRecommendedDe
       return `${recommendedDefault.kind}-${recommendedDefault.volumePreset}`;
     case "equipment_preset":
       return `${recommendedDefault.kind}-${recommendedDefault.equipmentPreset}`;
+    case "main_compound_selection":
+      return `${recommendedDefault.kind}-${recommendedDefault.movementPattern}-${recommendedDefault.exerciseId}`;
   }
 }
 
@@ -199,5 +202,7 @@ function getRecommendedDefaultLabel(recommendedDefault: PlanBlueprintRecommended
       return `${getVolumePreset(recommendedDefault.volumePreset).title} volume preset`;
     case "equipment_preset":
       return `${getEquipmentPreset(recommendedDefault.equipmentPreset).title} equipment preset`;
+    case "main_compound_selection":
+      return getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound";
   }
 }

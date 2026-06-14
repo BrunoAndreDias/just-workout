@@ -11,6 +11,7 @@ import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import type { TrainingSplitId } from "./training-split";
 import {
+  createRecommendedTrainingVolumeConfiguration,
   isTrainingVolumeConfiguration,
   type OptionalVolumeMuscleGroupId,
   type VolumePresetId,
@@ -1256,14 +1257,8 @@ describe("PlanBuilderRoute", () => {
     expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
   });
 
-  it("accepts non-exercise Recommended Defaults before generating and persists them into the Plan Blueprint", async () => {
+  it("accepts fully defaulted Recommended Defaults before generating and persists them into the Plan Blueprint", async () => {
     const user = userEvent.setup();
-    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-    await db.planBlueprints.put({
-      ...blueprint,
-      mainCompoundSelections: completeMainCompoundSelections,
-    });
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
@@ -1274,6 +1269,14 @@ describe("PlanBuilderRoute", () => {
     const confirmation = await screen.findByRole("dialog", {
       name: /default generation confirmation/i,
     });
+
+    expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
+    expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
+    expect(within(confirmation).getByText("Flat Barbell Bench Press")).toBeVisible();
+    expect(within(confirmation).getByText("Bent Over Barbell Rows")).toBeVisible();
+    expect(within(confirmation).getByText("Barbell Squats")).toBeVisible();
 
     await user.click(
       within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
@@ -1286,6 +1289,51 @@ describe("PlanBuilderRoute", () => {
     expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       equipmentPresetSource: "user_selected",
+      mainCompoundSelections: completeMainCompoundSelections,
+      repRanges: "balanced_hypertrophy",
+      split: "full-body-3-day",
+      volumePreset: "balanced",
+    });
+  });
+
+  it("accepts mixed user-picked and Recommended Default main compounds before generating", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      ...createBalancedFullBodyDefaults(),
+      equipmentPresetSource: "user_selected",
+      mainCompoundSelections: completeMainCompoundSelections.slice(0, 1),
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await expectGenerateStepComingNext();
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+
+    const confirmation = await screen.findByRole("dialog", {
+      name: /default generation confirmation/i,
+    });
+
+    expect(within(confirmation).queryByText("Flat Barbell Bench Press")).not.toBeInTheDocument();
+    expect(within(confirmation).getByText("Bent Over Barbell Rows")).toBeVisible();
+    expect(within(confirmation).getByText("Standing Overhead Barbell Press")).toBeVisible();
+    expect(within(confirmation).getByText("Pull-Ups")).toBeVisible();
+    expect(within(confirmation).getByText("Barbell Squats")).toBeVisible();
+    expect(within(confirmation).getByText("Barbell Romanian Deadlifts")).toBeVisible();
+
+    await user.click(
+      within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+    });
+    expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy",
       split: "full-body-3-day",
       volumePreset: "balanced",
@@ -2567,6 +2615,14 @@ function expectBlueprintSummaryValue(summary: HTMLElement, value: string) {
 
 function expectBlueprintSummaryValueAbsent(summary: HTMLElement, value: string) {
   expect(within(getBlueprintSummaryFields(summary)).queryByText(value)).not.toBeInTheDocument();
+}
+
+function createBalancedFullBodyDefaults() {
+  return {
+    ...createRecommendedTrainingVolumeConfiguration(),
+    repRanges: "balanced_hypertrophy" as const,
+    split: "full-body-3-day" as const,
+  };
 }
 
 function getBlueprintSummaryFields(summary: HTMLElement) {
