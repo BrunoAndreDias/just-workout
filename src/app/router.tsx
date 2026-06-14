@@ -25,7 +25,7 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     throw redirect({
       replace: true,
-      to: planBuilderPaths.frequency,
+      to: planBuilderPaths.entry,
     });
   },
   getParentRoute: () => rootRoute,
@@ -33,18 +33,18 @@ const indexRoute = createRoute({
 });
 
 const planBuilderEntryRoute = createRoute({
-  beforeLoad: () => {
-    throw redirect({
-      replace: true,
-      to: planBuilderPaths.overview,
-    });
-  },
+  component: PlanBuilderOnePageRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.entry,
 });
 
 const planBuilderOverviewRoute = createRoute({
-  component: PlanBuilderOnePageRoute,
+  beforeLoad: () => {
+    throw redirect({
+      replace: true,
+      to: planBuilderPaths.entry,
+    });
+  },
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.overview,
 });

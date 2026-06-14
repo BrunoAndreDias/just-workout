@@ -173,7 +173,7 @@ export function PlanBuilderOnePageRoute() {
       <div className="plan-builder-one-page__surface">
         <PageHeader
           description="Open any builder section from one focused workspace."
-          title="Plan Builder overview"
+          title="Plan Builder"
         />
 
         <PageMain>

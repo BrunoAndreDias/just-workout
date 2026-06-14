@@ -157,17 +157,19 @@ describe("PlanBuilderRoute", () => {
     restoreDefaultMatchMedia();
   });
 
-  it("routes the plan builder entry point into the canonical frequency URL", async () => {
-    const { router } = renderPlanBuilder();
+  it("routes / into the canonical plan builder workspace and shows a single Plan Builder nav entry", async () => {
+    const { router } = renderPlanBuilder({ initialEntries: ["/"] });
 
-    expect(await screen.findByRole("heading", { name: "Training schedule" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^plan builder$/i })).toBeVisible();
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
 
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-    expect(screen.getByRole("radio", { name: /3 days per week/i })).toBeChecked();
+    expect(screen.getByText("Open any builder section from one focused workspace.")).toBeVisible();
+    expect(await screen.findByRole("navigation", { name: /primary/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: /^plan builder$/i })).toBeVisible();
+    expect(screen.queryByRole("link", { name: /builder overview/i })).not.toBeInTheDocument();
   });
 
   it("renders the resumable plan builder summary inside the app shell", async () => {

@@ -1,12 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarCheck,
-  ClipboardList,
-  Dumbbell,
-  History,
-  LayoutDashboard,
-  Play,
-} from "lucide-react";
+import { CalendarCheck, ClipboardList, Dumbbell, History, Play } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 import "./app-shell.css";
@@ -30,14 +23,7 @@ type AppShellNavigationItem = {
 
 const appShellNavigationItems = [
   {
-    href: "/plan-builder/overview",
-    icon: (
-      <LayoutDashboard aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
-    ),
-    label: "Builder Overview",
-  },
-  {
-    href: "/plan-builder/frequency",
+    href: "/plan-builder",
     icon: (
       <CalendarCheck aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
     ),
@@ -175,14 +161,8 @@ function AppShellNavigationLink({
 }
 
 function isAppShellNavigationItemActive(currentPathname: string, href: string) {
-  if (href === "/plan-builder/overview") {
-    return currentPathname === href;
-  }
-
-  if (href === "/plan-builder/frequency") {
-    return (
-      currentPathname.startsWith("/plan-builder") && currentPathname !== "/plan-builder/overview"
-    );
+  if (href === "/plan-builder") {
+    return currentPathname.startsWith("/plan-builder");
   }
 
   if (href === "/training-plans") {
