@@ -5,7 +5,15 @@ import {
   type PlanBlueprint,
   resolvePlanBlueprintRecommendedDefaults,
 } from "./plan-blueprint";
+import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
+import { getWeeklyMovementCoverage } from "./weekly-movement-coverage";
+
+type MainCompoundCoverageExpectation = {
+  mainCompoundSelections: PlanBlueprint["mainCompoundSelections"];
+  split: NonNullable<PlanBlueprint["split"]>;
+  trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"];
+};
 
 const testBlueprintOptions = {
   id: "blueprint-1",
@@ -54,11 +62,13 @@ describe("plan blueprint default resolution", () => {
           equipmentPreset: "full_gym",
           kind: "equipment_preset",
         },
+        ...completeMainCompoundRecommendedDefaults,
       ],
       resolvedBlueprint: {
         ...blueprint,
         ...createRecommendedTrainingVolumeConfiguration(),
         equipmentPresetSource: "user_selected",
+        mainCompoundSelections: completeMainCompoundSelections,
         repRanges: "balanced_hypertrophy",
         split: "full-body-3-day",
       },
@@ -70,6 +80,7 @@ describe("plan blueprint default resolution", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),
       equipmentPresetSource: "user_selected",
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "controlled_higher_reps",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -90,6 +101,7 @@ describe("plan blueprint default resolution", () => {
         preferredExercises: [{ id: "prefer-1", rawText: "Chest-supported row" }],
         strategy: "balanced",
       },
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "strength_leaning",
       split: "rotating-push-pull-legs",
       trainingFrequencyDaysPerWeek: 5,
@@ -129,7 +141,7 @@ describe("plan blueprint default resolution", () => {
       createdAt: testBlueprintOptions.timestamp,
       id: testBlueprintOptions.id,
       mainCompoundRotationPools: [],
-      mainCompoundSelections: [],
+      mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy" as const,
       split: "full-body-3-day" as const,
       trainingFrequencyDaysPerWeek: 3 as const,
@@ -155,4 +167,136 @@ describe("plan blueprint default resolution", () => {
     expect(blueprint.equipmentPresetSource).toBeNull();
     expect(blueprint.exerciseSelectionPreferences.equipmentPreset).toBe("full_gym");
   });
+
+  it("recommends catalog-backed main compound selections for missing Full Body coverage during generation", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
+      repRanges: "balanced_hypertrophy",
+      split: "full-body-3-day",
+    });
+
+    const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+    expect(resolution).toMatchObject({
+      isReady: false,
+      recommendedDefaults: completeMainCompoundRecommendedDefaults,
+      resolvedBlueprint: {
+        ...blueprint,
+        mainCompoundSelections: completeMainCompoundSelections,
+      },
+    });
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "full-body-3-day",
+      trainingFrequencyDaysPerWeek: 3,
+    });
+  });
+
+  it("preserves configured main compounds and only recommends the missing Upper/Lower coverage patterns", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
+      mainCompoundSelections: completeMainCompoundSelections.filter(
+        ({ movementPattern }) =>
+          movementPattern === "horizontal_push" || movementPattern === "quad_dominant",
+      ),
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+    expect(resolution).toMatchObject({
+      isReady: false,
+      recommendedDefaults: [
+        {
+          exerciseId: "bent-over-barbell-rows",
+          kind: "main_compound_selection",
+          movementPattern: "horizontal_pull",
+        },
+        {
+          exerciseId: "standing-overhead-barbell-press",
+          kind: "main_compound_selection",
+          movementPattern: "vertical_push",
+        },
+        {
+          exerciseId: "pull-ups",
+          kind: "main_compound_selection",
+          movementPattern: "vertical_pull",
+        },
+        {
+          exerciseId: "barbell-romanian-deadlifts",
+          kind: "main_compound_selection",
+          movementPattern: "hip_hamstring_dominant",
+        },
+      ],
+      resolvedBlueprint: {
+        ...blueprint,
+        mainCompoundSelections: completeMainCompoundSelections,
+      },
+    });
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+  });
+
+  it("recommends only the missing Pull coverage patterns for Push/Pull/Legs", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
+      mainCompoundSelections: completeMainCompoundSelections.filter(
+        ({ movementPattern }) =>
+          movementPattern !== "horizontal_pull" && movementPattern !== "vertical_pull",
+      ),
+      repRanges: "balanced_hypertrophy",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+
+    const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+    expect(resolution).toMatchObject({
+      isReady: false,
+      recommendedDefaults: [
+        {
+          exerciseId: "bent-over-barbell-rows",
+          kind: "main_compound_selection",
+          movementPattern: "horizontal_pull",
+        },
+        {
+          exerciseId: "pull-ups",
+          kind: "main_compound_selection",
+          movementPattern: "vertical_pull",
+        },
+      ],
+    });
+    expectMainCompoundCoverageCanConfirmExercises({
+      mainCompoundSelections: resolution.resolvedBlueprint.mainCompoundSelections,
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+    });
+  });
 });
+
+const completeMainCompoundRecommendedDefaults = completeMainCompoundSelections.map((selection) => ({
+  ...selection,
+  kind: "main_compound_selection" as const,
+}));
+
+function expectMainCompoundCoverageCanConfirmExercises({
+  mainCompoundSelections,
+  split,
+  trainingFrequencyDaysPerWeek,
+}: MainCompoundCoverageExpectation): void {
+  expect(
+    getWeeklyMovementCoverage({
+      mainCompoundSelections,
+      split,
+      trainingFrequencyDaysPerWeek,
+    }).canConfirmExercises,
+  ).toBe(true);
+}
