@@ -460,9 +460,18 @@ function renderOnePageActiveStep({
     case "generate":
       return (
         <GenerateTrainingPlanStep
-          pendingDefaultResolution={pendingDefaultResolution}
+          isGenerating={generateStep.isGenerating}
+          onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
+          recommendedDefaultsConfirmation={
+            pendingDefaultResolution
+              ? {
+                  onAcceptRecommendedDefaults: generateStep.onAcceptRecommendedDefaults,
+                  onCancelRecommendedDefaults: generateStep.onCancelRecommendedDefaults,
+                  resolution: pendingDefaultResolution,
+                }
+              : null
+          }
           summary={summary}
-          {...generateStep}
         />
       );
   }
@@ -673,7 +682,7 @@ function useOnePageGenerateStep({
   return {
     isGenerating: isGenerating || isApplyingResolvedBlueprint,
     onAcceptRecommendedDefaults: async (resolution: PlanBlueprintDefaultResolution) => {
-      await applyResolvedPlanBlueprint({ resolution });
+      await applyResolvedPlanBlueprint({ blueprint: resolution.resolvedBlueprint });
       onPendingDefaultResolutionChange(null);
       await generateAndNavigate();
     },

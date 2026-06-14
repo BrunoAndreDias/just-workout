@@ -385,10 +385,7 @@ export function PlanBuilderGenerateRoute() {
     >
       <GenerateTrainingPlanStep
         isGenerating={isGenerating}
-        onAcceptRecommendedDefaults={async () => {}}
-        onCancelRecommendedDefaults={() => {}}
         onGenerateTrainingPlan={handleGenerateTrainingPlan}
-        pendingDefaultResolution={null}
         summary={summary}
       />
     </PlanBuilderPage>

@@ -4,33 +4,32 @@ import { Button } from "../../design-system/button";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
 import { PlanBuilderStepStatusCard } from "../components/plan-builder-page";
 import { getEquipmentPreset } from "../exercise-selection-preferences";
-import type {
-  PlanBlueprintDefaultResolution,
-  PlanBlueprintRecommendedDefault,
-  PlanBlueprintSummary,
+import {
+  getRepRangeStyle,
+  type PlanBlueprintDefaultResolution,
+  type PlanBlueprintRecommendedDefault,
+  type PlanBlueprintSummary,
 } from "../plan-blueprint";
-import { getRepRangeStyle } from "../plan-blueprint";
 import { planBuilderPaths } from "../plan-builder-paths";
 import { getTrainingSplitLabel } from "../training-split";
 import { getVolumePreset } from "../training-volume";
 
-type GenerateTrainingPlanStepProps = {
-  isGenerating: boolean;
+type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
   onCancelRecommendedDefaults: () => void;
+  resolution: PlanBlueprintDefaultResolution;
+};
+
+type GenerateTrainingPlanStepProps = {
+  isGenerating: boolean;
   onGenerateTrainingPlan: () => Promise<void>;
-  pendingDefaultResolution: PlanBlueprintDefaultResolution | null;
+  recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
 };
 
-export function GenerateTrainingPlanStep({
-  isGenerating,
-  onAcceptRecommendedDefaults,
-  onCancelRecommendedDefaults,
-  onGenerateTrainingPlan,
-  pendingDefaultResolution,
-  summary,
-}: GenerateTrainingPlanStepProps) {
+export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
+  const { isGenerating, onGenerateTrainingPlan, recommendedDefaultsConfirmation, summary } = props;
+
   return (
     <>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
@@ -88,12 +87,12 @@ export function GenerateTrainingPlanStep({
         </div>
       </div>
 
-      {pendingDefaultResolution ? (
+      {recommendedDefaultsConfirmation ? (
         <DefaultGenerationConfirmation
           isGenerating={isGenerating}
-          onAcceptRecommendedDefaults={onAcceptRecommendedDefaults}
-          onCancelRecommendedDefaults={onCancelRecommendedDefaults}
-          resolution={pendingDefaultResolution}
+          onAcceptRecommendedDefaults={recommendedDefaultsConfirmation.onAcceptRecommendedDefaults}
+          onCancelRecommendedDefaults={recommendedDefaultsConfirmation.onCancelRecommendedDefaults}
+          resolution={recommendedDefaultsConfirmation.resolution}
         />
       ) : null}
     </>
@@ -107,8 +106,8 @@ function DefaultGenerationConfirmation({
   resolution,
 }: {
   isGenerating: boolean;
-  onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
-  onCancelRecommendedDefaults: () => void;
+  onAcceptRecommendedDefaults: RecommendedDefaultsConfirmationProps["onAcceptRecommendedDefaults"];
+  onCancelRecommendedDefaults: RecommendedDefaultsConfirmationProps["onCancelRecommendedDefaults"];
   resolution: PlanBlueprintDefaultResolution;
 }) {
   return (
