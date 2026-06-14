@@ -48,7 +48,8 @@ export type PlanBuilderConfirmedSteps = {
   volume: boolean;
 };
 
-export type EquipmentPresetSource = "user_selected";
+export const userSelectedEquipmentPresetSource = "user_selected";
+export type EquipmentPresetSource = typeof userSelectedEquipmentPresetSource;
 
 export type PlanBlueprint = {
   id: string;

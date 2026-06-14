@@ -53,7 +53,6 @@ import type {
   ConfirmTrainingSplitOptions,
   ConfirmTrainingVolumeOptions,
   CreateDefaultPlanBlueprintOptions,
-  EquipmentPresetSource,
   InitializeTrainingVolumeOptions,
   PlanBlueprint,
   SelectMainCompoundOptions,
@@ -66,6 +65,10 @@ import type {
   TrainingFrequencyDaysPerWeek,
   UpdateExerciseSelectionPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
+} from "./plan-blueprint-types";
+import {
+  type EquipmentPresetSource,
+  userSelectedEquipmentPresetSource,
 } from "./plan-blueprint-types";
 
 export type {
@@ -332,7 +335,7 @@ export function updateExerciseSelectionPreferences({
       ...confirmedBuilderSteps,
       exercises: hasExerciseSelectionPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
-    equipmentPresetSource: "user_selected",
+    equipmentPresetSource: userSelectedEquipmentPresetSource,
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
     updatedAt: timestamp,
   };
@@ -537,7 +540,7 @@ export function confirmExerciseSelectionPreferences({
       ...blueprintToConfirm.confirmedBuilderSteps,
       exercises: true,
     },
-    equipmentPresetSource: "user_selected",
+    equipmentPresetSource: userSelectedEquipmentPresetSource,
     updatedAt: timestamp,
   };
 }
@@ -546,20 +549,28 @@ function normalizeEquipmentPresetSource(
   blueprint: StoredPlanBlueprint,
 ): EquipmentPresetSource | null {
   if (Object.hasOwn(blueprint, "equipmentPresetSource")) {
-    return blueprint.equipmentPresetSource === "user_selected" ? "user_selected" : null;
+    return normalizeStoredEquipmentPresetSource(blueprint.equipmentPresetSource);
   }
 
-  const preferences = blueprint.exerciseSelectionPreferences;
+  return hasStoredFullGymEquipmentPreset(blueprint.exerciseSelectionPreferences)
+    ? userSelectedEquipmentPresetSource
+    : null;
+}
 
+function normalizeStoredEquipmentPresetSource(candidate: unknown): EquipmentPresetSource | null {
+  return candidate === userSelectedEquipmentPresetSource ? userSelectedEquipmentPresetSource : null;
+}
+
+function hasStoredFullGymEquipmentPreset(preferences: unknown): boolean {
   if (typeof preferences !== "object" || preferences === null) {
-    return null;
+    return false;
   }
 
   if (!("equipmentPreset" in preferences)) {
-    return null;
+    return false;
   }
 
-  return preferences.equipmentPreset === "full_gym" ? "user_selected" : null;
+  return preferences.equipmentPreset === "full_gym";
 }
 
 function getCompatibleSelectedTrainingSplit({

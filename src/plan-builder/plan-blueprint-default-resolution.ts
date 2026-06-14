@@ -3,7 +3,11 @@ import {
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import { defaultRepRangeStyleId, isRepRangeStyleId } from "./plan-blueprint-options";
-import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint-types";
+import {
+  type PlanBlueprint,
+  type RepRangeStyleId,
+  userSelectedEquipmentPresetSource,
+} from "./plan-blueprint-types";
 import {
   getRecommendedTrainingSplitId,
   isTrainingSplitCompatible,
@@ -84,7 +88,8 @@ export function resolvePlanBlueprintRecommendedDefaults(
   const normalizedExerciseSelectionPreferences = normalizeExerciseSelectionPreferences(
     blueprint.exerciseSelectionPreferences,
   );
-  const needsEquipmentPresetDefault = blueprint.equipmentPresetSource !== "user_selected";
+  const needsEquipmentPresetDefault =
+    blueprint.equipmentPresetSource !== userSelectedEquipmentPresetSource;
 
   if (needsEquipmentPresetDefault) {
     recommendedDefaults.push({
@@ -93,7 +98,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
     });
     resolvedBlueprint = {
       ...resolvedBlueprint,
-      equipmentPresetSource: "user_selected",
+      equipmentPresetSource: userSelectedEquipmentPresetSource,
       exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
     };
   }
