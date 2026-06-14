@@ -1,5 +1,8 @@
 import type { MovementPatternId } from "../plan-builder/exercise-catalog";
-import { formatMovementPattern } from "./active-training-plan/active-training-plan-read-model";
+import {
+  type CompletedLoadVolumeMovementRow,
+  calculateVolumeByMovementPattern,
+} from "./completed-load-volume";
 import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 
 export type TrainingSessionSetEntry = {
@@ -15,11 +18,7 @@ export type TrainingSessionExerciseEntry = {
   sets: ReadonlyArray<TrainingSessionSetEntry>;
 };
 
-export type TrainingSessionMovementVolume = {
-  movementPattern: MovementPatternId;
-  movementPatternLabel: string;
-  volume: number;
-};
+export type TrainingSessionMovementVolume = CompletedLoadVolumeMovementRow;
 
 export type TrainingSession = {
   completedAt: string | null;
@@ -61,33 +60,4 @@ export function createCompletedTrainingSession({
     updatedAt: timestamp,
     volumeByMovementPattern: calculateVolumeByMovementPattern(entries),
   };
-}
-
-export function calculateVolumeByMovementPattern(
-  entries: ReadonlyArray<TrainingSessionExerciseEntry>,
-): TrainingSessionMovementVolume[] {
-  const volumeByPattern = new Map<MovementPatternId, number>();
-
-  for (const entry of entries) {
-    const exerciseVolume = entry.sets.reduce((total, set) => total + set.weight * set.reps, 0);
-
-    if (exerciseVolume <= 0) {
-      continue;
-    }
-
-    volumeByPattern.set(
-      entry.movementPattern,
-      (volumeByPattern.get(entry.movementPattern) ?? 0) + exerciseVolume,
-    );
-  }
-
-  return Array.from(volumeByPattern.entries()).map(([movementPattern, volume]) => ({
-    movementPattern,
-    movementPatternLabel: formatSessionMovementPattern(movementPattern),
-    volume,
-  }));
-}
-
-export function formatSessionMovementPattern(movementPattern: MovementPatternId): string {
-  return formatMovementPattern(movementPattern).replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

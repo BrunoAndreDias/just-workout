@@ -117,6 +117,7 @@ export function PlanBuilderOnePageRoute() {
   const visibleStep = activeStep ?? closingStep;
   const isClosingSelectedStep = activeStep === null && closingStep !== null;
   const isSectionGridCompact = activeStep !== null || closingStep !== null;
+  const nextStep = getNextPlanBuilderStep(blueprint);
 
   useEffect(() => {
     return () => {
@@ -204,6 +205,7 @@ export function PlanBuilderOnePageRoute() {
                 isActive={activeStep === section.id || closingStep === section.id}
                 isExpanded={activeStep === section.id}
                 key={section.id}
+                nextStep={nextStep}
                 onSelect={() => selectPlanBuilderSection(section.id)}
                 section={section}
                 summary={summary}
@@ -246,6 +248,7 @@ function PlanBuilderOnePageSectionCard({
   blueprint,
   isActive,
   isExpanded,
+  nextStep,
   onSelect,
   section,
   summary,
@@ -253,12 +256,13 @@ function PlanBuilderOnePageSectionCard({
   blueprint: PlanBlueprint | undefined;
   isActive: boolean;
   isExpanded: boolean;
+  nextStep: PlanBuilderStep | null;
   onSelect: () => void;
   section: (typeof planBuilderOnePageSections)[number];
   summary: PlanBlueprintSummary | null;
 }) {
   const Icon = section.icon;
-  const status = getSectionStatus({ blueprint, isActive, sectionId: section.id });
+  const status = getSectionStatus({ blueprint, isActive, nextStep, sectionId: section.id });
 
   return (
     <li
@@ -294,7 +298,7 @@ function PlanBuilderOnePageSectionCard({
           {getSectionDetails(section.id, blueprint, summary).map((detail) => (
             <span className="plan-builder-one-page__section-detail" key={detail.id}>
               <Circle aria-hidden="true" size={7} strokeWidth={3} />
-              <span>{detail.label}</span>
+              <span>{formatOverviewDetail(detail.label)}</span>
             </span>
           ))}
         </span>
@@ -821,21 +825,61 @@ function OnePageExercisesStep({
 function getSectionStatus({
   blueprint,
   isActive,
+  nextStep,
   sectionId,
 }: {
   blueprint: PlanBlueprint | undefined;
   isActive: boolean;
+  nextStep: PlanBuilderStep | null;
   sectionId: PlanBuilderStep;
-}): { label: string; tone: "complete" | "current" | "ready" } {
+}): { label: string; tone: "complete" | "current" | "next" | "ready" } {
+  if (!blueprint) {
+    return { label: "Loading", tone: "ready" };
+  }
+
   if (blueprint && isSectionComplete(sectionId, blueprint)) {
-    return { label: "Complete", tone: "complete" };
+    return { label: "Done", tone: "complete" };
   }
 
   if (isActive) {
-    return { label: "Current", tone: "current" };
+    return { label: "Open", tone: "current" };
+  }
+
+  if (sectionId === nextStep) {
+    return { label: "Next", tone: "next" };
   }
 
   return { label: "Ready", tone: "ready" };
+}
+
+function getNextPlanBuilderStep(blueprint: PlanBlueprint | undefined): PlanBuilderStep | null {
+  if (!blueprint) {
+    return null;
+  }
+
+  return (
+    planBuilderOnePageSections.find((section) => !isSectionComplete(section.id, blueprint))?.id ??
+    null
+  );
+}
+
+function formatOverviewDetail(detail: string): string {
+  switch (detail) {
+    case "Loading Plan Blueprint":
+      return "Loading plan blueprint";
+    case "Choose a Training Split":
+      return "Choose training split";
+    case "Choose Rep ranges":
+      return "Choose rep ranges";
+    case "Choose a compatible split to see this detail.":
+      return "Choose a compatible split first";
+    case "Weekly Rep Targets":
+      return "Weekly rep targets";
+    case "Create Training Plan":
+      return "Create training plan";
+    default:
+      return detail.replace(/\.$/, "");
+  }
 }
 
 function isSectionComplete(sectionId: PlanBuilderStep, blueprint: PlanBlueprint): boolean {

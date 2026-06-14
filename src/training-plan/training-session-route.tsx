@@ -6,22 +6,25 @@ import {
   formatExerciseRole,
   formatMovementPattern,
 } from "./active-training-plan/active-training-plan-read-model";
+import { calculateVolumeByMovementPattern } from "./completed-load-volume";
 import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
 import { trainingPlanService } from "./training-plan-service";
+import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 import {
-  calculateVolumeByMovementPattern,
-  type TrainingSession,
-  type TrainingSessionExerciseEntry,
-} from "./training-session";
-
-type SetDraft = {
-  done: boolean;
-  reps: string;
-  setIndex: number;
-  weight: string;
-};
-
-type ExerciseDrafts = Record<string, SetDraft[]>;
+  countCompletedTrainingSessionGroupSets,
+  countCompletedTrainingSessionSets,
+  createDefaultTrainingSessionSetDrafts,
+  createInitialTrainingSessionDrafts,
+  createTrainingSessionEntries,
+  createTrainingSessionExercises,
+  getDefaultTrainingSessionSetDraft,
+  getExpandedTrainingSessionGroupIdsAfterCompletion,
+  getPreviousTrainingSessionSetLabel,
+  getTrainingSessionDefaultReps,
+  getTrainingSessionExerciseKey,
+  type TrainingSessionExerciseDrafts,
+  type TrainingSessionSetDraft,
+} from "./training-session-execution";
 
 export function TrainingSessionRoute() {
   const routeParams = useTrainingSessionRouteParams();
@@ -53,10 +56,12 @@ export function TrainingSessionRoute() {
     ? getWorkoutTemplate(trainingPlan.workoutTemplates, routeParams?.templateId ?? null)
     : null;
   const sessionExercises = useMemo(
-    () => (workoutTemplate ? getSessionExercises(workoutTemplate) : []),
+    () => (workoutTemplate ? createTrainingSessionExercises(workoutTemplate) : []),
     [workoutTemplate],
   );
-  const [drafts, setDrafts] = useState<ExerciseDrafts>(() => createInitialDrafts([]));
+  const [drafts, setDrafts] = useState<TrainingSessionExerciseDrafts>(() =>
+    createInitialTrainingSessionDrafts([]),
+  );
   const [completedSession, setCompletedSession] = useState<TrainingSession | null>(null);
   const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlyArray<string>>([]);
   const completeSession = useMutation({
@@ -76,7 +81,9 @@ export function TrainingSessionRoute() {
 
   useEffect(() => {
     setDrafts((currentDrafts) =>
-      Object.keys(currentDrafts).length > 0 ? currentDrafts : createInitialDrafts(sessionExercises),
+      Object.keys(currentDrafts).length > 0
+        ? currentDrafts
+        : createInitialTrainingSessionDrafts(sessionExercises),
     );
   }, [sessionExercises]);
 
@@ -94,8 +101,8 @@ export function TrainingSessionRoute() {
     return <TrainingSessionShell>Training Session not found.</TrainingSessionShell>;
   }
 
-  const entries = createSessionEntries(sessionExercises, drafts);
-  const completedSetCount = countCompletedSets(drafts);
+  const entries = createTrainingSessionEntries(sessionExercises, drafts);
+  const completedSetCount = countCompletedTrainingSessionSets(drafts);
   const plannedSetCount = sessionExercises.length * 3;
   const volumeByMovementPattern = completedSession
     ? completedSession.volumeByMovementPattern
@@ -122,7 +129,11 @@ export function TrainingSessionRoute() {
         {workoutTemplate.supersetGroups.map((group, groupIndex) => {
           const isOpen = expandedGroupIds.includes(group.id);
           const groupSetCount = group.slots.length * 3;
-          const groupCompletedSets = countCompletedGroupSets(group.id, group.slots, drafts);
+          const groupCompletedSets = countCompletedTrainingSessionGroupSets({
+            drafts,
+            groupId: group.id,
+            slots: group.slots,
+          });
           const isGroupComplete = groupCompletedSets === groupSetCount;
           const groupTitle = formatGroupTitle(group.title, workoutTemplate.label, groupIndex);
           const toggleGroup = () => {
@@ -223,7 +234,9 @@ export function TrainingSessionRoute() {
                           onDraftChange={(exerciseKey, setIndex, field, value) => {
                             setDrafts((currentDrafts) => {
                               const slot = group.slots.find(
-                                (groupSlot) => getExerciseKey(group.id, groupSlot) === exerciseKey,
+                                (groupSlot) =>
+                                  getTrainingSessionExerciseKey(group.id, groupSlot) ===
+                                  exerciseKey,
                               );
 
                               if (!slot) {
@@ -233,7 +246,8 @@ export function TrainingSessionRoute() {
                               const updatedDrafts = {
                                 ...currentDrafts,
                                 [exerciseKey]: (
-                                  currentDrafts[exerciseKey] ?? createDefaultSetDrafts(slot)
+                                  currentDrafts[exerciseKey] ??
+                                  createDefaultTrainingSessionSetDrafts(slot)
                                 ).map((draft) =>
                                   draft.setIndex === setIndex
                                     ? { ...draft, [field]: value }
@@ -244,11 +258,14 @@ export function TrainingSessionRoute() {
                               if (
                                 field === "done" &&
                                 value === true &&
-                                countCompletedGroupSets(group.id, group.slots, updatedDrafts) ===
-                                  groupSetCount
+                                countCompletedTrainingSessionGroupSets({
+                                  drafts: updatedDrafts,
+                                  groupId: group.id,
+                                  slots: group.slots,
+                                }) === groupSetCount
                               ) {
                                 setExpandedGroupIds((currentGroupIds) =>
-                                  getExpandedGroupIdsAfterGroupCompletion({
+                                  getExpandedTrainingSessionGroupIdsAfterCompletion({
                                     completedGroupId: group.id,
                                     currentGroupIds,
                                     drafts: updatedDrafts,
@@ -318,12 +335,12 @@ function RoundSessionRows({
   roundIndex,
   slots,
 }: {
-  drafts: ExerciseDrafts;
+  drafts: TrainingSessionExerciseDrafts;
   groupId: string;
   onDraftChange: (
     exerciseKey: string,
     setIndex: number,
-    field: keyof SetDraft,
+    field: keyof TrainingSessionSetDraft,
     value: boolean | string,
   ) => void;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
@@ -333,11 +350,11 @@ function RoundSessionRows({
   return (
     <tbody aria-label={`Round ${roundIndex} superset`} className="training-session-round">
       {slots.map((slot) => {
-        const exerciseKey = getExerciseKey(groupId, slot);
+        const exerciseKey = getTrainingSessionExerciseKey(groupId, slot);
         const draft =
-          (drafts[exerciseKey] ?? createDefaultSetDrafts(slot)).find(
+          (drafts[exerciseKey] ?? createDefaultTrainingSessionSetDrafts(slot)).find(
             (setDraft) => setDraft.setIndex === roundIndex,
-          ) ?? getDefaultSetDraft(slot);
+          ) ?? getDefaultTrainingSessionSetDraft(slot);
 
         return (
           <tr
@@ -367,14 +384,18 @@ function TrainingSessionSetCells({
   previousTrainingSessions,
   slot,
 }: {
-  draft: SetDraft;
+  draft: TrainingSessionSetDraft;
   exerciseKey: string;
-  onDraftChange: (setIndex: number, field: keyof SetDraft, value: boolean | string) => void;
+  onDraftChange: (
+    setIndex: number,
+    field: keyof TrainingSessionSetDraft,
+    value: boolean | string,
+  ) => void;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   slot: TrainingPlanSlot;
 }) {
   const inputId = `${exerciseKey}-set-${draft.setIndex}`;
-  const repsTarget = getDefaultReps(slot);
+  const repsTarget = getTrainingSessionDefaultReps(slot);
 
   return (
     <>
@@ -384,7 +405,13 @@ function TrainingSessionSetCells({
         <span className="training-session-prescription">3 x 8-12</span>
       </td>
       <td>{formatMovementPattern(slot.movementPattern)}</td>
-      <td>{getPreviousSetLabel(slot, draft.setIndex, previousTrainingSessions)}</td>
+      <td>
+        {getPreviousTrainingSessionSetLabel({
+          previousTrainingSessions,
+          setIndex: draft.setIndex,
+          slot,
+        })}
+      </td>
       <td>
         <label className="training-session-sr" htmlFor={`${inputId}-weight`}>
           Set {draft.setIndex} weight
@@ -435,7 +462,7 @@ function TrainingSessionSetCells({
     </>
   );
 }
-function getTrainingSessionRowClassName(draft: SetDraft): string {
+function getTrainingSessionRowClassName(draft: TrainingSessionSetDraft): string {
   return [
     "training-session-exercise-row",
     draft.done ? "training-session-exercise-row--done" : "",
@@ -479,105 +506,6 @@ function getWorkoutTemplate(
   return workoutTemplates.find((template) => template.id === templateId) ?? null;
 }
 
-function getSessionExercises(workoutTemplate: WorkoutTemplate) {
-  return workoutTemplate.supersetGroups.flatMap((group) =>
-    group.slots.map((slot) => ({
-      groupId: group.id,
-      slot,
-    })),
-  );
-}
-
-function createInitialDrafts(
-  sessionExercises: ReturnType<typeof getSessionExercises>,
-): ExerciseDrafts {
-  return Object.fromEntries(
-    sessionExercises.map(({ groupId, slot }) => [
-      getExerciseKey(groupId, slot),
-      createDefaultSetDrafts(slot),
-    ]),
-  );
-}
-
-function createDefaultSetDrafts(slot?: TrainingPlanSlot): SetDraft[] {
-  const reps = String(getDefaultReps(slot));
-
-  return [
-    { done: false, reps, setIndex: 1, weight: "" },
-    { done: false, reps, setIndex: 2, weight: "" },
-    { done: false, reps, setIndex: 3, weight: "" },
-  ];
-}
-
-function getDefaultSetDraft(slot?: TrainingPlanSlot): SetDraft {
-  return createDefaultSetDrafts(slot)[0] ?? { done: false, reps: "8", setIndex: 1, weight: "" };
-}
-
-function createSessionEntries(
-  sessionExercises: ReturnType<typeof getSessionExercises>,
-  drafts: ExerciseDrafts,
-): TrainingSessionExerciseEntry[] {
-  return sessionExercises.map(({ groupId, slot }) => ({
-    exerciseId: slot.exerciseId,
-    exerciseName: slot.exerciseName,
-    movementPattern: slot.movementPattern,
-    sets: (drafts[getExerciseKey(groupId, slot)] ?? createDefaultSetDrafts(slot)).map((draft) => ({
-      reps: Number(draft.reps) || 0,
-      setIndex: draft.setIndex,
-      weight: Number(draft.weight) || 0,
-    })),
-  }));
-}
-
-function getExerciseKey(groupId: string, slot: TrainingPlanSlot): string {
-  return `${groupId}-${slot.exerciseId}-${slot.role}`;
-}
-
-function countCompletedSets(drafts: ExerciseDrafts): number {
-  return Object.values(drafts).reduce(
-    (total, exerciseDrafts) => total + exerciseDrafts.filter((draft) => draft.done).length,
-    0,
-  );
-}
-
-function countCompletedGroupSets(
-  groupId: string,
-  slots: ReadonlyArray<TrainingPlanSlot>,
-  drafts: ExerciseDrafts,
-): number {
-  return slots.reduce((total, slot) => {
-    const exerciseDrafts = drafts[getExerciseKey(groupId, slot)] ?? createDefaultSetDrafts(slot);
-
-    return total + exerciseDrafts.filter((draft) => draft.done).length;
-  }, 0);
-}
-
-function getExpandedGroupIdsAfterGroupCompletion({
-  completedGroupId,
-  currentGroupIds,
-  drafts,
-  groups,
-}: {
-  completedGroupId: string;
-  currentGroupIds: ReadonlyArray<string>;
-  drafts: ExerciseDrafts;
-  groups: WorkoutTemplate["supersetGroups"];
-}): string[] {
-  const nextIncompleteGroup = groups
-    .slice(groups.findIndex((group) => group.id === completedGroupId) + 1)
-    .find(
-      (group) => countCompletedGroupSets(group.id, group.slots, drafts) < group.slots.length * 3,
-    );
-  const nextGroupId = nextIncompleteGroup?.id;
-  const updatedGroupIds = currentGroupIds.filter((groupId) => groupId !== completedGroupId);
-
-  if (!nextGroupId || updatedGroupIds.includes(nextGroupId)) {
-    return updatedGroupIds;
-  }
-
-  return [...updatedGroupIds, nextGroupId];
-}
-
 function formatAccessibleGroupTitle(title: string): string {
   return title.replace(/Full-body superset /i, "Superset ");
 }
@@ -598,33 +526,4 @@ function formatGroupTitle(title: string, templateLabel: string, groupIndex: numb
   }
 
   return baseTitle.replace(/^\w/, (letter) => letter.toUpperCase());
-}
-
-function getDefaultReps(slot?: TrainingPlanSlot): number {
-  return slot?.role === "abs" ? 12 : 8;
-}
-
-function getPreviousSetLabel(
-  slot: TrainingPlanSlot,
-  setIndex: number,
-  previousTrainingSessions: ReadonlyArray<TrainingSession>,
-): string {
-  for (const session of previousTrainingSessions) {
-    const previousExercise = session.exercises.find(
-      (exercise) => exercise.exerciseId === slot.exerciseId,
-    );
-    const previousSet = previousExercise?.sets.find((set) => set.setIndex === setIndex);
-
-    if (!previousSet || previousSet.reps <= 0) {
-      continue;
-    }
-
-    if (previousSet.weight <= 0) {
-      return /pull-ups/i.test(slot.exerciseName) ? `BW x ${previousSet.reps}` : "-";
-    }
-
-    return `${previousSet.weight}kg x ${previousSet.reps}`;
-  }
-
-  return "-";
 }

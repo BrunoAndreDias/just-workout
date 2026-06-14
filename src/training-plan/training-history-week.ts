@@ -1,6 +1,10 @@
+import {
+  type CompletedLoadVolumeExerciseReport,
+  type CompletedLoadVolumeMovementRow,
+  summarizeCompletedLoadVolume,
+} from "./completed-load-volume";
 import type { TrainingPlan } from "./training-plan";
-import type { TrainingSession, TrainingSessionMovementVolume } from "./training-session";
-import { formatSessionMovementPattern } from "./training-session";
+import type { TrainingSession } from "./training-session";
 
 type TrainingHistoryWeek = {
   end: Date;
@@ -12,7 +16,7 @@ type TrainingHistoryWeek = {
 type TrainingHistoryWeekMetrics = {
   loadedSetCount: number;
   totalVolume: number;
-  volumeByMovementPattern: TrainingSessionMovementVolume[];
+  volumeByMovementPattern: CompletedLoadVolumeMovementRow[];
 };
 
 type CompletedTrainingSession = TrainingSession & { completedAt: string };
@@ -22,27 +26,14 @@ type TrainingHistorySessionDateRange = {
   oldestSessionDay: Date;
 };
 
-type TrainingHistorySessionTotals = {
-  completedLoadVolume: number;
-  loadedSetCount: number;
-};
-
-type TrainingSessionExercise = TrainingSession["exercises"][number];
-type TrainingSessionMovementPattern = TrainingSessionMovementVolume["movementPattern"];
+type TrainingSessionMovementPattern = CompletedLoadVolumeMovementRow["movementPattern"];
 
 type MovementPatternGroupVolume = {
   hasRows: boolean;
   totalVolume: number;
 };
 
-export type TrainingHistorySessionExerciseReport = {
-  completedLoadVolume: number;
-  exerciseId: string;
-  exerciseName: string;
-  loadedSetCount: number;
-  movementPattern: TrainingSessionMovementPattern;
-  movementPatternLabel: string;
-};
+export type TrainingHistorySessionExerciseReport = CompletedLoadVolumeExerciseReport;
 
 export type TrainingHistorySessionReport = {
   completedAt: string;
@@ -165,7 +156,7 @@ function summarizeTrainingSessionReports(
 ): TrainingHistoryWeekMetrics {
   let loadedSetCount = 0;
   let totalVolume = 0;
-  const volumeByPattern = new Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>();
+  const volumeByPattern = new Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow>();
 
   for (const sessionReport of sessionReports) {
     for (const exerciseReport of sessionReport.exercises) {
@@ -260,8 +251,8 @@ function createTrainingHistoryWeekSummary(
 }
 
 function createMovementPatternComparisons(
-  selectedWeekVolumes: ReadonlyArray<TrainingSessionMovementVolume>,
-  previousWeekVolumes: ReadonlyArray<TrainingSessionMovementVolume>,
+  selectedWeekVolumes: ReadonlyArray<CompletedLoadVolumeMovementRow>,
+  previousWeekVolumes: ReadonlyArray<CompletedLoadVolumeMovementRow>,
 ): ReadonlyArray<TrainingHistoryMovementPatternComparison> {
   const selectedVolumeByPattern = createVolumeByPatternIndex(selectedWeekVolumes);
   const previousVolumeByPattern = createVolumeByPatternIndex(previousWeekVolumes);
@@ -284,12 +275,12 @@ function createMovementPatternComparisons(
 }
 
 function createVolumeByPatternIndex(
-  rows: ReadonlyArray<TrainingSessionMovementVolume>,
-): Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume> {
+  rows: ReadonlyArray<CompletedLoadVolumeMovementRow>,
+): Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow> {
   return new Map(rows.map((row) => [row.movementPattern, row] as const));
 }
 
-function getMaxMovementPatternVolume(rows: ReadonlyArray<TrainingSessionMovementVolume>): number {
+function getMaxMovementPatternVolume(rows: ReadonlyArray<CompletedLoadVolumeMovementRow>): number {
   return Math.max(0, ...rows.map((row) => row.volume));
 }
 
@@ -301,8 +292,8 @@ function createMovementPatternComparison({
 }: {
   maxCurrentVolume: number;
   movementPattern: TrainingSessionMovementPattern;
-  previousRow: TrainingSessionMovementVolume | undefined;
-  selectedRow: TrainingSessionMovementVolume | undefined;
+  previousRow: CompletedLoadVolumeMovementRow | undefined;
+  selectedRow: CompletedLoadVolumeMovementRow | undefined;
 }): TrainingHistoryMovementPatternComparison {
   const currentVolume = selectedRow?.volume ?? 0;
   const previousVolume = previousRow?.volume ?? 0;
@@ -473,61 +464,21 @@ function resolveLeadingPushPullPatternGroup(
 function createTrainingHistorySessionReport(
   trainingSession: CompletedTrainingSession,
 ): TrainingHistorySessionReport {
-  const exercises = trainingSession.exercises.map(createTrainingHistorySessionExerciseReport);
-  const totals = sumTrainingHistorySessionExercises(exercises);
+  const completedLoadVolume = summarizeCompletedLoadVolume(trainingSession.exercises);
 
   return {
     completedAt: trainingSession.completedAt,
-    completedLoadVolume: totals.completedLoadVolume,
-    exercises,
+    completedLoadVolume: completedLoadVolume.totalVolume,
+    exercises: completedLoadVolume.exercises,
     id: trainingSession.id,
-    loadedSetCount: totals.loadedSetCount,
+    loadedSetCount: completedLoadVolume.loadedSetCount,
     templateLabel: trainingSession.templateLabel,
   };
 }
 
-function createTrainingHistorySessionExerciseReport(
-  exercise: TrainingSessionExercise,
-): TrainingHistorySessionExerciseReport {
-  let completedLoadVolume = 0;
-  let loadedSetCount = 0;
-
-  for (const set of exercise.sets) {
-    if (set.weight <= 0 || set.reps <= 0) {
-      continue;
-    }
-
-    completedLoadVolume += set.weight * set.reps;
-    loadedSetCount += 1;
-  }
-
-  return {
-    completedLoadVolume,
-    exerciseId: exercise.exerciseId,
-    exerciseName: exercise.exerciseName,
-    loadedSetCount,
-    movementPattern: exercise.movementPattern,
-    movementPatternLabel: formatSessionMovementPattern(exercise.movementPattern),
-  };
-}
-
-function sumTrainingHistorySessionExercises(
-  exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>,
-): TrainingHistorySessionTotals {
-  let completedLoadVolume = 0;
-  let loadedSetCount = 0;
-
-  for (const exercise of exercises) {
-    completedLoadVolume += exercise.completedLoadVolume;
-    loadedSetCount += exercise.loadedSetCount;
-  }
-
-  return { completedLoadVolume, loadedSetCount };
-}
-
 function updateMovementPatternVolume(
-  volumeByPattern: Map<TrainingSessionMovementPattern, TrainingSessionMovementVolume>,
-  exerciseReport: TrainingHistorySessionExerciseReport,
+  volumeByPattern: Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow>,
+  exerciseReport: CompletedLoadVolumeExerciseReport,
 ) {
   if (exerciseReport.completedLoadVolume <= 0) {
     return;
