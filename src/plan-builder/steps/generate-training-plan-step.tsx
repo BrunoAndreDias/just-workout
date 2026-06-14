@@ -1,7 +1,7 @@
 import { Wand2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
-import { PlanBuilderStepStatusCard } from "../components/plan-builder-page";
+import { PlanBuilderStepStatusCard } from "../components/plan-builder-step-status-card";
 import { getExerciseCatalogExercise } from "../exercise-catalog";
 import { getEquipmentPreset } from "../exercise-selection-preferences";
 import {

@@ -9,6 +9,15 @@ import { planBuilderPaths } from "./plan-builder-paths";
 import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 
+const legacyPlanBuilderStepPaths = [
+  "/plan-builder/overview",
+  "/plan-builder/frequency",
+  "/plan-builder/rep-ranges",
+  "/plan-builder/volume",
+  "/plan-builder/exercises",
+  "/plan-builder/generate",
+] as const;
+
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
     await db.delete();
@@ -30,18 +39,14 @@ describe("Plan Builder canonical route", () => {
     expect(screen.queryByRole("link", { name: /builder overview/i })).not.toBeInTheDocument();
   });
 
-  it("removes legacy Plan Builder step urls from the app route table", () => {
+  it("removes legacy Plan Builder step URLs from the app route table", () => {
     const router = createAppRouter();
-    const routesByPath =
-      (router as unknown as { routesByPath?: Record<string, unknown> }).routesByPath ?? {};
 
-    expect(routesByPath).toHaveProperty(planBuilderPaths.entry);
-    expect(routesByPath).not.toHaveProperty("/plan-builder/overview");
-    expect(routesByPath).not.toHaveProperty("/plan-builder/frequency");
-    expect(routesByPath).not.toHaveProperty("/plan-builder/rep-ranges");
-    expect(routesByPath).not.toHaveProperty("/plan-builder/volume");
-    expect(routesByPath).not.toHaveProperty("/plan-builder/exercises");
-    expect(routesByPath).not.toHaveProperty("/plan-builder/generate");
+    expect(router.routesByPath).toHaveProperty(planBuilderPaths.entry);
+
+    for (const legacyPath of legacyPlanBuilderStepPaths) {
+      expect(router.routesByPath).not.toHaveProperty(legacyPath);
+    }
   });
 
   it("opens each Plan Builder section from the unified workspace without prior confirmation", async () => {

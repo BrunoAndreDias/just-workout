@@ -66,6 +66,7 @@ import {
   type TrainingVolumeConfiguration,
   type VolumePresetId,
 } from "./training-volume";
+import "./components/plan-builder-page.css";
 import "./plan-builder-one-page-route.css";
 
 const planBuilderOnePageSections = [

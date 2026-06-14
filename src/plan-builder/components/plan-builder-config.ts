@@ -1,5 +1,3 @@
-export type PlanBuilderPrototypeVariant = "bottom" | "header" | "rail" | "strip";
-
 export const planBuilderSteps = [
   { id: "frequency", label: "Frequency" },
   { id: "rep-ranges", label: "Rep ranges" },
@@ -11,15 +9,6 @@ export const planBuilderSteps = [
 export type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
 
 export const planBuilderBlueprintQueryKey = ["plan-builder", "blueprint"] as const;
-
-export const planBuilderPrototypeVariants = [
-  { id: "strip", label: "Top strip" },
-  { id: "rail", label: "Mini rail" },
-  { id: "header", label: "Header metadata" },
-  { id: "bottom", label: "Status bar" },
-] as const satisfies ReadonlyArray<{ id: PlanBuilderPrototypeVariant; label: string }>;
-
-export const planBuilderLargeScreenQuery = "(min-width: 1280px) and (min-height: 720px)";
 
 export const planBuilderNextStepBodyByStep = {
   frequency: "Next, you'll choose the rep range and volume style for your workout plan.",
