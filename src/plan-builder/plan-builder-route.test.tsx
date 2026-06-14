@@ -56,6 +56,13 @@ describe("Plan Builder canonical route", () => {
 
     const exercisesCard = await getOnePageSectionButton("Exercises");
 
+    await user.click(await getOnePageSectionButton("Training schedule"));
+    expect(
+      await screen.findByRole("heading", {
+        name: /how many days can you train per week\?/i,
+      }),
+    ).toBeVisible();
+
     await user.click(await getOnePageSectionButton("Rep ranges"));
     expect(
       await screen.findByRole("radio", {
