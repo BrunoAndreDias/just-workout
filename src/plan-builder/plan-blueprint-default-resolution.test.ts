@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createDefaultPlanBlueprint,
+  normalizePlanBlueprint,
   type PlanBlueprint,
   resolvePlanBlueprintRecommendedDefaults,
 } from "./plan-blueprint";
@@ -49,10 +50,15 @@ describe("plan blueprint default resolution", () => {
           kind: "training_volume",
           ...createRecommendedTrainingVolumeConfiguration(),
         },
+        {
+          equipmentPreset: "full_gym",
+          kind: "equipment_preset",
+        },
       ],
       resolvedBlueprint: {
         ...blueprint,
         ...createRecommendedTrainingVolumeConfiguration(),
+        equipmentPresetSource: "user_selected",
         repRanges: "balanced_hypertrophy",
         split: "full-body-3-day",
       },
@@ -63,6 +69,7 @@ describe("plan blueprint default resolution", () => {
   it("returns a ready result when the non-exercise Plan Blueprint choices are already configured", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
       repRanges: "controlled_higher_reps",
       split: "upper-lower-4-day",
       trainingFrequencyDaysPerWeek: 4,
@@ -103,6 +110,7 @@ describe("plan blueprint default resolution", () => {
       resolvedBlueprint: {
         ...blueprint,
         ...createRecommendedTrainingVolumeConfiguration(),
+        equipmentPresetSource: "user_selected",
         exerciseSelectionPreferences: {
           avoidedExercises: [{ id: "avoid-1", rawText: "Behind-the-neck press" }],
           equipmentPreset: "full_gym",
@@ -114,5 +122,37 @@ describe("plan blueprint default resolution", () => {
     expect(blueprint.repRanges).toBe("strength_leaning");
     expect(blueprint.split).toBe("rotating-push-pull-legs");
     expect(blueprint.volumePreset).toBeNull();
+  });
+
+  it("reports the missing Equipment Preset default after normalizing a stored blueprint that lacked it", () => {
+    const storedBlueprint = {
+      createdAt: testBlueprintOptions.timestamp,
+      id: testBlueprintOptions.id,
+      mainCompoundRotationPools: [],
+      mainCompoundSelections: [],
+      repRanges: "balanced_hypertrophy" as const,
+      split: "full-body-3-day" as const,
+      trainingFrequencyDaysPerWeek: 3 as const,
+      trainingGoal: "build-muscle" as const,
+      updatedAt: testBlueprintOptions.timestamp,
+      ...createRecommendedTrainingVolumeConfiguration(),
+    };
+    const blueprint = normalizePlanBlueprint(storedBlueprint);
+
+    expect(resolvePlanBlueprintRecommendedDefaults(blueprint)).toMatchObject({
+      isReady: false,
+      recommendedDefaults: [
+        {
+          equipmentPreset: "full_gym",
+          kind: "equipment_preset",
+        },
+      ],
+      resolvedBlueprint: {
+        ...blueprint,
+        equipmentPresetSource: "user_selected",
+      },
+    });
+    expect(blueprint.equipmentPresetSource).toBeNull();
+    expect(blueprint.exerciseSelectionPreferences.equipmentPreset).toBe("full_gym");
   });
 });

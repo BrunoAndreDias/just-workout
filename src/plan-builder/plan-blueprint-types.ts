@@ -48,6 +48,8 @@ export type PlanBuilderConfirmedSteps = {
   volume: boolean;
 };
 
+export type EquipmentPresetSource = "user_selected";
+
 export type PlanBlueprint = {
   id: string;
   createdAt: string;
@@ -62,6 +64,7 @@ export type PlanBlueprint = {
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
+  equipmentPresetSource: EquipmentPresetSource | null;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
 };
 
@@ -187,6 +190,7 @@ export type StoredPlanBlueprint = Omit<
   PlanBlueprint,
   | "confirmedBuilderSteps"
   | "exerciseSelectionPreferences"
+  | "equipmentPresetSource"
   | "mainCompoundSelections"
   | "mainCompoundRotationPools"
   | "volumePreset"
@@ -195,6 +199,7 @@ export type StoredPlanBlueprint = Omit<
 > & {
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
   exerciseSelectionPreferences?: unknown;
+  equipmentPresetSource?: unknown;
   mainCompoundSelections?: unknown;
   mainCompoundRotationPools?: unknown;
   volumePreset?: unknown;

@@ -53,6 +53,7 @@ import type {
   ConfirmTrainingSplitOptions,
   ConfirmTrainingVolumeOptions,
   CreateDefaultPlanBlueprintOptions,
+  EquipmentPresetSource,
   InitializeTrainingVolumeOptions,
   PlanBlueprint,
   SelectMainCompoundOptions,
@@ -108,6 +109,7 @@ export function createDefaultPlanBlueprint({
     mainCompoundSelections: [],
     mainCompoundRotationPools: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
+    equipmentPresetSource: null,
     confirmedBuilderSteps: getConfirmedBuilderSteps({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
     }),
@@ -123,6 +125,7 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
     exerciseSelectionPreferences: normalizeExerciseSelectionPreferences(
       blueprint.exerciseSelectionPreferences,
     ),
+    equipmentPresetSource: normalizeEquipmentPresetSource(blueprint),
     mainCompoundSelections,
     mainCompoundRotationPools: normalizeMainCompoundRotationPools({
       mainCompoundSelections,
@@ -329,6 +332,7 @@ export function updateExerciseSelectionPreferences({
       ...confirmedBuilderSteps,
       exercises: hasExerciseSelectionPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
+    equipmentPresetSource: "user_selected",
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
     updatedAt: timestamp,
   };
@@ -533,8 +537,29 @@ export function confirmExerciseSelectionPreferences({
       ...blueprintToConfirm.confirmedBuilderSteps,
       exercises: true,
     },
+    equipmentPresetSource: "user_selected",
     updatedAt: timestamp,
   };
+}
+
+function normalizeEquipmentPresetSource(
+  blueprint: StoredPlanBlueprint,
+): EquipmentPresetSource | null {
+  if (Object.hasOwn(blueprint, "equipmentPresetSource")) {
+    return blueprint.equipmentPresetSource === "user_selected" ? "user_selected" : null;
+  }
+
+  const preferences = blueprint.exerciseSelectionPreferences;
+
+  if (typeof preferences !== "object" || preferences === null) {
+    return null;
+  }
+
+  if (!("equipmentPreset" in preferences)) {
+    return null;
+  }
+
+  return preferences.equipmentPreset === "full_gym" ? "user_selected" : null;
 }
 
 function getCompatibleSelectedTrainingSplit({

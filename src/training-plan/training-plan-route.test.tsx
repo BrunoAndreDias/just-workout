@@ -988,6 +988,7 @@ function createCompleteBlueprint({
       preferredExercises: [],
       strategy: "balanced",
     },
+    equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,

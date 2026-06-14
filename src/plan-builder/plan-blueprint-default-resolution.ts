@@ -84,17 +84,16 @@ export function resolvePlanBlueprintRecommendedDefaults(
   const normalizedExerciseSelectionPreferences = normalizeExerciseSelectionPreferences(
     blueprint.exerciseSelectionPreferences,
   );
-  const currentEquipmentPreset = getExerciseSelectionEquipmentPreset(
-    blueprint.exerciseSelectionPreferences,
-  );
+  const needsEquipmentPresetDefault = blueprint.equipmentPresetSource !== "user_selected";
 
-  if (currentEquipmentPreset !== normalizedExerciseSelectionPreferences.equipmentPreset) {
+  if (needsEquipmentPresetDefault) {
     recommendedDefaults.push({
       kind: "equipment_preset",
       equipmentPreset: normalizedExerciseSelectionPreferences.equipmentPreset,
     });
     resolvedBlueprint = {
       ...resolvedBlueprint,
+      equipmentPresetSource: "user_selected",
       exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
     };
   }
@@ -104,16 +103,4 @@ export function resolvePlanBlueprintRecommendedDefaults(
     recommendedDefaults,
     resolvedBlueprint,
   };
-}
-
-function getExerciseSelectionEquipmentPreset(preferences: unknown): string | null {
-  if (typeof preferences !== "object" || preferences === null) {
-    return null;
-  }
-
-  if (!("equipmentPreset" in preferences)) {
-    return null;
-  }
-
-  return typeof preferences.equipmentPreset === "string" ? preferences.equipmentPreset : null;
 }

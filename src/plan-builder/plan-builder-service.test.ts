@@ -184,6 +184,7 @@ describe("planBuilderService", () => {
 
     expect(updatedBlueprint).toEqual({
       ...configuredBlueprint,
+      equipmentPresetSource: "user_selected",
       exerciseSelectionPreferences: expectedExerciseSelectionPreferences,
       updatedAt: "2026-05-30T10:15:00.000Z",
     });
@@ -244,6 +245,7 @@ describe("planBuilderService", () => {
     const expectedAddedExerciseBlueprint: PlanBlueprint = {
       ...confirmedBlueprint,
       confirmedBuilderSteps: expectedConfirmedBuilderStepsAfterDraftChange,
+      equipmentPresetSource: "user_selected",
       exerciseSelectionPreferences: {
         ...confirmedBlueprint.exerciseSelectionPreferences,
         [listId]: exercisesAfterAdd,
@@ -331,6 +333,7 @@ describe("planBuilderService", () => {
         split: true,
         volume: true,
       },
+      equipmentPresetSource: "user_selected",
       exerciseSelectionPreferences: expectedExerciseSelectionPreferences,
       updatedAt: "2026-05-30T10:16:00.000Z",
     });

@@ -97,6 +97,7 @@ describe("plan blueprint", () => {
         preferredExercises: [],
         strategy: "balanced",
       },
+      equipmentPresetSource: null,
       confirmedBuilderSteps: {
         exercises: false,
         frequency: false,
@@ -120,6 +121,7 @@ describe("plan blueprint", () => {
       }),
     ).toMatchObject({
       mainCompoundSelections: [],
+      equipmentPresetSource: null,
       exerciseSelectionPreferences: {
         avoidedExercises: [],
         equipmentPreset: "full_gym",
@@ -183,6 +185,7 @@ describe("plan blueprint", () => {
           updatedAt: "2026-05-30T10:05:00.000Z",
         },
       ],
+      equipmentPresetSource: null,
       exerciseSelectionPreferences: {
         avoidedExercises: [{ id: "avoided-1", rawText: "Behind-the-neck press" }],
         equipmentPreset: "full_gym",
