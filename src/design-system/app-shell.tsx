@@ -15,22 +15,27 @@ type AppShellTrainingSessionTarget = {
   templateId: string;
 };
 
+const planBuilderNavigationHref = "/plan-builder";
+const trainingPlansNavigationHref = "/training-plans";
+
+type AppShellNavigationHref = typeof planBuilderNavigationHref | typeof trainingPlansNavigationHref;
+
 type AppShellNavigationItem = {
-  href: string;
+  href: AppShellNavigationHref;
   icon: ReactNode;
   label: string;
 };
 
 const appShellNavigationItems = [
   {
-    href: "/plan-builder",
+    href: planBuilderNavigationHref,
     icon: (
       <CalendarCheck aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
     ),
     label: "Plan Builder",
   },
   {
-    href: "/training-plans",
+    href: trainingPlansNavigationHref,
     icon: (
       <ClipboardList aria-hidden="true" className="app-shell-navigation-icon" strokeWidth={1.7} />
     ),
@@ -61,7 +66,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
               <Link
                 aria-label="Just Workout"
                 className="app-shell-brand flex min-w-0 items-center gap-3 px-4 pr-3 transition-colors hover:bg-stone-950/5 sm:px-5"
-                to="/plan-builder"
+                to={planBuilderNavigationHref}
               >
                 <span className="app-shell-brand-mark flex shrink-0 items-center justify-center bg-[#00636a] text-white">
                   <Dumbbell aria-hidden="true" className="app-shell-brand-icon" strokeWidth={2.4} />
@@ -152,7 +157,7 @@ function AppShellNavigationLink({
     <Link
       aria-current={isActive ? "page" : undefined}
       className={appShellNavigationLinkClassName}
-      activeOptions={item.href === "/training-plans" ? { exact: true } : undefined}
+      activeOptions={item.href === trainingPlansNavigationHref ? { exact: true } : undefined}
       to={item.href}
     >
       <AppShellNavigationPill icon={item.icon} isActive={isActive} label={item.label} />
@@ -160,16 +165,16 @@ function AppShellNavigationLink({
   );
 }
 
-function isAppShellNavigationItemActive(currentPathname: string, href: string) {
-  if (href === "/plan-builder") {
-    return currentPathname.startsWith("/plan-builder");
+function isAppShellNavigationItemActive(currentPathname: string, href: AppShellNavigationHref) {
+  switch (href) {
+    case planBuilderNavigationHref:
+      return currentPathname.startsWith(planBuilderNavigationHref);
+    case trainingPlansNavigationHref:
+      return (
+        currentPathname === trainingPlansNavigationHref ||
+        /^\/training-plans\/[^/]+$/.test(currentPathname)
+      );
   }
-
-  if (href === "/training-plans") {
-    return currentPathname === href || /^\/training-plans\/[^/]+$/.test(currentPathname);
-  }
-
-  return currentPathname === href;
 }
 
 function AppShellNavigationPill({
