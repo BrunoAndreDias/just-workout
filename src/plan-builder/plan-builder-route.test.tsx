@@ -1182,19 +1182,19 @@ describe("PlanBuilderRoute", () => {
     await expectGenerateStepComingNext();
     await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
-    const confirmation = await screen.findByRole("dialog", {
-      name: /default generation confirmation/i,
-    });
+    const confirmation = await findDefaultGenerationConfirmation();
 
     expect(
       within(confirmation).getByText(
         "Just Workout will apply these Recommended Defaults before generation continues.",
       ),
     ).toBeVisible();
-    expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
-    expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
-    expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
-    expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
+    expectRecommendedDefaultItemsVisible(confirmation, [
+      "3-Day Full Body",
+      "Balanced hypertrophy",
+      "Balanced volume preset",
+      "Full gym equipment preset",
+    ]);
 
     await user.click(within(confirmation).getByRole("button", { name: /^cancel$/i }));
 
@@ -1266,17 +1266,17 @@ describe("PlanBuilderRoute", () => {
     await expectGenerateStepComingNext();
     await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
-    const confirmation = await screen.findByRole("dialog", {
-      name: /default generation confirmation/i,
-    });
+    const confirmation = await findDefaultGenerationConfirmation();
 
-    expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
-    expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
-    expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
-    expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
-    expect(within(confirmation).getByText("Flat Barbell Bench Press")).toBeVisible();
-    expect(within(confirmation).getByText("Bent Over Barbell Rows")).toBeVisible();
-    expect(within(confirmation).getByText("Barbell Squats")).toBeVisible();
+    expectRecommendedDefaultItemsVisible(confirmation, [
+      "3-Day Full Body",
+      "Balanced hypertrophy",
+      "Balanced volume preset",
+      "Full gym equipment preset",
+      "Flat Barbell Bench Press",
+      "Bent Over Barbell Rows",
+      "Barbell Squats",
+    ]);
 
     await user.click(
       within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
@@ -1313,16 +1313,16 @@ describe("PlanBuilderRoute", () => {
     await expectGenerateStepComingNext();
     await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
-    const confirmation = await screen.findByRole("dialog", {
-      name: /default generation confirmation/i,
-    });
+    const confirmation = await findDefaultGenerationConfirmation();
 
-    expect(within(confirmation).queryByText("Flat Barbell Bench Press")).not.toBeInTheDocument();
-    expect(within(confirmation).getByText("Bent Over Barbell Rows")).toBeVisible();
-    expect(within(confirmation).getByText("Standing Overhead Barbell Press")).toBeVisible();
-    expect(within(confirmation).getByText("Pull-Ups")).toBeVisible();
-    expect(within(confirmation).getByText("Barbell Squats")).toBeVisible();
-    expect(within(confirmation).getByText("Barbell Romanian Deadlifts")).toBeVisible();
+    expectRecommendedDefaultItemsAbsent(confirmation, ["Flat Barbell Bench Press"]);
+    expectRecommendedDefaultItemsVisible(confirmation, [
+      "Bent Over Barbell Rows",
+      "Standing Overhead Barbell Press",
+      "Pull-Ups",
+      "Barbell Squats",
+      "Barbell Romanian Deadlifts",
+    ]);
 
     await user.click(
       within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
@@ -2588,6 +2588,30 @@ async function expectGenerateStepComingNext() {
     ),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: /^generate training plan$/i })).toBeEnabled();
+}
+
+async function findDefaultGenerationConfirmation() {
+  return screen.findByRole("dialog", {
+    name: /default generation confirmation/i,
+  });
+}
+
+function expectRecommendedDefaultItemsVisible(
+  confirmation: HTMLElement,
+  labels: ReadonlyArray<string>,
+) {
+  for (const label of labels) {
+    expect(within(confirmation).getByText(label)).toBeVisible();
+  }
+}
+
+function expectRecommendedDefaultItemsAbsent(
+  confirmation: HTMLElement,
+  labels: ReadonlyArray<string>,
+) {
+  for (const label of labels) {
+    expect(within(confirmation).queryByText(label)).not.toBeInTheDocument();
+  }
 }
 
 function expectBlueprintSummaryField(summary: HTMLElement, label: string, value: string) {
