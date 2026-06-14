@@ -13,6 +13,7 @@ import { cn } from "../design-system/cn";
 import { PageHeader, PageMain } from "../design-system/typography";
 import type { PlanBuilderStep } from "./components/plan-builder-config";
 import {
+  useApplyResolvedPlanBlueprintMutation,
   useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
   useConfirmTrainingFrequencyMutation,
@@ -37,8 +38,10 @@ import {
   hasConfiguredTrainingVolume,
   hasValidTrainingFrequency,
   type PlanBlueprint,
+  type PlanBlueprintDefaultResolution,
   type PlanBlueprintSummary,
   type RepRangeStyleId,
+  resolvePlanBlueprintRecommendedDefaults,
   type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import {
@@ -342,11 +345,17 @@ function PlanBuilderOnePageUnlockedStep({
   const selectedRepRangeStyleId = savedRepRangeStyleId ?? defaultRepRangeStyleId;
   const selectedRepRangeStyle = getRepRangeStyle(selectedRepRangeStyleId);
   const trainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
+  const [pendingDefaultResolution, setPendingDefaultResolution] =
+    useState<PlanBlueprintDefaultResolution | null>(null);
   const frequencyStep = useOnePageTrainingScheduleStep({ blueprint, setActiveStep });
   const repRangeStep = useOnePageRepRangeStep({ selectedRepRangeStyleId, setActiveStep });
   const volumeStep = useOnePageVolumeStep({ setActiveStep, trainingVolumeConfiguration });
   const exercisesStep = useOnePageExercisesStep({ setActiveStep });
-  const generateStep = useOnePageGenerateStep({ navigate });
+  const generateStep = useOnePageGenerateStep({
+    blueprint,
+    navigate,
+    onPendingDefaultResolutionChange: setPendingDefaultResolution,
+  });
 
   useRepRangeDefaultSelection({
     activeStep,
@@ -365,6 +374,7 @@ function PlanBuilderOnePageUnlockedStep({
     exercisesStep,
     frequencyStep,
     generateStep,
+    pendingDefaultResolution,
     repRangeStep,
     selectedRepRangeStyle,
     savedRepRangeStyleId,
@@ -381,6 +391,7 @@ function renderOnePageActiveStep({
   exercisesStep,
   frequencyStep,
   generateStep,
+  pendingDefaultResolution,
   repRangeStep,
   selectedRepRangeStyle,
   savedRepRangeStyleId,
@@ -394,6 +405,7 @@ function renderOnePageActiveStep({
   exercisesStep: ReturnType<typeof useOnePageExercisesStep>;
   frequencyStep: ReturnType<typeof useOnePageTrainingScheduleStep>;
   generateStep: ReturnType<typeof useOnePageGenerateStep>;
+  pendingDefaultResolution: PlanBlueprintDefaultResolution | null;
   repRangeStep: ReturnType<typeof useOnePageRepRangeStep>;
   selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
   savedRepRangeStyleId: RepRangeStyleId | null;
@@ -446,7 +458,13 @@ function renderOnePageActiveStep({
       );
     }
     case "generate":
-      return <GenerateTrainingPlanStep summary={summary} {...generateStep} />;
+      return (
+        <GenerateTrainingPlanStep
+          pendingDefaultResolution={pendingDefaultResolution}
+          summary={summary}
+          {...generateStep}
+        />
+      );
   }
 
   return null;
@@ -629,19 +647,48 @@ function useOnePageExercisesStep({
   };
 }
 
-function useOnePageGenerateStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+function useOnePageGenerateStep({
+  blueprint,
+  navigate,
+  onPendingDefaultResolutionChange,
+}: {
+  blueprint: PlanBlueprint;
+  navigate: ReturnType<typeof useNavigate>;
+  onPendingDefaultResolutionChange: (resolution: PlanBlueprintDefaultResolution | null) => void;
+}) {
+  const { mutateAsync: applyResolvedPlanBlueprint, isPending: isApplyingResolvedBlueprint } =
+    useApplyResolvedPlanBlueprintMutation();
   const { mutateAsync: generateTrainingPlan, isPending: isGenerating } =
     useGenerateTrainingPlanMutation();
 
-  return {
-    isGenerating,
-    onGenerateTrainingPlan: async () => {
-      const trainingPlan = await generateTrainingPlan();
+  async function generateAndNavigate() {
+    const trainingPlan = await generateTrainingPlan();
 
-      await navigate({
-        params: { planId: trainingPlan.id },
-        to: "/training-plans/$planId",
-      });
+    await navigate({
+      params: { planId: trainingPlan.id },
+      to: "/training-plans/$planId",
+    });
+  }
+
+  return {
+    isGenerating: isGenerating || isApplyingResolvedBlueprint,
+    onAcceptRecommendedDefaults: async (resolution: PlanBlueprintDefaultResolution) => {
+      await applyResolvedPlanBlueprint({ resolution });
+      onPendingDefaultResolutionChange(null);
+      await generateAndNavigate();
+    },
+    onCancelRecommendedDefaults: () => {
+      onPendingDefaultResolutionChange(null);
+    },
+    onGenerateTrainingPlan: async () => {
+      const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+      if (!resolution.isReady) {
+        onPendingDefaultResolutionChange(resolution);
+        return;
+      }
+
+      await generateAndNavigate();
     },
   };
 }

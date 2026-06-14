@@ -1166,6 +1166,50 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   });
 
+  it("prompts before generating when non-exercise Recommended Defaults will be applied and cancels without persisting them", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await expectGenerateStepComingNext();
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+
+    const confirmation = await screen.findByRole("dialog", {
+      name: /default generation confirmation/i,
+    });
+
+    expect(
+      within(confirmation).getByText(
+        "Just Workout will apply these Recommended Defaults before generation continues.",
+      ),
+    ).toBeVisible();
+    expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
+    expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
+
+    await user.click(within(confirmation).getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: /default generation confirmation/i })).toBeNull();
+    });
+    expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
+    expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(0);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      equipmentPresetSource: null,
+      repRanges: null,
+      split: null,
+      volumePreset: null,
+    });
+  });
+
   it("generates an active Training Plan and navigates to the plan route", async () => {
     const user = userEvent.setup();
 
@@ -1210,6 +1254,42 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
     expect(screen.getByRole("link", { name: /training plans/i })).toBeVisible();
     expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
+  });
+
+  it("accepts non-exercise Recommended Defaults before generating and persists them into the Plan Blueprint", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await db.planBlueprints.put({
+      ...blueprint,
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
+
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await expectGenerateStepComingNext();
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+
+    const confirmation = await screen.findByRole("dialog", {
+      name: /default generation confirmation/i,
+    });
+
+    await user.click(
+      within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+    });
+    expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
+    expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      equipmentPresetSource: "user_selected",
+      repRanges: "balanced_hypertrophy",
+      split: "full-body-3-day",
+      volumePreset: "balanced",
+    });
   });
 
   it("opens the Training Plans route from the top menu", async () => {

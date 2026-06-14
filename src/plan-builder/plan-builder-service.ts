@@ -8,6 +8,7 @@ import {
   createDefaultPlanBlueprint,
   initializeTrainingVolume as initializeTrainingVolumeState,
   normalizePlanBlueprint,
+  type PlanBlueprint,
   type RepRangeStyleId,
   selectMainCompound,
   selectRepRangeStyle,
@@ -120,6 +121,10 @@ type ConfirmExerciseSelectionPreferencesOptions = {
 
 type InitializeTrainingVolumeOptions = {
   timestamp?: string;
+};
+
+type ApplyResolvedPlanBlueprintOptions = {
+  blueprint: PlanBlueprint;
 };
 
 async function updateTrainingFrequency({
@@ -335,7 +340,12 @@ async function initializeTrainingVolume({
   );
 }
 
+async function applyResolvedPlanBlueprint({ blueprint }: ApplyResolvedPlanBlueprintOptions) {
+  return savePlanBlueprint(blueprint);
+}
+
 export const planBuilderService = {
+  applyResolvedPlanBlueprint,
   confirmSelectedExerciseSelectionPreferences,
   confirmSelectedRepRangeStyle,
   confirmSelectedTrainingFrequency,

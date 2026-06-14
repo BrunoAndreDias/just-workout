@@ -9,6 +9,7 @@ import {
   confirmTrainingVolume,
   initializeTrainingVolume,
   type PlanBlueprint,
+  type PlanBlueprintDefaultResolution,
   type RepRangeStyleId,
   selectMainCompound,
   selectRepRangeStyle,
@@ -89,6 +90,10 @@ type ConfirmTrainingVolumeMutationVariables = {
 type ConfirmExerciseSelectionPreferencesMutationVariables = {
   exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   timestamp: string;
+};
+
+type ApplyResolvedPlanBlueprintMutationVariables = {
+  resolution: PlanBlueprintDefaultResolution;
 };
 export function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
@@ -322,6 +327,16 @@ export function useUpdateMainCompoundRotationPoolMutation() {
 export function useGenerateTrainingPlanMutation() {
   return useMutation<TrainingPlan, Error, void>({
     mutationFn: trainingPlanService.generateTrainingPlan,
+  });
+}
+
+export function useApplyResolvedPlanBlueprintMutation() {
+  return usePlanBlueprintMutation<ApplyResolvedPlanBlueprintMutationVariables>({
+    mutationFn: ({ resolution }) =>
+      planBuilderService.applyResolvedPlanBlueprint({
+        blueprint: resolution.resolvedBlueprint,
+      }),
+    optimisticUpdate: (_blueprint, { resolution }) => resolution.resolvedBlueprint,
   });
 }
 
