@@ -4,6 +4,7 @@ import {
   PlanBuilderExercisesRoute,
   PlanBuilderGenerateRoute,
   type PlanBuilderGuardedStep,
+  PlanBuilderOnePageRoute,
   type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
@@ -35,11 +36,17 @@ const planBuilderEntryRoute = createRoute({
   beforeLoad: () => {
     throw redirect({
       replace: true,
-      to: planBuilderPaths.frequency,
+      to: planBuilderPaths.overview,
     });
   },
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.entry,
+});
+
+const planBuilderOverviewRoute = createRoute({
+  component: PlanBuilderOnePageRoute,
+  getParentRoute: () => rootRoute,
+  path: planBuilderPaths.overview,
 });
 
 const planBuilderFrequencyRoute = createRoute({
@@ -141,6 +148,7 @@ const trainingPlansRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   planBuilderEntryRoute,
+  planBuilderOverviewRoute,
   planBuilderFrequencyRoute,
   planBuilderRepRangesRoute,
   planBuilderVolumeRoute,

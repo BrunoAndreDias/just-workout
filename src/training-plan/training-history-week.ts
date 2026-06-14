@@ -619,7 +619,7 @@ function clampWeekEnd({
 function isCompletedTrainingSession(
   trainingSession: TrainingSession,
 ): trainingSession is CompletedTrainingSession {
-  return trainingSession.completedAt !== null;
+  return trainingSession.completedAt !== null && isValidDateString(trainingSession.completedAt);
 }
 
 function getCompletedSessionDateRange(
@@ -678,7 +678,9 @@ function parseDayKey(value: string | null): Date | null {
     return null;
   }
 
-  return toUtcDay(`${value}T00:00:00.000Z`);
+  const parsedDay = toUtcDay(`${value}T00:00:00.000Z`);
+
+  return isValidDate(parsedDay) ? parsedDay : null;
 }
 
 function toDayKey(value: Date): string {
@@ -689,6 +691,14 @@ function toUtcDay(value: string): Date {
   const date = new Date(value);
 
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function isValidDateString(value: string): boolean {
+  return isValidDate(new Date(value));
+}
+
+function isValidDate(value: Date): boolean {
+  return !Number.isNaN(value.getTime());
 }
 
 function addUtcDays(value: Date, days: number): Date {

@@ -44,7 +44,7 @@ export function TrainingFrequencyStep({
     <section aria-labelledby="training-frequency-title" className="training-frequency-panel">
       <div className="training-frequency-heading">
         <h2 className="training-frequency-title" id="training-frequency-title">
-          Frequency
+          How many days can you train per week?
         </h2>
       </div>
 
@@ -80,12 +80,12 @@ export function TrainingFrequencyStep({
             type="button"
             variant="builderPrimary"
           >
-            Continue to Training style
+            Continue to Rep ranges
             <ArrowRight aria-hidden="true" size={20} />
           </Button>
         ) : (
           <Button disabled size="step" type="button" variant="builderPrimary">
-            Continue to Training style
+            Continue to Rep ranges
             <ArrowRight aria-hidden="true" size={20} />
           </Button>
         )}
@@ -189,8 +189,8 @@ function TrainingFrequencyRecommendationCard({
   recommendedSplit,
   selectedSplit,
 }: TrainingFrequencyRecommendationCardProps) {
-  const splitOptions = [recommendedSplit, ...compatibleSplits];
   const weeklyLayout = getCompactWeeklyLayout(selectedSplit);
+  const splitOptions = [recommendedSplit, ...compatibleSplits];
 
   return (
     <section aria-labelledby="training-schedule-split-title" className="training-schedule-split">
@@ -204,12 +204,12 @@ function TrainingFrequencyRecommendationCard({
         {splitOptions.map((split) => {
           const isSelected = selectedSplit.id === split.id;
           const isRecommended = split.id === recommendedSplit.id;
-          const benefits = getSplitCardBenefits(split);
 
           return (
             <label
               className={cn(
                 "training-schedule-split__card",
+                isRecommended ? "training-schedule-split__card--recommended" : null,
                 isSelected ? "training-schedule-split__card--selected" : null,
               )}
               key={split.id}
@@ -222,17 +222,15 @@ function TrainingFrequencyRecommendationCard({
                 type="radio"
                 value={split.id}
               />
-              <span className="training-schedule-split__selected-check" aria-hidden="true">
-                {isSelected ? <Check size={18} strokeWidth={2.5} /> : null}
-              </span>
               <div className="training-schedule-split__heading">
                 <div className="training-schedule-split__title-row">
                   <h3>{split.label}</h3>
                   {isRecommended ? (
-                    <span className="training-schedule-split__badge">Best fit</span>
+                    <span className="training-schedule-split__chips">
+                      <span className="training-schedule-split__badge">Best fit</span>
+                    </span>
                   ) : null}
                 </div>
-                <p>{split.cardDescription}</p>
               </div>
 
               <ul
@@ -242,7 +240,7 @@ function TrainingFrequencyRecommendationCard({
                 )}
                 aria-label={`${split.label} benefits`}
               >
-                {benefits.map((benefit) => (
+                {getSplitCardBenefits(split).map((benefit) => (
                   <li key={benefit}>
                     <Check aria-hidden="true" size={15} strokeWidth={2.4} />
                     <span>{benefit}</span>
@@ -255,7 +253,10 @@ function TrainingFrequencyRecommendationCard({
       </div>
 
       <div className="training-schedule-split__layout">
-        <h3>Selected weekly layout</h3>
+        <h3>Weekly preview</h3>
+        <p className="training-schedule-split__layout-helper">
+          Training on Mon, Wed and Fri with recovery days between sessions.
+        </p>
         <ol>
           {weeklyLayout.map((layoutDay) => (
             <li
@@ -293,7 +294,7 @@ function getSplitCardBenefits(split: TrainingSplitDefinition): ReadonlyArray<str
     case "rotating-push-pull-legs":
       return ["Flexible training days", "Push, pull, legs variety", "Best with movable weekdays"];
     default:
-      return ["Muscles trained 3x/week", "Best balance", "Manageable recovery"];
+      return ["Muscles trained 3x/week", "Simple progression", "Manageable recovery"];
   }
 }
 

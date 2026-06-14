@@ -143,6 +143,51 @@ describe("buildTrainingHistoryWeekReport", () => {
       },
     ]);
   });
+
+  it("ignores corrupted completed sessions with invalid completion dates", () => {
+    const trainingPlan = createTrainingPlan();
+    const trainingSessions: ReadonlyArray<TrainingSession> = [
+      createTrainingSession({
+        completedAt: "not-a-date",
+        id: "corrupted-session",
+        templateLabel: "Corrupted Session",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            movementPatternLabel: "Horizontal Push",
+            volume: 1000,
+          },
+        ],
+      }),
+      createTrainingSession({
+        completedAt: "2026-06-06T09:00:00.000Z",
+        id: "valid-session",
+        templateLabel: "Full Body A",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_pull",
+            movementPatternLabel: "Horizontal Pull",
+            volume: 400,
+          },
+        ],
+      }),
+    ];
+
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: "not-a-week",
+      trainingPlan,
+      trainingSessions,
+    });
+
+    expect(report.selectedSessions).toHaveLength(1);
+    expect(report.selectedSessions[0]).toEqual(
+      expect.objectContaining({
+        id: "valid-session",
+        templateLabel: "Full Body A",
+      }),
+    );
+    expect(report.summary.totalVolume).toBe(400);
+  });
 });
 
 function createTrainingPlan(): TrainingPlan {

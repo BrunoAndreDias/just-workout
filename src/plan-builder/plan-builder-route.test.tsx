@@ -215,9 +215,18 @@ describe("PlanBuilderRoute", () => {
     expect(within(frequencyGroup).queryByText("Full Body")).not.toBeInTheDocument();
     expect(within(frequencyGroup).queryByText("Upper/Lower")).not.toBeInTheDocument();
     expect(within(frequencyGroup).queryByText("Push/Pull/Legs variation")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "How many days can you train per week?" }),
+    ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Choose your weekly split" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
-    expect(screen.getByText("Selected weekly layout")).toBeVisible();
+    expect(within(splitGroup).getByText("Best fit")).toBeVisible();
+    expect(within(splitGroup).queryByText(/Good fit for/i)).not.toBeInTheDocument();
+    expect(within(splitGroup).queryByText("Other compatible splits")).not.toBeInTheDocument();
+    expect(screen.getByText("Weekly preview")).toBeVisible();
+    expect(
+      screen.getByText("Training on Mon, Wed and Fri with recovery days between sessions."),
+    ).toBeVisible();
     expect(screen.getByText("Alternating Full Body A/B")).toBeVisible();
     expect(within(splitGroup).getByText("Upper / Lower / Full Body")).toBeVisible();
     expect(
@@ -234,7 +243,7 @@ describe("PlanBuilderRoute", () => {
     expectBlueprintSummaryField(summary, "Split", "Pending");
     expectBlueprintSummaryField(summary, "Rep ranges", "Pending");
     expect(screen.getByRole("button", { name: /^back$/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /continue to training style/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "What happens next" })).not.toBeInTheDocument();
   });
 
@@ -360,7 +369,7 @@ describe("PlanBuilderRoute", () => {
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
 
     await selectTrainingFrequency(user, 4);
-    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -395,7 +404,7 @@ describe("PlanBuilderRoute", () => {
       ).toBeChecked();
     });
 
-    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -1726,7 +1735,7 @@ describe("PlanBuilderRoute", () => {
 
     expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
 
-    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
 
     const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
@@ -2191,9 +2200,7 @@ describe("PlanBuilderRoute", () => {
     expect(
       splitOptions.getByRole("radio", { name: getLabelMatcher(recommendedLabel) }),
     ).toBeChecked();
-    expect(splitGroup.querySelector(".training-schedule-split__badge")).toHaveTextContent(
-      "Best fit",
-    );
+    expect(within(splitGroup).getByText("Best fit")).toBeVisible();
 
     for (const label of expectedLabels) {
       expect(splitOptions.getByText(label)).toBeVisible();
@@ -2201,7 +2208,7 @@ describe("PlanBuilderRoute", () => {
     }
   });
 
-  it("shows split benefits for every compatible Training Split", async () => {
+  it("shows split benefits in selectable split cards", async () => {
     const user = userEvent.setup();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
@@ -2210,8 +2217,14 @@ describe("PlanBuilderRoute", () => {
 
     expect(within(splitGroup).getByRole("radio", { name: /3-day full body/i })).toBeChecked();
     expect(within(splitGroup).getByText("Muscles trained 3x/week")).toBeVisible();
-    expect(within(splitGroup).getByText("More variety")).toBeVisible();
-    expect(within(splitGroup).getByText("Mixed emphasis")).toBeVisible();
+    expect(within(splitGroup).getByText(trainingSplitLabels.alternatingFullBodyAB)).toBeVisible();
+    expect(within(splitGroup).getByText("Upper / Lower / Full Body")).toBeVisible();
+    expect(
+      within(splitGroup).queryByText("More variety, slightly more complex."),
+    ).not.toBeInTheDocument();
+    expect(
+      within(splitGroup).queryByText("Mixed emphasis, less repeated full-body work."),
+    ).not.toBeInTheDocument();
     expect(within(splitGroup).queryByText("Select")).not.toBeInTheDocument();
 
     await user.click(within(splitGroup).getByText(trainingSplitLabels.alternatingFullBodyAB));
@@ -2224,7 +2237,7 @@ describe("PlanBuilderRoute", () => {
       ).toBeChecked();
     });
 
-    expect(within(splitGroup).getByText("More variety")).toBeVisible();
+    expect(within(splitGroup).getByText(trainingSplitLabels.alternatingFullBodyAB)).toBeVisible();
     expect(within(splitGroup).getByText("Muscles trained 3x/week")).toBeVisible();
   });
 
@@ -2245,9 +2258,9 @@ describe("PlanBuilderRoute", () => {
 
     expect(splitOptions.getAllByRole("radio")).toHaveLength(1);
     expectTrainingSplitChecked(splitGroup, label);
-    expect(screen.getByRole("button", { name: /continue to training style/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /continue to rep ranges/i })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /continue to training style/i }));
+    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
@@ -2347,7 +2360,7 @@ describe("PlanBuilderRoute", () => {
     ).toBeVisible();
     expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
 
-    await user.click(await screen.findByRole("button", { name: /continue to training style/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to rep ranges/i }));
 
     expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
     expectRepRangeStyleChecked(

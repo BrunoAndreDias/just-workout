@@ -49,23 +49,27 @@ The in-progress set of choices a user makes before generating a **Training Plan*
 _Avoid_: Draft routine, temporary plan
 
 **Plan Builder**:
-The guided flow where a user creates a **Plan Blueprint** and generates a **Training Plan**.
-_Avoid_: Routine builder, program wizard
+The workspace where a user creates a **Plan Blueprint** and generates a **Training Plan**.
+_Avoid_: Builder Overview, routine builder, program wizard
 
 **Generate Step**:
 The final **Plan Builder** step where a user generates a **Training Plan** from the completed **Plan Blueprint**. A **Generate Step** can include a final blueprint review, but its canonical purpose is generation.
 _Avoid_: Review step, final review
 
 **Recommended Default**:
-A **Plan Builder** choice that Just Workout preselects and persists because it is the recommended starting point. A **Recommended Default** is a valid **Plan Blueprint** choice, but the user has not actively confirmed that builder step until they continue past it.
+A **Plan Builder** choice that Just Workout can use because it is the recommended starting point. A **Recommended Default** is a valid **Plan Blueprint** choice; once the user accepts generation with defaults, those defaults become ordinary **Plan Blueprint** choices.
 _Avoid_: Placeholder, unsaved default
 
-**Confirmed Builder Step**:
-A **Plan Builder** step the user has accepted and moved past. A step can have a valid configured choice before it becomes a **Confirmed Builder Step**.
-_Avoid_: Dirty state, manually changed step
+**Default Generation Confirmation**:
+The moment when a user asks to generate a **Training Plan** while some required **Plan Blueprint** choices still rely on **Recommended Defaults**. The confirmation names the defaults Just Workout will use before generation continues.
+_Avoid_: Missing-step warning, final review
+
+**Configured Builder Section**:
+A **Plan Builder** section whose current choices are valid for the current **Plan Blueprint**. A section can be configured whether or not the user visited sections in order or clicked a continue action.
+_Avoid_: Confirmed step, dirty state, manually changed step
 
 **Stale Builder Output**:
-Downstream **Plan Builder** data that was derived from an earlier upstream choice after that upstream choice changes. Stale output can be preserved for review or recovery, but it no longer represents the current **Plan Blueprint** until the affected step is confirmed again.
+Downstream **Plan Builder** data that was derived from an earlier upstream choice after that upstream choice changes. Stale output can be preserved for review or recovery, but it no longer represents the current **Plan Blueprint** until the affected section is configured again.
 _Avoid_: Invalid generated data, broken state
 
 **Training Frequency**:
@@ -129,7 +133,7 @@ The user-facing **Plan Builder** row for the baseline hamstrings **Weekly Rep Ta
 _Avoid_: Glutes baseline target, separate glutes target
 
 **Main Compound Selection**:
-A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** are actual plan-building choices and are evaluated before the **Training Plan** is generated.
+A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** can be user-picked or recommended by Just Workout before the **Training Plan** is generated.
 _Avoid_: Preferred exercise, catalog row, generated exercise
 
 **Main Compound Rotation Pool**:

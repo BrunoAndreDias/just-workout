@@ -1454,6 +1454,24 @@
   --jw-step-warning-bg: #fff8f1;
   --jw-step-warning-border: rgba(186, 86, 31, 0.22);
   --jw-step-warning-ink: #8a4a18;
+  --jw-option-card-gap: 0.7rem;
+  --jw-option-card-min-height: 8.15rem;
+  --jw-option-card-border: rgba(28, 25, 23, 0.12);
+  --jw-option-card-hover-border: rgba(0, 119, 128, 0.34);
+  --jw-option-card-bg: rgba(255, 253, 250, 0.5);
+  --jw-option-card-hover-bg: rgba(255, 253, 250, 0.78);
+  --jw-option-card-selected-bg: rgba(242, 251, 250, 0.82);
+  --jw-option-card-radius: 0.5rem;
+  --jw-option-card-padding: 0.86rem 0.9rem 0.78rem;
+  --jw-option-card-focus: rgba(0, 99, 106, 0.86);
+  --jw-option-card-title-size: 1rem;
+  --jw-option-card-title-line-height: 1.2rem;
+  --jw-option-card-title-weight: 750;
+  --jw-option-card-copy-size: 0.9375rem;
+  --jw-option-card-copy-line-height: 1.45rem;
+  --jw-option-card-copy-weight: 500;
+  --jw-option-card-copy-margin-top: 0.42rem;
+  --jw-option-card-detail-border: rgba(0, 119, 128, 0.16);
 }
 
 /* Compact builder density: flatter surfaces, smaller copy, clearer grouping by dividers. */
@@ -1515,8 +1533,7 @@
 .plan-builder-page.plan-builder-page .step-panel,
 .plan-builder-page.plan-builder-page .step-notice,
 .plan-builder-page.plan-builder-page .plan-builder-step-status {
-  border-right: 0;
-  border-left: 0;
+  border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;

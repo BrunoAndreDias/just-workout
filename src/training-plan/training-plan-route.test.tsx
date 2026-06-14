@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../app/local-database";
 import { createAppRouter } from "../app/router";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
@@ -22,6 +22,7 @@ describe("TrainingPlanRoute", () => {
 
   afterEach(() => {
     restoreDefaultMatchMedia();
+    vi.restoreAllMocks();
   });
 
   it("renders the Compare tab as a readable template comparison without editing controls", async () => {
@@ -475,6 +476,21 @@ describe("TrainingPlanRoute", () => {
       "aria-current",
     );
     expect(screen.getByRole("link", { name: "Start training" })).toBeVisible();
+  });
+
+  it("shows a retry action when Training history fails to load", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+    vi.spyOn(db.trainingPlans, "get").mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByText("Training history could not load.")).toBeVisible();
+    expect(screen.queryByText("Training Plan not found.")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Retry loading Training history" }));
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
   });
 
   it("shows the latest available Training Week header and summary strip", async () => {

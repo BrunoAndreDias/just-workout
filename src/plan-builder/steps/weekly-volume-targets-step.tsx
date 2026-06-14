@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, ChevronLeft, Trash2 } from "lucide-react";
+import { ArrowRight, ChevronLeft, Trash2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions } from "../../design-system/step-screen";
@@ -232,11 +232,6 @@ function VolumePresetOptionRadio({
                 <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
               ) : null}
             </div>
-            {isSelected ? (
-              <span className="rep-range-option__selected-check" aria-hidden="true">
-                <Check aria-hidden="true" size={14} strokeWidth={3} />
-              </span>
-            ) : null}
           </div>
           <p
             className={cn(

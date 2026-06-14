@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
   buildTrainingHistoryWeekReport,
@@ -48,6 +50,23 @@ export function TrainingSessionHistoryRoute() {
     return (
       <TrainingSessionHistoryShell kind="loading">
         Loading Training history...
+      </TrainingSessionHistoryShell>
+    );
+  }
+
+  if (trainingPlanQuery.isError || trainingSessionsQuery.isError) {
+    return (
+      <TrainingSessionHistoryShell
+        action={{
+          label: "Retry loading Training history",
+          onClick: () => {
+            void trainingPlanQuery.refetch();
+            void trainingSessionsQuery.refetch();
+          },
+        }}
+        kind="error"
+      >
+        Training history could not load.
       </TrainingSessionHistoryShell>
     );
   }
@@ -100,17 +119,32 @@ export function TrainingSessionHistoryRoute() {
 }
 
 function TrainingSessionHistoryShell({
+  action,
   children,
   kind,
 }: {
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
   children: string;
-  kind: "loading" | "not-found";
+  kind: "error" | "loading" | "not-found";
 }) {
   return (
     <section className="training-history-page" aria-label="Training history">
       <p className="active-training-plan-loading" role={kind === "loading" ? "status" : undefined}>
         {children}
       </p>
+      {action ? (
+        <Button
+          className="training-history-shell__action"
+          onClick={action.onClick}
+          type="button"
+          variant="builderPrimary"
+        >
+          {action.label}
+        </Button>
+      ) : null}
     </section>
   );
 }
@@ -259,7 +293,6 @@ function CompletedSessionsSection({
             <span>Session</span>
             <span>Completed Load Volume</span>
             <span>Loaded Sets</span>
-            <span>Details</span>
           </div>
           <div className="training-history-list__items">
             {selectedSessions.map((session) => (
@@ -300,34 +333,38 @@ function CompletedSessionRow({
 
   return (
     <article className="training-history-session-row">
-      <div className="training-history-session-row__summary">
-        <div className="training-history-session-row__identity">
+      <button
+        aria-controls={detailsId}
+        aria-expanded={isExpanded}
+        aria-label={actionLabel}
+        className={`training-history-session-row__summary${
+          isExpanded ? " training-history-session-row__summary--expanded" : ""
+        }`}
+        onClick={() => onToggleSession(session.id)}
+        type="button"
+      >
+        <span className="training-history-session-row__identity">
           <strong>{session.templateLabel}</strong>
           <small className="training-history-session-row__date">
             {formatCompletedDate(session.completedAt)}
           </small>
-        </div>
-        <dl className="training-history-session-row__metrics">
-          <div>
-            <dt>Completed Load Volume</dt>
-            <dd>{formatWeight(session.completedLoadVolume)} kg</dd>
-          </div>
-          <div>
-            <dt>Loaded Sets</dt>
-            <dd>{formatLoadedSetCount(session.loadedSetCount)}</dd>
-          </div>
-        </dl>
-        <button
-          aria-controls={detailsId}
-          aria-expanded={isExpanded}
-          aria-label={actionLabel}
-          className="training-history-session-row__action"
-          onClick={() => onToggleSession(session.id)}
-          type="button"
-        >
-          {isExpanded ? "Hide session" : "View session"}
-        </button>
-      </div>
+        </span>
+        <span className="training-history-session-row__metric" data-label="Completed Load Volume">
+          {formatWeight(session.completedLoadVolume)} kg
+        </span>
+        <span className="training-history-session-row__metric" data-label="Loaded Sets">
+          {formatLoadedSetCount(session.loadedSetCount)}
+        </span>
+        <span className="training-history-session-row__action" aria-hidden="true">
+          <span>{isExpanded ? "Hide session" : "View session"}</span>
+          <ChevronDown
+            className={`training-history-session-row__chevron${
+              isExpanded ? " training-history-session-row__chevron--expanded" : ""
+            }`}
+            data-expanded={isExpanded}
+          />
+        </span>
+      </button>
       {isExpanded ? (
         <CompletedSessionDetails
           detailsId={detailsId}
@@ -371,7 +408,10 @@ function CompletedSessionDetails({
           </thead>
           <tbody>
             {session.exercises.map((exercise) => (
-              <CompletedSessionExerciseRow key={exercise.exerciseId} exercise={exercise} />
+              <CompletedSessionExerciseRow
+                key={getTrainingHistoryExerciseKey(exercise)}
+                exercise={exercise}
+              />
             ))}
           </tbody>
         </table>
@@ -388,10 +428,17 @@ function CompletedSessionExerciseCards({
   return (
     <ul className="training-history-session-details-cards">
       {exercises.map((exercise) => (
-        <CompletedSessionExerciseCard exercise={exercise} key={exercise.exerciseId} />
+        <CompletedSessionExerciseCard
+          exercise={exercise}
+          key={getTrainingHistoryExerciseKey(exercise)}
+        />
       ))}
     </ul>
   );
+}
+
+function getTrainingHistoryExerciseKey(exercise: TrainingHistorySessionExerciseReport): string {
+  return `${exercise.exerciseId}-${exercise.exerciseName}-${exercise.movementPattern}`;
 }
 
 function CompletedSessionExerciseCard({
@@ -611,7 +658,7 @@ function MovementPatternVolumeBar({
     <span aria-hidden="true" className="training-history-comparison-table__bar-track">
       <span
         className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
-        style={{ width: `${relativeVolumePercentage}%` }}
+        style={{ width: `${clampPercentage(relativeVolumePercentage)}%` }}
       />
     </span>
   );
@@ -630,7 +677,13 @@ function formatCompletedDate(value: string | null): string {
     return "Unknown date";
   }
 
-  return completedDateFormatter.format(new Date(value));
+  const completedDate = new Date(value);
+
+  if (Number.isNaN(completedDate.getTime())) {
+    return "Unknown date";
+  }
+
+  return completedDateFormatter.format(completedDate);
 }
 
 function useTrainingHistoryCompactLayout() {
@@ -711,6 +764,14 @@ function formatMovementPatternChange(row: TrainingHistoryMovementPatternComparis
     case "dropped":
       return "no volume this week";
   }
+}
+
+function clampPercentage(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, value));
 }
 
 function getMovementPatternChangeTone(
