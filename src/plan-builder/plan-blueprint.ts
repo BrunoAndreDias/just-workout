@@ -11,6 +11,7 @@ import {
 } from "./main-compound-rotation-pool";
 import { isRepRangeStyleId } from "./plan-blueprint-options";
 
+export { resolvePlanBlueprintRecommendedDefaults } from "./plan-blueprint-default-resolution";
 export {
   defaultRepRangeStyleId,
   getRepRangeStyle,
