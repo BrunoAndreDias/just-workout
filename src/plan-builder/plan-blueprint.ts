@@ -34,6 +34,8 @@ import {
 
 export {
   getPlanBuilderRedirectStep,
+  hasConfiguredExercises,
+  hasConfiguredTrainingVolume,
   hasValidTrainingFrequency,
   isExercisesStepComplete,
   isFrequencyStepComplete,

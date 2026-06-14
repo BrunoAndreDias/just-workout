@@ -29,16 +29,18 @@ import {
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
+import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
   getValidRepRangeStyleId,
+  hasConfiguredExercises,
+  hasConfiguredTrainingVolume,
   hasValidTrainingFrequency,
-  isExercisesStepComplete,
-  isVolumeStepComplete,
   type PlanBlueprint,
   type PlanBlueprintSummary,
   type RepRangeStyleId,
+  type TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
 import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
@@ -53,8 +55,10 @@ import {
 import {
   isTrainingVolumeConfiguration,
   type OptionalVolumeMuscleGroupId,
+  type TrainingVolumeConfiguration,
   type VolumePresetId,
 } from "./training-volume";
+import type { MainCompoundSelection } from "./weekly-movement-coverage";
 import "./plan-builder-one-page-route.css";
 
 const planBuilderOnePageSections = [
@@ -280,9 +284,9 @@ function PlanBuilderOnePageSectionCard({
 
         <span className="plan-builder-one-page__section-details">
           {getSectionDetails(section.id, blueprint, summary).map((detail) => (
-            <span className="plan-builder-one-page__section-detail" key={detail}>
+            <span className="plan-builder-one-page__section-detail" key={detail.id}>
               <Circle aria-hidden="true" size={7} strokeWidth={3} />
-              <span>{detail}</span>
+              <span>{detail.label}</span>
             </span>
           ))}
         </span>
@@ -328,28 +332,127 @@ function PlanBuilderOnePageUnlockedStep({
   summary: PlanBlueprintSummary;
 }) {
   const navigate = useNavigate();
-  const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
-  const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
-  const { mutateAsync: confirmSelectedTrainingFrequency } = useConfirmTrainingFrequencyMutation();
-  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
-  const { mutateAsync: confirmSelectedRepRangeStyle } = useConfirmRepRangeStyleMutation();
   const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
-  const { mutateAsync: confirmSelectedTrainingVolume } = useConfirmTrainingVolumeMutation();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
-  const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
-  const { mutate: updateOptionalVolumeTarget } = useUpdateOptionalVolumeTargetMutation();
-  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
-    useConfirmExerciseSelectionPreferencesMutation();
-  const { mutateAsync: updateMainCompoundRotationPool } =
-    useUpdateMainCompoundRotationPoolMutation();
-  const { mutateAsync: updateMainCompoundSelection } = useUpdateMainCompoundSelectionMutation();
-  const { mutateAsync: generateTrainingPlan, isPending: isGenerating } =
-    useGenerateTrainingPlanMutation();
-
   const savedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
   const selectedRepRangeStyleId = savedRepRangeStyleId ?? defaultRepRangeStyleId;
   const selectedRepRangeStyle = getRepRangeStyle(selectedRepRangeStyleId);
   const trainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
+  const frequencyStep = useOnePageTrainingScheduleStep({ blueprint, setActiveStep });
+  const repRangeStep = useOnePageRepRangeStep({ selectedRepRangeStyleId, setActiveStep });
+  const volumeStep = useOnePageVolumeStep({ setActiveStep, trainingVolumeConfiguration });
+  const exercisesStep = useOnePageExercisesStep({ setActiveStep });
+  const generateStep = useOnePageGenerateStep({ navigate });
+
+  useRepRangeDefaultSelection({
+    activeStep,
+    savedRepRangeStyleId,
+    updateRepRangeStyle,
+  });
+  useTrainingVolumeDefaultSelection({
+    activeStep,
+    initializeTrainingVolumeDefaults,
+    trainingVolumeConfiguration,
+  });
+
+  return renderOnePageActiveStep({
+    activeStep,
+    blueprint,
+    exercisesStep,
+    frequencyStep,
+    generateStep,
+    repRangeStep,
+    selectedRepRangeStyle,
+    savedRepRangeStyleId,
+    setActiveStep,
+    summary,
+    trainingVolumeConfiguration,
+    volumeStep,
+  });
+}
+
+function renderOnePageActiveStep({
+  activeStep,
+  blueprint,
+  exercisesStep,
+  frequencyStep,
+  generateStep,
+  repRangeStep,
+  selectedRepRangeStyle,
+  savedRepRangeStyleId,
+  setActiveStep,
+  summary,
+  trainingVolumeConfiguration,
+  volumeStep,
+}: {
+  activeStep: PlanBuilderStep;
+  blueprint: PlanBlueprint;
+  exercisesStep: ReturnType<typeof useOnePageExercisesStep>;
+  frequencyStep: ReturnType<typeof useOnePageTrainingScheduleStep>;
+  generateStep: ReturnType<typeof useOnePageGenerateStep>;
+  repRangeStep: ReturnType<typeof useOnePageRepRangeStep>;
+  selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
+  savedRepRangeStyleId: RepRangeStyleId | null;
+  setActiveStep: (step: PlanBuilderStep) => void;
+  summary: PlanBlueprintSummary;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+  volumeStep: ReturnType<typeof useOnePageVolumeStep>;
+}) {
+  switch (activeStep) {
+    case "frequency":
+      return <OnePageTrainingScheduleStep blueprint={blueprint} {...frequencyStep} />;
+    case "rep-ranges":
+      return (
+        <OnePageRepRangeStep
+          savedRepRangeStyleId={savedRepRangeStyleId}
+          selectedRepRangeStyle={selectedRepRangeStyle}
+          {...repRangeStep}
+        />
+      );
+    case "volume":
+      return (
+        <OnePageVolumeStep
+          blueprint={blueprint}
+          repRangeStyle={selectedRepRangeStyle}
+          trainingVolumeConfiguration={trainingVolumeConfiguration}
+          {...volumeStep}
+        />
+      );
+    case "exercises":
+      if (!hasCompatibleSelectedTrainingSplit(blueprint) || !trainingVolumeConfiguration) {
+        return (
+          <ExerciseFoundationSetupState
+            onOpenTrainingSchedule={() => setActiveStep("frequency")}
+            onOpenVolume={() => setActiveStep("volume")}
+            requiresTrainingSchedule={!hasCompatibleSelectedTrainingSplit(blueprint)}
+            requiresVolume={!trainingVolumeConfiguration}
+          />
+        );
+      }
+
+      return (
+        <OnePageExercisesStep
+          blueprint={blueprint}
+          trainingVolumeConfiguration={trainingVolumeConfiguration}
+          {...exercisesStep}
+        />
+      );
+    case "generate":
+      return <GenerateTrainingPlanStep summary={summary} {...generateStep} />;
+  }
+
+  return null;
+}
+
+function useRepRangeDefaultSelection({
+  activeStep,
+  savedRepRangeStyleId,
+  updateRepRangeStyle,
+}: {
+  activeStep: PlanBuilderStep;
+  savedRepRangeStyleId: RepRangeStyleId | null;
+  updateRepRangeStyle: (variables: { repRangeStyle: RepRangeStyleId; timestamp: string }) => void;
+}) {
   useEffect(() => {
     if (activeStep !== "rep-ranges" || savedRepRangeStyleId) {
       return;
@@ -360,7 +463,17 @@ function PlanBuilderOnePageUnlockedStep({
       timestamp: new Date().toISOString(),
     });
   }, [activeStep, savedRepRangeStyleId, updateRepRangeStyle]);
+}
 
+function useTrainingVolumeDefaultSelection({
+  activeStep,
+  initializeTrainingVolumeDefaults,
+  trainingVolumeConfiguration,
+}: {
+  activeStep: PlanBuilderStep;
+  initializeTrainingVolumeDefaults: (variables: { timestamp: string }) => void;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+}) {
   useEffect(() => {
     if (activeStep !== "volume" || trainingVolumeConfiguration) {
       return;
@@ -370,167 +483,280 @@ function PlanBuilderOnePageUnlockedStep({
       timestamp: new Date().toISOString(),
     });
   }, [activeStep, initializeTrainingVolumeDefaults, trainingVolumeConfiguration]);
+}
 
-  async function handleContinueToRepRanges() {
-    const timestamp = new Date().toISOString();
-    const selectedSplit = getVisibleTrainingSplitId(blueprint);
+function useOnePageTrainingScheduleStep({
+  blueprint,
+  setActiveStep,
+}: {
+  blueprint: PlanBlueprint;
+  setActiveStep: (step: PlanBuilderStep) => void;
+}) {
+  const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
+  const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
+  const { mutateAsync: confirmSelectedTrainingFrequency } = useConfirmTrainingFrequencyMutation();
+  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
 
-    updateTrainingSplit({
-      split: selectedSplit,
-      timestamp,
-    });
-    await confirmSelectedTrainingFrequency({
-      timestamp,
-      trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
-    });
-    await confirmSelectedTrainingSplit({
-      split: selectedSplit,
-      timestamp,
-    });
-    setActiveStep("rep-ranges");
-  }
+  return {
+    onContinueToTrainingStyle: async () => {
+      const timestamp = new Date().toISOString();
+      const selectedSplit = getVisibleTrainingSplitId(blueprint);
 
-  async function handleContinueToVolume() {
-    await confirmSelectedRepRangeStyle({
-      repRangeStyle: selectedRepRangeStyleId,
-      timestamp: new Date().toISOString(),
-    });
-    setActiveStep("volume");
-  }
+      updateTrainingSplit({ split: selectedSplit, timestamp });
+      await confirmSelectedTrainingFrequency({
+        timestamp,
+        trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+      });
+      await confirmSelectedTrainingSplit({ split: selectedSplit, timestamp });
+      setActiveStep("rep-ranges");
+    },
+    onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) =>
+      updateTrainingFrequency({
+        timestamp: new Date().toISOString(),
+        trainingFrequencyDaysPerWeek,
+      }),
+    onTrainingSplitChange: (split: TrainingSplitId) =>
+      updateTrainingSplit({
+        split,
+        timestamp: new Date().toISOString(),
+      }),
+  };
+}
 
-  async function handleContinueToExercises() {
-    if (!trainingVolumeConfiguration) {
-      return;
-    }
+function useOnePageRepRangeStep({
+  selectedRepRangeStyleId,
+  setActiveStep,
+}: {
+  selectedRepRangeStyleId: RepRangeStyleId;
+  setActiveStep: (step: PlanBuilderStep) => void;
+}) {
+  const { mutateAsync: confirmSelectedRepRangeStyle } = useConfirmRepRangeStyleMutation();
+  const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
 
-    await confirmSelectedTrainingVolume({
-      trainingVolumeConfiguration,
-      timestamp: new Date().toISOString(),
-    });
-    setActiveStep("exercises");
-  }
+  return {
+    onContinueToVolume: async () => {
+      await confirmSelectedRepRangeStyle({
+        repRangeStyle: selectedRepRangeStyleId,
+        timestamp: new Date().toISOString(),
+      });
+      setActiveStep("volume");
+    },
+    onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) =>
+      updateRepRangeStyle({
+        repRangeStyle,
+        timestamp: new Date().toISOString(),
+      }),
+  };
+}
 
-  async function handleContinueToGenerate() {
-    await confirmSelectedExerciseSelectionPreferences({
-      timestamp: new Date().toISOString(),
-    });
-    setActiveStep("generate");
-  }
+function useOnePageVolumeStep({
+  setActiveStep,
+  trainingVolumeConfiguration,
+}: {
+  setActiveStep: (step: PlanBuilderStep) => void;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+}) {
+  const { mutateAsync: confirmSelectedTrainingVolume } = useConfirmTrainingVolumeMutation();
+  const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
+  const { mutate: updateOptionalVolumeTarget } = useUpdateOptionalVolumeTargetMutation();
 
-  async function handleGenerateTrainingPlan() {
-    const trainingPlan = await generateTrainingPlan();
-
-    await navigate({
-      params: { planId: trainingPlan.id },
-      to: "/training-plans/$planId",
-    });
-  }
-
-  switch (activeStep) {
-    case "frequency":
-      return (
-        <TrainingFrequencyStep
-          canContinueToTrainingStyle={hasValidTrainingFrequency(blueprint)}
-          onContinueToTrainingStyle={handleContinueToRepRanges}
-          onTrainingFrequencyChange={(trainingFrequencyDaysPerWeek) => {
-            updateTrainingFrequency({
-              timestamp: new Date().toISOString(),
-              trainingFrequencyDaysPerWeek,
-            });
-          }}
-          onTrainingSplitChange={(split: TrainingSplitId) => {
-            updateTrainingSplit({
-              split,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          selectedTrainingSplitId={getVisibleTrainingSplitId(blueprint)}
-          selectedTrainingFrequencyDaysPerWeek={
-            hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
-          }
-        />
-      );
-    case "rep-ranges":
-      return (
-        <RepRangeStyleStep
-          onContinueToVolume={handleContinueToVolume}
-          onRepRangeStyleChange={(repRangeStyle: RepRangeStyleId) => {
-            updateRepRangeStyle({
-              repRangeStyle,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          savedRepRangeStyleId={savedRepRangeStyleId}
-          selectedRepRangeStyle={selectedRepRangeStyle}
-        />
-      );
-    case "volume":
-      return (
-        <WeeklyVolumeTargetsStep
-          canContinueToExercises={trainingVolumeConfiguration !== null}
-          onContinueToExercises={handleContinueToExercises}
-          onOptionalVolumeTargetToggle={(
-            muscleGroup: OptionalVolumeMuscleGroupId,
-            isEnabled: boolean,
-          ) => {
-            updateOptionalVolumeTarget({
-              isEnabled,
-              muscleGroup,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          onVolumePresetChange={(volumePreset: VolumePresetId) => {
-            updateTrainingVolumePreset({
-              timestamp: new Date().toISOString(),
-              volumePreset,
-            });
-          }}
-          repRangeStyle={selectedRepRangeStyle}
-          selectedVolumePresetId={blueprint.volumePreset}
-          volumePresetSource={blueprint.volumePresetSource}
-          weeklyRepTargets={blueprint.weeklyRepTargets}
-        />
-      );
-    case "exercises":
-      if (!hasCompatibleSelectedTrainingSplit(blueprint) || !trainingVolumeConfiguration) {
-        return <p className="plan-builder-one-page__loading">Preparing exercise foundation...</p>;
+  return {
+    onContinueToExercises: async () => {
+      if (!trainingVolumeConfiguration) {
+        return;
       }
 
-      return (
-        <ExerciseFoundationStep
-          mainCompoundSelections={blueprint.mainCompoundSelections}
-          mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
-          onContinueToGenerate={handleContinueToGenerate}
-          onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
-            await updateMainCompoundSelection({
-              exerciseId,
-              movementPattern,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          onRotationPoolChange={async ({ exerciseIds, movementPattern }) => {
-            await updateMainCompoundRotationPool({
-              exerciseIds,
-              movementPattern,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          split={blueprint.split}
-          trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
-          weeklyRepTargets={trainingVolumeConfiguration.weeklyRepTargets}
-        />
-      );
-    case "generate":
-      return (
-        <GenerateTrainingPlanStep
-          isGenerating={isGenerating}
-          onGenerateTrainingPlan={handleGenerateTrainingPlan}
-          summary={summary}
-        />
-      );
-  }
+      await confirmSelectedTrainingVolume({
+        trainingVolumeConfiguration,
+        timestamp: new Date().toISOString(),
+      });
+      setActiveStep("exercises");
+    },
+    onOptionalVolumeTargetToggle: (muscleGroup: OptionalVolumeMuscleGroupId, isEnabled: boolean) =>
+      updateOptionalVolumeTarget({ isEnabled, muscleGroup, timestamp: new Date().toISOString() }),
+    onVolumePresetChange: (volumePreset: VolumePresetId) =>
+      updateTrainingVolumePreset({
+        timestamp: new Date().toISOString(),
+        volumePreset,
+      }),
+  };
+}
 
-  return null;
+function useOnePageExercisesStep({
+  setActiveStep,
+}: {
+  setActiveStep: (step: PlanBuilderStep) => void;
+}) {
+  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
+    useConfirmExerciseSelectionPreferencesMutation();
+  const { mutateAsync: updateMainCompoundRotationPool } =
+    useUpdateMainCompoundRotationPoolMutation();
+  const { mutateAsync: updateMainCompoundSelection } = useUpdateMainCompoundSelectionMutation();
+
+  return {
+    onContinueToGenerate: async () => {
+      await confirmSelectedExerciseSelectionPreferences({
+        timestamp: new Date().toISOString(),
+      });
+      setActiveStep("generate");
+    },
+    onMainCompoundSelectionChange: async ({
+      exerciseId,
+      movementPattern,
+    }: {
+      exerciseId: string;
+      movementPattern: MainCompoundSelection["movementPattern"];
+    }) =>
+      updateMainCompoundSelection({
+        exerciseId,
+        movementPattern,
+        timestamp: new Date().toISOString(),
+      }),
+    onRotationPoolChange: async ({
+      exerciseIds,
+      movementPattern,
+    }: {
+      exerciseIds: ReadonlyArray<string>;
+      movementPattern: MainCompoundRotationPool["movementPattern"];
+    }) =>
+      updateMainCompoundRotationPool({
+        exerciseIds,
+        movementPattern,
+        timestamp: new Date().toISOString(),
+      }),
+  };
+}
+
+function useOnePageGenerateStep({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const { mutateAsync: generateTrainingPlan, isPending: isGenerating } =
+    useGenerateTrainingPlanMutation();
+
+  return {
+    isGenerating,
+    onGenerateTrainingPlan: async () => {
+      const trainingPlan = await generateTrainingPlan();
+
+      await navigate({
+        params: { planId: trainingPlan.id },
+        to: "/training-plans/$planId",
+      });
+    },
+  };
+}
+
+function OnePageTrainingScheduleStep({
+  blueprint,
+  onContinueToTrainingStyle,
+  onTrainingFrequencyChange,
+  onTrainingSplitChange,
+}: {
+  blueprint: PlanBlueprint;
+  onContinueToTrainingStyle: () => Promise<void>;
+  onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
+  onTrainingSplitChange: (split: TrainingSplitId) => void;
+}) {
+  return (
+    <TrainingFrequencyStep
+      canContinueToTrainingStyle={hasValidTrainingFrequency(blueprint)}
+      onContinueToTrainingStyle={onContinueToTrainingStyle}
+      onTrainingFrequencyChange={onTrainingFrequencyChange}
+      onTrainingSplitChange={onTrainingSplitChange}
+      selectedTrainingSplitId={getVisibleTrainingSplitId(blueprint)}
+      selectedTrainingFrequencyDaysPerWeek={
+        hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
+      }
+    />
+  );
+}
+
+function OnePageRepRangeStep({
+  onContinueToVolume,
+  onRepRangeStyleChange,
+  savedRepRangeStyleId,
+  selectedRepRangeStyle,
+}: {
+  onContinueToVolume: () => Promise<void>;
+  onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
+  savedRepRangeStyleId: RepRangeStyleId | null;
+  selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
+}) {
+  return (
+    <RepRangeStyleStep
+      onContinueToVolume={onContinueToVolume}
+      onRepRangeStyleChange={onRepRangeStyleChange}
+      savedRepRangeStyleId={savedRepRangeStyleId}
+      selectedRepRangeStyle={selectedRepRangeStyle}
+    />
+  );
+}
+
+function OnePageVolumeStep({
+  blueprint,
+  onContinueToExercises,
+  onOptionalVolumeTargetToggle,
+  onVolumePresetChange,
+  repRangeStyle,
+  trainingVolumeConfiguration,
+}: {
+  blueprint: PlanBlueprint;
+  onContinueToExercises: () => Promise<void>;
+  onOptionalVolumeTargetToggle: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
+  onVolumePresetChange: (volumePreset: VolumePresetId) => void;
+  repRangeStyle: ReturnType<typeof getRepRangeStyle>;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+}) {
+  return (
+    <WeeklyVolumeTargetsStep
+      canContinueToExercises={trainingVolumeConfiguration !== null}
+      onContinueToExercises={onContinueToExercises}
+      onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+      onVolumePresetChange={onVolumePresetChange}
+      repRangeStyle={repRangeStyle}
+      selectedVolumePresetId={blueprint.volumePreset}
+      volumePresetSource={blueprint.volumePresetSource}
+      weeklyRepTargets={blueprint.weeklyRepTargets}
+    />
+  );
+}
+
+function OnePageExercisesStep({
+  blueprint,
+  onContinueToGenerate,
+  onMainCompoundSelectionChange,
+  onRotationPoolChange,
+  trainingVolumeConfiguration,
+}: {
+  blueprint: PlanBlueprint & { split: TrainingSplitId };
+  onContinueToGenerate: () => Promise<void>;
+  onMainCompoundSelectionChange: (selection: {
+    exerciseId: string;
+    movementPattern: MainCompoundSelection["movementPattern"];
+  }) => Promise<unknown>;
+  onRotationPoolChange: (rotationPool: {
+    exerciseIds: ReadonlyArray<string>;
+    movementPattern: MainCompoundRotationPool["movementPattern"];
+  }) => Promise<unknown>;
+  trainingVolumeConfiguration: TrainingVolumeConfiguration;
+}) {
+  return (
+    <ExerciseFoundationStep
+      mainCompoundSelections={blueprint.mainCompoundSelections}
+      mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+      onContinueToGenerate={onContinueToGenerate}
+      onMainCompoundSelectionChange={async (selection) => {
+        await onMainCompoundSelectionChange(selection);
+      }}
+      onRotationPoolChange={async (rotationPool) => {
+        await onRotationPoolChange(rotationPool);
+      }}
+      split={blueprint.split}
+      trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+      weeklyRepTargets={trainingVolumeConfiguration.weeklyRepTargets}
+    />
+  );
 }
 
 function getSectionStatus({
@@ -560,9 +786,9 @@ function isSectionComplete(sectionId: PlanBuilderStep, blueprint: PlanBlueprint)
     case "rep-ranges":
       return getValidRepRangeStyleId(blueprint.repRanges) !== null;
     case "volume":
-      return isVolumeStepComplete(blueprint);
+      return hasConfiguredTrainingVolume(blueprint);
     case "exercises":
-      return isExercisesStepComplete(blueprint);
+      return hasConfiguredExercises(blueprint);
     case "generate":
       return false;
   }
@@ -574,33 +800,88 @@ function getSectionDetails(
   sectionId: PlanBuilderStep,
   blueprint: PlanBlueprint | undefined,
   summary: PlanBlueprintSummary | null,
-): ReadonlyArray<string> {
+): ReadonlyArray<{ id: string; label: string }> {
   if (!blueprint || !summary) {
-    return ["Loading Plan Blueprint", "Default choices available", "Progress saved locally"];
+    return getLoadingSectionDetails(sectionId);
   }
 
   switch (sectionId) {
     case "frequency":
-      return [summary.trainingFrequency, summary.split, summary.recovery];
+      return getFrequencySectionDetails(summary);
     case "rep-ranges":
-      return [summary.repRanges, "Main and secondary lift bias", "Accessory defaults"];
+      return getRepRangeSectionDetails(summary);
     case "volume":
-      return [summary.volumePreset, "Weekly Rep Targets", "Optional target groups"];
+      return getVolumeSectionDetails(summary);
     case "exercises":
-      return [
-        `${blueprint.mainCompoundSelections.length} main lifts selected`,
-        `${blueprint.mainCompoundRotationPools.length} rotation pools`,
-        summary.nextStep === "Generate" ? "Ready to generate" : "Coverage in progress",
-      ];
+      return getExercisesSectionDetails(blueprint);
     case "generate":
-      return [
-        "Review blueprint",
-        summary.generationStatus,
-        summary.nextStep === "Generate" ? "Create Training Plan" : "Finish prior steps",
-      ];
+      return getGenerateSectionDetails(summary);
   }
 
   return [];
+}
+
+function getLoadingSectionDetails(sectionId: PlanBuilderStep) {
+  return [
+    { id: `${sectionId}-loading`, label: "Loading Plan Blueprint" },
+    { id: `${sectionId}-defaults`, label: "Default choices available" },
+    { id: `${sectionId}-saved`, label: "Progress saved locally" },
+  ] as const;
+}
+
+function getFrequencySectionDetails(summary: PlanBlueprintSummary) {
+  return [
+    { id: "frequency-days", label: summary.trainingFrequency },
+    { id: "frequency-split", label: summary.split },
+    { id: "frequency-recovery", label: summary.recovery },
+  ] as const;
+}
+
+function getRepRangeSectionDetails(summary: PlanBlueprintSummary) {
+  return [
+    { id: "rep-ranges-selection", label: summary.repRanges },
+    { id: "rep-ranges-bias", label: "Main and secondary lift bias" },
+    { id: "rep-ranges-accessories", label: "Accessory defaults" },
+  ] as const;
+}
+
+function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
+  return [
+    { id: "volume-preset", label: summary.volumePreset },
+    { id: "volume-targets", label: "Weekly Rep Targets" },
+    { id: "volume-optional", label: "Optional target groups" },
+  ] as const;
+}
+
+function getExercisesSectionDetails(blueprint: PlanBlueprint) {
+  return [
+    {
+      id: "exercises-main-lifts",
+      label: `${blueprint.mainCompoundSelections.length} main lifts selected`,
+    },
+    {
+      id: "exercises-rotation-pools",
+      label: `${blueprint.mainCompoundRotationPools.length} rotation pools`,
+    },
+    {
+      id: "exercises-status",
+      label: hasConfiguredExercises(blueprint) ? "Ready to generate" : "Coverage still needed",
+    },
+  ] as const;
+}
+
+function getGenerateSectionDetails(summary: PlanBlueprintSummary) {
+  return [
+    { id: "generate-review", label: "Review blueprint" },
+    { id: "generate-status", label: summary.generationStatus },
+    {
+      id: "generate-action",
+      label:
+        summary.nextStep === "Generate"
+          ? "Create Training Plan"
+          : "Defaults or choices still needed",
+    },
+  ] as const;
 }
 
 function getStepTitle(step: PlanBuilderStep): string {
@@ -619,4 +900,45 @@ function hasCompatibleSelectedTrainingSplit(
   blueprint: PlanBlueprint,
 ): blueprint is PlanBlueprint & { split: TrainingSplitId } {
   return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
+}
+
+function ExerciseFoundationSetupState({
+  onOpenTrainingSchedule,
+  onOpenVolume,
+  requiresTrainingSchedule,
+  requiresVolume,
+}: {
+  onOpenTrainingSchedule: () => void;
+  onOpenVolume: () => void;
+  requiresTrainingSchedule: boolean;
+  requiresVolume: boolean;
+}) {
+  const guidance = [
+    requiresTrainingSchedule ? "Choose a compatible split in Training schedule." : null,
+    requiresVolume ? "Set weekly volume in Volume." : null,
+  ].filter((item): item is string => item !== null);
+
+  return (
+    <section className="plan-builder-one-page__loading">
+      <h3>Exercises needs setup</h3>
+      <p>Choose a compatible split and weekly volume before selecting exercises.</p>
+      <ul>
+        {guidance.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-3 pt-2">
+        {requiresTrainingSchedule ? (
+          <button onClick={onOpenTrainingSchedule} type="button">
+            Open Training schedule
+          </button>
+        ) : null}
+        {requiresVolume ? (
+          <button onClick={onOpenVolume} type="button">
+            Open Volume
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
 }

@@ -172,6 +172,35 @@ describe("PlanBuilderRoute", () => {
     expect(screen.queryByRole("link", { name: /builder overview/i })).not.toBeInTheDocument();
   });
 
+  it("opens each Plan Builder section from the unified workspace without prior confirmation", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    const exercisesCard = await getOnePageSectionButton("Exercises");
+
+    await user.click(await getOnePageSectionButton("Rep ranges"));
+    expect(
+      await screen.findByRole("radio", {
+        name: new RegExp(repRangeStyleLabels.balancedHypertrophy, "i"),
+      }),
+    ).toBeChecked();
+
+    await user.click(await getOnePageSectionButton("Volume"));
+    expect(await screen.findByRole("region", { name: /weekly volume targets/i })).toBeVisible();
+    expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
+
+    await user.click(exercisesCard);
+    expect(await screen.findByRole("heading", { name: "Exercises needs setup" })).toBeVisible();
+    expect(
+      screen.getByText("Choose a compatible split and weekly volume before selecting exercises."),
+    ).toBeVisible();
+    expect(screen.queryByText("Preparing exercise foundation...")).not.toBeInTheDocument();
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
+  });
+
   it("renders the resumable plan builder summary inside the app shell", async () => {
     renderPlanBuilder({ initialEntries: [planBuilderPaths.frequency] });
     const summary = await screen.findByRole("complementary", { name: /plan blueprint summary/i });
@@ -480,15 +509,13 @@ describe("PlanBuilderRoute", () => {
     expectBlueprintSummaryField(summary, "Rep ranges", repRangeStyleLabels.balancedHypertrophy);
   });
 
-  it("redirects direct access to Rep ranges back to Training schedule when no compatible Training Split is saved", async () => {
+  it("opens Rep ranges directly when no compatible Training Split is saved", async () => {
     await saveConfirmedFourDayTrainingFrequency();
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.repRanges] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
+    expect(await screen.findByRole("group", { name: /rep range style/i })).toBeVisible();
     expectBlueprintSummaryField(
       screen.getByRole("complementary", { name: /plan blueprint summary/i }),
       "Frequency",
@@ -521,7 +548,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("redirects direct access to Volume back to Training schedule when a stale confirmed Split marker has incompatible data", async () => {
+  it("opens Volume directly when a stale confirmed Split marker has incompatible data", async () => {
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
     await db.planBlueprints.put({
@@ -540,13 +567,11 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
   });
 
-  it("redirects direct access to Volume back to Rep ranges when the saved Rep Range Style has not been confirmed", async () => {
+  it("opens Volume directly when the saved Rep Range Style has not been confirmed", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.updateRepRangeStyle({
       repRangeStyle: "strength_leaning",
@@ -555,17 +580,11 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
-    });
-    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
-    expectRepRangeStyleChecked(
-      await screen.findByRole("group", { name: /rep range style/i }),
-      repRangeStyleLabels.strengthLeaning,
-    );
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
   });
 
-  it("redirects direct access to Volume back to Rep ranges when a stale confirmed Rep Range Style is invalid", async () => {
+  it("opens Volume directly and restores the default Rep Range Style when a stale saved value is invalid", async () => {
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
     await db.planBlueprints.put({
@@ -585,26 +604,11 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.volume] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.repRanges);
-    });
-    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
-
-    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.balancedHypertrophy);
-    await waitFor(async () => {
-      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
-        confirmedBuilderSteps: {
-          frequency: true,
-          repRanges: false,
-          split: true,
-          volume: false,
-        },
-        repRanges: "balanced_hypertrophy",
-      });
-    });
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
   });
 
-  it("redirects direct access to Exercises back to Volume when Volume has not been confirmed", async () => {
+  it("opens Exercises directly and shows setup guidance when Volume has not been confirmed", async () => {
     await saveConfirmedFourDayUpperLowerTrainingSplit();
     await planBuilderService.confirmSelectedRepRangeStyle({
       repRangeStyle: "balanced_hypertrophy",
@@ -616,13 +620,11 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
-    });
-    expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
+    await expectPlanBuilderPath(router, planBuilderPaths.exercises);
+    await expectExercisesSetupState();
   });
 
-  it("redirects direct access to Exercises back to Volume when a stale confirmed Volume marker has invalid data", async () => {
+  it("opens Exercises directly and shows setup guidance when a stale confirmed Volume marker has invalid data", async () => {
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
     await db.planBlueprints.put({
@@ -645,22 +647,8 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.volume);
-    });
-    expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
-    await waitFor(async () => {
-      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
-        confirmedBuilderSteps: {
-          frequency: true,
-          repRanges: true,
-          split: true,
-          volume: false,
-        },
-        volumePreset: "balanced",
-        volumePresetSource: "recommended_default",
-      });
-    });
+    await expectPlanBuilderPath(router, planBuilderPaths.exercises);
+    await expectExercisesSetupState();
   });
 
   it("renders the Exercise picker overview on direct access when Volume is confirmed", async () => {
@@ -1164,7 +1152,7 @@ describe("PlanBuilderRoute", () => {
     });
   });
 
-  it("redirects direct access to Generate back to Exercises when Exercises has not been confirmed", async () => {
+  it("opens Generate directly when Exercises has not been confirmed", async () => {
     await saveConfirmedPlanBuilderProgressForTest({
       repRangeStyle: "balanced_hypertrophy",
       split: "upper-lower-4-day",
@@ -1174,10 +1162,8 @@ describe("PlanBuilderRoute", () => {
 
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.generate] });
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.exercises);
-    });
-    await expectConfirmableExercisesStep();
+    await expectPlanBuilderPath(router, planBuilderPaths.generate);
+    expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   });
 
   it("generates an active Training Plan and navigates to the plan route", async () => {
@@ -1684,7 +1670,7 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
   });
 
-  it("preserves compatible saved Split, Rep ranges, and Volume data after Frequency changes and restores guarded Exercises access after reconfirmation", async () => {
+  it("preserves compatible saved Split, Rep ranges, and Volume data after Frequency changes while leaving Exercises openable", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedPlanBuilderProgressForTest({
@@ -1724,35 +1710,27 @@ describe("PlanBuilderRoute", () => {
 
     frequencyView.unmount();
 
-    const guardedExercisesView = renderPlanBuilder({
+    const exercisesView = renderPlanBuilder({
       initialEntries: [planBuilderPaths.exercises],
     });
 
-    await waitFor(() => {
-      expect(guardedExercisesView.router.state.location.pathname).toBe(planBuilderPaths.frequency);
-    });
-    expect(await screen.findByRole("group", { name: /training frequency/i })).toBeVisible();
-
-    const splitGroup = await getTrainingScheduleSplitSection();
-
-    expectTrainingSplitChecked(splitGroup, trainingSplitLabels.rotatingPushPullLegs);
-
-    await user.click(screen.getByRole("button", { name: /continue to rep ranges/i }));
-
-    const repRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
+    await expectPlanBuilderPath(exercisesView.router, planBuilderPaths.exercises);
+    await expectConfirmableExercisesStep();
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
-    expectRepRangeStyleChecked(repRangeGroup, repRangeStyleLabels.controlledHigherReps);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      repRanges: "controlled_higher_reps",
+    });
     expectBlueprintSummaryField(summary, "Split", trainingSplitLabels.rotatingPushPullLegs);
     expectBlueprintSummaryField(summary, "Volume preset", "Higher volume");
 
-    guardedExercisesView.unmount();
+    exercisesView.unmount();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
 
     await expectConfirmableExercisesStep();
   });
 
-  it("preserves canonical Weekly Rep Targets after Rep ranges change and restores guarded Exercises access after reconfirmation", async () => {
+  it("preserves canonical Weekly Rep Targets after Rep ranges change while leaving Exercises openable", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedPlanBuilderProgressForTest({
@@ -1787,44 +1765,22 @@ describe("PlanBuilderRoute", () => {
 
     repRangesView.unmount();
 
-    const guardedExercisesView = renderPlanBuilder({
+    const exercisesView = renderPlanBuilder({
       initialEntries: [planBuilderPaths.exercises],
     });
 
-    await expectPlanBuilderPath(guardedExercisesView.router, planBuilderPaths.repRanges);
-
-    const resumedRepRangeGroup = await screen.findByRole("group", { name: /rep range style/i });
-
-    expect(resumedRepRangeGroup).toBeVisible();
-    expectRepRangeStyleChecked(resumedRepRangeGroup, repRangeStyleLabels.controlledHigherReps);
-
-    await user.click(screen.getByRole("button", { name: /continue to volume/i }));
-
-    const volumeView = await screen.findByRole("heading", { name: /set your training volume/i });
-    const weeklyTargets = await screen.findByRole("region", { name: /weekly volume targets/i });
-    const chestRow = getListItemByLabel(weeklyTargets, "Chest");
+    await expectPlanBuilderPath(exercisesView.router, planBuilderPaths.exercises);
+    await expectConfirmableExercisesStep();
     const summary = screen.getByRole("complementary", { name: /plan blueprint summary/i });
 
-    expect(volumeView).toBeVisible();
-    expect(within(chestRow).getByText("120 reps/week")).toBeVisible();
-    expect(within(chestRow).getByText("8-12 sets/week")).toBeVisible();
     expectBlueprintSummaryField(summary, "Volume preset", "Higher volume");
 
-    guardedExercisesView.unmount();
-
-    const guardedVolumeView = renderPlanBuilder({
-      initialEntries: [planBuilderPaths.exercises],
-    });
-
-    await expectPlanBuilderPath(guardedVolumeView.router, planBuilderPaths.volume);
-    expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
-
+    exercisesView.unmount();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.exercises] });
     await expectConfirmableExercisesStep();
   });
 
-  it("marks Volume unconfirmed after Volume changes and restores guarded Exercises access after reconfirmation", async () => {
+  it("marks Volume unconfirmed after Volume changes while leaving Exercises openable", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedPlanBuilderProgressForTest({
@@ -1860,21 +1816,11 @@ describe("PlanBuilderRoute", () => {
 
     volumeView.unmount();
 
-    const guardedExercisesView = renderPlanBuilder({
+    const exercisesView = renderPlanBuilder({
       initialEntries: [planBuilderPaths.exercises],
     });
 
-    await expectPlanBuilderPath(guardedExercisesView.router, planBuilderPaths.volume);
-    expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
-
-    const resumedVolumePresetGroup = await screen.findByRole("group", { name: /volume preset/i });
-
-    expect(
-      within(resumedVolumePresetGroup).getByRole("radio", { name: /conservative/i }),
-    ).toBeChecked();
-
-    await user.click(screen.getByRole("button", { name: /continue to exercises/i }));
-
+    await expectPlanBuilderPath(exercisesView.router, planBuilderPaths.exercises);
     await expectConfirmableExercisesStep();
   });
 
@@ -1930,7 +1876,7 @@ describe("PlanBuilderRoute", () => {
     expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
   });
 
-  it("redirects stepper forward navigation to the affected step after an upstream change stales downstream output", async () => {
+  it("allows stepper forward navigation after an upstream change stales downstream output", async () => {
     const user = userEvent.setup();
 
     await saveConfirmedPlanBuilderProgressForTest({
@@ -1956,8 +1902,8 @@ describe("PlanBuilderRoute", () => {
       }),
     );
 
-    await expectPlanBuilderPath(router, planBuilderPaths.repRanges);
-    expect(await screen.findByRole("heading", { name: /^rep ranges$/i })).toBeVisible();
+    await expectPlanBuilderPath(router, planBuilderPaths.volume);
+    expect(await screen.findByRole("heading", { name: /set your training volume/i })).toBeVisible();
   });
 
   it("navigates backward from the wide Plan Blueprint progress summary", async () => {
@@ -2456,6 +2402,17 @@ function restoreDefaultMatchMedia() {
   });
 }
 
+async function getOnePageSectionButton(title: string) {
+  const label = await screen.findByText(title);
+  const button = label.closest("button");
+
+  if (!button) {
+    throw new Error(`Expected a one-page section button for "${title}".`);
+  }
+
+  return button;
+}
+
 async function expectReadOnlyExercisesStep() {
   expect(
     await screen.findByRole("heading", { level: 1, name: "Exercise foundation" }),
@@ -2466,6 +2423,13 @@ async function expectReadOnlyExercisesStep() {
   expect(screen.queryByText("Exercise preferences · optional")).not.toBeInTheDocument();
   expect(screen.queryAllByRole("button", { name: /choose|change/i }).length).toBeGreaterThan(0);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+}
+
+async function expectExercisesSetupState() {
+  expect(await screen.findByRole("heading", { name: "Exercises needs setup" })).toBeVisible();
+  expect(
+    screen.getByText("Choose a compatible split and weekly volume before selecting exercises."),
+  ).toBeVisible();
 }
 
 async function expectConfirmableExercisesStep() {

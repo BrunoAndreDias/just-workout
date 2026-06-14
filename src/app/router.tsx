@@ -1,16 +1,12 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import {
-  getPlanBuilderRedirectStep,
   PlanBuilderExercisesRoute,
   PlanBuilderGenerateRoute,
-  type PlanBuilderGuardedStep,
   PlanBuilderOnePageRoute,
-  type PlanBuilderRedirectStep,
   PlanBuilderRepRangesRoute,
   PlanBuilderRoute,
   PlanBuilderVolumeRoute,
   planBuilderPaths,
-  planBuilderService,
 } from "../plan-builder";
 import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
 import { TrainingSessionHistoryRoute } from "../training-plan/training-session-history-route";
@@ -55,67 +51,25 @@ const planBuilderFrequencyRoute = createRoute({
   path: planBuilderPaths.frequency,
 });
 
-const planBuilderRedirectPaths = {
-  exercises: planBuilderPaths.exercises,
-  frequency: planBuilderPaths.frequency,
-  "rep-ranges": planBuilderPaths.repRanges,
-  volume: planBuilderPaths.volume,
-} as const satisfies Record<PlanBuilderRedirectStep, string>;
-
-async function requirePlanBuilderStep(step: PlanBuilderGuardedStep) {
-  const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
-
-  const redirectStep = getPlanBuilderRedirectStep(blueprint, step);
-
-  if (!redirectStep) {
-    return;
-  }
-
-  throw redirect({
-    replace: true,
-    to: planBuilderRedirectPaths[redirectStep],
-  });
-}
-
-async function requireConfirmedTrainingSplit() {
-  return requirePlanBuilderStep("rep-ranges");
-}
-
-async function requireConfirmedRepRangeStyle() {
-  return requirePlanBuilderStep("volume");
-}
-
-async function requireConfirmedTrainingVolume() {
-  return requirePlanBuilderStep("exercises");
-}
-
-async function requireConfirmedExercises() {
-  return requirePlanBuilderStep("generate");
-}
-
 const planBuilderRepRangesRoute = createRoute({
-  beforeLoad: requireConfirmedTrainingSplit,
   component: PlanBuilderRepRangesRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.repRanges,
 });
 
 const planBuilderVolumeRoute = createRoute({
-  beforeLoad: requireConfirmedRepRangeStyle,
   component: PlanBuilderVolumeRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.volume,
 });
 
 const planBuilderExercisesRoute = createRoute({
-  beforeLoad: requireConfirmedTrainingVolume,
   component: PlanBuilderExercisesRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.exercises,
 });
 
 const planBuilderGenerateRoute = createRoute({
-  beforeLoad: requireConfirmedExercises,
   component: PlanBuilderGenerateRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.generate,

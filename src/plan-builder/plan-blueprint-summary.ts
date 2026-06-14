@@ -3,7 +3,12 @@ import {
   repRangeStyleLabels,
   trainingGoalLabels,
 } from "./plan-blueprint-options";
-import { isExercisesStepComplete, isVolumeStepComplete } from "./plan-blueprint-progress";
+import {
+  hasConfiguredExercises,
+  hasConfiguredRepRanges,
+  hasConfiguredTrainingSchedule,
+  hasConfiguredTrainingVolume,
+} from "./plan-blueprint-progress";
 import type {
   PlanBlueprint,
   PlanBlueprintSplitSummaryDetails,
@@ -20,7 +25,7 @@ import {
 import { getVolumePreset, isVolumePresetId, type VolumePresetId } from "./training-volume";
 
 const planBlueprintSummaryFallbacks = {
-  generationStatus: "Not ready yet",
+  generationStatus: "Defaults or choices still needed",
   nextStep: "Choose a Training Split",
   pendingSplitDerivedDetail: "Choose a compatible split to see this detail.",
   repRanges: "Choose Rep ranges",
@@ -32,24 +37,27 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
   const { splitStatus, splitSummary } = getPlanBlueprintSplitSummaryDetails(blueprint);
   const pendingSplitDetail = planBlueprintSummaryFallbacks.pendingSplitDerivedDetail;
   const selectedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
-  const hasRepRangeStyle = selectedRepRangeStyleId !== null;
-  const isExercisesConfirmed = isExercisesStepComplete(blueprint);
-  const isVolumeConfirmed = isVolumeStepComplete(blueprint);
+  const hasRepRangeStyle = hasConfiguredRepRanges(blueprint);
+  const isTrainingScheduleConfigured = hasConfiguredTrainingSchedule(blueprint);
+  const isExercisesConfigured = hasConfiguredExercises(blueprint);
+  const isVolumeConfigured = hasConfiguredTrainingVolume(blueprint);
   const selectedVolumePresetId = isVolumePresetId(blueprint.volumePreset)
     ? blueprint.volumePreset
     : null;
 
   return {
-    generationStatus: planBlueprintSummaryFallbacks.generationStatus,
+    generationStatus: isExercisesConfigured
+      ? "Ready to generate"
+      : planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: getPlanBlueprintNextStep({
-      isExercisesConfirmed,
-      hasCompatibleSplit: splitSummary !== null,
-      hasRepRangeStyle,
-      isVolumeConfirmed,
+      hasCompatibleSplit: isTrainingScheduleConfigured,
+      hasConfiguredRepRangeStyle: hasRepRangeStyle,
+      hasConfiguredVolume: isVolumeConfigured,
+      isExercisesConfigured,
     }),
     repRanges: hasRepRangeStyle
-      ? formatRepRangeStyle(selectedRepRangeStyleId)
+      ? formatRepRangeStyle(selectedRepRangeStyleId ?? "balanced_hypertrophy")
       : planBlueprintSummaryFallbacks.repRanges,
     recovery: splitSummary?.recovery ?? pendingSplitDetail,
     split: splitSummary?.split ?? planBlueprintSummaryFallbacks.split,
@@ -65,29 +73,29 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
 }
 
 function getPlanBlueprintNextStep({
-  isExercisesConfirmed,
+  hasConfiguredRepRangeStyle,
   hasCompatibleSplit,
-  hasRepRangeStyle,
-  isVolumeConfirmed,
+  hasConfiguredVolume,
+  isExercisesConfigured,
 }: {
-  isExercisesConfirmed: boolean;
+  hasConfiguredRepRangeStyle: boolean;
   hasCompatibleSplit: boolean;
-  hasRepRangeStyle: boolean;
-  isVolumeConfirmed: boolean;
+  hasConfiguredVolume: boolean;
+  isExercisesConfigured: boolean;
 }): string {
   if (!hasCompatibleSplit) {
     return planBlueprintSummaryFallbacks.nextStep;
   }
 
-  if (!hasRepRangeStyle) {
+  if (!hasConfiguredRepRangeStyle) {
     return "Rep ranges";
   }
 
-  if (!isVolumeConfirmed) {
+  if (!hasConfiguredVolume) {
     return "Volume";
   }
 
-  if (!isExercisesConfirmed) {
+  if (!isExercisesConfigured) {
     return "Exercises";
   }
 

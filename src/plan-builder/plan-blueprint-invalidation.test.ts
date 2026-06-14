@@ -485,7 +485,7 @@ describe("plan blueprint invalidation and redirects", () => {
     });
 
     expect(summarizePlanBlueprint(blueprint)).toMatchObject({
-      generationStatus: "Not ready yet",
+      generationStatus: "Defaults or choices still needed",
       muscleFrequency:
         "Each major muscle group is trained about twice per week with focused volume.",
       nextStep: "Rep ranges",

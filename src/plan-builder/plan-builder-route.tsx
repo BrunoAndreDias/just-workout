@@ -18,6 +18,7 @@ import {
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
 import { PlanBuilderPage } from "./components/plan-builder-page";
+import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import {
   defaultRepRangeStyleId,
   getRepRangeStyle,
@@ -40,8 +41,10 @@ import {
 import {
   isTrainingVolumeConfiguration,
   type OptionalVolumeMuscleGroupId,
+  type TrainingVolumeConfiguration,
   type VolumePresetId,
 } from "./training-volume";
+import type { MainCompoundSelection } from "./weekly-movement-coverage";
 
 export function PlanBuilderRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
@@ -278,32 +281,80 @@ export function PlanBuilderExercisesRoute() {
       summary={summary}
     >
       {isExerciseSelectionStepReady ? (
-        <ExerciseFoundationStep
-          mainCompoundSelections={blueprint.mainCompoundSelections}
-          mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+        <PlanBuilderExercisesStepContent
+          blueprint={blueprint}
           onContinueToGenerate={handleContinueToGenerate}
-          onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
-            await updateMainCompoundSelection({
-              exerciseId,
-              movementPattern,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          onRotationPoolChange={async ({ exerciseIds, movementPattern }) => {
-            await updateMainCompoundRotationPool({
-              exerciseIds,
-              movementPattern,
-              timestamp: new Date().toISOString(),
-            });
-          }}
-          split={blueprint.split}
-          trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
-          weeklyRepTargets={blueprint.weeklyRepTargets}
+          onMainCompoundSelectionChange={updateMainCompoundSelection}
+          onRotationPoolChange={updateMainCompoundRotationPool}
         />
       ) : (
-        <p className="text-sm font-semibold text-stone-600">Loading exercise foundation...</p>
+        <PlanBuilderExercisesSetupState blueprint={blueprint} />
       )}
     </PlanBuilderPage>
+  );
+}
+
+function PlanBuilderExercisesStepContent({
+  blueprint,
+  onContinueToGenerate,
+  onMainCompoundSelectionChange,
+  onRotationPoolChange,
+}: {
+  blueprint: PlanBlueprint & { split: TrainingSplitId } & TrainingVolumeConfiguration;
+  onContinueToGenerate: () => Promise<void>;
+  onMainCompoundSelectionChange: (variables: {
+    exerciseId: string;
+    movementPattern: MainCompoundSelection["movementPattern"];
+    timestamp: string;
+  }) => Promise<unknown>;
+  onRotationPoolChange: (variables: {
+    exerciseIds: ReadonlyArray<string>;
+    movementPattern: MainCompoundRotationPool["movementPattern"];
+    timestamp: string;
+  }) => Promise<unknown>;
+}) {
+  return (
+    <ExerciseFoundationStep
+      mainCompoundSelections={blueprint.mainCompoundSelections}
+      mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+      onContinueToGenerate={onContinueToGenerate}
+      onMainCompoundSelectionChange={async ({ exerciseId, movementPattern }) => {
+        await onMainCompoundSelectionChange({
+          exerciseId,
+          movementPattern,
+          timestamp: new Date().toISOString(),
+        });
+      }}
+      onRotationPoolChange={async ({ exerciseIds, movementPattern }) => {
+        await onRotationPoolChange({
+          exerciseIds,
+          movementPattern,
+          timestamp: new Date().toISOString(),
+        });
+      }}
+      split={blueprint.split}
+      trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+      weeklyRepTargets={blueprint.weeklyRepTargets}
+    />
+  );
+}
+
+function PlanBuilderExercisesSetupState({ blueprint }: { blueprint: PlanBlueprint | undefined }) {
+  return (
+    <section className="space-y-4 rounded-xl border border-dashed border-stone-900/15 bg-stone-50/70 p-5 text-sm text-stone-700">
+      <div className="space-y-2">
+        <h2 className="text-lg font-black text-stone-950">Exercises needs setup</h2>
+        <p>Choose a compatible split and weekly volume before selecting exercises.</p>
+      </div>
+      <ul className="list-disc space-y-1 pl-5">
+        {blueprint && !hasCompatibleSelectedTrainingSplit(blueprint) ? (
+          <li>Choose a compatible split in Training schedule.</li>
+        ) : null}
+        {!blueprint || !isTrainingVolumeConfiguration(blueprint) ? (
+          <li>Set weekly volume in Volume.</li>
+        ) : null}
+      </ul>
+    </section>
   );
 }
 

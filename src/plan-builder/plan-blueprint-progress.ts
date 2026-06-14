@@ -12,6 +12,7 @@ import type {
 } from "./plan-blueprint-types";
 import { isTrainingSplitCompatible } from "./training-split";
 import { isTrainingVolumeConfiguration } from "./training-volume";
+import { getWeeklyMovementCoverage } from "./weekly-movement-coverage";
 
 export const defaultConfirmedBuilderSteps = {
   exercises: false,
@@ -82,6 +83,58 @@ export function isExercisesStepComplete(
   }
 
   return getConfirmedBuilderSteps(blueprint).exercises;
+}
+
+export function hasConfiguredTrainingSchedule(
+  blueprint: Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek"> | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
+}
+
+export function hasConfiguredRepRanges(
+  blueprint: Pick<PlanBlueprint, "repRanges"> | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return isRepRangeStyleId(blueprint.repRanges);
+}
+
+export function hasConfiguredTrainingVolume(
+  blueprint: VolumeStepCompletionCandidate | null | undefined,
+): boolean {
+  if (!blueprint) {
+    return false;
+  }
+
+  return isTrainingVolumeConfiguration(blueprint);
+}
+
+export function hasConfiguredExercises(blueprint: PlanBlueprint | null | undefined): boolean {
+  if (
+    !blueprint ||
+    !hasConfiguredTrainingSchedule(blueprint) ||
+    !hasConfiguredTrainingVolume(blueprint)
+  ) {
+    return false;
+  }
+
+  const split = blueprint.split;
+
+  if (!split) {
+    return false;
+  }
+
+  return getWeeklyMovementCoverage({
+    mainCompoundSelections: blueprint.mainCompoundSelections,
+    split,
+    trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
+  }).canConfirmExercises;
 }
 
 export function getPlanBuilderRedirectStep(
