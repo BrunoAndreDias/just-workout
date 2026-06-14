@@ -24,12 +24,14 @@ export type MainCompoundRotationPoolChange = {
 
 export function PlanBuilderExerciseFoundationStep({
   blueprint,
+  onBackToVolume,
   onContinueToGenerate,
   onMainCompoundSelectionChange,
   onRotationPoolChange,
   weeklyRepTargets,
 }: {
   blueprint: ExerciseFoundationReadyBlueprint;
+  onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
   onMainCompoundSelectionChange: (selection: MainCompoundSelectionChange) => Promise<unknown>;
   onRotationPoolChange: (rotationPool: MainCompoundRotationPoolChange) => Promise<unknown>;
@@ -39,6 +41,7 @@ export function PlanBuilderExerciseFoundationStep({
     <ExerciseFoundationStep
       mainCompoundSelections={blueprint.mainCompoundSelections}
       mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
+      onBackToVolume={onBackToVolume}
       onContinueToGenerate={onContinueToGenerate}
       onMainCompoundSelectionChange={async (selection) => {
         await onMainCompoundSelectionChange(selection);

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Wand2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
@@ -11,7 +10,6 @@ import {
   type PlanBlueprintRecommendedDefault,
   type PlanBlueprintSummary,
 } from "../plan-blueprint";
-import { planBuilderPaths } from "../plan-builder-paths";
 import { getTrainingSplitLabel } from "../training-split";
 import { getVolumePreset } from "../training-volume";
 
@@ -23,13 +21,20 @@ type RecommendedDefaultsConfirmationProps = {
 
 type GenerateTrainingPlanStepProps = {
   isGenerating: boolean;
+  onBackToExercises: () => void;
   onGenerateTrainingPlan: () => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
 };
 
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
-  const { isGenerating, onGenerateTrainingPlan, recommendedDefaultsConfirmation, summary } = props;
+  const {
+    isGenerating,
+    onBackToExercises,
+    onGenerateTrainingPlan,
+    recommendedDefaultsConfirmation,
+    summary,
+  } = props;
 
   return (
     <>
@@ -56,8 +61,8 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
             </dl>
 
             <StepActions className="mt-6">
-              <Button asChild variant="outline">
-                <Link to={planBuilderPaths.exercises}>Back to Exercises</Link>
+              <Button onClick={onBackToExercises} type="button" variant="outline">
+                Back to Exercises
               </Button>
               <Button
                 disabled={isGenerating}

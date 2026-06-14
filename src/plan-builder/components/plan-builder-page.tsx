@@ -181,20 +181,17 @@ function getPlanBuilderLockedStepReason(step: PlanBuilderStep): string {
 }
 
 function getPlanBuilderPathByStep(step: string) {
-  switch (step) {
-    case "exercises":
-      return planBuilderPaths.exercises;
-    case "frequency":
-      return planBuilderPaths.frequency;
-    case "rep-ranges":
-      return planBuilderPaths.repRanges;
-    case "generate":
-      return planBuilderPaths.generate;
-    case "volume":
-      return planBuilderPaths.volume;
+  if (
+    step === "frequency" ||
+    step === "rep-ranges" ||
+    step === "volume" ||
+    step === "exercises" ||
+    step === "generate"
+  ) {
+    return planBuilderPaths.entry;
   }
 
-  throw new Error(`Unknown Plan Builder step "${step}".`);
+  throw new Error(`Unknown Plan Builder section "${step}".`);
 }
 
 function getPlanBuilderPageTitle(currentStep: PlanBuilderStep): string {

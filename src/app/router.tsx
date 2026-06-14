@@ -1,13 +1,5 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
-import {
-  PlanBuilderExercisesRoute,
-  PlanBuilderGenerateRoute,
-  PlanBuilderOnePageRoute,
-  PlanBuilderRepRangesRoute,
-  PlanBuilderRoute,
-  PlanBuilderVolumeRoute,
-  planBuilderPaths,
-} from "../plan-builder";
+import { PlanBuilderOnePageRoute, planBuilderPaths } from "../plan-builder";
 import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
 import { TrainingSessionHistoryRoute } from "../training-plan/training-session-history-route";
 import { TrainingSessionRoute } from "../training-plan/training-session-route";
@@ -32,47 +24,6 @@ const planBuilderEntryRoute = createRoute({
   component: PlanBuilderOnePageRoute,
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.entry,
-});
-
-const planBuilderOverviewRoute = createRoute({
-  beforeLoad: () => {
-    throw redirect({
-      replace: true,
-      to: planBuilderPaths.entry,
-    });
-  },
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.overview,
-});
-
-const planBuilderFrequencyRoute = createRoute({
-  component: PlanBuilderRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.frequency,
-});
-
-const planBuilderRepRangesRoute = createRoute({
-  component: PlanBuilderRepRangesRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.repRanges,
-});
-
-const planBuilderVolumeRoute = createRoute({
-  component: PlanBuilderVolumeRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.volume,
-});
-
-const planBuilderExercisesRoute = createRoute({
-  component: PlanBuilderExercisesRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.exercises,
-});
-
-const planBuilderGenerateRoute = createRoute({
-  component: PlanBuilderGenerateRoute,
-  getParentRoute: () => rootRoute,
-  path: planBuilderPaths.generate,
 });
 
 const trainingPlanRoute = createRoute({
@@ -102,12 +53,6 @@ const trainingPlansRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   planBuilderEntryRoute,
-  planBuilderOverviewRoute,
-  planBuilderFrequencyRoute,
-  planBuilderRepRangesRoute,
-  planBuilderVolumeRoute,
-  planBuilderExercisesRoute,
-  planBuilderGenerateRoute,
   trainingPlansRoute,
   trainingSessionHistoryRoute,
   trainingSessionRoute,

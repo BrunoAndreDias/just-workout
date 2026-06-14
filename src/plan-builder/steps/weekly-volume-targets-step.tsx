@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, Trash2 } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
@@ -11,7 +10,6 @@ import {
   repRangeStyleDetailStyles,
 } from "../components/plan-builder-option-ui";
 import type { RepRangeStyle } from "../plan-blueprint";
-import { planBuilderPaths } from "../plan-builder-paths";
 import {
   type OptionalVolumeMuscleGroupId,
   type VolumePreset,
@@ -50,6 +48,7 @@ const weeklyVolumeTargetStatusStyles = {
 
 type WeeklyVolumeTargetsStepProps = {
   canContinueToExercises: boolean;
+  onBackToRepRanges: () => void;
   onContinueToExercises: () => Promise<void>;
   onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
@@ -101,6 +100,7 @@ const mainWeeklyTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as
 
 export function WeeklyVolumeTargetsStep({
   canContinueToExercises,
+  onBackToRepRanges,
   onContinueToExercises,
   onOptionalVolumeTargetToggle,
   onVolumePresetChange,
@@ -137,11 +137,9 @@ export function WeeklyVolumeTargetsStep({
           </div>
 
           <StepActions className="training-volume-actions">
-            <Button asChild size="step" variant="outline">
-              <Link to={planBuilderPaths.repRanges}>
-                <ChevronLeft aria-hidden="true" size={20} />
-                Back to Rep ranges
-              </Link>
+            <Button onClick={onBackToRepRanges} size="step" type="button" variant="outline">
+              <ChevronLeft aria-hidden="true" size={20} />
+              Back to Rep ranges
             </Button>
             <Button
               disabled={!canContinueToExercises}

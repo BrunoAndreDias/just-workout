@@ -420,6 +420,7 @@ function renderOnePageActiveStep({
     case "rep-ranges":
       return (
         <OnePageRepRangeStep
+          onBackToTrainingSchedule={() => setActiveStep("frequency")}
           savedRepRangeStyleId={savedRepRangeStyleId}
           selectedRepRangeStyle={selectedRepRangeStyle}
           {...repRangeStep}
@@ -429,6 +430,7 @@ function renderOnePageActiveStep({
       return (
         <OnePageVolumeStep
           blueprint={blueprint}
+          onBackToRepRanges={() => setActiveStep("rep-ranges")}
           repRangeStyle={selectedRepRangeStyle}
           trainingVolumeConfiguration={trainingVolumeConfiguration}
           {...volumeStep}
@@ -452,6 +454,7 @@ function renderOnePageActiveStep({
       return (
         <OnePageExercisesStep
           blueprint={blueprint}
+          onBackToVolume={() => setActiveStep("volume")}
           trainingVolumeConfiguration={trainingVolumeConfiguration}
           {...exercisesStep}
         />
@@ -461,6 +464,7 @@ function renderOnePageActiveStep({
       return (
         <GenerateTrainingPlanStep
           isGenerating={generateStep.isGenerating}
+          onBackToExercises={() => setActiveStep("exercises")}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
@@ -728,11 +732,13 @@ function OnePageTrainingScheduleStep({
 }
 
 function OnePageRepRangeStep({
+  onBackToTrainingSchedule,
   onContinueToVolume,
   onRepRangeStyleChange,
   savedRepRangeStyleId,
   selectedRepRangeStyle,
 }: {
+  onBackToTrainingSchedule: () => void;
   onContinueToVolume: () => Promise<void>;
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   savedRepRangeStyleId: RepRangeStyleId | null;
@@ -740,6 +746,7 @@ function OnePageRepRangeStep({
 }) {
   return (
     <RepRangeStyleStep
+      onBackToTrainingSchedule={onBackToTrainingSchedule}
       onContinueToVolume={onContinueToVolume}
       onRepRangeStyleChange={onRepRangeStyleChange}
       savedRepRangeStyleId={savedRepRangeStyleId}
@@ -750,6 +757,7 @@ function OnePageRepRangeStep({
 
 function OnePageVolumeStep({
   blueprint,
+  onBackToRepRanges,
   onContinueToExercises,
   onOptionalVolumeTargetToggle,
   onVolumePresetChange,
@@ -757,6 +765,7 @@ function OnePageVolumeStep({
   trainingVolumeConfiguration,
 }: {
   blueprint: PlanBlueprint;
+  onBackToRepRanges: () => void;
   onContinueToExercises: () => Promise<void>;
   onOptionalVolumeTargetToggle: (
     muscleGroup: OptionalVolumeMuscleGroupId,
@@ -769,6 +778,7 @@ function OnePageVolumeStep({
   return (
     <WeeklyVolumeTargetsStep
       canContinueToExercises={trainingVolumeConfiguration !== null}
+      onBackToRepRanges={onBackToRepRanges}
       onContinueToExercises={onContinueToExercises}
       onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
       onVolumePresetChange={onVolumePresetChange}
@@ -782,12 +792,14 @@ function OnePageVolumeStep({
 
 function OnePageExercisesStep({
   blueprint,
+  onBackToVolume,
   onContinueToGenerate,
   onMainCompoundSelectionChange,
   onRotationPoolChange,
   trainingVolumeConfiguration,
 }: {
   blueprint: PlanBlueprint & { split: TrainingSplitId };
+  onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
   onMainCompoundSelectionChange: (selection: MainCompoundSelectionChange) => Promise<unknown>;
   onRotationPoolChange: (rotationPool: MainCompoundRotationPoolChange) => Promise<unknown>;
@@ -796,6 +808,7 @@ function OnePageExercisesStep({
   return (
     <PlanBuilderExerciseFoundationStep
       blueprint={blueprint}
+      onBackToVolume={onBackToVolume}
       onContinueToGenerate={onContinueToGenerate}
       onMainCompoundSelectionChange={onMainCompoundSelectionChange}
       onRotationPoolChange={onRotationPoolChange}

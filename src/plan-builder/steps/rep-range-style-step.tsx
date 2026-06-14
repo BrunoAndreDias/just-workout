@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, ChevronLeft, Info } from "lucide-react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
@@ -11,10 +10,10 @@ import {
   repRangeStyleDetailStyles,
 } from "../components/plan-builder-option-ui";
 import { type RepRangeStyle, type RepRangeStyleId, repRangeStyles } from "../plan-blueprint";
-import { planBuilderPaths } from "../plan-builder-paths";
 import "./rep-range-style-step.css";
 
 type RepRangeStyleStepProps = {
+  onBackToTrainingSchedule: () => void;
   onContinueToVolume: () => Promise<void>;
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   savedRepRangeStyleId: RepRangeStyleId | null;
@@ -37,6 +36,7 @@ type RepRangeStyleTargetsProps = {
   targets: RepRangeStyle["targets"];
 };
 export function RepRangeStyleStep({
+  onBackToTrainingSchedule,
   onContinueToVolume,
   onRepRangeStyleChange,
   savedRepRangeStyleId,
@@ -65,11 +65,9 @@ export function RepRangeStyleStep({
       </div>
 
       <StepActions className="rep-range-actions">
-        <Button asChild size="step" variant="outline">
-          <Link to={planBuilderPaths.frequency}>
-            <ChevronLeft aria-hidden="true" size={20} />
-            Back to Training schedule
-          </Link>
+        <Button onClick={onBackToTrainingSchedule} size="step" type="button" variant="outline">
+          <ChevronLeft aria-hidden="true" size={20} />
+          Back to Training schedule
         </Button>
         <Button
           onClick={() => {

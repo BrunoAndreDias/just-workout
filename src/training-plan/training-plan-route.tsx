@@ -40,7 +40,7 @@ export function TrainingPlansRoute() {
               Complete the Plan Builder to generate your first Training Plan.
             </p>
             <Button asChild className="mt-4" variant="builderPrimary">
-              <Link to="/plan-builder/generate">Go to Generate</Link>
+              <Link to="/plan-builder">Open Plan Builder</Link>
             </Button>
           </div>
         ) : (

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import {
   ArrowDownUp,
   ArrowLeft,
@@ -28,7 +27,6 @@ import {
 } from "../exercise-catalog";
 import type { MainCompoundRotationPool } from "../main-compound-rotation-pool";
 import type { TrainingFrequencyDaysPerWeek } from "../plan-blueprint-types";
-import { planBuilderPaths } from "../plan-builder-paths";
 import type { TrainingSplitId } from "../training-split";
 import type { OptionalVolumeMuscleGroupId, WeeklyRepTarget } from "../training-volume";
 import {
@@ -43,6 +41,7 @@ import "./exercise-foundation-step.css";
 type ExerciseFoundationStepProps = {
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
+  onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
   onMainCompoundSelectionChange: (
     selection: Pick<MainCompoundSelection, "exerciseId" | "movementPattern">,
@@ -245,6 +244,7 @@ function getAvailableAccessoryExercises(
 export function ExerciseFoundationStep({
   mainCompoundSelections,
   mainCompoundRotationPools,
+  onBackToVolume,
   onContinueToGenerate,
   onMainCompoundSelectionChange,
   onRotationPoolChange,
@@ -598,11 +598,9 @@ export function ExerciseFoundationStep({
           )}
 
           <StepActions>
-            <Button asChild size="step" variant="outline">
-              <Link to={planBuilderPaths.volume}>
-                <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
-                Back to Volume
-              </Link>
+            <Button onClick={onBackToVolume} size="step" type="button" variant="outline">
+              <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
+              Back to Volume
             </Button>
             <Button
               disabled={!canContinueToGenerate}
