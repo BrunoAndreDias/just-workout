@@ -38,6 +38,34 @@ describe("Training Session Execution", () => {
     });
   });
 
+  it("prefills editable set drafts from suggested starting loads", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises, [
+      {
+        effectiveLoad: 92.5,
+        exerciseId: "bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        previousLoad: 100,
+        reason: "same exercise, -5% reset",
+        suggestedLoad: 95,
+        userEditedLoad: 92.5,
+      },
+    ]);
+
+    expect(drafts[getTrainingSessionExerciseKey("group-1", benchPressSlot)]).toEqual([
+      { done: false, reps: "8", setIndex: 1, weight: "92.5" },
+      { done: false, reps: "8", setIndex: 2, weight: "92.5" },
+      { done: false, reps: "8", setIndex: 3, weight: "92.5" },
+    ]);
+    expect(drafts[getTrainingSessionExerciseKey("group-1", pullUpsSlot)]).toEqual([
+      { done: false, reps: "8", setIndex: 1, weight: "" },
+      { done: false, reps: "8", setIndex: 2, weight: "" },
+      { done: false, reps: "8", setIndex: 3, weight: "" },
+    ]);
+  });
+
   it("counts completed sets for the whole Training Session and one Superset Group", () => {
     const workoutTemplate = createWorkoutTemplate();
     const sessionExercises = createTrainingSessionExercises(workoutTemplate);

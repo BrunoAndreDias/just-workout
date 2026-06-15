@@ -1,6 +1,6 @@
 import { normalizePlanBlueprint } from "../plan-builder/plan-blueprint";
 import { getCurrentPlanBlueprint } from "../plan-builder/plan-builder-repository";
-import { generateTrainingPlanFromBlueprint } from "./training-plan";
+import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
 import {
   getTrainingPlan,
   getTrainingPlans,
@@ -65,10 +65,15 @@ async function completeTrainingSession({
   return saveCompletedTrainingSession(trainingSession);
 }
 
+async function saveNextTrainingPlan(trainingPlan: TrainingPlan) {
+  return saveGeneratedTrainingPlan(trainingPlan);
+}
+
 export const trainingPlanService = {
   completeTrainingSession,
   generateTrainingPlan,
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
+  saveNextTrainingPlan,
 };

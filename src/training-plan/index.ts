@@ -1,4 +1,13 @@
 export type {
+  NextTrainingBlockLoadSuggestion,
+  NextTrainingBlockPreview,
+} from "./training-block";
+export { applyNextTrainingBlockLoadSuggestionEdit } from "./training-block";
+export {
+  acceptNextTrainingBlockTransition,
+  createNextTrainingBlockTransitionPreview,
+} from "./training-block-transition";
+export type {
   SupersetGroup,
   TrainingPlan,
   TrainingPlanSlot,

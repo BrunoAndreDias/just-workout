@@ -6,6 +6,7 @@ import {
   formatExerciseRole,
   formatMovementPattern,
 } from "./active-training-plan/active-training-plan-read-model";
+import { isBodyweightLoadExercise } from "./bodyweight-load";
 import { calculateVolumeByMovementPattern } from "./completed-load-volume";
 import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
 import { trainingPlanService } from "./training-plan-service";
@@ -64,6 +65,7 @@ export function TrainingSessionRoute() {
   );
   const [completedSession, setCompletedSession] = useState<TrainingSession | null>(null);
   const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlyArray<string>>([]);
+  const startingLoadSuggestions = trainingPlan?.startingLoadSuggestions ?? [];
   const completeSession = useMutation({
     mutationFn: (entries: ReadonlyArray<TrainingSessionExerciseEntry>) => {
       if (!routeParams || !workoutTemplate) {
@@ -83,9 +85,9 @@ export function TrainingSessionRoute() {
     setDrafts((currentDrafts) =>
       Object.keys(currentDrafts).length > 0
         ? currentDrafts
-        : createInitialTrainingSessionDrafts(sessionExercises),
+        : createInitialTrainingSessionDrafts(sessionExercises, startingLoadSuggestions),
     );
-  }, [sessionExercises]);
+  }, [sessionExercises, startingLoadSuggestions]);
 
   useEffect(() => {
     setExpandedGroupIds(
@@ -421,7 +423,7 @@ function TrainingSessionSetCells({
             aria-label={`Set ${draft.setIndex} weight`}
             id={`${inputId}-weight`}
             inputMode="decimal"
-            min="0"
+            min={isBodyweightLoadExercise(slot) ? "-200" : "0"}
             onChange={(event) => onDraftChange(draft.setIndex, "weight", event.target.value)}
             type="number"
             value={draft.weight}

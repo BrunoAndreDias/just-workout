@@ -1,4 +1,8 @@
-import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
+import type {
+  TrainingPlanSlot,
+  TrainingPlanStartingLoadSuggestion,
+  WorkoutTemplate,
+} from "./training-plan";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 
 export type TrainingSessionSetDraft = {
@@ -28,24 +32,33 @@ export function createTrainingSessionExercises(
 
 export function createInitialTrainingSessionDrafts(
   sessionExercises: ReadonlyArray<TrainingSessionExercise>,
+  startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion> = [],
 ): TrainingSessionExerciseDrafts {
+  const startingLoadByExerciseId = new Map(
+    startingLoadSuggestions.map((suggestion) => [
+      suggestion.exerciseId,
+      String(suggestion.effectiveLoad),
+    ]),
+  );
+
   return Object.fromEntries(
     sessionExercises.map(({ groupId, slot }) => [
       getTrainingSessionExerciseKey(groupId, slot),
-      createDefaultTrainingSessionSetDrafts(slot),
+      createDefaultTrainingSessionSetDrafts(slot, startingLoadByExerciseId.get(slot.exerciseId)),
     ]),
   );
 }
 
 export function createDefaultTrainingSessionSetDrafts(
   slot?: TrainingPlanSlot,
+  startingLoad?: string,
 ): TrainingSessionSetDraft[] {
   const reps = String(getTrainingSessionDefaultReps(slot));
 
   return [
-    { done: false, reps, setIndex: 1, weight: "" },
-    { done: false, reps, setIndex: 2, weight: "" },
-    { done: false, reps, setIndex: 3, weight: "" },
+    { done: false, reps, setIndex: 1, weight: startingLoad ?? "" },
+    { done: false, reps, setIndex: 2, weight: startingLoad ?? "" },
+    { done: false, reps, setIndex: 3, weight: startingLoad ?? "" },
   ];
 }
 

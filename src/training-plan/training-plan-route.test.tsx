@@ -8,7 +8,8 @@ import { createAppRouter } from "../app/router";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
-import { generateTrainingPlanFromBlueprint } from "./training-plan";
+import type { TrainingSession } from "./index";
+import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
 
 const defaultMatchMedia = window.matchMedia;
 const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
@@ -302,6 +303,167 @@ describe("TrainingPlanRoute", () => {
     expect(within(workoutPanel).queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("shows a calm cycle summary on the active Training Plan", async () => {
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    const blockSummary = getClosestSection(screen.getByRole("heading", { name: "Cycle 1" }));
+
+    expect(within(blockSummary).getByText("Cycle 1 · Week 2 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Current focus: building consistency")).toBeVisible();
+    expect(within(blockSummary).getByText("4 weeks until exercise rotation")).toBeVisible();
+    expect(
+      within(blockSummary).getByText(
+        "After week 6, Just Workout can rotate exercises and prefill starting loads based on your previous cycle.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(blockSummary).queryByRole("button", { name: "Generate next cycle" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the next cycle action and preview summary at the end of week 6", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-07-12T10:00:00.000Z",
+        exerciseId: "flat-barbell-bench-press",
+        exerciseName: "Flat Barbell Bench Press",
+        movementPattern: "horizontal_push",
+        weight: 100,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    const blockSummary = getClosestSection(screen.getByRole("heading", { name: "Cycle 1" }));
+
+    expect(within(blockSummary).getByText("Cycle 1 · Week 6 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Ready for exercise rotation")).toBeVisible();
+    expect(within(blockSummary).getByRole("button", { name: "Generate next cycle" })).toBeVisible();
+    expect(within(blockSummary).getByText("Next cycle preview")).toBeVisible();
+    expect(within(blockSummary).getByText("5 exercises rotated")).toBeVisible();
+    expect(within(blockSummary).getByText("7 exercises kept")).toBeVisible();
+
+    await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
+
+    expect(
+      within(blockSummary).getByRole("heading", { name: "Exercise rotation preview" }),
+    ).toBeVisible();
+    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(12);
+    expect(
+      within(blockSummary).getByText(/Flat Dumbbell Bench Press.*Incline Dumbbell Bench Press/),
+    ).toBeVisible();
+    expect(within(blockSummary).getByText("same Movement Pattern rotation pool")).toBeVisible();
+    expect(within(blockSummary).getByText("Previous load: 100 kg")).toBeVisible();
+    expect(within(blockSummary).getByText("Suggested start: 90 kg")).toBeVisible();
+    expect(within(blockSummary).getByText("same Movement Pattern, -10% reset")).toBeVisible();
+
+    const suggestedLoadInput = within(blockSummary).getByLabelText(
+      "Suggested starting load for Incline Dumbbell Bench Press",
+    );
+
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "92.5");
+
+    expect(suggestedLoadInput).toHaveValue(92.5);
+    expect(within(blockSummary).getByText("Edited start: 92.5 kg")).toBeVisible();
+  });
+
+  it("accepts the next cycle preview and stores the edited suggested load", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-07-12T10:00:00.000Z",
+        exerciseId: "flat-barbell-bench-press",
+        exerciseName: "Flat Barbell Bench Press",
+        movementPattern: "horizontal_push",
+        weight: 100,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+
+    await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
+
+    const suggestedLoadInput = within(blockSummary).getByLabelText(
+      "Suggested starting load for Incline Dumbbell Bench Press",
+    );
+
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "92.5");
+    await user.click(within(blockSummary).getByRole("button", { name: "Accept next cycle" }));
+
+    expect(await screen.findByRole("heading", { name: "Cycle 2" })).toBeVisible();
+    expect(screen.getByText("Cycle 2 · Week 1 of 6")).toBeVisible();
+
+    const previousPlan = await db.trainingPlans.get("training-plan-test");
+    const nextPlan = await db.trainingPlans.get("training-plan-test-next");
+
+    expect(previousPlan).toMatchObject({ active: false });
+    expect(nextPlan).toMatchObject({
+      active: true,
+      startingLoadSuggestions: expect.arrayContaining([
+        expect.objectContaining({
+          effectiveLoad: 92.5,
+          exerciseId: "incline-dumbbell-bench-press",
+          previousLoad: 100,
+          suggestedLoad: 90,
+          userEditedLoad: 92.5,
+        }),
+      ]),
+      trainingBlock: {
+        cycleNumber: 2,
+        id: "training-block-1-next",
+        previousBlockId: "training-block-1",
+        weekNumber: 1,
+      },
+    });
+  });
+
   it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
@@ -428,6 +590,46 @@ describe("TrainingPlanRoute", () => {
         name: /1 Barbell Squats.*Quad dominant/i,
       }),
     ).toBeVisible();
+  });
+
+  it("allows signed assistance only for bodyweight exercise load inputs", async () => {
+    await seedTrainingPlan();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+    const pullUpsRow = within(firstRound).getByRole("row", {
+      name: /1 Pull-Ups.*Vertical pull/i,
+    });
+
+    expect(within(benchPressRow).getByLabelText("Set 1 weight")).toHaveAttribute("min", "0");
+    expect(within(pullUpsRow).getByLabelText("Set 1 weight")).toHaveAttribute("min", "-200");
+  });
+
+  it("prefills a next-cycle workout session with the saved suggested starting load", async () => {
+    await seedGeneratedTrainingPlanWithStartingLoadSuggestion();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test-next/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    for (const setIndex of [1, 2, 3]) {
+      const round = screen.getByRole("rowgroup", { name: `Round ${setIndex} superset` });
+      const inclineBenchRow = within(round).getByRole("row", {
+        name: new RegExp(`${setIndex} Incline Dumbbell Bench Press.*Horizontal push`, "i"),
+      });
+
+      expect(within(inclineBenchRow).getByLabelText(`Set ${setIndex} weight`)).toHaveValue(92.5);
+    }
   });
 
   it("opens Training Session history from the active Training Plan", async () => {
@@ -688,18 +890,108 @@ describe("TrainingPlanRoute", () => {
 });
 
 async function seedTrainingPlan(
-  blueprintOverrides: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> = {},
+  overrides: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> &
+    Partial<Pick<TrainingPlan, "mainCompoundRotationPools" | "trainingBlock">> = {},
 ) {
+  const { mainCompoundRotationPools, trainingBlock, ...blueprintOverrides } = overrides;
   const trainingPlan = generateTrainingPlanFromBlueprint({
     blueprint: createCompleteBlueprint(blueprintOverrides),
     id: "training-plan-test",
     timestamp: "2026-06-07T10:00:00.000Z",
   });
 
-  await db.trainingPlans.put(trainingPlan);
+  await db.trainingPlans.put({
+    ...trainingPlan,
+    ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
+    ...(trainingBlock ? { trainingBlock } : {}),
+  });
 }
 
-async function seedCompletedTrainingSessions() {
+async function seedGeneratedTrainingPlanWithStartingLoadSuggestion() {
+  const trainingPlan = generateTrainingPlanFromBlueprint({
+    blueprint: createCompleteBlueprint(),
+    id: "training-plan-test-next",
+    timestamp: "2026-07-19T09:00:00.000Z",
+  });
+
+  await db.trainingPlans.put({
+    ...trainingPlan,
+    generatedAt: "2026-07-18",
+    startingLoadSuggestions: [
+      {
+        effectiveLoad: 92.5,
+        exerciseId: "incline-dumbbell-bench-press",
+        exerciseName: "Incline Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        previousLoad: 100,
+        reason: "same Movement Pattern, -10% reset",
+        suggestedLoad: 90,
+        userEditedLoad: 92.5,
+      },
+    ],
+    trainingBlock: {
+      cycleNumber: 2,
+      endDate: "2026-08-29",
+      id: "training-block-2",
+      planId: "training-plan-test-next",
+      previousBlockId: "training-block-1",
+      startDate: "2026-07-19",
+      status: "active",
+      weekNumber: 1,
+    },
+    updatedAt: "2026-07-18",
+    workoutTemplates: trainingPlan.workoutTemplates.map((template) => ({
+      ...template,
+      supersetGroups: template.supersetGroups.map((group) => ({
+        ...group,
+        slots: group.slots.map((slot) =>
+          slot.exerciseId === "flat-dumbbell-bench-press"
+            ? {
+                ...slot,
+                exerciseId: "incline-dumbbell-bench-press",
+                exerciseName: "Incline Dumbbell Bench Press",
+              }
+            : slot,
+        ),
+      })),
+    })),
+  });
+}
+
+async function seedCompletedTrainingSessions(
+  overrides: ReadonlyArray<{
+    completedAt: string;
+    exerciseId: string;
+    exerciseName: string;
+    movementPattern: TrainingSession["exercises"][number]["movementPattern"];
+    weight: number;
+  }> = [],
+) {
+  if (overrides.length > 0) {
+    await db.trainingSessions.bulkPut(
+      overrides.map((entry, index) => ({
+        completedAt: entry.completedAt,
+        createdAt: entry.completedAt,
+        exercises: [
+          {
+            exerciseId: entry.exerciseId,
+            exerciseName: entry.exerciseName,
+            movementPattern: entry.movementPattern,
+            sets: [{ reps: 8, setIndex: 1, weight: entry.weight }],
+          },
+        ],
+        id: `session-override-${index}`,
+        planId: "training-plan-test",
+        status: "completed" as const,
+        templateId: "template-1",
+        templateLabel: "Upper A",
+        updatedAt: entry.completedAt,
+        volumeByMovementPattern: [],
+      })),
+    );
+    return;
+  }
+
   await db.trainingSessions.bulkPut([
     {
       completedAt: "2026-05-27T09:00:00.000Z",

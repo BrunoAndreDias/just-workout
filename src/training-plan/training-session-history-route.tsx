@@ -12,7 +12,10 @@ import {
   type TrainingHistoryWeekReport,
   type TrainingHistoryWeekSummary,
 } from "./training-history-week";
-import { trainingPlanService } from "./training-plan-service";
+import {
+  trainingPlanQueryOptions,
+  trainingPlanSessionsQueryOptions,
+} from "./training-plan-query-options";
 
 const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
@@ -150,28 +153,8 @@ function TrainingSessionHistoryShell({
 }
 
 function useTrainingHistoryData(planId: string | null) {
-  const trainingPlanQuery = useQuery({
-    enabled: planId !== null,
-    queryFn: () => {
-      if (!planId) {
-        return null;
-      }
-
-      return trainingPlanService.getTrainingPlan(planId);
-    },
-    queryKey: ["training-plan", planId],
-  });
-  const trainingSessionsQuery = useQuery({
-    enabled: planId !== null,
-    queryFn: () => {
-      if (!planId) {
-        return [];
-      }
-
-      return trainingPlanService.getTrainingSessionsForPlan(planId);
-    },
-    queryKey: ["training-sessions", planId],
-  });
+  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(planId));
+  const trainingSessionsQuery = useQuery(trainingPlanSessionsQueryOptions(planId));
 
   return { trainingPlanQuery, trainingSessionsQuery };
 }

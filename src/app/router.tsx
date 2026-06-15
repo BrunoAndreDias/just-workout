@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
+import { TrainingCycleDevSeedRoute } from "../dev/training-cycle-dev-seed-route";
 import { PlanBuilderOnePageRoute, planBuilderPaths } from "../plan-builder";
 import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
 import { TrainingSessionHistoryRoute } from "../training-plan/training-session-history-route";
@@ -50,9 +51,16 @@ const trainingPlansRoute = createRoute({
   path: "/training-plans",
 });
 
+const trainingCycleDevSeedRoute = createRoute({
+  component: TrainingCycleDevSeedRoute,
+  getParentRoute: () => rootRoute,
+  path: "/dev/training-cycle-seeds",
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   planBuilderEntryRoute,
+  trainingCycleDevSeedRoute,
   trainingPlansRoute,
   trainingSessionHistoryRoute,
   trainingSessionRoute,

@@ -12,6 +12,7 @@ import {
   getWeeklyMovementCoverage,
   type MainCompoundSelection,
 } from "../plan-builder/weekly-movement-coverage";
+import type { TrainingBlock } from "./training-block";
 
 export type TrainingPlanSlot = {
   exerciseId: string;
@@ -21,6 +22,17 @@ export type TrainingPlanSlot = {
   role: "main_compound" | "secondary_compound" | "isolation" | "abs";
   slotLabel: string;
   targetMuscles: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
+};
+
+export type TrainingPlanStartingLoadSuggestion = {
+  effectiveLoad: number;
+  exerciseId: string;
+  exerciseName: string;
+  movementPattern: MovementPatternId;
+  previousLoad: number | null;
+  reason: string;
+  suggestedLoad: number;
+  userEditedLoad: number | null;
 };
 
 export type SupersetGroup = {
@@ -44,6 +56,8 @@ export type TrainingPlan = {
   repRangeStyle: NonNullable<PlanBlueprint["repRanges"]>;
   sourceBlueprintId: string;
   split: string;
+  startingLoadSuggestions?: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+  trainingBlock?: TrainingBlock;
   trainingBlockWeeks: number;
   trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"];
   trainingGoal: PlanBlueprint["trainingGoal"];

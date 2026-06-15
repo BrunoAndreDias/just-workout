@@ -2,7 +2,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { History, Play } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, PageMain } from "../../design-system/typography";
-import type { TrainingPlan } from "../index";
+import {
+  acceptNextTrainingBlockTransition,
+  createNextTrainingBlockTransitionPreview,
+  type TrainingPlan,
+  type TrainingSession,
+} from "../index";
 import {
   type ActiveTrainingPlanTab,
   type ActiveTrainingPlanTabId,
@@ -18,7 +23,15 @@ import {
 } from "./training-block-progress";
 import { WorkoutBlueprint } from "./workout-blueprint";
 
-export function ActiveTrainingPlanPage({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+export function ActiveTrainingPlanPage({
+  onAcceptNextTrainingPlan,
+  trainingPlan,
+  trainingSessions = [],
+}: {
+  onAcceptNextTrainingPlan?: (nextTrainingPlan: TrainingPlan) => Promise<TrainingPlan>;
+  trainingPlan: TrainingPlan;
+  trainingSessions?: ReadonlyArray<TrainingSession>;
+}) {
   const [activeTabId, setActiveTabId] = useState<ActiveTrainingPlanTabId>("overview");
 
   return (
@@ -28,7 +41,11 @@ export function ActiveTrainingPlanPage({ trainingPlan }: { trainingPlan: Trainin
         title={trainingPlan.split}
       />
       <PageMain>
-        <ActiveTrainingPlanActions trainingPlan={trainingPlan} />
+        <ActiveTrainingPlanActions
+          onAcceptNextTrainingPlan={onAcceptNextTrainingPlan}
+          trainingPlan={trainingPlan}
+          trainingSessions={trainingSessions}
+        />
         <ActiveTrainingPlanTabs
           activeTabId={activeTabId}
           setActiveTabId={setActiveTabId}
@@ -48,12 +65,25 @@ export function ActiveTrainingPlanLoading({ children }: { children: string }) {
   );
 }
 
-function ActiveTrainingPlanActions({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+function ActiveTrainingPlanActions({
+  onAcceptNextTrainingPlan,
+  trainingPlan,
+  trainingSessions,
+}: {
+  onAcceptNextTrainingPlan?: (nextTrainingPlan: TrainingPlan) => Promise<TrainingPlan>;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}) {
   const navigate = useNavigate();
-  const blockWeek = getCurrentBlockWeek();
+  const blockWeek = getCurrentBlockWeek(trainingPlan);
   const blockProgressPercent = getBlockProgressPercent({
     blockWeek,
     trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+  });
+  const nextBlockPreview = createNextTrainingBlockTransitionPreview({
+    availableLoadIncrement: 2.5,
+    trainingPlan,
+    trainingSessions,
   });
 
   return (
@@ -98,6 +128,22 @@ function ActiveTrainingPlanActions({ trainingPlan }: { trainingPlan: TrainingPla
       <TrainingBlockProgress
         blockProgressPercent={blockProgressPercent}
         blockWeek={blockWeek}
+        cycleNumber={trainingPlan.trainingBlock?.cycleNumber}
+        nextBlockPreview={nextBlockPreview ?? undefined}
+        onAcceptNextTrainingBlock={
+          onAcceptNextTrainingPlan
+            ? async ({ preview, suggestions }) => {
+                const savedTrainingPlan = await onAcceptNextTrainingPlan(
+                  acceptNextTrainingBlockTransition({ preview, suggestions }),
+                );
+
+                await navigate({
+                  params: { planId: savedTrainingPlan.id },
+                  to: "/training-plans/$planId",
+                });
+              }
+            : undefined
+        }
         trainingBlockWeeks={trainingPlan.trainingBlockWeeks}
       />
     </div>

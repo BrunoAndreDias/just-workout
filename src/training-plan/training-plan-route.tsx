@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
@@ -8,6 +8,10 @@ import {
 } from "./active-training-plan/active-training-plan-page";
 import type { TrainingPlan } from "./index";
 import { trainingPlanService } from "./index";
+import {
+  trainingPlanQueryOptions,
+  trainingPlanSessionsQueryOptions,
+} from "./training-plan-query-options";
 import "./training-plan-route.css";
 
 export function TrainingPlansRoute() {
@@ -57,18 +61,13 @@ export function TrainingPlansRoute() {
 
 export function TrainingPlanRoute() {
   const planId = useTrainingPlanIdFromPathname();
-  const trainingPlanQuery = useQuery({
-    enabled: planId !== null,
-    queryFn: () => {
-      if (!planId) {
-        return null;
-      }
-
-      return trainingPlanService.getTrainingPlan(planId);
-    },
-    queryKey: ["training-plan", planId],
-  });
+  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(planId));
+  const trainingSessionsQuery = useQuery(trainingPlanSessionsQueryOptions(planId));
   const trainingPlan = trainingPlanQuery.data;
+  const saveNextTrainingPlan = useMutation({
+    mutationFn: (nextTrainingPlan: TrainingPlan) =>
+      trainingPlanService.saveNextTrainingPlan(nextTrainingPlan),
+  });
 
   if (trainingPlanQuery.isLoading) {
     return <ActiveTrainingPlanLoading>Loading Training Plan...</ActiveTrainingPlanLoading>;
@@ -78,7 +77,15 @@ export function TrainingPlanRoute() {
     return <ActiveTrainingPlanLoading>Training Plan not found.</ActiveTrainingPlanLoading>;
   }
 
-  return <ActiveTrainingPlanPage trainingPlan={trainingPlan} />;
+  return (
+    <ActiveTrainingPlanPage
+      onAcceptNextTrainingPlan={(nextTrainingPlan) =>
+        saveNextTrainingPlan.mutateAsync(nextTrainingPlan)
+      }
+      trainingPlan={trainingPlan}
+      trainingSessions={trainingSessionsQuery.data ?? []}
+    />
+  );
 }
 
 function useTrainingPlanIdFromPathname(): string | null {
