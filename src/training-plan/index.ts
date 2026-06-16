@@ -3,9 +3,11 @@ export type {
   NextTrainingBlockPreview,
 } from "./training-block";
 export { applyNextTrainingBlockLoadSuggestionEdit } from "./training-block";
+export type { NextTrainingBlockTransitionWorkflow } from "./training-block-transition";
 export {
   acceptNextTrainingBlockTransition,
   createNextTrainingBlockTransitionPreview,
+  createNextTrainingBlockTransitionWorkflow,
 } from "./training-block-transition";
 export type {
   SupersetGroup,

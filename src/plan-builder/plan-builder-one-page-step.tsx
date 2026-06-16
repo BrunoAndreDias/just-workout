@@ -6,14 +6,11 @@ import {
   useUpdateRepRangeStyleMutation,
 } from "./components/plan-builder-mutations";
 import {
-  defaultRepRangeStyleId,
   getRepRangeStyle,
-  getValidRepRangeStyleId,
   type PlanBlueprint,
   type PlanBlueprintDefaultResolution,
   type PlanBlueprintSummary,
 } from "./plan-blueprint";
-import { hasCompatibleSelectedTrainingSplit } from "./plan-builder-one-page-overview";
 import {
   useOnePageExercisesStep,
   useOnePageGenerateStep,
@@ -30,9 +27,9 @@ import {
   OnePageTrainingScheduleStep,
   OnePageVolumeStep,
 } from "./plan-builder-one-page-step-panels";
+import type { PlanBuilderWorkflow } from "./plan-builder-workflow";
 import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
-import { getRecommendedTrainingSplitId, type TrainingSplitId } from "./training-split";
-import { isTrainingVolumeConfiguration, type TrainingVolumeConfiguration } from "./training-volume";
+import type { TrainingVolumeConfiguration } from "./training-volume";
 import "./plan-builder-one-page-step.css";
 
 export function PlanBuilderOnePageStepContent({
@@ -40,11 +37,13 @@ export function PlanBuilderOnePageStepContent({
   blueprint,
   setActiveStep,
   summary,
+  workflow,
 }: {
   activeStep: PlanBuilderStep;
   blueprint: PlanBlueprint | undefined;
   setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary | null;
+  workflow: PlanBuilderWorkflow;
 }) {
   if (!blueprint || !summary) {
     return <p className="plan-builder-one-page__loading">Loading Plan Blueprint...</p>;
@@ -56,6 +55,7 @@ export function PlanBuilderOnePageStepContent({
       blueprint={blueprint}
       setActiveStep={setActiveStep}
       summary={summary}
+      workflow={workflow}
     />
   );
 }
@@ -65,44 +65,48 @@ function PlanBuilderOnePageUnlockedStep({
   blueprint,
   setActiveStep,
   summary,
+  workflow,
 }: {
   activeStep: PlanBuilderStep;
   blueprint: PlanBlueprint;
   setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary;
+  workflow: PlanBuilderWorkflow;
 }) {
   const navigate = useNavigate();
   const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
   const { mutate: initializeTrainingVolumeDefaults } = useInitializeTrainingVolumeMutation();
-  const savedRepRangeStyleId = getValidRepRangeStyleId(blueprint.repRanges);
-  const selectedRepRangeStyleId = savedRepRangeStyleId ?? defaultRepRangeStyleId;
-  const selectedRepRangeStyle = getRepRangeStyle(selectedRepRangeStyleId);
-  const trainingVolumeConfiguration = isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
+  const selectedRepRangeStyle = getRepRangeStyle(workflow.selectedRepRangeStyleId);
+  const trainingVolumeConfiguration = workflow.trainingVolumeConfiguration;
+  const visibleTrainingSplitId = workflow.visibleTrainingSplitId;
   const [pendingDefaultResolution, setPendingDefaultResolution] =
     useState<PlanBlueprintDefaultResolution | null>(null);
+
   const frequencyStep = useOnePageTrainingScheduleStep({
     blueprint,
-    getVisibleTrainingSplitId,
+    selectedTrainingSplitId: visibleTrainingSplitId,
     setActiveStep,
   });
-  const repRangeStep = useOnePageRepRangeStep({ selectedRepRangeStyleId, setActiveStep });
+  const repRangeStep = useOnePageRepRangeStep({
+    selectedRepRangeStyleId: workflow.selectedRepRangeStyleId,
+    setActiveStep,
+  });
   const volumeStep = useOnePageVolumeStep({ setActiveStep, trainingVolumeConfiguration });
   const exercisesStep = useOnePageExercisesStep({ setActiveStep });
   const generateStep = useOnePageGenerateStep({
-    blueprint,
+    defaultResolution: workflow.generation.defaultResolution,
     navigate,
     onPendingDefaultResolutionChange: setPendingDefaultResolution,
   });
 
   useRepRangeDefaultSelection({
-    activeStep,
-    savedRepRangeStyleId,
+    defaultRepRangeStyleId: workflow.selectedRepRangeStyleId,
+    shouldSelectDefaultRepRangeStyle: workflow.defaultEntryActions.shouldSelectDefaultRepRangeStyle,
     updateRepRangeStyle,
   });
   useTrainingVolumeDefaultSelection({
-    activeStep,
     initializeTrainingVolumeDefaults,
-    trainingVolumeConfiguration,
+    shouldInitializeTrainingVolume: workflow.defaultEntryActions.shouldInitializeTrainingVolume,
   });
 
   return renderOnePageActiveStep({
@@ -114,11 +118,12 @@ function PlanBuilderOnePageUnlockedStep({
     pendingDefaultResolution,
     repRangeStep,
     selectedRepRangeStyle,
-    savedRepRangeStyleId,
     setActiveStep,
     summary,
     trainingVolumeConfiguration,
+    visibleTrainingSplitId,
     volumeStep,
+    workflow,
   });
 }
 
@@ -131,11 +136,12 @@ function renderOnePageActiveStep({
   pendingDefaultResolution,
   repRangeStep,
   selectedRepRangeStyle,
-  savedRepRangeStyleId,
   setActiveStep,
   summary,
   trainingVolumeConfiguration,
+  visibleTrainingSplitId,
   volumeStep,
+  workflow,
 }: {
   activeStep: PlanBuilderStep;
   blueprint: PlanBlueprint;
@@ -145,18 +151,19 @@ function renderOnePageActiveStep({
   pendingDefaultResolution: PlanBlueprintDefaultResolution | null;
   repRangeStep: ReturnType<typeof useOnePageRepRangeStep>;
   selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
-  savedRepRangeStyleId: ReturnType<typeof getValidRepRangeStyleId>;
   setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary;
   trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+  visibleTrainingSplitId: PlanBuilderWorkflow["visibleTrainingSplitId"];
   volumeStep: ReturnType<typeof useOnePageVolumeStep>;
+  workflow: PlanBuilderWorkflow;
 }) {
   switch (activeStep) {
     case "frequency":
       return (
         <OnePageTrainingScheduleStep
           blueprint={blueprint}
-          getVisibleTrainingSplitId={getVisibleTrainingSplitId}
+          selectedTrainingSplitId={visibleTrainingSplitId}
           {...frequencyStep}
         />
       );
@@ -164,7 +171,7 @@ function renderOnePageActiveStep({
       return (
         <OnePageRepRangeStep
           onBackToTrainingSchedule={() => setActiveStep("frequency")}
-          savedRepRangeStyleId={savedRepRangeStyleId}
+          savedRepRangeStyleId={workflow.savedRepRangeStyleId}
           selectedRepRangeStyle={selectedRepRangeStyle}
           {...repRangeStep}
         />
@@ -180,23 +187,22 @@ function renderOnePageActiveStep({
         />
       );
     case "exercises": {
-      const requiresTrainingSchedule = !hasCompatibleSelectedTrainingSplit(blueprint);
-      const requiresVolume = !trainingVolumeConfiguration;
+      const configuredBlueprint = workflow.exerciseSetup.configuredBlueprint;
 
-      if (requiresTrainingSchedule || requiresVolume) {
+      if (!configuredBlueprint || !trainingVolumeConfiguration) {
         return (
           <ExerciseFoundationSetupState
             onOpenTrainingSchedule={() => setActiveStep("frequency")}
             onOpenVolume={() => setActiveStep("volume")}
-            requiresTrainingSchedule={requiresTrainingSchedule}
-            requiresVolume={requiresVolume}
+            requiresTrainingSchedule={workflow.exerciseSetup.requiresTrainingSchedule}
+            requiresVolume={workflow.exerciseSetup.requiresVolume}
           />
         );
       }
 
       return (
         <OnePageExercisesStep
-          blueprint={blueprint}
+          blueprint={configuredBlueprint}
           onBackToVolume={() => setActiveStep("volume")}
           trainingVolumeConfiguration={trainingVolumeConfiguration}
           {...exercisesStep}
@@ -224,12 +230,4 @@ function renderOnePageActiveStep({
   }
 
   return null;
-}
-
-function getVisibleTrainingSplitId(blueprint: PlanBlueprint): TrainingSplitId {
-  if (hasCompatibleSelectedTrainingSplit(blueprint)) {
-    return blueprint.split;
-  }
-
-  return getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek);
 }

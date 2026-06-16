@@ -2,23 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type TrainingPlan, trainingPlanService } from "../../training-plan";
 import type { ExerciseSelectionPreferences } from "../exercise-selection-preferences";
 import {
-  confirmExerciseSelectionPreferences,
-  confirmRepRangeStyle,
-  confirmTrainingFrequency,
-  confirmTrainingSplit,
-  confirmTrainingVolume,
-  initializeTrainingVolume,
+  applyPlanBlueprintTransition,
   type PlanBlueprint,
+  type PlanBlueprintTransition,
   type RepRangeStyleId,
-  selectMainCompound,
-  selectRepRangeStyle,
-  selectTrainingFrequency,
-  selectTrainingSplit,
-  selectTrainingVolumePreset,
-  setOptionalVolumeTargetEnabled,
   summarizePlanBlueprint,
   type TrainingFrequencyDaysPerWeek,
-  updateMainCompoundRotationPool,
 } from "../plan-blueprint";
 import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
@@ -41,8 +30,16 @@ type PlanBlueprintMutationContext = {
 
 type PlanBlueprintMutationConfig<TVariables> = {
   mutationFn: (variables: TVariables) => Promise<PlanBlueprint>;
-  optimisticUpdate: (blueprint: PlanBlueprint, variables: TVariables) => PlanBlueprint;
-};
+} & (
+  | {
+      optimisticUpdate?: never;
+      transition: (variables: TVariables) => PlanBlueprintTransition;
+    }
+  | {
+      optimisticUpdate: (blueprint: PlanBlueprint, variables: TVariables) => PlanBlueprint;
+      transition?: never;
+    }
+);
 
 type TrainingSplitMutationVariables = {
   split: TrainingSplitId;
@@ -117,12 +114,11 @@ export function useUpdateTrainingFrequencyMutation() {
         timestamp,
         trainingFrequencyDaysPerWeek,
       }),
-    optimisticUpdate: (blueprint, { timestamp, trainingFrequencyDaysPerWeek }) =>
-      selectTrainingFrequency({
-        blueprint,
-        timestamp,
-        trainingFrequencyDaysPerWeek,
-      }),
+    transition: ({ timestamp, trainingFrequencyDaysPerWeek }) => ({
+      timestamp,
+      trainingFrequencyDaysPerWeek,
+      type: "selectTrainingFrequency",
+    }),
   });
 }
 
@@ -133,12 +129,11 @@ export function useUpdateTrainingSplitMutation() {
         split,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { split, timestamp }) =>
-      selectTrainingSplit({
-        blueprint,
-        split,
-        timestamp,
-      }),
+    transition: ({ split, timestamp }) => ({
+      split,
+      timestamp,
+      type: "selectTrainingSplit",
+    }),
   });
 }
 
@@ -149,12 +144,11 @@ export function useConfirmTrainingFrequencyMutation() {
         timestamp,
         trainingFrequencyDaysPerWeek,
       }),
-    optimisticUpdate: (blueprint, { timestamp, trainingFrequencyDaysPerWeek }) =>
-      confirmTrainingFrequency({
-        blueprint,
-        timestamp,
-        trainingFrequencyDaysPerWeek,
-      }),
+    transition: ({ timestamp, trainingFrequencyDaysPerWeek }) => ({
+      timestamp,
+      trainingFrequencyDaysPerWeek,
+      type: "confirmTrainingFrequency",
+    }),
   });
 }
 
@@ -165,12 +159,11 @@ export function useConfirmTrainingSplitMutation() {
         split,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { split, timestamp }) =>
-      confirmTrainingSplit({
-        blueprint,
-        split,
-        timestamp,
-      }),
+    transition: ({ split, timestamp }) => ({
+      split,
+      timestamp,
+      type: "confirmTrainingSplit",
+    }),
   });
 }
 
@@ -181,12 +174,11 @@ export function useConfirmRepRangeStyleMutation() {
         repRangeStyle,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { repRangeStyle, timestamp }) =>
-      confirmRepRangeStyle({
-        blueprint,
-        repRangeStyle,
-        timestamp,
-      }),
+    transition: ({ repRangeStyle, timestamp }) => ({
+      repRangeStyle,
+      timestamp,
+      type: "confirmRepRangeStyle",
+    }),
   });
 }
 
@@ -197,12 +189,11 @@ export function useUpdateRepRangeStyleMutation() {
         repRangeStyle,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { repRangeStyle, timestamp }) =>
-      selectRepRangeStyle({
-        blueprint,
-        repRangeStyle,
-        timestamp,
-      }),
+    transition: ({ repRangeStyle, timestamp }) => ({
+      repRangeStyle,
+      timestamp,
+      type: "selectRepRangeStyle",
+    }),
   });
 }
 
@@ -212,11 +203,10 @@ export function useInitializeTrainingVolumeMutation() {
       planBuilderService.initializeTrainingVolume({
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { timestamp }) =>
-      initializeTrainingVolume({
-        blueprint,
-        timestamp,
-      }),
+    transition: ({ timestamp }) => ({
+      timestamp,
+      type: "initializeTrainingVolume",
+    }),
   });
 }
 
@@ -227,12 +217,11 @@ export function useUpdateTrainingVolumePresetMutation() {
         timestamp,
         volumePreset,
       }),
-    optimisticUpdate: (blueprint, { timestamp, volumePreset }) =>
-      selectTrainingVolumePreset({
-        blueprint,
-        timestamp,
-        volumePreset,
-      }),
+    transition: ({ timestamp, volumePreset }) => ({
+      timestamp,
+      type: "selectTrainingVolumePreset",
+      volumePreset,
+    }),
   });
 }
 
@@ -244,13 +233,12 @@ export function useUpdateOptionalVolumeTargetMutation() {
         muscleGroup,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { isEnabled, muscleGroup, timestamp }) =>
-      setOptionalVolumeTargetEnabled({
-        blueprint,
-        isEnabled,
-        muscleGroup,
-        timestamp,
-      }),
+    transition: ({ isEnabled, muscleGroup, timestamp }) => ({
+      isEnabled,
+      muscleGroup,
+      timestamp,
+      type: "setOptionalVolumeTargetEnabled",
+    }),
   });
 }
 
@@ -261,14 +249,11 @@ export function useConfirmTrainingVolumeMutation() {
         trainingVolumeConfiguration,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { timestamp, trainingVolumeConfiguration }) =>
-      confirmTrainingVolume({
-        blueprint: {
-          ...blueprint,
-          ...trainingVolumeConfiguration,
-        },
-        timestamp,
-      }),
+    transition: ({ timestamp, trainingVolumeConfiguration }) => ({
+      timestamp,
+      trainingVolumeConfiguration,
+      type: "confirmTrainingVolume",
+    }),
   });
 }
 
@@ -279,12 +264,11 @@ export function useConfirmExerciseSelectionPreferencesMutation() {
         exerciseSelectionPreferences,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { exerciseSelectionPreferences, timestamp }) =>
-      confirmExerciseSelectionPreferences({
-        blueprint,
-        exerciseSelectionPreferences,
-        timestamp,
-      }),
+    transition: ({ exerciseSelectionPreferences, timestamp }) => ({
+      exerciseSelectionPreferences,
+      timestamp,
+      type: "confirmExerciseSelectionPreferences",
+    }),
   });
 }
 
@@ -296,13 +280,12 @@ export function useUpdateMainCompoundSelectionMutation() {
         movementPattern,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { exerciseId, movementPattern, timestamp }) =>
-      selectMainCompound({
-        blueprint,
-        exerciseId,
-        movementPattern,
-        timestamp,
-      }),
+    transition: ({ exerciseId, movementPattern, timestamp }) => ({
+      exerciseId,
+      movementPattern,
+      timestamp,
+      type: "selectMainCompound",
+    }),
   });
 }
 
@@ -314,13 +297,12 @@ export function useUpdateMainCompoundRotationPoolMutation() {
         movementPattern,
         timestamp,
       }),
-    optimisticUpdate: (blueprint, { exerciseIds, movementPattern, timestamp }) =>
-      updateMainCompoundRotationPool({
-        blueprint,
-        exerciseIds,
-        movementPattern,
-        timestamp,
-      }),
+    transition: ({ exerciseIds, movementPattern, timestamp }) => ({
+      exerciseIds,
+      movementPattern,
+      timestamp,
+      type: "updateMainCompoundRotationPool",
+    }),
   });
 }
 
@@ -343,6 +325,7 @@ export function useApplyResolvedPlanBlueprintMutation() {
 function usePlanBlueprintMutation<TVariables>({
   mutationFn,
   optimisticUpdate,
+  transition,
 }: PlanBlueprintMutationConfig<TVariables>) {
   const queryClient = useQueryClient();
 
@@ -363,7 +346,12 @@ function usePlanBlueprintMutation<TVariables>({
       if (previousBlueprint) {
         queryClient.setQueryData(
           planBuilderBlueprintQueryKey,
-          optimisticUpdate(previousBlueprint, variables),
+          transition
+            ? applyPlanBlueprintTransition({
+                blueprint: previousBlueprint,
+                transition: transition(variables),
+              })
+            : optimisticUpdate(previousBlueprint, variables),
         );
       }
 

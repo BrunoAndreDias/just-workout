@@ -17,13 +17,10 @@ import {
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "./components/plan-builder-mutations";
-import {
-  defaultRepRangeStyleId,
-  type PlanBlueprint,
-  type PlanBlueprintDefaultResolution,
-  type RepRangeStyleId,
-  resolvePlanBlueprintRecommendedDefaults,
-  type TrainingFrequencyDaysPerWeek,
+import type {
+  PlanBlueprintDefaultResolution,
+  RepRangeStyleId,
+  TrainingFrequencyDaysPerWeek,
 } from "./plan-blueprint";
 import type {
   MainCompoundRotationPoolChange,
@@ -37,16 +34,16 @@ import type {
 } from "./training-volume";
 
 export function useRepRangeDefaultSelection({
-  activeStep,
-  savedRepRangeStyleId,
+  defaultRepRangeStyleId,
+  shouldSelectDefaultRepRangeStyle,
   updateRepRangeStyle,
 }: {
-  activeStep: PlanBuilderStep;
-  savedRepRangeStyleId: RepRangeStyleId | null;
+  defaultRepRangeStyleId: RepRangeStyleId;
+  shouldSelectDefaultRepRangeStyle: boolean;
   updateRepRangeStyle: (variables: { repRangeStyle: RepRangeStyleId; timestamp: string }) => void;
 }) {
   useEffect(() => {
-    if (activeStep !== "rep-ranges" || savedRepRangeStyleId) {
+    if (!shouldSelectDefaultRepRangeStyle) {
       return;
     }
 
@@ -54,37 +51,35 @@ export function useRepRangeDefaultSelection({
       repRangeStyle: defaultRepRangeStyleId,
       timestamp: new Date().toISOString(),
     });
-  }, [activeStep, savedRepRangeStyleId, updateRepRangeStyle]);
+  }, [defaultRepRangeStyleId, shouldSelectDefaultRepRangeStyle, updateRepRangeStyle]);
 }
 
 export function useTrainingVolumeDefaultSelection({
-  activeStep,
   initializeTrainingVolumeDefaults,
-  trainingVolumeConfiguration,
+  shouldInitializeTrainingVolume,
 }: {
-  activeStep: PlanBuilderStep;
   initializeTrainingVolumeDefaults: (variables: { timestamp: string }) => void;
-  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
+  shouldInitializeTrainingVolume: boolean;
 }) {
   useEffect(() => {
-    if (activeStep !== "volume" || trainingVolumeConfiguration) {
+    if (!shouldInitializeTrainingVolume) {
       return;
     }
 
     initializeTrainingVolumeDefaults({
       timestamp: new Date().toISOString(),
     });
-  }, [activeStep, initializeTrainingVolumeDefaults, trainingVolumeConfiguration]);
+  }, [initializeTrainingVolumeDefaults, shouldInitializeTrainingVolume]);
 }
 
 export function useOnePageTrainingScheduleStep({
   blueprint,
+  selectedTrainingSplitId,
   setActiveStep,
-  getVisibleTrainingSplitId,
 }: {
-  blueprint: PlanBlueprint;
+  blueprint: { trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek };
+  selectedTrainingSplitId: TrainingSplitId;
   setActiveStep: (step: PlanBuilderStep) => void;
-  getVisibleTrainingSplitId: (blueprint: PlanBlueprint) => TrainingSplitId;
 }) {
   const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
   const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
@@ -94,14 +89,13 @@ export function useOnePageTrainingScheduleStep({
   return {
     onContinueToTrainingStyle: async () => {
       const timestamp = new Date().toISOString();
-      const selectedSplit = getVisibleTrainingSplitId(blueprint);
 
-      updateTrainingSplit({ split: selectedSplit, timestamp });
+      updateTrainingSplit({ split: selectedTrainingSplitId, timestamp });
       await confirmSelectedTrainingFrequency({
         timestamp,
         trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
       });
-      await confirmSelectedTrainingSplit({ split: selectedSplit, timestamp });
+      await confirmSelectedTrainingSplit({ split: selectedTrainingSplitId, timestamp });
       setActiveStep("rep-ranges");
     },
     onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) =>
@@ -216,11 +210,11 @@ export function useOnePageExercisesStep({
 }
 
 export function useOnePageGenerateStep({
-  blueprint,
+  defaultResolution,
   navigate,
   onPendingDefaultResolutionChange,
 }: {
-  blueprint: PlanBlueprint;
+  defaultResolution: PlanBlueprintDefaultResolution | null;
   navigate: ReturnType<typeof useNavigate>;
   onPendingDefaultResolutionChange: (resolution: PlanBlueprintDefaultResolution | null) => void;
 }) {
@@ -249,7 +243,11 @@ export function useOnePageGenerateStep({
       onPendingDefaultResolutionChange(null);
     },
     onGenerateTrainingPlan: async () => {
-      const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+      const resolution = defaultResolution;
+
+      if (!resolution) {
+        return;
+      }
 
       if (!resolution.isReady) {
         onPendingDefaultResolutionChange(resolution);

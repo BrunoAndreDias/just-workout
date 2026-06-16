@@ -15,14 +15,14 @@ import {
 import {
   acceptNextTrainingBlockTransition,
   createNextTrainingBlockTransitionPreview,
+  createNextTrainingBlockTransitionWorkflow,
 } from "./training-block-transition";
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 
 describe("Training Block transition", () => {
   it("does not expose a next Training Block preview until the active block reaches the final week", () => {
-    const preview = createNextTrainingBlockTransitionPreview({
-      availableLoadIncrement: 2.5,
+    const transition = createNextTrainingBlockTransitionWorkflow({
       trainingPlan: createTrainingPlan({
         trainingBlock: {
           cycleNumber: 1,
@@ -38,7 +38,7 @@ describe("Training Block transition", () => {
       trainingSessions: [],
     });
 
-    expect(preview).toBeNull();
+    expect(transition).toBeNull();
   });
 
   it("creates and accepts a complete next Training Block transition behind one interface", () => {
@@ -108,6 +108,69 @@ describe("Training Block transition", () => {
         userEditedLoad: 92.5,
       }),
     );
+  });
+
+  it("accepts a next Training Block transition through the workflow after editing suggested load", async () => {
+    const events: string[] = [];
+    const transition = createNextTrainingBlockTransitionWorkflow({
+      onAcceptedTrainingPlan: async (savedTrainingPlan) => {
+        events.push(`after-save:${savedTrainingPlan.id}`);
+      },
+      saveAcceptedTrainingPlan: async (nextTrainingPlan) => {
+        const editedSuggestion = nextTrainingPlan.startingLoadSuggestions?.find(
+          (suggestion) => suggestion.exerciseId === "incline-dumbbell-bench-press",
+        );
+
+        events.push(`save:${nextTrainingPlan.id}:${editedSuggestion?.effectiveLoad}`);
+
+        return {
+          ...nextTrainingPlan,
+          id: "persisted-training-plan-next",
+        };
+      },
+      trainingPlan: createTrainingPlan({
+        mainCompoundRotationPools: [
+          {
+            exerciseIds: ["incline-dumbbell-bench-press"],
+            movementPattern: "horizontal_push",
+          },
+        ],
+        trainingBlock: {
+          cycleNumber: 1,
+          endDate: "2026-07-18",
+          id: "training-block-1",
+          planId: "training-plan-1",
+          previousBlockId: null,
+          startDate: "2026-06-07",
+          status: "completed",
+          weekNumber: 6,
+        },
+      }),
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2026-07-12T10:00:00.000Z",
+          exerciseId: "flat-barbell-bench-press",
+          weight: 100,
+        }),
+      ],
+    });
+
+    if (!transition?.accept) {
+      throw new Error("Expected an acceptable next Training Block transition.");
+    }
+
+    const editedSuggestions = transition.editLoadSuggestion({
+      exerciseId: "incline-dumbbell-bench-press",
+      suggestions: transition.preview.loadSuggestions,
+      userEditedLoad: 92.5,
+    });
+    const savedTrainingPlan = await transition.accept({ suggestions: editedSuggestions });
+
+    expect(savedTrainingPlan.id).toBe("persisted-training-plan-next");
+    expect(events).toEqual([
+      "save:training-plan-1-next:92.5",
+      "after-save:persisted-training-plan-next",
+    ]);
   });
 });
 

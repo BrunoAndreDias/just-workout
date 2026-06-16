@@ -1,32 +1,24 @@
 import { useState } from "react";
-import {
-  applyNextTrainingBlockLoadSuggestionEdit,
-  type NextTrainingBlockLoadSuggestion,
-  type NextTrainingBlockPreview,
-} from "../index";
+import type { NextTrainingBlockTransitionWorkflow } from "../index";
 import "./training-block-progress.css";
 
 export function TrainingBlockProgress({
   blockProgressPercent,
   blockWeek,
   cycleNumber = 1,
-  nextBlockPreview,
-  onAcceptNextTrainingBlock,
+  nextTrainingBlockTransition,
   trainingBlockWeeks,
 }: {
   blockProgressPercent: number;
   blockWeek: number;
   cycleNumber?: number;
-  nextBlockPreview?: NextTrainingBlockPreview;
-  onAcceptNextTrainingBlock?: (input: {
-    preview: NextTrainingBlockPreview;
-    suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
-  }) => Promise<void>;
+  nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
   trainingBlockWeeks: number;
 }) {
   const weeksUntilRotation = Math.max(trainingBlockWeeks - blockWeek, 0);
   const summaryId = `training-block-${cycleNumber}-summary`;
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const nextBlockPreview = nextTrainingBlockTransition?.preview;
 
   return (
     <section className="active-training-plan-progress" aria-labelledby={summaryId}>
@@ -79,11 +71,8 @@ export function TrainingBlockProgress({
           >
             Generate next cycle
           </button>
-          {nextBlockPreview && isPreviewExpanded ? (
-            <TrainingBlockPreviewDetails
-              onAcceptNextTrainingBlock={onAcceptNextTrainingBlock}
-              preview={nextBlockPreview}
-            />
+          {nextTrainingBlockTransition && isPreviewExpanded ? (
+            <TrainingBlockPreviewDetails transition={nextTrainingBlockTransition} />
           ) : null}
         </>
       ) : null}
@@ -92,15 +81,11 @@ export function TrainingBlockProgress({
 }
 
 function TrainingBlockPreviewDetails({
-  onAcceptNextTrainingBlock,
-  preview,
+  transition,
 }: {
-  onAcceptNextTrainingBlock?: (input: {
-    preview: NextTrainingBlockPreview;
-    suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
-  }) => Promise<void>;
-  preview: NextTrainingBlockPreview;
+  transition: NextTrainingBlockTransitionWorkflow;
 }) {
+  const { preview } = transition;
   const [loadSuggestions, setLoadSuggestions] = useState(preview.loadSuggestions);
   const [isAccepting, setIsAccepting] = useState(false);
   const [loadInputValues, setLoadInputValues] = useState<Record<string, string>>(() =>
@@ -159,7 +144,7 @@ function TrainingBlockPreviewDetails({
                         }
 
                         setLoadSuggestions((current) =>
-                          applyNextTrainingBlockLoadSuggestionEdit({
+                          transition.editLoadSuggestion({
                             exerciseId: loadSuggestion.exerciseId,
                             suggestions: current,
                             userEditedLoad: nextLoad,
@@ -189,7 +174,7 @@ function TrainingBlockPreviewDetails({
           </li>
         ))}
       </ul>
-      {onAcceptNextTrainingBlock ? (
+      {transition.accept ? (
         <button
           className="active-training-plan-progress__accept"
           disabled={isAccepting}
@@ -197,7 +182,7 @@ function TrainingBlockPreviewDetails({
             setIsAccepting(true);
 
             try {
-              await onAcceptNextTrainingBlock({ preview, suggestions: loadSuggestions });
+              await transition.accept?.({ suggestions: loadSuggestions });
             } finally {
               setIsAccepting(false);
             }

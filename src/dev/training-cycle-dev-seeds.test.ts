@@ -1,22 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { db } from "../app/local-database";
+import {
+  getTrainingPlan,
+  getTrainingSessionsForPlan,
+} from "../training-plan/training-plan-repository";
 import { seedTrainingCycleDevPlans } from "./training-cycle-dev-seeds";
 
 describe("seedTrainingCycleDevPlans", () => {
   it("creates plans that are already in the cycle test conditions", async () => {
     const result = await seedTrainingCycleDevPlans();
 
-    const readyWeekSixPlan = await db.trainingPlans.get(result.readyWeekSixPlanId);
-    const bodyweightWeekSixPlan = await db.trainingPlans.get(result.bodyweightWeekSixPlanId);
-    const acceptedNextCyclePlan = await db.trainingPlans.get(result.acceptedNextCyclePlanId);
-    const readySessions = await db.trainingSessions
-      .where("planId")
-      .equals(result.readyWeekSixPlanId)
-      .toArray();
-    const bodyweightSessions = await db.trainingSessions
-      .where("planId")
-      .equals(result.bodyweightWeekSixPlanId)
-      .toArray();
+    const readyWeekSixPlan = await getTrainingPlan(result.readyWeekSixPlanId);
+    const bodyweightWeekSixPlan = await getTrainingPlan(result.bodyweightWeekSixPlanId);
+    const acceptedNextCyclePlan = await getTrainingPlan(result.acceptedNextCyclePlanId);
+    const readySessions = await getTrainingSessionsForPlan(result.readyWeekSixPlanId);
+    const bodyweightSessions = await getTrainingSessionsForPlan(result.bodyweightWeekSixPlanId);
 
     expect(readyWeekSixPlan).toMatchObject({
       active: true,

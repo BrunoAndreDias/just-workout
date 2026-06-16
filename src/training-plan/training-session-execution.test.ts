@@ -3,16 +3,21 @@ import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 import {
   applyTrainingSessionDraftChange,
+  applyTrainingSessionExecutionChange,
   countCompletedTrainingSessionGroupSets,
   countCompletedTrainingSessionSets,
   createInitialTrainingSessionDrafts,
+  createInitialTrainingSessionExecutionState,
   createTrainingSessionEntries,
+  createTrainingSessionExecutionReadModel,
   createTrainingSessionExercises,
   getExpandedTrainingSessionGroupIdsAfterCompletion,
   getPreviousTrainingSessionSetLabel,
   getTrainingSessionDefaultReps,
   getTrainingSessionExerciseKey,
   getTrainingSessionGroupProgress,
+  hasTrainingSessionExecutionDrafts,
+  toggleTrainingSessionExecutionGroup,
 } from "./training-session-execution";
 
 describe("Training Session Execution", () => {
@@ -186,6 +191,115 @@ describe("Training Session Execution", () => {
   it("defaults abs work to twelve reps and other work to eight reps", () => {
     expect(getTrainingSessionDefaultReps(absSlot)).toBe(12);
     expect(getTrainingSessionDefaultReps(benchPressSlot)).toBe(8);
+  });
+
+  it("creates the execution read model consumed by the route and Superset Group UI", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+
+    state.drafts[benchKey] = [
+      { done: true, reps: "10", setIndex: 1, weight: "40" },
+      { done: false, reps: "8", setIndex: 2, weight: "40" },
+      { done: false, reps: "8", setIndex: 3, weight: "40" },
+    ];
+
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [createPreviousTrainingSession()],
+      state,
+      workoutTemplate,
+    });
+
+    expect(readModel.completedSetCount).toBe(1);
+    expect(readModel.plannedSetCount).toBe(9);
+    expect(readModel.volumeByMovementPattern).toEqual([
+      {
+        movementPattern: "horizontal_push",
+        movementPatternLabel: "Horizontal Push",
+        volume: 1040,
+      },
+    ]);
+    expect(readModel.entries[0]).toEqual({
+      exerciseId: "bench-press",
+      exerciseName: "Flat Dumbbell Bench Press",
+      movementPattern: "horizontal_push",
+      sets: [
+        { reps: 10, setIndex: 1, weight: 40 },
+        { reps: 8, setIndex: 2, weight: 40 },
+        { reps: 8, setIndex: 3, weight: 40 },
+      ],
+    });
+    expect(readModel.groups[0]).toMatchObject({
+      accessibleTitle: "Superset 1",
+      groupId: "group-1",
+      isOpen: true,
+      now: {
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPatternLabel: "Horizontal push",
+        prescriptionLabel: "3 x 8-12",
+        roleLabel: "Main",
+        setLabel: "Set 1 of 3",
+        targetRepsLabel: "Target 8-12 reps",
+      },
+      summary: {
+        completedSetCount: 1,
+        exerciseCount: 2,
+        isComplete: false,
+        plannedSetCount: 6,
+      },
+      title: "Upper Superset 1",
+    });
+    expect(readModel.groups[0]?.rounds[0]?.rows[0]).toMatchObject({
+      done: true,
+      doneLabel: "Mark Flat Dumbbell Bench Press set 1 not done",
+      exerciseKey: benchKey,
+      exerciseName: "Flat Dumbbell Bench Press",
+      movementPatternLabel: "Horizontal push",
+      prescriptionLabel: "3 x 8-12",
+      previousSetLabel: "40kg x 10",
+      reps: "10",
+      setIndex: 1,
+      weight: "40",
+      weightInputMin: "0",
+    });
+  });
+
+  it("applies execution changes and advances to the next incomplete Superset Group", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const initialState = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    let state = initialState;
+
+    for (const slot of [benchPressSlot, pullUpsSlot]) {
+      for (const setIndex of [1, 2, 3]) {
+        state = applyTrainingSessionExecutionChange({
+          change: {
+            exerciseKey: getTrainingSessionExerciseKey("group-1", slot),
+            field: "done",
+            setIndex,
+            value: true,
+          },
+          state,
+          workoutTemplate,
+        });
+      }
+    }
+
+    expect(state.expandedGroupIds).toEqual(["group-2"]);
+  });
+
+  it("keeps Training Session execution state details behind execution helpers", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+
+    expect(hasTrainingSessionExecutionDrafts(state)).toBe(true);
+    expect(state.expandedGroupIds).toEqual(["group-1"]);
+    expect(
+      toggleTrainingSessionExecutionGroup({
+        groupId: "group-1",
+        state,
+      }).expandedGroupIds,
+    ).toEqual([]);
   });
 });
 

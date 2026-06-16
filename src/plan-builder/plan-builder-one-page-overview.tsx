@@ -10,13 +10,11 @@ import {
 import { cn } from "../design-system/cn";
 import type { PlanBuilderStep } from "./components/plan-builder-config";
 import {
-  getValidRepRangeStyleId,
   hasConfiguredExercises,
-  hasConfiguredTrainingVolume,
   type PlanBlueprint,
   type PlanBlueprintSummary,
 } from "./plan-blueprint";
-import { isTrainingSplitCompatible, type TrainingSplitId } from "./training-split";
+import type { PlanBuilderWorkflowSectionStatus } from "./plan-builder-workflow";
 import "./plan-builder-one-page-overview.css";
 
 export const planBuilderOnePageSections = [
@@ -61,21 +59,20 @@ export function PlanBuilderOnePageSectionCard({
   blueprint,
   isActive,
   isExpanded,
-  nextStep,
   onSelect,
   section,
   summary,
+  status,
 }: {
   blueprint: PlanBlueprint | undefined;
   isActive: boolean;
   isExpanded: boolean;
-  nextStep: PlanBuilderStep | null;
   onSelect: () => void;
   section: (typeof planBuilderOnePageSections)[number];
   summary: PlanBlueprintSummary | null;
+  status: PlanBuilderWorkflowSectionStatus;
 }) {
   const Icon = section.icon;
-  const status = getSectionStatus({ blueprint, isActive, nextStep, sectionId: section.id });
 
   return (
     <li
@@ -120,74 +117,8 @@ export function PlanBuilderOnePageSectionCard({
   );
 }
 
-export function getNextPlanBuilderStep(
-  blueprint: PlanBlueprint | undefined,
-): PlanBuilderStep | null {
-  if (!blueprint) {
-    return null;
-  }
-
-  return (
-    planBuilderOnePageSections.find((section) => !isSectionComplete(section.id, blueprint))?.id ??
-    null
-  );
-}
-
 export function getPlanBuilderOnePageStepTitle(step: PlanBuilderStep): string {
   return planBuilderOnePageSections.find((section) => section.id === step)?.title ?? "Builder";
-}
-
-export function hasCompatibleSelectedTrainingSplit(
-  blueprint: PlanBlueprint,
-): blueprint is PlanBlueprint & { split: TrainingSplitId } {
-  return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
-}
-
-function getSectionStatus({
-  blueprint,
-  isActive,
-  nextStep,
-  sectionId,
-}: {
-  blueprint: PlanBlueprint | undefined;
-  isActive: boolean;
-  nextStep: PlanBuilderStep | null;
-  sectionId: PlanBuilderStep;
-}): { label: string; tone: "complete" | "current" | "next" | "ready" } {
-  if (!blueprint) {
-    return { label: "Loading", tone: "ready" };
-  }
-
-  if (blueprint && isSectionComplete(sectionId, blueprint)) {
-    return { label: "Done", tone: "complete" };
-  }
-
-  if (isActive) {
-    return { label: "Open", tone: "current" };
-  }
-
-  if (sectionId === nextStep) {
-    return { label: "Next", tone: "next" };
-  }
-
-  return { label: "Ready", tone: "ready" };
-}
-
-function isSectionComplete(sectionId: PlanBuilderStep, blueprint: PlanBlueprint): boolean {
-  switch (sectionId) {
-    case "frequency":
-      return hasCompatibleSelectedTrainingSplit(blueprint);
-    case "rep-ranges":
-      return getValidRepRangeStyleId(blueprint.repRanges) !== null;
-    case "volume":
-      return hasConfiguredTrainingVolume(blueprint);
-    case "exercises":
-      return hasConfiguredExercises(blueprint);
-    case "generate":
-      return false;
-  }
-
-  return false;
 }
 
 function formatOverviewDetail(detail: string): string {

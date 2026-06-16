@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { db } from "../app/local-database";
+import { resetLocalDatabase } from "../app/local-database";
 import type {
   ExerciseSelectionPreferenceItem,
   ExerciseSelectionPreferenceListId,
   ExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import type { PlanBlueprint } from "./plan-blueprint";
+import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import {
@@ -52,8 +53,7 @@ const exercisePreferenceDraftUpdateCases = [
 
 describe("planBuilderService", () => {
   beforeEach(async () => {
-    await db.delete();
-    await db.open();
+    await resetLocalDatabase();
   });
 
   it("creates a blueprint once and resumes it on the next entry", async () => {
@@ -61,7 +61,7 @@ describe("planBuilderService", () => {
     const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
     expect(firstBlueprint).toEqual(resumedBlueprint);
-    expect(await db.planBlueprints.toArray()).toEqual([firstBlueprint]);
+    expect(await getCurrentPlanBlueprint()).toEqual(firstBlueprint);
   });
 
   it("resumes blueprints saved before confirmed builder progress existed", async () => {
@@ -70,8 +70,7 @@ describe("planBuilderService", () => {
 
     delete legacyBlueprint.confirmedBuilderSteps;
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
 
     const resumedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
@@ -104,8 +103,7 @@ describe("planBuilderService", () => {
 
     delete legacyBlueprint.exerciseSelectionPreferences;
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
 
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       exerciseSelectionPreferences: {
@@ -123,8 +121,7 @@ describe("planBuilderService", () => {
 
     delete legacyBlueprint.mainCompoundSelections;
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(legacyBlueprint as PlanBlueprint);
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
 
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       mainCompoundSelections: [],
@@ -149,8 +146,7 @@ describe("planBuilderService", () => {
       updatedAt: "2026-05-30T10:14:30.000Z",
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const draftExerciseSelectionPreferences = {
       automaticRules: [{ id: "compound_priority" }],
@@ -228,8 +224,7 @@ describe("planBuilderService", () => {
       updatedAt: confirmedAt,
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(confirmedBlueprint);
+    await savePlanBlueprint(confirmedBlueprint);
 
     const addedExerciseBlueprint = await planBuilderService.updateExerciseSelectionPreferences({
       exerciseSelectionPreferences: {
@@ -294,8 +289,7 @@ describe("planBuilderService", () => {
       updatedAt: "2026-05-30T10:15:30.000Z",
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const finalExerciseSelectionPreferences = {
       automaticRules: [{ id: "rest_scaling" }],
@@ -371,8 +365,7 @@ describe("planBuilderService", () => {
       updatedAt: "2026-05-30T10:16:30.000Z",
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const updatedBlueprint = await planBuilderService.updateTrainingFrequency({
       timestamp: "2026-05-30T10:17:00.000Z",
@@ -454,8 +447,7 @@ describe("planBuilderService", () => {
       updatedAt: "2026-05-30T10:20:30.000Z",
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const updatedBlueprint = await planBuilderService.updateTrainingSplit({
       split: "rotating-push-pull-legs",

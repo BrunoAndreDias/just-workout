@@ -4,12 +4,12 @@ import { PageHeader, PageMain } from "../design-system/typography";
 import type { PlanBuilderStep } from "./components/plan-builder-config";
 import { usePlanBuilderBlueprint } from "./components/plan-builder-mutations";
 import {
-  getNextPlanBuilderStep,
   getPlanBuilderOnePageStepTitle,
   PlanBuilderOnePageSectionCard,
   planBuilderOnePageSections,
 } from "./plan-builder-one-page-overview";
 import { PlanBuilderOnePageStepContent } from "./plan-builder-one-page-step";
+import { getPlanBuilderWorkflow } from "./plan-builder-workflow";
 import "./components/plan-builder-page.css";
 import "./components/plan-builder-page-responsive.css";
 import "./components/plan-builder-page-compact-responsive.css";
@@ -28,7 +28,7 @@ export function PlanBuilderOnePageRoute() {
   const visibleStep = activeStep ?? closingStep;
   const isClosingSelectedStep = activeStep === null && closingStep !== null;
   const isSectionGridCompact = activeStep !== null || closingStep !== null;
-  const nextStep = getNextPlanBuilderStep(blueprint);
+  const workflow = getPlanBuilderWorkflow({ activeStep: visibleStep, blueprint });
 
   useEffect(() => {
     return () => {
@@ -110,18 +110,26 @@ export function PlanBuilderOnePageRoute() {
                 : null,
             )}
           >
-            {planBuilderOnePageSections.map((section) => (
-              <PlanBuilderOnePageSectionCard
-                blueprint={blueprint}
-                isActive={activeStep === section.id || closingStep === section.id}
-                isExpanded={activeStep === section.id}
-                key={section.id}
-                nextStep={nextStep}
-                onSelect={() => selectPlanBuilderSection(section.id)}
-                section={section}
-                summary={summary}
-              />
-            ))}
+            {planBuilderOnePageSections.map((section) => {
+              const status = workflow.sectionStatuses[section.id];
+
+              if (!status) {
+                return null;
+              }
+
+              return (
+                <PlanBuilderOnePageSectionCard
+                  blueprint={blueprint}
+                  isActive={activeStep === section.id || closingStep === section.id}
+                  isExpanded={activeStep === section.id}
+                  key={section.id}
+                  onSelect={() => selectPlanBuilderSection(section.id)}
+                  section={section}
+                  status={status}
+                  summary={summary}
+                />
+              );
+            })}
           </ul>
 
           {visibleStep ? (
@@ -145,6 +153,7 @@ export function PlanBuilderOnePageRoute() {
                   blueprint={blueprint}
                   setActiveStep={openPlanBuilderSection}
                   summary={summary}
+                  workflow={workflow}
                 />
               </div>
             </section>

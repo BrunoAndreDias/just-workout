@@ -1,24 +1,12 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
-  confirmExerciseSelectionPreferences,
-  confirmRepRangeStyle,
-  confirmTrainingFrequency,
-  confirmTrainingSplit,
-  confirmTrainingVolume,
+  applyPlanBlueprintTransition,
   createDefaultPlanBlueprint,
-  initializeTrainingVolume as initializeTrainingVolumeState,
   normalizePlanBlueprint,
   type PlanBlueprint,
+  type PlanBlueprintTransition,
   type RepRangeStyleId,
-  selectMainCompound,
-  selectRepRangeStyle,
-  selectTrainingFrequency,
-  selectTrainingSplit,
-  selectTrainingVolumePreset,
-  setOptionalVolumeTargetEnabled,
   type TrainingFrequencyDaysPerWeek,
-  updateExerciseSelectionPreferences as updateExerciseSelectionPreferencesState,
-  updateMainCompoundRotationPool as updateMainCompoundRotationPoolState,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
@@ -127,61 +115,56 @@ type ApplyResolvedPlanBlueprintOptions = {
   blueprint: PlanBlueprint;
 };
 
-async function updateTrainingFrequency({
-  timestamp = new Date().toISOString(),
-  trainingFrequencyDaysPerWeek,
-}: UpdateTrainingFrequencyOptions) {
+async function savePlanBlueprintTransition(transition: PlanBlueprintTransition) {
   const blueprint = await getOrCreatePlanBlueprint();
 
   return savePlanBlueprint(
-    selectTrainingFrequency({
+    applyPlanBlueprintTransition({
       blueprint,
-      timestamp,
-      trainingFrequencyDaysPerWeek,
+      transition,
     }),
   );
 }
 
-async function updateTrainingSplit(options: UpdateTrainingSplitOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
+async function updateTrainingFrequency({
+  timestamp = new Date().toISOString(),
+  trainingFrequencyDaysPerWeek,
+}: UpdateTrainingFrequencyOptions) {
+  return savePlanBlueprintTransition({
+    timestamp,
+    trainingFrequencyDaysPerWeek,
+    type: "selectTrainingFrequency",
+  });
+}
 
-  return savePlanBlueprint(
-    selectTrainingSplit({
-      blueprint,
-      split: options.split ?? options.trainingSplitId,
-      timestamp: options.timestamp ?? new Date().toISOString(),
-    }),
-  );
+async function updateTrainingSplit(options: UpdateTrainingSplitOptions) {
+  return savePlanBlueprintTransition({
+    split: options.split ?? options.trainingSplitId,
+    timestamp: options.timestamp ?? new Date().toISOString(),
+    type: "selectTrainingSplit",
+  });
 }
 
 async function updateRepRangeStyle({
   repRangeStyle,
   timestamp = new Date().toISOString(),
 }: UpdateRepRangeStyleOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    selectRepRangeStyle({
-      blueprint,
-      repRangeStyle,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    repRangeStyle,
+    timestamp,
+    type: "selectRepRangeStyle",
+  });
 }
 
 async function updateTrainingVolumePreset({
   timestamp = new Date().toISOString(),
   volumePreset,
 }: UpdateTrainingVolumePresetOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    selectTrainingVolumePreset({
-      blueprint,
-      timestamp,
-      volumePreset,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    timestamp,
+    type: "selectTrainingVolumePreset",
+    volumePreset,
+  });
 }
 
 async function updateOptionalVolumeTarget({
@@ -189,31 +172,23 @@ async function updateOptionalVolumeTarget({
   muscleGroup,
   timestamp = new Date().toISOString(),
 }: UpdateOptionalVolumeTargetOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    setOptionalVolumeTargetEnabled({
-      blueprint,
-      isEnabled,
-      muscleGroup,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    isEnabled,
+    muscleGroup,
+    timestamp,
+    type: "setOptionalVolumeTargetEnabled",
+  });
 }
 
 async function updateExerciseSelectionPreferences({
   exerciseSelectionPreferences,
   timestamp = new Date().toISOString(),
 }: UpdateExerciseSelectionPreferencesOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    updateExerciseSelectionPreferencesState({
-      blueprint,
-      exerciseSelectionPreferences,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    exerciseSelectionPreferences,
+    timestamp,
+    type: "updateExerciseSelectionPreferences",
+  });
 }
 
 async function updateMainCompoundSelection({
@@ -221,16 +196,12 @@ async function updateMainCompoundSelection({
   movementPattern,
   timestamp = new Date().toISOString(),
 }: SelectMainCompoundOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    selectMainCompound({
-      blueprint,
-      exerciseId,
-      movementPattern,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    exerciseId,
+    movementPattern,
+    timestamp,
+    type: "selectMainCompound",
+  });
 }
 
 async function updateMainCompoundRotationPool({
@@ -238,106 +209,76 @@ async function updateMainCompoundRotationPool({
   movementPattern,
   timestamp = new Date().toISOString(),
 }: UpdateMainCompoundRotationPoolOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    updateMainCompoundRotationPoolState({
-      blueprint,
-      exerciseIds,
-      movementPattern,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    exerciseIds,
+    movementPattern,
+    timestamp,
+    type: "updateMainCompoundRotationPool",
+  });
 }
 
 async function confirmSelectedTrainingFrequency({
   timestamp = new Date().toISOString(),
   trainingFrequencyDaysPerWeek,
 }: ConfirmTrainingFrequencyOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    confirmTrainingFrequency({
-      blueprint,
-      timestamp,
-      trainingFrequencyDaysPerWeek,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    timestamp,
+    trainingFrequencyDaysPerWeek,
+    type: "confirmTrainingFrequency",
+  });
 }
 
 async function confirmSelectedTrainingSplit({
   split,
   timestamp = new Date().toISOString(),
 }: ConfirmTrainingSplitOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    confirmTrainingSplit({
-      blueprint,
-      split,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    split,
+    timestamp,
+    type: "confirmTrainingSplit",
+  });
 }
 
 async function confirmSelectedRepRangeStyle({
   repRangeStyle,
   timestamp = new Date().toISOString(),
 }: ConfirmRepRangeStyleOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    confirmRepRangeStyle({
-      blueprint,
-      repRangeStyle,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    repRangeStyle,
+    timestamp,
+    type: "confirmRepRangeStyle",
+  });
 }
 
 async function confirmSelectedTrainingVolume({
   timestamp = new Date().toISOString(),
   trainingVolumeConfiguration,
 }: ConfirmTrainingVolumeOptions) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    confirmTrainingVolume({
-      blueprint: {
-        ...blueprint,
-        ...trainingVolumeConfiguration,
-      },
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    timestamp,
+    trainingVolumeConfiguration,
+    type: "confirmTrainingVolume",
+  });
 }
 
 async function confirmSelectedExerciseSelectionPreferences({
   exerciseSelectionPreferences,
   timestamp = new Date().toISOString(),
 }: ConfirmExerciseSelectionPreferencesOptions = {}) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    confirmExerciseSelectionPreferences({
-      blueprint,
-      exerciseSelectionPreferences,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    exerciseSelectionPreferences,
+    timestamp,
+    type: "confirmExerciseSelectionPreferences",
+  });
 }
 
 async function initializeTrainingVolume({
   timestamp = new Date().toISOString(),
 }: InitializeTrainingVolumeOptions = {}) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    initializeTrainingVolumeState({
-      blueprint,
-      timestamp,
-    }),
-  );
+  return savePlanBlueprintTransition({
+    timestamp,
+    type: "initializeTrainingVolume",
+  });
 }
 
 async function applyResolvedPlanBlueprint({ blueprint }: ApplyResolvedPlanBlueprintOptions) {

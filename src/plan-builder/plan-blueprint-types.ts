@@ -3,6 +3,7 @@ import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import type {
   OptionalVolumeMuscleGroupId,
+  TrainingVolumeConfiguration,
   TrainingVolumeConfigurationCandidate,
   VolumeEstimationRepRange,
   VolumePresetId,
@@ -185,6 +186,85 @@ export type ConfirmExerciseSelectionPreferencesOptions = {
   blueprint: PlanBlueprint;
   exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   timestamp: string;
+};
+
+export type PlanBlueprintTransition =
+  | {
+      type: "selectTrainingFrequency";
+      timestamp: string;
+      trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+    }
+  | {
+      split: TrainingSplitId;
+      timestamp: string;
+      type: "selectTrainingSplit";
+    }
+  | {
+      repRangeStyle: RepRangeStyleId;
+      timestamp: string;
+      type: "selectRepRangeStyle";
+    }
+  | {
+      timestamp: string;
+      type: "initializeTrainingVolume";
+    }
+  | {
+      timestamp: string;
+      type: "selectTrainingVolumePreset";
+      volumePreset: VolumePresetId;
+    }
+  | {
+      isEnabled: boolean;
+      muscleGroup: OptionalVolumeMuscleGroupId;
+      timestamp: string;
+      type: "setOptionalVolumeTargetEnabled";
+    }
+  | {
+      exerciseSelectionPreferences: ExerciseSelectionPreferences;
+      timestamp: string;
+      type: "updateExerciseSelectionPreferences";
+    }
+  | {
+      exerciseId: string;
+      movementPattern: MainCompoundSelection["movementPattern"];
+      timestamp: string;
+      type: "selectMainCompound";
+    }
+  | {
+      exerciseIds: ReadonlyArray<string>;
+      movementPattern: MainCompoundSelection["movementPattern"];
+      timestamp: string;
+      type: "updateMainCompoundRotationPool";
+    }
+  | {
+      timestamp: string;
+      trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
+      type: "confirmTrainingFrequency";
+    }
+  | {
+      split: TrainingSplitId;
+      timestamp: string;
+      type: "confirmTrainingSplit";
+    }
+  | {
+      repRangeStyle: RepRangeStyleId;
+      timestamp: string;
+      type: "confirmRepRangeStyle";
+    }
+  | {
+      timestamp: string;
+      trainingVolumeConfiguration?: TrainingVolumeConfiguration;
+      type: "confirmTrainingVolume";
+    }
+  | {
+      exerciseSelectionPreferences?: ExerciseSelectionPreferences;
+      timestamp: string;
+      type: "confirmExerciseSelectionPreferences";
+    };
+
+export type ApplyPlanBlueprintTransitionOptions = {
+  blueprint: PlanBlueprint;
+  transition: PlanBlueprintTransition;
 };
 
 export type StoredPlanBlueprint = Omit<

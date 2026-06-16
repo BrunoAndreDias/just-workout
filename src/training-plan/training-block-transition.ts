@@ -1,4 +1,5 @@
 import {
+  applyNextTrainingBlockLoadSuggestionEdit,
   applyNextTrainingBlockLoadSuggestions,
   generateNextTrainingBlockPreview,
   type NextTrainingBlockLoadSuggestion,
@@ -7,8 +8,10 @@ import {
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 
+const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
+
 export type CreateNextTrainingBlockTransitionPreviewInput = {
-  availableLoadIncrement: number;
+  availableLoadIncrement?: number;
   idFactory?: (baseId: string) => string;
   timestamp?: string;
   trainingPlan: TrainingPlan;
@@ -20,8 +23,90 @@ export type AcceptNextTrainingBlockTransitionInput = {
   suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
 };
 
-export function createNextTrainingBlockTransitionPreview({
+export type CreateNextTrainingBlockTransitionWorkflowInput = {
+  availableLoadIncrement?: number;
+  idFactory?: (baseId: string) => string;
+  onAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<void> | void;
+  saveAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<TrainingPlan>;
+  timestamp?: string;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+};
+
+export type EditNextTrainingBlockTransitionLoadSuggestionInput = {
+  exerciseId: string;
+  suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+  userEditedLoad: number;
+};
+
+export type NextTrainingBlockTransitionWorkflow = {
+  accept?: (input: {
+    suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+  }) => Promise<TrainingPlan>;
+  editLoadSuggestion: (
+    input: EditNextTrainingBlockTransitionLoadSuggestionInput,
+  ) => ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+  preview: NextTrainingBlockPreview;
+};
+
+export function createNextTrainingBlockTransitionWorkflow({
   availableLoadIncrement,
+  idFactory,
+  onAcceptedTrainingPlan,
+  saveAcceptedTrainingPlan,
+  timestamp,
+  trainingPlan,
+  trainingSessions,
+}: CreateNextTrainingBlockTransitionWorkflowInput): NextTrainingBlockTransitionWorkflow | null {
+  const preview = createNextTrainingBlockTransitionPreview({
+    availableLoadIncrement,
+    idFactory,
+    timestamp,
+    trainingPlan,
+    trainingSessions,
+  });
+
+  if (!preview) {
+    return null;
+  }
+
+  const editLoadSuggestion = ({
+    exerciseId,
+    suggestions,
+    userEditedLoad,
+  }: EditNextTrainingBlockTransitionLoadSuggestionInput) =>
+    applyNextTrainingBlockLoadSuggestionEdit({
+      exerciseId,
+      suggestions,
+      userEditedLoad,
+    });
+
+  if (!saveAcceptedTrainingPlan) {
+    return {
+      editLoadSuggestion,
+      preview,
+    };
+  }
+
+  return {
+    accept: async ({ suggestions }) => {
+      const nextTrainingPlan = acceptNextTrainingBlockTransition({
+        preview,
+        suggestions,
+      });
+      const savedTrainingPlan = await saveAcceptedTrainingPlan(nextTrainingPlan);
+
+      await onAcceptedTrainingPlan?.(savedTrainingPlan);
+
+      return savedTrainingPlan;
+    },
+    editLoadSuggestion,
+    preview,
+  };
+}
+
+export function createNextTrainingBlockTransitionPreview({
+  availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
   idFactory = createNextId,
   timestamp,
   trainingPlan,

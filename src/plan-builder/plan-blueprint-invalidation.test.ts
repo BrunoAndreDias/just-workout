@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
+  applyPlanBlueprintTransition,
   confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
@@ -385,6 +386,35 @@ describe("plan blueprint invalidation and redirects", () => {
       repRanges: "strength_leaning",
     });
     expect(getPlanBuilderRedirectStep(repRangesChangedBlueprint, "generate")).toBe("rep-ranges");
+  });
+
+  it("routes transition invalidation through the same dependency rules as direct selections", () => {
+    const blueprint = createConfirmedPlanBlueprint({
+      confirmedBuilderSteps: {
+        exercises: true,
+      },
+      mainCompoundSelections: completeMainCompoundSelections,
+    });
+
+    expect(
+      applyPlanBlueprintTransition({
+        blueprint,
+        transition: {
+          repRangeStyle: "strength_leaning",
+          timestamp: firstUpdateTimestamp,
+          type: "selectRepRangeStyle",
+        },
+      }),
+    ).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: false,
+        split: true,
+        volume: false,
+      },
+      repRanges: "strength_leaning",
+    });
   });
 
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {

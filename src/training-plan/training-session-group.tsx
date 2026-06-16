@@ -1,85 +1,41 @@
 import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
-import {
-  formatExerciseRole,
-  formatMovementPattern,
-} from "./active-training-plan/active-training-plan-read-model";
-import { isBodyweightLoadExercise } from "./bodyweight-load";
-import type { SupersetGroup, TrainingPlanSlot } from "./training-plan";
-import type { TrainingSession } from "./training-session";
-import {
-  applyTrainingSessionDraftChange,
-  createDefaultTrainingSessionSetDrafts,
-  getDefaultTrainingSessionSetDraft,
-  getExpandedTrainingSessionGroupIdsAfterCompletion,
-  getPreviousTrainingSessionSetLabel,
-  getTrainingSessionDefaultReps,
-  getTrainingSessionExerciseKey,
-  getTrainingSessionGroupProgress,
-  type TrainingSessionExerciseDrafts,
-  type TrainingSessionSetDraft,
+import type {
+  TrainingSessionExecutionDraftChange,
+  TrainingSessionExecutionGroup,
+  TrainingSessionExecutionGroupSummary,
+  TrainingSessionExecutionSetRow,
 } from "./training-session-execution";
 import "./training-session-group.css";
 
 export function TrainingSessionGroup({
-  drafts,
-  expandedGroupIds,
   group,
-  groupIndex,
-  groups,
-  previousTrainingSessions,
-  setDrafts,
-  setExpandedGroupIds,
-  workoutTemplateLabel,
+  onDraftChange,
+  onToggleGroup,
 }: {
-  drafts: TrainingSessionExerciseDrafts;
-  expandedGroupIds: ReadonlyArray<string>;
-  group: SupersetGroup;
-  groupIndex: number;
-  groups: ReadonlyArray<SupersetGroup>;
-  previousTrainingSessions: ReadonlyArray<TrainingSession>;
-  setDrafts: (
-    updater: (drafts: TrainingSessionExerciseDrafts) => TrainingSessionExerciseDrafts,
-  ) => void;
-  setExpandedGroupIds: (
-    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
-  ) => void;
-  workoutTemplateLabel: string;
+  group: TrainingSessionExecutionGroup;
+  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
+  onToggleGroup: (groupId: string) => void;
 }) {
-  const isOpen = expandedGroupIds.includes(group.id);
-  const groupProgress = getTrainingSessionGroupProgress({
-    drafts,
-    groupId: group.id,
-    slots: group.slots,
-  });
-  const groupTitle = formatGroupTitle(group.title, workoutTemplateLabel, groupIndex);
-
   return (
     <section
-      aria-labelledby={`training-session-group-${group.id}`}
-      className={getTrainingSessionGroupClassName(groupProgress.isComplete, isOpen)}
+      aria-labelledby={`training-session-group-${group.groupId}`}
+      className={getTrainingSessionGroupClassName(group.summary.isComplete, group.isOpen)}
     >
       <header className="training-session-group__header">
         <div>
-          <h2
-            aria-label={formatAccessibleGroupTitle(group.title)}
-            id={`training-session-group-${group.id}`}
-          >
-            {groupTitle}
+          <h2 aria-label={group.accessibleTitle} id={`training-session-group-${group.groupId}`}>
+            {group.title}
           </h2>
-          <TrainingSessionGroupSummary
-            group={group}
-            groupProgress={groupProgress}
-            isOpen={isOpen}
-          />
+          <TrainingSessionGroupSummary groupSummary={group.summary} isOpen={group.isOpen} />
         </div>
         <button
-          aria-expanded={isOpen}
-          aria-label={`${isOpen ? "Collapse" : "Expand"} ${groupTitle}`}
+          aria-expanded={group.isOpen}
+          aria-label={`${group.isOpen ? "Collapse" : "Expand"} ${group.title}`}
           className="training-session-group__toggle"
-          onClick={() => toggleTrainingSessionGroup(group.id, setExpandedGroupIds)}
+          onClick={() => onToggleGroup(group.groupId)}
           type="button"
         >
-          {isOpen ? (
+          {group.isOpen ? (
             <ChevronUp aria-hidden="true" className="training-session-group__chevron" />
           ) : (
             <ChevronDown aria-hidden="true" className="training-session-group__chevron" />
@@ -87,7 +43,7 @@ export function TrainingSessionGroup({
         </button>
       </header>
 
-      {isOpen ? (
+      {group.isOpen ? (
         <>
           <TrainingSessionNow group={group} />
           <div className="training-session-table-wrap">
@@ -103,26 +59,11 @@ export function TrainingSessionGroup({
                   <th scope="col">Done</th>
                 </tr>
               </thead>
-              {[1, 2, 3].map((roundIndex) => (
+              {group.rounds.map((round) => (
                 <RoundSessionRows
-                  drafts={drafts}
-                  groupId={group.id}
-                  key={`${group.id}-round-${roundIndex}`}
-                  onDraftChange={(exerciseKey, setIndex, field, value) => {
-                    updateTrainingSessionGroupDraft({
-                      exerciseKey,
-                      field,
-                      group,
-                      groups,
-                      setDrafts,
-                      setExpandedGroupIds,
-                      setIndex,
-                      value,
-                    });
-                  }}
-                  previousTrainingSessions={previousTrainingSessions}
-                  roundIndex={roundIndex}
-                  slots={group.slots}
+                  key={`${group.groupId}-round-${round.roundIndex}`}
+                  onDraftChange={onDraftChange}
+                  round={round}
                 />
               ))}
             </table>
@@ -134,262 +75,154 @@ export function TrainingSessionGroup({
 }
 
 function TrainingSessionGroupSummary({
-  group,
-  groupProgress,
+  groupSummary,
   isOpen,
 }: {
-  group: SupersetGroup;
-  groupProgress: ReturnType<typeof getTrainingSessionGroupProgress>;
+  groupSummary: TrainingSessionExecutionGroupSummary;
   isOpen: boolean;
 }) {
   return (
     <p>
-      {groupProgress.isComplete && !isOpen ? (
+      {groupSummary.isComplete && !isOpen ? (
         <>
           <strong className="training-session-group__complete-state">
             <CheckCircle2 aria-hidden="true" />
             Complete
           </strong>
-          <span>{groupProgress.plannedSetCount} sets logged</span>
+          <span>{groupSummary.plannedSetCount} sets logged</span>
         </>
       ) : isOpen ? (
         <>
           <span>Superset</span>
           <span>3 rounds</span>
           <strong className="training-session-group__sets-completed">
-            {groupProgress.completedSetCount}/{groupProgress.plannedSetCount} sets completed
+            {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
           </strong>
         </>
       ) : (
         <>
-          <span>{group.slots.length} exercises</span>
-          <span>{groupProgress.plannedSetCount} planned sets</span>
+          <span>{groupSummary.exerciseCount} exercises</span>
+          <span>{groupSummary.plannedSetCount} planned sets</span>
         </>
       )}
     </p>
   );
 }
 
-function TrainingSessionNow({ group }: { group: SupersetGroup }) {
+function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup }) {
+  if (!group.now) {
+    return null;
+  }
+
   return (
     <p className="training-session-now">
       <span>Now</span>
-      <strong
-        className="training-session-now__exercise"
-        data-exercise={group.slots[0]?.exerciseName ?? "Exercise"}
-      />
+      <strong className="training-session-now__exercise" data-exercise={group.now.exerciseName} />
       <small>
-        {formatMovementPattern(group.slots[0]?.movementPattern ?? "horizontal_push")} ·{" "}
-        {formatExerciseRole(group.slots[0]?.role ?? "main_compound")} · Set 1 of 3 · Target 8-12
-        reps
-        <span className="training-session-prescription">3 x 8-12</span>
+        {group.now.movementPatternLabel} · {group.now.roleLabel} · {group.now.setLabel} ·{" "}
+        {group.now.targetRepsLabel}
+        <span className="training-session-prescription">{group.now.prescriptionLabel}</span>
       </small>
     </p>
   );
 }
 
-function toggleTrainingSessionGroup(
-  groupId: string,
-  setExpandedGroupIds: (
-    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
-  ) => void,
-) {
-  setExpandedGroupIds((currentGroupIds) =>
-    currentGroupIds.includes(groupId)
-      ? currentGroupIds.filter((currentGroupId) => currentGroupId !== groupId)
-      : [...currentGroupIds, groupId],
-  );
-}
-
-function updateTrainingSessionGroupDraft({
-  exerciseKey,
-  field,
-  group,
-  groups,
-  setDrafts,
-  setExpandedGroupIds,
-  setIndex,
-  value,
-}: {
-  exerciseKey: string;
-  field: keyof TrainingSessionSetDraft;
-  group: SupersetGroup;
-  groups: ReadonlyArray<SupersetGroup>;
-  setDrafts: (
-    updater: (drafts: TrainingSessionExerciseDrafts) => TrainingSessionExerciseDrafts,
-  ) => void;
-  setExpandedGroupIds: (
-    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
-  ) => void;
-  setIndex: number;
-  value: boolean | string;
-}) {
-  setDrafts((currentDrafts) => {
-    const slot = group.slots.find(
-      (groupSlot) => getTrainingSessionExerciseKey(group.id, groupSlot) === exerciseKey,
-    );
-
-    if (!slot) {
-      return currentDrafts;
-    }
-
-    const updatedDrafts = applyTrainingSessionDraftChange({
-      drafts: currentDrafts,
-      exerciseKey,
-      field,
-      setIndex,
-      slot,
-      value,
-    });
-
-    if (
-      field === "done" &&
-      value === true &&
-      getTrainingSessionGroupProgress({
-        drafts: updatedDrafts,
-        groupId: group.id,
-        slots: group.slots,
-      }).isComplete
-    ) {
-      setExpandedGroupIds((currentGroupIds) =>
-        getExpandedTrainingSessionGroupIdsAfterCompletion({
-          completedGroupId: group.id,
-          currentGroupIds,
-          drafts: updatedDrafts,
-          groups,
-        }),
-      );
-    }
-
-    return updatedDrafts;
-  });
-}
-
 function RoundSessionRows({
-  drafts,
-  groupId,
   onDraftChange,
-  previousTrainingSessions,
-  roundIndex,
-  slots,
+  round,
 }: {
-  drafts: TrainingSessionExerciseDrafts;
-  groupId: string;
-  onDraftChange: (
-    exerciseKey: string,
-    setIndex: number,
-    field: keyof TrainingSessionSetDraft,
-    value: boolean | string,
-  ) => void;
-  previousTrainingSessions: ReadonlyArray<TrainingSession>;
-  roundIndex: number;
-  slots: ReadonlyArray<TrainingPlanSlot>;
+  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
+  round: TrainingSessionExecutionGroup["rounds"][number];
 }) {
   return (
-    <tbody aria-label={`Round ${roundIndex} superset`} className="training-session-round">
-      {slots.map((slot) => {
-        const exerciseKey = getTrainingSessionExerciseKey(groupId, slot);
-        const draft =
-          (drafts[exerciseKey] ?? createDefaultTrainingSessionSetDrafts(slot)).find(
-            (setDraft) => setDraft.setIndex === roundIndex,
-          ) ?? getDefaultTrainingSessionSetDraft(slot);
-
-        return (
-          <tr
-            className={getTrainingSessionRowClassName(draft)}
-            key={`${exerciseKey}-set-${roundIndex}`}
-          >
-            <TrainingSessionSetCells
-              draft={draft}
-              exerciseKey={exerciseKey}
-              onDraftChange={(setIndex, field, value) =>
-                onDraftChange(exerciseKey, setIndex, field, value)
-              }
-              previousTrainingSessions={previousTrainingSessions}
-              slot={slot}
-            />
-          </tr>
-        );
-      })}
+    <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
+      {round.rows.map((row) => (
+        <tr
+          className={getTrainingSessionRowClassName(row)}
+          key={`${row.exerciseKey}-set-${row.setIndex}`}
+        >
+          <TrainingSessionSetCells onDraftChange={onDraftChange} row={row} />
+        </tr>
+      ))}
     </tbody>
   );
 }
 
 function TrainingSessionSetCells({
-  draft,
-  exerciseKey,
   onDraftChange,
-  previousTrainingSessions,
-  slot,
+  row,
 }: {
-  draft: TrainingSessionSetDraft;
-  exerciseKey: string;
-  onDraftChange: (
-    setIndex: number,
-    field: keyof TrainingSessionSetDraft,
-    value: boolean | string,
-  ) => void;
-  previousTrainingSessions: ReadonlyArray<TrainingSession>;
-  slot: TrainingPlanSlot;
+  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
+  row: TrainingSessionExecutionSetRow;
 }) {
-  const inputId = `${exerciseKey}-set-${draft.setIndex}`;
-  const repsTarget = getTrainingSessionDefaultReps(slot);
-
   return (
     <>
-      <td>{draft.setIndex}</td>
+      <td>{row.setIndex}</td>
       <td>
-        {slot.exerciseName}
-        <span className="training-session-prescription">3 x 8-12</span>
+        {row.exerciseName}
+        <span className="training-session-prescription">{row.prescriptionLabel}</span>
       </td>
-      <td>{formatMovementPattern(slot.movementPattern)}</td>
+      <td>{row.movementPatternLabel}</td>
+      <td>{row.previousSetLabel}</td>
       <td>
-        {getPreviousTrainingSessionSetLabel({
-          previousTrainingSessions,
-          setIndex: draft.setIndex,
-          slot,
-        })}
-      </td>
-      <td>
-        <label className="training-session-sr" htmlFor={`${inputId}-weight`}>
-          Set {draft.setIndex} weight
+        <label className="training-session-sr" htmlFor={`${row.inputId}-weight`}>
+          Set {row.setIndex} weight
         </label>
         <div className="training-session-weight-input">
           <input
-            aria-label={`Set ${draft.setIndex} weight`}
-            id={`${inputId}-weight`}
+            aria-label={`Set ${row.setIndex} weight`}
+            id={`${row.inputId}-weight`}
             inputMode="decimal"
-            min={isBodyweightLoadExercise(slot) ? "-200" : "0"}
-            onChange={(event) => onDraftChange(draft.setIndex, "weight", event.target.value)}
+            min={row.weightInputMin}
+            onChange={(event) =>
+              onDraftChange({
+                exerciseKey: row.exerciseKey,
+                field: "weight",
+                setIndex: row.setIndex,
+                value: event.target.value,
+              })
+            }
             type="number"
-            value={draft.weight}
+            value={row.weight}
           />
           <span>kg</span>
         </div>
       </td>
       <td>
-        <label className="training-session-sr" htmlFor={`${inputId}-reps`}>
-          Set {draft.setIndex} reps
+        <label className="training-session-sr" htmlFor={`${row.inputId}-reps`}>
+          Set {row.setIndex} reps
         </label>
         <input
-          aria-label={`Set ${draft.setIndex} reps`}
+          aria-label={`Set ${row.setIndex} reps`}
           className="training-session-reps-input"
-          id={`${inputId}-reps`}
+          id={`${row.inputId}-reps`}
           inputMode="numeric"
           min="0"
-          onChange={(event) => onDraftChange(draft.setIndex, "reps", event.target.value)}
+          onChange={(event) =>
+            onDraftChange({
+              exerciseKey: row.exerciseKey,
+              field: "reps",
+              setIndex: row.setIndex,
+              value: event.target.value,
+            })
+          }
           type="number"
-          value={draft.reps || String(repsTarget)}
+          value={row.reps}
         />
       </td>
       <td>
         <label className="training-session-done">
           <input
-            aria-label={`Mark ${slot.exerciseName} set ${draft.setIndex} ${
-              draft.done ? "not done" : "done"
-            }`}
-            checked={draft.done}
-            onChange={(event) => onDraftChange(draft.setIndex, "done", event.target.checked)}
+            aria-label={row.doneLabel}
+            checked={row.done}
+            onChange={(event) =>
+              onDraftChange({
+                exerciseKey: row.exerciseKey,
+                field: "done",
+                setIndex: row.setIndex,
+                value: event.target.checked,
+              })
+            }
             type="checkbox"
           />
           <span aria-hidden="true" className="training-session-done__control">
@@ -401,11 +234,13 @@ function TrainingSessionSetCells({
   );
 }
 
-function getTrainingSessionRowClassName(draft: TrainingSessionSetDraft): string {
+function getTrainingSessionRowClassName(
+  row: Pick<TrainingSessionExecutionSetRow, "done" | "setIndex">,
+): string {
   return [
     "training-session-exercise-row",
-    draft.done ? "training-session-exercise-row--done" : "",
-    draft.setIndex === 3 ? "training-session-exercise-row--future" : "",
+    row.done ? "training-session-exercise-row--done" : "",
+    row.setIndex === 3 ? "training-session-exercise-row--future" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -419,26 +254,4 @@ function getTrainingSessionGroupClassName(isComplete: boolean, isOpen: boolean):
   ]
     .filter(Boolean)
     .join(" ");
-}
-
-function formatAccessibleGroupTitle(title: string): string {
-  return title.replace(/Full-body superset /i, "Superset ");
-}
-
-function formatGroupTitle(title: string, templateLabel: string, groupIndex: number): string {
-  const baseTitle = title.replace(/Full-body superset /i, "superset ");
-
-  if (groupIndex >= 2 || /isolation/i.test(title)) {
-    return "Isolation work";
-  }
-
-  if (/upper|full body a/i.test(templateLabel)) {
-    return `Upper ${baseTitle}`;
-  }
-
-  if (/lower|full body b/i.test(templateLabel)) {
-    return `Lower ${baseTitle}`;
-  }
-
-  return baseTitle.replace(/^\w/, (letter) => letter.toUpperCase());
 }

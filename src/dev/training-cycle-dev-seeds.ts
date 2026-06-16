@@ -1,4 +1,3 @@
-import { db } from "../app/local-database";
 import type { PlanBlueprint } from "../plan-builder";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
@@ -7,6 +6,7 @@ import {
   type TrainingPlan,
   type WorkoutTemplate,
 } from "../training-plan/training-plan";
+import { seedTrainingPlanData } from "../training-plan/training-plan-repository";
 import { createCompletedTrainingSession } from "../training-plan/training-session";
 
 export type TrainingCycleDevSeedResult = {
@@ -19,67 +19,51 @@ export async function seedTrainingCycleDevPlans(): Promise<TrainingCycleDevSeedR
   const readyWeekSixPlan = createReadyWeekSixPlan();
   const bodyweightWeekSixPlan = createBodyweightWeekSixPlan();
   const acceptedNextCyclePlan = createAcceptedNextCyclePlan();
+  const readyWeekSixSession = createCompletedTrainingSession({
+    entries: [
+      {
+        exerciseId: "flat-barbell-bench-press",
+        exerciseName: "Flat Barbell Bench Press",
+        movementPattern: "horizontal_push",
+        sets: [{ reps: 10, setIndex: 1, weight: 100 }],
+      },
+      {
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        sets: [{ reps: 10, setIndex: 1, weight: 120 }],
+      },
+      {
+        exerciseId: "pull-ups",
+        exerciseName: "Pull-Ups",
+        movementPattern: "vertical_pull",
+        sets: [{ reps: 8, setIndex: 1, weight: 10 }],
+      },
+    ],
+    id: "dev-cycle-week-6-session-loaded",
+    plan: readyWeekSixPlan,
+    template: getFirstWorkoutTemplate(readyWeekSixPlan),
+    timestamp: "2026-07-12T10:00:00.000Z",
+  });
+  const bodyweightWeekSixSession = createCompletedTrainingSession({
+    entries: [
+      {
+        exerciseId: "pull-ups",
+        exerciseName: "Pull-Ups",
+        movementPattern: "vertical_pull",
+        sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+      },
+    ],
+    id: "dev-cycle-bodyweight-session",
+    plan: bodyweightWeekSixPlan,
+    template: getFirstWorkoutTemplate(bodyweightWeekSixPlan),
+    timestamp: "2026-07-12T10:00:00.000Z",
+  });
 
-  await db.transaction("rw", db.trainingPlans, db.trainingSessions, async () => {
-    const activePlans = await db.trainingPlans.filter((plan) => plan.active).toArray();
-
-    await Promise.all(
-      activePlans.map((plan) =>
-        db.trainingPlans.put({
-          ...plan,
-          active: false,
-          updatedAt: "2026-07-19T09:00:00.000Z",
-        }),
-      ),
-    );
-
-    await db.trainingPlans.bulkPut([
-      readyWeekSixPlan,
-      bodyweightWeekSixPlan,
-      acceptedNextCyclePlan,
-    ]);
-    await db.trainingSessions.bulkPut([
-      createCompletedTrainingSession({
-        entries: [
-          {
-            exerciseId: "flat-barbell-bench-press",
-            exerciseName: "Flat Barbell Bench Press",
-            movementPattern: "horizontal_push",
-            sets: [{ reps: 10, setIndex: 1, weight: 100 }],
-          },
-          {
-            exerciseId: "barbell-squats",
-            exerciseName: "Barbell Squats",
-            movementPattern: "quad_dominant",
-            sets: [{ reps: 10, setIndex: 1, weight: 120 }],
-          },
-          {
-            exerciseId: "pull-ups",
-            exerciseName: "Pull-Ups",
-            movementPattern: "vertical_pull",
-            sets: [{ reps: 8, setIndex: 1, weight: 10 }],
-          },
-        ],
-        id: "dev-cycle-week-6-session-loaded",
-        plan: readyWeekSixPlan,
-        template: getFirstWorkoutTemplate(readyWeekSixPlan),
-        timestamp: "2026-07-12T10:00:00.000Z",
-      }),
-      createCompletedTrainingSession({
-        entries: [
-          {
-            exerciseId: "pull-ups",
-            exerciseName: "Pull-Ups",
-            movementPattern: "vertical_pull",
-            sets: [{ reps: 12, setIndex: 1, weight: 0 }],
-          },
-        ],
-        id: "dev-cycle-bodyweight-session",
-        plan: bodyweightWeekSixPlan,
-        template: getFirstWorkoutTemplate(bodyweightWeekSixPlan),
-        timestamp: "2026-07-12T10:00:00.000Z",
-      }),
-    ]);
+  await seedTrainingPlanData({
+    deactivateActivePlansAt: "2026-07-19T09:00:00.000Z",
+    trainingPlans: [readyWeekSixPlan, bodyweightWeekSixPlan, acceptedNextCyclePlan],
+    trainingSessions: [readyWeekSixSession, bodyweightWeekSixSession],
   });
 
   return {

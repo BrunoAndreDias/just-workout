@@ -19,18 +19,18 @@ import type {
 
 export function OnePageTrainingScheduleStep({
   blueprint,
-  getVisibleTrainingSplitId,
   onContinueToTrainingStyle,
   onTrainingFrequencyChange,
   onTrainingSplitChange,
+  selectedTrainingSplitId,
 }: {
   blueprint: PlanBlueprint;
-  getVisibleTrainingSplitId: (blueprint: PlanBlueprint) => TrainingSplitId;
   onContinueToTrainingStyle: () => Promise<void>;
   onTrainingFrequencyChange: (
     trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
   ) => void;
   onTrainingSplitChange: (split: TrainingSplitId) => void;
+  selectedTrainingSplitId: TrainingSplitId;
 }) {
   return (
     <TrainingFrequencyStep
@@ -38,7 +38,7 @@ export function OnePageTrainingScheduleStep({
       onContinueToTrainingStyle={onContinueToTrainingStyle}
       onTrainingFrequencyChange={onTrainingFrequencyChange}
       onTrainingSplitChange={onTrainingSplitChange}
-      selectedTrainingSplitId={getVisibleTrainingSplitId(blueprint)}
+      selectedTrainingSplitId={selectedTrainingSplitId}
       selectedTrainingFrequencyDaysPerWeek={
         hasValidTrainingFrequency(blueprint) ? blueprint.trainingFrequencyDaysPerWeek : null
       }

@@ -44,3 +44,8 @@ export class JustWorkoutDatabase extends Dexie {
 }
 
 export const db = new JustWorkoutDatabase();
+
+export async function resetLocalDatabase(): Promise<void> {
+  await db.delete();
+  await db.open();
+}

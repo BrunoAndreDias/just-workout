@@ -51,6 +51,7 @@ export {
 export { summarizePlanBlueprint } from "./plan-blueprint-summary";
 
 import type {
+  ApplyPlanBlueprintTransitionOptions,
   ConfirmExerciseSelectionPreferencesOptions,
   ConfirmRepRangeStyleOptions,
   ConfirmTrainingFrequencyOptions,
@@ -78,6 +79,7 @@ import {
 export type {
   PlanBlueprint,
   PlanBlueprintSummary,
+  PlanBlueprintTransition,
   PlanBuilderGuardedStep,
   PlanBuilderRedirectStep,
   RepRangeStyle,
@@ -121,6 +123,104 @@ export function createDefaultPlanBlueprint({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
     }),
   };
+}
+
+export function applyPlanBlueprintTransition({
+  blueprint,
+  transition,
+}: ApplyPlanBlueprintTransitionOptions): PlanBlueprint {
+  switch (transition.type) {
+    case "selectTrainingFrequency":
+      return selectTrainingFrequency({
+        blueprint,
+        timestamp: transition.timestamp,
+        trainingFrequencyDaysPerWeek: transition.trainingFrequencyDaysPerWeek,
+      });
+    case "selectTrainingSplit":
+      return selectTrainingSplit({
+        blueprint,
+        split: transition.split,
+        timestamp: transition.timestamp,
+      });
+    case "selectRepRangeStyle":
+      return selectRepRangeStyle({
+        blueprint,
+        repRangeStyle: transition.repRangeStyle,
+        timestamp: transition.timestamp,
+      });
+    case "initializeTrainingVolume":
+      return initializeTrainingVolume({
+        blueprint,
+        timestamp: transition.timestamp,
+      });
+    case "selectTrainingVolumePreset":
+      return selectTrainingVolumePreset({
+        blueprint,
+        timestamp: transition.timestamp,
+        volumePreset: transition.volumePreset,
+      });
+    case "setOptionalVolumeTargetEnabled":
+      return setOptionalVolumeTargetEnabled({
+        blueprint,
+        isEnabled: transition.isEnabled,
+        muscleGroup: transition.muscleGroup,
+        timestamp: transition.timestamp,
+      });
+    case "updateExerciseSelectionPreferences":
+      return updateExerciseSelectionPreferences({
+        blueprint,
+        exerciseSelectionPreferences: transition.exerciseSelectionPreferences,
+        timestamp: transition.timestamp,
+      });
+    case "selectMainCompound":
+      return selectMainCompound({
+        blueprint,
+        exerciseId: transition.exerciseId,
+        movementPattern: transition.movementPattern,
+        timestamp: transition.timestamp,
+      });
+    case "updateMainCompoundRotationPool":
+      return updateMainCompoundRotationPool({
+        blueprint,
+        exerciseIds: transition.exerciseIds,
+        movementPattern: transition.movementPattern,
+        timestamp: transition.timestamp,
+      });
+    case "confirmTrainingFrequency":
+      return confirmTrainingFrequency({
+        blueprint,
+        timestamp: transition.timestamp,
+        trainingFrequencyDaysPerWeek: transition.trainingFrequencyDaysPerWeek,
+      });
+    case "confirmTrainingSplit":
+      return confirmTrainingSplit({
+        blueprint,
+        split: transition.split,
+        timestamp: transition.timestamp,
+      });
+    case "confirmRepRangeStyle":
+      return confirmRepRangeStyle({
+        blueprint,
+        repRangeStyle: transition.repRangeStyle,
+        timestamp: transition.timestamp,
+      });
+    case "confirmTrainingVolume":
+      return confirmTrainingVolume({
+        blueprint: transition.trainingVolumeConfiguration
+          ? {
+              ...blueprint,
+              ...transition.trainingVolumeConfiguration,
+            }
+          : blueprint,
+        timestamp: transition.timestamp,
+      });
+    case "confirmExerciseSelectionPreferences":
+      return confirmExerciseSelectionPreferences({
+        blueprint,
+        exerciseSelectionPreferences: transition.exerciseSelectionPreferences,
+        timestamp: transition.timestamp,
+      });
+  }
 }
 
 export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlueprint {

@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { db } from "../app/local-database";
+import { resetLocalDatabase } from "../app/local-database";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { PlanBlueprint, RepRangeStyleId } from "./plan-blueprint";
+import { savePlanBlueprint } from "./plan-builder-repository";
 import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { isTrainingVolumeConfiguration } from "./training-volume";
 
 describe("planBuilderService volume and dependency invalidation", () => {
   beforeEach(async () => {
-    await db.delete();
-    await db.open();
+    await resetLocalDatabase();
   });
 
   it("does not overwrite an existing Training Volume configuration when Volume re-initializes", async () => {
@@ -42,8 +42,7 @@ describe("planBuilderService volume and dependency invalidation", () => {
       ],
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const initializedBlueprint = await planBuilderService.initializeTrainingVolume({
       timestamp: "2026-05-30T10:28:00.000Z",
@@ -82,8 +81,7 @@ describe("planBuilderService volume and dependency invalidation", () => {
       ],
     };
 
-    await db.planBlueprints.clear();
-    await db.planBlueprints.put(configuredBlueprint);
+    await savePlanBlueprint(configuredBlueprint);
 
     const enabledBlueprint = await planBuilderService.updateOptionalVolumeTarget({
       isEnabled: true,
@@ -223,7 +221,7 @@ describe("planBuilderService volume and dependency invalidation", () => {
       timestamp: "2026-05-30T10:33:00.000Z",
       trainingVolumeConfiguration: initializedBlueprint,
     });
-    await db.planBlueprints.put({
+    await savePlanBlueprint({
       ...(await planBuilderService.getOrCreatePlanBlueprint()),
       mainCompoundSelections: completeMainCompoundSelections,
     });

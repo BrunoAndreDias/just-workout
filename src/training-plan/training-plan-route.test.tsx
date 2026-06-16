@@ -3,13 +3,19 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { db } from "../app/local-database";
+import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
 import type { TrainingSession } from "./index";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
+import {
+  getTrainingPlan,
+  getTrainingSessionsForPlan,
+  seedTrainingPlanData,
+} from "./training-plan-repository";
+import { trainingPlanService } from "./training-plan-service";
 
 const defaultMatchMedia = window.matchMedia;
 const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
@@ -17,8 +23,7 @@ const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 describe("TrainingPlanRoute", () => {
   beforeEach(async () => {
     restoreDefaultMatchMedia();
-    await db.delete();
-    await db.open();
+    await resetLocalDatabase();
   });
 
   afterEach(() => {
@@ -440,8 +445,8 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Cycle 2" })).toBeVisible();
     expect(screen.getByText("Cycle 2 · Week 1 of 6")).toBeVisible();
 
-    const previousPlan = await db.trainingPlans.get("training-plan-test");
-    const nextPlan = await db.trainingPlans.get("training-plan-test-next");
+    const previousPlan = await getTrainingPlan("training-plan-test");
+    const nextPlan = await getTrainingPlan("training-plan-test-next");
 
     expect(previousPlan).toMatchObject({ active: false });
     expect(nextPlan).toMatchObject({
@@ -515,7 +520,7 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Session completed" })).toBeVisible();
     expect(screen.getAllByText(/Horizontal push/i).length).toBeGreaterThan(0);
 
-    const completedSessions = await db.trainingSessions.toArray();
+    const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
 
     expect(completedSessions).toHaveLength(1);
     expect(completedSessions[0]).toMatchObject({
@@ -683,7 +688,9 @@ describe("TrainingPlanRoute", () => {
   it("shows a retry action when Training history fails to load", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
-    vi.spyOn(db.trainingPlans, "get").mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+    vi.spyOn(trainingPlanService, "getTrainingPlan").mockRejectedValueOnce(
+      new Error("IndexedDB unavailable"),
+    );
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
 
@@ -900,10 +907,14 @@ async function seedTrainingPlan(
     timestamp: "2026-06-07T10:00:00.000Z",
   });
 
-  await db.trainingPlans.put({
-    ...trainingPlan,
-    ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
-    ...(trainingBlock ? { trainingBlock } : {}),
+  await seedTrainingPlanData({
+    trainingPlans: [
+      {
+        ...trainingPlan,
+        ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
+        ...(trainingBlock ? { trainingBlock } : {}),
+      },
+    ],
   });
 }
 
@@ -914,47 +925,51 @@ async function seedGeneratedTrainingPlanWithStartingLoadSuggestion() {
     timestamp: "2026-07-19T09:00:00.000Z",
   });
 
-  await db.trainingPlans.put({
-    ...trainingPlan,
-    generatedAt: "2026-07-18",
-    startingLoadSuggestions: [
+  await seedTrainingPlanData({
+    trainingPlans: [
       {
-        effectiveLoad: 92.5,
-        exerciseId: "incline-dumbbell-bench-press",
-        exerciseName: "Incline Dumbbell Bench Press",
-        movementPattern: "horizontal_push",
-        previousLoad: 100,
-        reason: "same Movement Pattern, -10% reset",
-        suggestedLoad: 90,
-        userEditedLoad: 92.5,
+        ...trainingPlan,
+        generatedAt: "2026-07-18",
+        startingLoadSuggestions: [
+          {
+            effectiveLoad: 92.5,
+            exerciseId: "incline-dumbbell-bench-press",
+            exerciseName: "Incline Dumbbell Bench Press",
+            movementPattern: "horizontal_push",
+            previousLoad: 100,
+            reason: "same Movement Pattern, -10% reset",
+            suggestedLoad: 90,
+            userEditedLoad: 92.5,
+          },
+        ],
+        trainingBlock: {
+          cycleNumber: 2,
+          endDate: "2026-08-29",
+          id: "training-block-2",
+          planId: "training-plan-test-next",
+          previousBlockId: "training-block-1",
+          startDate: "2026-07-19",
+          status: "active",
+          weekNumber: 1,
+        },
+        updatedAt: "2026-07-18",
+        workoutTemplates: trainingPlan.workoutTemplates.map((template) => ({
+          ...template,
+          supersetGroups: template.supersetGroups.map((group) => ({
+            ...group,
+            slots: group.slots.map((slot) =>
+              slot.exerciseId === "flat-dumbbell-bench-press"
+                ? {
+                    ...slot,
+                    exerciseId: "incline-dumbbell-bench-press",
+                    exerciseName: "Incline Dumbbell Bench Press",
+                  }
+                : slot,
+            ),
+          })),
+        })),
       },
     ],
-    trainingBlock: {
-      cycleNumber: 2,
-      endDate: "2026-08-29",
-      id: "training-block-2",
-      planId: "training-plan-test-next",
-      previousBlockId: "training-block-1",
-      startDate: "2026-07-19",
-      status: "active",
-      weekNumber: 1,
-    },
-    updatedAt: "2026-07-18",
-    workoutTemplates: trainingPlan.workoutTemplates.map((template) => ({
-      ...template,
-      supersetGroups: template.supersetGroups.map((group) => ({
-        ...group,
-        slots: group.slots.map((slot) =>
-          slot.exerciseId === "flat-dumbbell-bench-press"
-            ? {
-                ...slot,
-                exerciseId: "incline-dumbbell-bench-press",
-                exerciseName: "Incline Dumbbell Bench Press",
-              }
-            : slot,
-        ),
-      })),
-    })),
   });
 }
 
@@ -968,8 +983,8 @@ async function seedCompletedTrainingSessions(
   }> = [],
 ) {
   if (overrides.length > 0) {
-    await db.trainingSessions.bulkPut(
-      overrides.map((entry, index) => ({
+    await seedTrainingPlanData({
+      trainingSessions: overrides.map((entry, index) => ({
         completedAt: entry.completedAt,
         createdAt: entry.completedAt,
         exercises: [
@@ -988,210 +1003,216 @@ async function seedCompletedTrainingSessions(
         updatedAt: entry.completedAt,
         volumeByMovementPattern: [],
       })),
-    );
+    });
     return;
   }
 
-  await db.trainingSessions.bulkPut([
-    {
-      completedAt: "2026-05-27T09:00:00.000Z",
-      createdAt: "2026-05-27T09:00:00.000Z",
-      exercises: [
-        {
-          exerciseId: "flat-dumbbell-bench-press",
-          exerciseName: "Flat Dumbbell Bench Press",
-          movementPattern: "horizontal_push",
-          sets: [{ reps: 10, setIndex: 1, weight: 40 }],
-        },
-        {
-          exerciseId: "barbell-squats",
-          exerciseName: "Barbell Squats",
-          movementPattern: "quad_dominant",
-          sets: [{ reps: 10, setIndex: 1, weight: 60 }],
-        },
-      ],
-      id: "session-d",
-      planId: "training-plan-test",
-      status: "completed",
-      templateId: "template-2",
-      templateLabel: "Lower",
-      updatedAt: "2026-05-27T09:00:00.000Z",
-      volumeByMovementPattern: [
-        {
-          movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
-          volume: 400,
-        },
-        {
-          movementPattern: "quad_dominant",
-          movementPatternLabel: "Quad Dominant",
-          volume: 600,
-        },
-      ],
-    },
-    {
-      completedAt: "2026-06-03T09:00:00.000Z",
-      createdAt: "2026-06-03T09:00:00.000Z",
-      exercises: [
-        {
-          exerciseId: "flat-barbell-bench-press",
-          exerciseName: "Flat Barbell Bench Press",
-          movementPattern: "horizontal_push",
-          sets: [{ reps: 10, setIndex: 1, weight: 50 }],
-        },
-        {
-          exerciseId: "barbell-squats",
-          exerciseName: "Barbell Squats",
-          movementPattern: "quad_dominant",
-          sets: [{ reps: 10, setIndex: 1, weight: 100 }],
-        },
-        {
-          exerciseId: "bent-over-barbell-rows",
-          exerciseName: "Bent Over Barbell Rows",
-          movementPattern: "horizontal_pull",
-          sets: [{ reps: 10, setIndex: 1, weight: 30 }],
-        },
-        {
-          exerciseId: "pull-ups",
-          exerciseName: "Pull-Ups",
-          movementPattern: "vertical_pull",
-          sets: [{ reps: 10, setIndex: 1, weight: 60 }],
-        },
-      ],
-      id: "session-c",
-      planId: "training-plan-test",
-      status: "completed",
-      templateId: "template-1",
-      templateLabel: "Upper",
-      updatedAt: "2026-06-03T09:00:00.000Z",
-      volumeByMovementPattern: [
-        {
-          movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
-          volume: 500,
-        },
-        {
-          movementPattern: "quad_dominant",
-          movementPatternLabel: "Quad Dominant",
-          volume: 1000,
-        },
-        {
-          movementPattern: "horizontal_pull",
-          movementPatternLabel: "Horizontal Pull",
-          volume: 300,
-        },
-        {
-          movementPattern: "vertical_pull",
-          movementPatternLabel: "Vertical Pull",
-          volume: 600,
-        },
-      ],
-    },
-    {
-      completedAt: "2026-06-10T09:00:00.000Z",
-      createdAt: "2026-06-10T09:00:00.000Z",
-      exercises: [
-        {
-          exerciseId: "flat-dumbbell-bench-press",
-          exerciseName: "Flat Dumbbell Bench Press",
-          movementPattern: "horizontal_push",
-          sets: [{ reps: 10, setIndex: 1, weight: 40 }],
-        },
-        {
-          exerciseId: "bent-over-barbell-rows",
-          exerciseName: "Bent Over Barbell Rows",
-          movementPattern: "horizontal_pull",
-          sets: [{ reps: 10, setIndex: 1, weight: 30 }],
-        },
-      ],
-      id: "session-a",
-      planId: "training-plan-test",
-      status: "completed",
-      templateId: "template-1",
-      templateLabel: "Full Body A",
-      updatedAt: "2026-06-10T09:00:00.000Z",
-      volumeByMovementPattern: [
-        {
-          movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
-          volume: 400,
-        },
-        {
-          movementPattern: "horizontal_pull",
-          movementPatternLabel: "Horizontal Pull",
-          volume: 300,
-        },
-      ],
-    },
-    {
-      completedAt: "2026-06-09T09:00:00.000Z",
-      createdAt: "2026-06-09T09:00:00.000Z",
-      exercises: [
-        {
-          exerciseId: "flat-barbell-bench-press",
-          exerciseName: "Flat Barbell Bench Press",
-          movementPattern: "horizontal_push",
-          sets: [{ reps: 9, setIndex: 1, weight: 40 }],
-        },
-        {
-          exerciseId: "barbell-squats",
-          exerciseName: "Barbell Squats",
-          movementPattern: "quad_dominant",
-          sets: [{ reps: 10, setIndex: 1, weight: 90 }],
-        },
-        {
-          exerciseId: "standing-overhead-barbell-press",
-          exerciseName: "Standing Overhead Barbell Press",
-          movementPattern: "vertical_push",
-          sets: [{ reps: 10, setIndex: 1, weight: 20 }],
-        },
-      ],
-      id: "session-b",
-      planId: "training-plan-test",
-      status: "completed",
-      templateId: "template-2",
-      templateLabel: "Full Body B",
-      updatedAt: "2026-06-09T09:00:00.000Z",
-      volumeByMovementPattern: [
-        {
-          movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
-          volume: 360,
-        },
-        {
-          movementPattern: "quad_dominant",
-          movementPatternLabel: "Quad Dominant",
-          volume: 900,
-        },
-        {
-          movementPattern: "vertical_push",
-          movementPatternLabel: "Vertical Push",
-          volume: 200,
-        },
-      ],
-    },
-  ]);
+  await seedTrainingPlanData({
+    trainingSessions: [
+      {
+        completedAt: "2026-05-27T09:00:00.000Z",
+        createdAt: "2026-05-27T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "flat-dumbbell-bench-press",
+            exerciseName: "Flat Dumbbell Bench Press",
+            movementPattern: "horizontal_push",
+            sets: [{ reps: 10, setIndex: 1, weight: 40 }],
+          },
+          {
+            exerciseId: "barbell-squats",
+            exerciseName: "Barbell Squats",
+            movementPattern: "quad_dominant",
+            sets: [{ reps: 10, setIndex: 1, weight: 60 }],
+          },
+        ],
+        id: "session-d",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-2",
+        templateLabel: "Lower",
+        updatedAt: "2026-05-27T09:00:00.000Z",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            movementPatternLabel: "Horizontal Push",
+            volume: 400,
+          },
+          {
+            movementPattern: "quad_dominant",
+            movementPatternLabel: "Quad Dominant",
+            volume: 600,
+          },
+        ],
+      },
+      {
+        completedAt: "2026-06-03T09:00:00.000Z",
+        createdAt: "2026-06-03T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "flat-barbell-bench-press",
+            exerciseName: "Flat Barbell Bench Press",
+            movementPattern: "horizontal_push",
+            sets: [{ reps: 10, setIndex: 1, weight: 50 }],
+          },
+          {
+            exerciseId: "barbell-squats",
+            exerciseName: "Barbell Squats",
+            movementPattern: "quad_dominant",
+            sets: [{ reps: 10, setIndex: 1, weight: 100 }],
+          },
+          {
+            exerciseId: "bent-over-barbell-rows",
+            exerciseName: "Bent Over Barbell Rows",
+            movementPattern: "horizontal_pull",
+            sets: [{ reps: 10, setIndex: 1, weight: 30 }],
+          },
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 10, setIndex: 1, weight: 60 }],
+          },
+        ],
+        id: "session-c",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-1",
+        templateLabel: "Upper",
+        updatedAt: "2026-06-03T09:00:00.000Z",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            movementPatternLabel: "Horizontal Push",
+            volume: 500,
+          },
+          {
+            movementPattern: "quad_dominant",
+            movementPatternLabel: "Quad Dominant",
+            volume: 1000,
+          },
+          {
+            movementPattern: "horizontal_pull",
+            movementPatternLabel: "Horizontal Pull",
+            volume: 300,
+          },
+          {
+            movementPattern: "vertical_pull",
+            movementPatternLabel: "Vertical Pull",
+            volume: 600,
+          },
+        ],
+      },
+      {
+        completedAt: "2026-06-10T09:00:00.000Z",
+        createdAt: "2026-06-10T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "flat-dumbbell-bench-press",
+            exerciseName: "Flat Dumbbell Bench Press",
+            movementPattern: "horizontal_push",
+            sets: [{ reps: 10, setIndex: 1, weight: 40 }],
+          },
+          {
+            exerciseId: "bent-over-barbell-rows",
+            exerciseName: "Bent Over Barbell Rows",
+            movementPattern: "horizontal_pull",
+            sets: [{ reps: 10, setIndex: 1, weight: 30 }],
+          },
+        ],
+        id: "session-a",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        updatedAt: "2026-06-10T09:00:00.000Z",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            movementPatternLabel: "Horizontal Push",
+            volume: 400,
+          },
+          {
+            movementPattern: "horizontal_pull",
+            movementPatternLabel: "Horizontal Pull",
+            volume: 300,
+          },
+        ],
+      },
+      {
+        completedAt: "2026-06-09T09:00:00.000Z",
+        createdAt: "2026-06-09T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "flat-barbell-bench-press",
+            exerciseName: "Flat Barbell Bench Press",
+            movementPattern: "horizontal_push",
+            sets: [{ reps: 9, setIndex: 1, weight: 40 }],
+          },
+          {
+            exerciseId: "barbell-squats",
+            exerciseName: "Barbell Squats",
+            movementPattern: "quad_dominant",
+            sets: [{ reps: 10, setIndex: 1, weight: 90 }],
+          },
+          {
+            exerciseId: "standing-overhead-barbell-press",
+            exerciseName: "Standing Overhead Barbell Press",
+            movementPattern: "vertical_push",
+            sets: [{ reps: 10, setIndex: 1, weight: 20 }],
+          },
+        ],
+        id: "session-b",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        updatedAt: "2026-06-09T09:00:00.000Z",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            movementPatternLabel: "Horizontal Push",
+            volume: 360,
+          },
+          {
+            movementPattern: "quad_dominant",
+            movementPatternLabel: "Quad Dominant",
+            volume: 900,
+          },
+          {
+            movementPattern: "vertical_push",
+            movementPatternLabel: "Vertical Push",
+            volume: 200,
+          },
+        ],
+      },
+    ],
+  });
 }
 
 async function seedBodyweightOnlyTrainingSession() {
-  await db.trainingSessions.put({
-    completedAt: "2026-06-10T09:00:00.000Z",
-    createdAt: "2026-06-10T09:00:00.000Z",
-    exercises: [
+  await seedTrainingPlanData({
+    trainingSessions: [
       {
-        exerciseId: "pull-ups",
-        exerciseName: "Pull-Ups",
-        movementPattern: "vertical_pull",
-        sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+        completedAt: "2026-06-10T09:00:00.000Z",
+        createdAt: "2026-06-10T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+          },
+        ],
+        id: "session-bodyweight-only",
+        planId: "training-plan-test",
+        status: "completed",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        updatedAt: "2026-06-10T09:00:00.000Z",
+        volumeByMovementPattern: [],
       },
     ],
-    id: "session-bodyweight-only",
-    planId: "training-plan-test",
-    status: "completed",
-    templateId: "template-1",
-    templateLabel: "Full Body A",
-    updatedAt: "2026-06-10T09:00:00.000Z",
-    volumeByMovementPattern: [],
   });
 }
 

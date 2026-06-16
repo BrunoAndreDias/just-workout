@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { CheckCircle2, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { calculateVolumeByMovementPattern } from "./completed-load-volume";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
@@ -10,11 +9,14 @@ import {
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 import {
-  countCompletedTrainingSessionSets,
-  createInitialTrainingSessionDrafts,
-  createTrainingSessionEntries,
-  createTrainingSessionExercises,
-  type TrainingSessionExerciseDrafts,
+  applyTrainingSessionExecutionChange,
+  createEmptyTrainingSessionExecutionState,
+  createInitialTrainingSessionExecutionState,
+  createTrainingSessionExecutionReadModel,
+  hasTrainingSessionExecutionDrafts,
+  type TrainingSessionExecutionDraftChange,
+  type TrainingSessionExecutionState,
+  toggleTrainingSessionExecutionGroup,
 } from "./training-session-execution";
 import { TrainingSessionGroup } from "./training-session-group";
 import {
@@ -38,16 +40,23 @@ export function TrainingSessionRoute() {
         workoutTemplates: trainingPlan.workoutTemplates,
       })
     : null;
-  const sessionExercises = useMemo(
-    () => (workoutTemplate ? createTrainingSessionExercises(workoutTemplate) : []),
-    [workoutTemplate],
-  );
-  const [drafts, setDrafts] = useState<TrainingSessionExerciseDrafts>(() =>
-    createInitialTrainingSessionDrafts([]),
+  const [executionState, setExecutionState] = useState<TrainingSessionExecutionState>(() =>
+    createEmptyTrainingSessionExecutionState(),
   );
   const [completedSession, setCompletedSession] = useState<TrainingSession | null>(null);
-  const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlyArray<string>>([]);
   const startingLoadSuggestions = trainingPlan?.startingLoadSuggestions ?? [];
+  const executionReadModel = useMemo(
+    () =>
+      workoutTemplate
+        ? createTrainingSessionExecutionReadModel({
+            completedSession,
+            previousTrainingSessions,
+            state: executionState,
+            workoutTemplate,
+          })
+        : null,
+    [completedSession, executionState, previousTrainingSessions, workoutTemplate],
+  );
   const completeSession = useMutation({
     mutationFn: (entries: ReadonlyArray<TrainingSessionExerciseEntry>) => {
       if (!routeParams || !workoutTemplate) {
@@ -64,36 +73,52 @@ export function TrainingSessionRoute() {
   });
 
   useEffect(() => {
-    setDrafts((currentDrafts) =>
-      Object.keys(currentDrafts).length > 0
-        ? currentDrafts
-        : createInitialTrainingSessionDrafts(sessionExercises, startingLoadSuggestions),
-    );
-  }, [sessionExercises, startingLoadSuggestions]);
+    if (!workoutTemplate) {
+      return;
+    }
 
-  useEffect(() => {
-    setExpandedGroupIds(
-      workoutTemplate?.supersetGroups[0]?.id ? [workoutTemplate.supersetGroups[0].id] : [],
+    setExecutionState((currentState) =>
+      hasTrainingSessionExecutionDrafts(currentState)
+        ? currentState
+        : createInitialTrainingSessionExecutionState({
+            startingLoadSuggestions,
+            workoutTemplate,
+          }),
     );
-  }, [workoutTemplate]);
+  }, [startingLoadSuggestions, workoutTemplate]);
 
   if (trainingPlanQuery.isLoading) {
     return <TrainingSessionShell>Loading Training Session...</TrainingSessionShell>;
   }
 
-  if (!trainingPlan || !workoutTemplate) {
+  if (!trainingPlan || !workoutTemplate || !executionReadModel) {
     return <TrainingSessionShell>Training Session not found.</TrainingSessionShell>;
   }
 
-  const entries = createTrainingSessionEntries(sessionExercises, drafts);
-  const completedSetCount = countCompletedTrainingSessionSets(drafts);
-  const plannedSetCount = sessionExercises.length * 3;
-  const volumeByMovementPattern = completedSession
-    ? completedSession.volumeByMovementPattern
-    : calculateVolumeByMovementPattern(entries);
+  const activeExecutionReadModel = executionReadModel;
+  const activeWorkoutTemplate = workoutTemplate;
 
   async function handleCompleteSession() {
-    await completeSession.mutateAsync(entries);
+    await completeSession.mutateAsync(activeExecutionReadModel.entries);
+  }
+
+  function handleExecutionChange(change: TrainingSessionExecutionDraftChange) {
+    setExecutionState((currentState) =>
+      applyTrainingSessionExecutionChange({
+        change,
+        state: currentState,
+        workoutTemplate: activeWorkoutTemplate,
+      }),
+    );
+  }
+
+  function handleToggleGroup(groupId: string) {
+    setExecutionState((currentState) =>
+      toggleTrainingSessionExecutionGroup({
+        groupId,
+        state: currentState,
+      }),
+    );
   }
 
   return (
@@ -110,29 +135,24 @@ export function TrainingSessionRoute() {
       ) : null}
 
       <div className="training-session-work">
-        {workoutTemplate.supersetGroups.map((group, groupIndex) => (
+        {activeExecutionReadModel.groups.map((group) => (
           <TrainingSessionGroup
-            drafts={drafts}
-            expandedGroupIds={expandedGroupIds}
             group={group}
-            groupIndex={groupIndex}
-            groups={workoutTemplate.supersetGroups}
-            key={group.id}
-            previousTrainingSessions={previousTrainingSessions}
-            setDrafts={setDrafts}
-            setExpandedGroupIds={setExpandedGroupIds}
-            workoutTemplateLabel={workoutTemplate.label}
+            key={group.groupId}
+            onDraftChange={handleExecutionChange}
+            onToggleGroup={handleToggleGroup}
           />
         ))}
       </div>
 
       <footer className="training-session-footer">
         <span>
-          {completedSetCount}/{plannedSetCount} planned sets completed
+          {activeExecutionReadModel.completedSetCount}/{activeExecutionReadModel.plannedSetCount}{" "}
+          planned sets completed
         </span>
-        {volumeByMovementPattern.length > 0 ? (
+        {activeExecutionReadModel.volumeByMovementPattern.length > 0 ? (
           <div className="training-session-volume-inline">
-            {volumeByMovementPattern.map((row) => (
+            {activeExecutionReadModel.volumeByMovementPattern.map((row) => (
               <span key={row.movementPattern}>
                 {row.movementPatternLabel}{" "}
                 <strong className="training-session-volume-inline__value">{row.volume} kg</strong>

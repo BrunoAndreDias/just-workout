@@ -3,9 +3,11 @@ import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { db } from "../app/local-database";
+import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import { getActiveTrainingPlans } from "../training-plan/training-plan-repository";
 import { planBuilderPaths } from "./plan-builder-paths";
+import { savePlanBlueprint } from "./plan-builder-repository";
 import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 
@@ -20,8 +22,7 @@ const legacyPlanBuilderStepPaths = [
 
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
-    await db.delete();
-    await db.open();
+    await resetLocalDatabase();
   });
 
   it("routes / into the canonical plan builder workspace and shows a single Plan Builder nav entry", async () => {
@@ -102,7 +103,7 @@ describe("Plan Builder canonical route", () => {
     const user = userEvent.setup();
     const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
 
-    await db.planBlueprints.put({
+    await savePlanBlueprint({
       ...blueprint,
       mainCompoundSelections: completeMainCompoundSelections,
     });
@@ -128,7 +129,7 @@ describe("Plan Builder canonical route", () => {
       expect(screen.queryByRole("dialog", { name: /default generation confirmation/i })).toBeNull();
     });
     expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
-    expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(0);
+    expect(await getActiveTrainingPlans()).toHaveLength(0);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       equipmentPresetSource: null,
       repRanges: null,
@@ -161,7 +162,7 @@ describe("Plan Builder canonical route", () => {
       expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
     });
     expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
-    expect(await db.trainingPlans.filter((plan) => plan.active).count()).toBe(1);
+    expect(await getActiveTrainingPlans()).toHaveLength(1);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       equipmentPresetSource: "user_selected",
       mainCompoundSelections: completeMainCompoundSelections,

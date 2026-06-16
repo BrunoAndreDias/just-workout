@@ -1,13 +1,16 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
   ActiveTrainingPlanLoading,
   ActiveTrainingPlanPage,
 } from "./active-training-plan/active-training-plan-page";
-import type { TrainingPlan } from "./index";
-import { trainingPlanService } from "./index";
+import {
+  createNextTrainingBlockTransitionWorkflow,
+  type TrainingPlan,
+  trainingPlanService,
+} from "./index";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
@@ -59,6 +62,7 @@ export function TrainingPlansRoute() {
 }
 
 export function TrainingPlanRoute() {
+  const navigate = useNavigate();
   const planId = useTrainingPlanIdFromPathname();
   const trainingPlanQuery = useQuery(trainingPlanQueryOptions(planId));
   const trainingSessionsQuery = useQuery(trainingPlanSessionsQueryOptions(planId));
@@ -78,11 +82,20 @@ export function TrainingPlanRoute() {
 
   return (
     <ActiveTrainingPlanPage
-      onAcceptNextTrainingPlan={(nextTrainingPlan) =>
-        saveNextTrainingPlan.mutateAsync(nextTrainingPlan)
+      nextTrainingBlockTransition={
+        createNextTrainingBlockTransitionWorkflow({
+          onAcceptedTrainingPlan: (savedTrainingPlan) =>
+            navigate({
+              params: { planId: savedTrainingPlan.id },
+              to: "/training-plans/$planId",
+            }),
+          saveAcceptedTrainingPlan: (nextTrainingPlan) =>
+            saveNextTrainingPlan.mutateAsync(nextTrainingPlan),
+          trainingPlan,
+          trainingSessions: trainingSessionsQuery.data ?? [],
+        }) ?? undefined
       }
       trainingPlan={trainingPlan}
-      trainingSessions={trainingSessionsQuery.data ?? []}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPlanBlueprintTransition,
   confirmExerciseSelectionPreferences,
   confirmRepRangeStyle,
   confirmTrainingFrequency,
@@ -508,6 +509,63 @@ describe("plan blueprint", () => {
       ],
     });
     expect(isVolumeStepComplete(confirmedBlueprint)).toBe(true);
+  });
+
+  it("applies selection, default, and confirmation changes through the transition seam", () => {
+    const blueprint = createTestPlanBlueprint();
+    const frequencyBlueprint = applyPlanBlueprintTransition({
+      blueprint,
+      transition: {
+        timestamp: firstUpdateTimestamp,
+        trainingFrequencyDaysPerWeek: 4,
+        type: "confirmTrainingFrequency",
+      },
+    });
+    const splitBlueprint = applyPlanBlueprintTransition({
+      blueprint: frequencyBlueprint,
+      transition: {
+        split: "upper-lower-4-day",
+        timestamp: secondUpdateTimestamp,
+        type: "confirmTrainingSplit",
+      },
+    });
+    const repRangesBlueprint = applyPlanBlueprintTransition({
+      blueprint: splitBlueprint,
+      transition: {
+        repRangeStyle: "balanced_hypertrophy",
+        timestamp: secondUpdateTimestamp,
+        type: "confirmRepRangeStyle",
+      },
+    });
+    const volumeBlueprint = applyPlanBlueprintTransition({
+      blueprint: repRangesBlueprint,
+      transition: {
+        timestamp: secondUpdateTimestamp,
+        type: "initializeTrainingVolume",
+      },
+    });
+    const confirmedVolumeBlueprint = applyPlanBlueprintTransition({
+      blueprint: volumeBlueprint,
+      transition: {
+        timestamp: secondUpdateTimestamp,
+        type: "confirmTrainingVolume",
+      },
+    });
+
+    expect(confirmedVolumeBlueprint).toMatchObject({
+      confirmedBuilderSteps: {
+        exercises: false,
+        frequency: true,
+        repRanges: true,
+        split: true,
+        volume: true,
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "balanced",
+      volumePresetSource: "recommended_default",
+    });
   });
 
   it("stores confirmed Exercises progress separately from draft Exercise Selection Preferences", () => {

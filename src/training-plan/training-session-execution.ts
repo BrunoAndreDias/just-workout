@@ -1,3 +1,12 @@
+import {
+  formatExerciseRole,
+  formatMovementPattern,
+} from "./active-training-plan/active-training-plan-read-model";
+import { isBodyweightLoadExercise } from "./bodyweight-load";
+import {
+  type CompletedLoadVolumeMovementRow,
+  calculateVolumeByMovementPattern,
+} from "./completed-load-volume";
 import type {
   TrainingPlanSlot,
   TrainingPlanStartingLoadSuggestion,
@@ -32,6 +41,199 @@ export type TrainingSessionGroupProgress = {
   isComplete: boolean;
   plannedSetCount: number;
 };
+
+export type TrainingSessionExecutionState = {
+  drafts: TrainingSessionExerciseDrafts;
+  expandedGroupIds: ReadonlyArray<string>;
+};
+
+export type TrainingSessionExecutionDraftChange = {
+  exerciseKey: string;
+  field: keyof TrainingSessionSetDraft;
+  setIndex: number;
+  value: boolean | string;
+};
+
+export type TrainingSessionExecutionSetRow = {
+  done: boolean;
+  doneLabel: string;
+  exerciseKey: string;
+  exerciseName: string;
+  inputId: string;
+  movementPatternLabel: string;
+  prescriptionLabel: string;
+  previousSetLabel: string;
+  reps: string;
+  setIndex: number;
+  weight: string;
+  weightInputMin: string;
+};
+
+export type TrainingSessionExecutionRound = {
+  roundIndex: number;
+  rows: ReadonlyArray<TrainingSessionExecutionSetRow>;
+};
+
+export type TrainingSessionExecutionGroupSummary = TrainingSessionGroupProgress & {
+  exerciseCount: number;
+};
+
+export type TrainingSessionExecutionNow = {
+  exerciseName: string;
+  movementPatternLabel: string;
+  prescriptionLabel: string;
+  roleLabel: string;
+  setLabel: string;
+  targetRepsLabel: string;
+};
+
+export type TrainingSessionExecutionGroup = {
+  accessibleTitle: string;
+  groupId: string;
+  isOpen: boolean;
+  now: TrainingSessionExecutionNow | null;
+  rounds: ReadonlyArray<TrainingSessionExecutionRound>;
+  summary: TrainingSessionExecutionGroupSummary;
+  title: string;
+};
+
+export type TrainingSessionExecutionReadModel = {
+  completedSetCount: number;
+  entries: ReadonlyArray<TrainingSessionExerciseEntry>;
+  groups: ReadonlyArray<TrainingSessionExecutionGroup>;
+  plannedSetCount: number;
+  volumeByMovementPattern: ReadonlyArray<CompletedLoadVolumeMovementRow>;
+};
+
+export function createEmptyTrainingSessionExecutionState(): TrainingSessionExecutionState {
+  return {
+    drafts: createInitialTrainingSessionDrafts([]),
+    expandedGroupIds: [],
+  };
+}
+
+export function createInitialTrainingSessionExecutionState({
+  startingLoadSuggestions = [],
+  workoutTemplate,
+}: {
+  startingLoadSuggestions?: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+  workoutTemplate: WorkoutTemplate;
+}): TrainingSessionExecutionState {
+  return {
+    drafts: createInitialTrainingSessionDrafts(
+      createTrainingSessionExercises(workoutTemplate),
+      startingLoadSuggestions,
+    ),
+    expandedGroupIds: getInitialTrainingSessionExpandedGroupIds(workoutTemplate),
+  };
+}
+
+export function hasTrainingSessionExecutionDrafts(state: TrainingSessionExecutionState): boolean {
+  return Object.keys(state.drafts).length > 0;
+}
+
+export function createTrainingSessionExecutionReadModel({
+  completedSession,
+  previousTrainingSessions,
+  state,
+  workoutTemplate,
+}: {
+  completedSession: TrainingSession | null;
+  previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  state: TrainingSessionExecutionState;
+  workoutTemplate: WorkoutTemplate;
+}): TrainingSessionExecutionReadModel {
+  const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+  const entries = createTrainingSessionEntries(sessionExercises, state.drafts);
+  const completedSetCount = countCompletedTrainingSessionSets(state.drafts);
+  const plannedSetCount = sessionExercises.length * TRAINING_SESSION_PLANNED_SET_COUNT;
+
+  return {
+    completedSetCount,
+    entries,
+    groups: workoutTemplate.supersetGroups.map((group, groupIndex) =>
+      createTrainingSessionExecutionGroup({
+        drafts: state.drafts,
+        expandedGroupIds: state.expandedGroupIds,
+        group,
+        groupIndex,
+        previousTrainingSessions,
+        workoutTemplateLabel: workoutTemplate.label,
+      }),
+    ),
+    plannedSetCount,
+    volumeByMovementPattern: completedSession
+      ? completedSession.volumeByMovementPattern
+      : calculateVolumeByMovementPattern(entries),
+  };
+}
+
+export function toggleTrainingSessionExecutionGroup({
+  groupId,
+  state,
+}: {
+  groupId: string;
+  state: TrainingSessionExecutionState;
+}): TrainingSessionExecutionState {
+  return {
+    ...state,
+    expandedGroupIds: state.expandedGroupIds.includes(groupId)
+      ? state.expandedGroupIds.filter((currentGroupId) => currentGroupId !== groupId)
+      : [...state.expandedGroupIds, groupId],
+  };
+}
+
+export function applyTrainingSessionExecutionChange({
+  change,
+  state,
+  workoutTemplate,
+}: {
+  change: TrainingSessionExecutionDraftChange;
+  state: TrainingSessionExecutionState;
+  workoutTemplate: WorkoutTemplate;
+}): TrainingSessionExecutionState {
+  const group = workoutTemplate.supersetGroups.find((candidateGroup) =>
+    candidateGroup.slots.some(
+      (groupSlot) =>
+        getTrainingSessionExerciseKey(candidateGroup.id, groupSlot) === change.exerciseKey,
+    ),
+  );
+  const slot = group?.slots.find(
+    (groupSlot) => getTrainingSessionExerciseKey(group.id, groupSlot) === change.exerciseKey,
+  );
+
+  if (!group || !slot) {
+    return state;
+  }
+
+  const drafts = applyTrainingSessionDraftChange({
+    drafts: state.drafts,
+    exerciseKey: change.exerciseKey,
+    field: change.field,
+    setIndex: change.setIndex,
+    slot,
+    value: change.value,
+  });
+  const groupProgress = getTrainingSessionGroupProgress({
+    drafts,
+    groupId: group.id,
+    slots: group.slots,
+  });
+  const expandedGroupIds =
+    change.field === "done" && change.value === true && groupProgress.isComplete
+      ? getExpandedTrainingSessionGroupIdsAfterCompletion({
+          completedGroupId: group.id,
+          currentGroupIds: state.expandedGroupIds,
+          drafts,
+          groups: workoutTemplate.supersetGroups,
+        })
+      : state.expandedGroupIds;
+
+  return {
+    drafts,
+    expandedGroupIds,
+  };
+}
 
 export function createTrainingSessionExercises(
   workoutTemplate: WorkoutTemplate,
@@ -233,4 +435,143 @@ export function getPreviousTrainingSessionSetLabel({
   }
 
   return "-";
+}
+
+const TRAINING_SESSION_PLANNED_SET_COUNT = 3;
+
+function getInitialTrainingSessionExpandedGroupIds(
+  workoutTemplate: WorkoutTemplate,
+): ReadonlyArray<string> {
+  return workoutTemplate.supersetGroups[0]?.id ? [workoutTemplate.supersetGroups[0].id] : [];
+}
+
+function createTrainingSessionExecutionGroup({
+  drafts,
+  expandedGroupIds,
+  group,
+  groupIndex,
+  previousTrainingSessions,
+  workoutTemplateLabel,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  expandedGroupIds: ReadonlyArray<string>;
+  group: WorkoutTemplate["supersetGroups"][number];
+  groupIndex: number;
+  previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  workoutTemplateLabel: string;
+}): TrainingSessionExecutionGroup {
+  const isOpen = expandedGroupIds.includes(group.id);
+  const summary = getTrainingSessionGroupProgress({
+    drafts,
+    groupId: group.id,
+    slots: group.slots,
+  });
+
+  return {
+    accessibleTitle: formatAccessibleGroupTitle(group.title),
+    groupId: group.id,
+    isOpen,
+    now: createTrainingSessionExecutionNow(group.slots[0]),
+    rounds: [1, 2, 3].map((roundIndex) => ({
+      roundIndex,
+      rows: group.slots.map((slot) =>
+        createTrainingSessionExecutionSetRow({
+          drafts,
+          groupId: group.id,
+          previousTrainingSessions,
+          roundIndex,
+          slot,
+        }),
+      ),
+    })),
+    summary: {
+      ...summary,
+      exerciseCount: group.slots.length,
+    },
+    title: formatGroupTitle(group.title, workoutTemplateLabel, groupIndex),
+  };
+}
+
+function createTrainingSessionExecutionNow(
+  slot: TrainingPlanSlot | undefined,
+): TrainingSessionExecutionNow | null {
+  if (!slot) {
+    return null;
+  }
+
+  return {
+    exerciseName: slot.exerciseName,
+    movementPatternLabel: formatMovementPattern(slot.movementPattern),
+    prescriptionLabel: getTrainingSessionPrescriptionLabel(slot),
+    roleLabel: formatExerciseRole(slot.role),
+    setLabel: "Set 1 of 3",
+    targetRepsLabel: "Target 8-12 reps",
+  };
+}
+
+function createTrainingSessionExecutionSetRow({
+  drafts,
+  groupId,
+  previousTrainingSessions,
+  roundIndex,
+  slot,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  groupId: string;
+  previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  roundIndex: number;
+  slot: TrainingPlanSlot;
+}): TrainingSessionExecutionSetRow {
+  const exerciseKey = getTrainingSessionExerciseKey(groupId, slot);
+  const draft =
+    (drafts[exerciseKey] ?? createDefaultTrainingSessionSetDrafts(slot)).find(
+      (setDraft) => setDraft.setIndex === roundIndex,
+    ) ?? getDefaultTrainingSessionSetDraft(slot);
+
+  return {
+    done: draft.done,
+    doneLabel: `Mark ${slot.exerciseName} set ${draft.setIndex} ${
+      draft.done ? "not done" : "done"
+    }`,
+    exerciseKey,
+    exerciseName: slot.exerciseName,
+    inputId: `${exerciseKey}-set-${draft.setIndex}`,
+    movementPatternLabel: formatMovementPattern(slot.movementPattern),
+    prescriptionLabel: getTrainingSessionPrescriptionLabel(slot),
+    previousSetLabel: getPreviousTrainingSessionSetLabel({
+      previousTrainingSessions,
+      setIndex: draft.setIndex,
+      slot,
+    }),
+    reps: draft.reps || String(getTrainingSessionDefaultReps(slot)),
+    setIndex: draft.setIndex,
+    weight: draft.weight,
+    weightInputMin: isBodyweightLoadExercise(slot) ? "-200" : "0",
+  };
+}
+
+function getTrainingSessionPrescriptionLabel(_slot: TrainingPlanSlot): string {
+  return "3 x 8-12";
+}
+
+function formatAccessibleGroupTitle(title: string): string {
+  return title.replace(/Full-body superset /i, "Superset ");
+}
+
+function formatGroupTitle(title: string, templateLabel: string, groupIndex: number): string {
+  const baseTitle = title.replace(/Full-body superset /i, "superset ");
+
+  if (groupIndex >= 2 || /isolation/i.test(title)) {
+    return "Isolation work";
+  }
+
+  if (/upper|full body a/i.test(templateLabel)) {
+    return `Upper ${baseTitle}`;
+  }
+
+  if (/lower|full body b/i.test(templateLabel)) {
+    return `Lower ${baseTitle}`;
+  }
+
+  return baseTitle.replace(/^\w/, (letter) => letter.toUpperCase());
 }

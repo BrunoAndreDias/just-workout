@@ -1,6 +1,5 @@
-import { normalizePlanBlueprint } from "../plan-builder/plan-blueprint";
-import { getCurrentPlanBlueprint } from "../plan-builder/plan-builder-repository";
-import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
+import type { TrainingPlan } from "./training-plan";
+import { generateActiveTrainingPlanFromCurrentPlanBlueprint } from "./training-plan-generation";
 import {
   getTrainingPlan,
   getTrainingPlans,
@@ -14,20 +13,7 @@ import {
 } from "./training-session";
 
 async function generateTrainingPlan() {
-  const blueprint = await getCurrentPlanBlueprint();
-
-  if (!blueprint) {
-    throw new Error("Cannot generate a Training Plan without a Plan Blueprint.");
-  }
-
-  const timestamp = new Date().toISOString();
-  const trainingPlan = generateTrainingPlanFromBlueprint({
-    blueprint: normalizePlanBlueprint(blueprint),
-    id: crypto.randomUUID(),
-    timestamp,
-  });
-
-  return saveGeneratedTrainingPlan(trainingPlan);
+  return generateActiveTrainingPlanFromCurrentPlanBlueprint();
 }
 
 async function completeTrainingSession({
