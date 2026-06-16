@@ -1,22 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "../design-system/cn";
-import { PageHeader, PageMain } from "../design-system/typography";
-import type { PlanBuilderStep } from "./components/plan-builder-config";
-import { usePlanBuilderBlueprint } from "./components/plan-builder-mutations";
+import { cn } from "../../design-system/cn";
+import { PageHeader, PageMain } from "../../design-system/typography";
+import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
+import { usePlanBuilderBlueprint } from "../builder-state/plan-builder-mutations";
+import { getPlanBuilderWorkflow } from "../plan-builder-workflow";
 import {
   getPlanBuilderOnePageStepTitle,
   PlanBuilderOnePageSectionCard,
   planBuilderOnePageSections,
-} from "./plan-builder-one-page-overview";
-import { PlanBuilderOnePageStepContent } from "./plan-builder-one-page-step";
-import { getPlanBuilderWorkflow } from "./plan-builder-workflow";
-import "./components/plan-builder-page.css";
-import "./components/plan-builder-page-responsive.css";
-import "./components/plan-builder-page-compact-responsive.css";
-import "./components/plan-builder-page-large-viewport.css";
-import "./components/plan-builder-frequency-page.css";
-import "./components/plan-builder-exercises-page.css";
-import "./plan-builder-one-page-route.css";
+} from "./one-page-overview";
+import { PlanBuilderOnePageStepContent } from "./one-page-step";
+import "./page-shell/plan-builder-page.css";
+import "./page-shell/plan-builder-page-responsive.css";
+import "./page-shell/plan-builder-page-compact-responsive.css";
+import "./page-shell/plan-builder-page-large-viewport.css";
+import "./page-shell/plan-builder-frequency-page.css";
+import "./page-shell/plan-builder-exercises-page.css";
+import "./one-page-route.css";
 
 export function PlanBuilderOnePageRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();

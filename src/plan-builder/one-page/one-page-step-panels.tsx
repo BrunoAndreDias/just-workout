@@ -1,21 +1,21 @@
-import type { getRepRangeStyle } from "./plan-blueprint";
-import { hasValidTrainingFrequency, type PlanBlueprint } from "./plan-blueprint";
+import type { getRepRangeStyle } from "../plan-blueprint";
+import { hasValidTrainingFrequency, type PlanBlueprint } from "../plan-blueprint";
 import {
   exerciseFoundationSetupCopy,
   getExerciseFoundationSetupGuidance,
   type MainCompoundRotationPoolChange,
   type MainCompoundSelectionChange,
   PlanBuilderExerciseFoundationStep,
-} from "./plan-builder-exercise-foundation";
-import { RepRangeStyleStep } from "./steps/rep-range-style-step";
-import { TrainingFrequencyStep } from "./steps/training-frequency-step";
-import { WeeklyVolumeTargetsStep } from "./steps/weekly-volume-targets-step";
-import type { TrainingSplitId } from "./training-split";
+} from "../plan-builder-exercise-foundation";
+import { RepRangeStyleStep } from "../steps/rep-range-style/rep-range-style-step";
+import { TrainingFrequencyStep } from "../steps/training-frequency/training-frequency-step";
+import { WeeklyVolumeTargetsStep } from "../steps/weekly-volume-targets/weekly-volume-targets-step";
+import type { TrainingSplitId } from "../training-split";
 import type {
   OptionalVolumeMuscleGroupId,
   TrainingVolumeConfiguration,
   VolumePresetId,
-} from "./training-volume";
+} from "../training-volume";
 
 export function OnePageTrainingScheduleStep({
   blueprint,

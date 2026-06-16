@@ -7,15 +7,15 @@ import {
   SlidersHorizontal,
   Wand2,
 } from "lucide-react";
-import { cn } from "../design-system/cn";
-import type { PlanBuilderStep } from "./components/plan-builder-config";
+import { cn } from "../../design-system/cn";
+import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   hasConfiguredExercises,
   type PlanBlueprint,
   type PlanBlueprintSummary,
-} from "./plan-blueprint";
-import type { PlanBuilderWorkflowSectionStatus } from "./plan-builder-workflow";
-import "./plan-builder-one-page-overview.css";
+} from "../plan-blueprint";
+import type { PlanBuilderWorkflowSectionStatus } from "../plan-builder-workflow";
+import "./one-page-overview.css";
 
 export const planBuilderOnePageSections = [
   {

@@ -1,16 +1,19 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { PlanBuilderStep } from "./components/plan-builder-config";
+import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   useInitializeTrainingVolumeMutation,
   useUpdateRepRangeStyleMutation,
-} from "./components/plan-builder-mutations";
+} from "../builder-state/plan-builder-mutations";
 import {
   getRepRangeStyle,
   type PlanBlueprint,
   type PlanBlueprintDefaultResolution,
   type PlanBlueprintSummary,
-} from "./plan-blueprint";
+} from "../plan-blueprint";
+import type { PlanBuilderWorkflow } from "../plan-builder-workflow";
+import { GenerateTrainingPlanStep } from "../steps/generate-training-plan/generate-training-plan-step";
+import type { TrainingVolumeConfiguration } from "../training-volume";
 import {
   useOnePageExercisesStep,
   useOnePageGenerateStep,
@@ -19,18 +22,15 @@ import {
   useOnePageVolumeStep,
   useRepRangeDefaultSelection,
   useTrainingVolumeDefaultSelection,
-} from "./plan-builder-one-page-step-adapters";
+} from "./one-page-step-adapters";
 import {
   ExerciseFoundationSetupState,
   OnePageExercisesStep,
   OnePageRepRangeStep,
   OnePageTrainingScheduleStep,
   OnePageVolumeStep,
-} from "./plan-builder-one-page-step-panels";
-import type { PlanBuilderWorkflow } from "./plan-builder-workflow";
-import { GenerateTrainingPlanStep } from "./steps/generate-training-plan-step";
-import type { TrainingVolumeConfiguration } from "./training-volume";
-import "./plan-builder-one-page-step.css";
+} from "./one-page-step-panels";
+import "./one-page-step.css";
 
 export function PlanBuilderOnePageStepContent({
   activeStep,

@@ -1,6 +1,6 @@
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import type { PlanBuilderStep } from "./components/plan-builder-config";
+import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   useApplyResolvedPlanBlueprintMutation,
   useConfirmExerciseSelectionPreferencesMutation,
@@ -16,22 +16,22 @@ import {
   useUpdateTrainingFrequencyMutation,
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
-} from "./components/plan-builder-mutations";
+} from "../builder-state/plan-builder-mutations";
 import type {
   PlanBlueprintDefaultResolution,
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
-} from "./plan-blueprint";
+} from "../plan-blueprint";
 import type {
   MainCompoundRotationPoolChange,
   MainCompoundSelectionChange,
-} from "./plan-builder-exercise-foundation";
-import type { TrainingSplitId } from "./training-split";
+} from "../plan-builder-exercise-foundation";
+import type { TrainingSplitId } from "../training-split";
 import type {
   OptionalVolumeMuscleGroupId,
   TrainingVolumeConfiguration,
   VolumePresetId,
-} from "./training-volume";
+} from "../training-volume";
 
 export function useRepRangeDefaultSelection({
   defaultRepRangeStyleId,

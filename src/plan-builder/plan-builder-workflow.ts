@@ -1,4 +1,4 @@
-import type { PlanBuilderStep } from "./components/plan-builder-config";
+import type { PlanBuilderStep } from "./builder-state/plan-builder-config";
 import {
   defaultRepRangeStyleId,
   getValidRepRangeStyleId,

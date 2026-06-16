@@ -1,15 +1,15 @@
 import { ArrowRight, CheckCircle2, ChevronLeft, Info } from "lucide-react";
-import { Button } from "../../design-system/button";
-import { cn } from "../../design-system/cn";
-import { StepActions } from "../../design-system/step-screen";
+import { Button } from "../../../design-system/button";
+import { cn } from "../../../design-system/cn";
+import { StepActions } from "../../../design-system/step-screen";
+import { type RepRangeStyle, type RepRangeStyleId, repRangeStyles } from "../../plan-blueprint";
 import {
-  getRepRangeStyleOptionCardClassName,
+  getSelectableOptionCardClassName,
   getSelectableOptionState,
-  RepRangeStyleStatusBadge,
-  repRangeStyleDescriptionStyles,
-  repRangeStyleDetailStyles,
-} from "../components/plan-builder-option-ui";
-import { type RepRangeStyle, type RepRangeStyleId, repRangeStyles } from "../plan-blueprint";
+  SelectableOptionStatusBadge,
+  selectableOptionDescriptionStyles,
+  selectableOptionDetailStyles,
+} from "../../shared-ui/option-ui/selectable-option-ui";
 import "./rep-range-style-step.css";
 import "./rep-range-style-responsive.css";
 import "./rep-range-style-page-overrides.css";
@@ -128,7 +128,7 @@ function RepRangeStyleOptionRadio({
     <label
       className={cn(
         "rep-range-option",
-        getRepRangeStyleOptionCardClassName(optionState),
+        getSelectableOptionCardClassName(optionState),
         isSelected ? "rep-range-option--selected" : null,
       )}
     >
@@ -148,11 +148,15 @@ function RepRangeStyleOptionRadio({
             <div className="rep-range-option__title-row">
               <p className="rep-range-option__title font-black">{option.title}</p>
               {option.isRecommended ? (
-                <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
+                <SelectableOptionStatusBadge tone="recommended">
+                  Recommended
+                </SelectableOptionStatusBadge>
               ) : null}
             </div>
           </div>
-          <p className={cn("rep-range-option__copy", repRangeStyleDescriptionStyles[optionState])}>
+          <p
+            className={cn("rep-range-option__copy", selectableOptionDescriptionStyles[optionState])}
+          >
             {option.description}
           </p>
           <RepRangeStyleTargets isSelected={isSelected} targets={option.targets} />
@@ -164,7 +168,7 @@ function RepRangeStyleOptionRadio({
 
 function RepRangeStyleTargets({ isSelected = false, targets }: RepRangeStyleTargetsProps) {
   const optionState = getSelectableOptionState(isSelected);
-  const styles = repRangeStyleDetailStyles[optionState];
+  const styles = selectableOptionDetailStyles[optionState];
 
   return (
     <dl className="rep-range-targets">

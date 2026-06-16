@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
-import { cn } from "../../design-system/cn";
-import { StepNotice } from "../../design-system/step-screen";
+import { cn } from "../../../design-system/cn";
+import { StepNotice } from "../../../design-system/step-screen";
 
 export type PlanBuilderStepStatusCardProps = {
   body: string;

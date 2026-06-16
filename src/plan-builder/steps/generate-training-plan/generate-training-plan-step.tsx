@@ -1,17 +1,17 @@
 import { Wand2 } from "lucide-react";
-import { Button } from "../../design-system/button";
-import { StepActions, StepPanel } from "../../design-system/step-screen";
-import { PlanBuilderStepStatusCard } from "../components/plan-builder-step-status-card";
-import { getExerciseCatalogExercise } from "../exercise-catalog";
-import { getEquipmentPreset } from "../exercise-selection-preferences";
+import { Button } from "../../../design-system/button";
+import { StepActions, StepPanel } from "../../../design-system/step-screen";
+import { getExerciseCatalogExercise } from "../../exercise-catalog";
+import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
   getRepRangeStyle,
   type PlanBlueprintDefaultResolution,
   type PlanBlueprintRecommendedDefault,
   type PlanBlueprintSummary,
-} from "../plan-blueprint";
-import { getTrainingSplitLabel } from "../training-split";
-import { getVolumePreset } from "../training-volume";
+} from "../../plan-blueprint";
+import { PlanBuilderStepStatusCard } from "../../shared-ui/step-status-card/step-status-card";
+import { getTrainingSplitLabel } from "../../training-split";
+import { getVolumePreset } from "../../training-volume";
 
 type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;

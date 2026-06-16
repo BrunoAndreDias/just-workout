@@ -1,11 +1,11 @@
-import type { RepRangeStyle } from "../plan-blueprint";
+import type { RepRangeStyle } from "../../plan-blueprint";
 import {
   type EstimatedSetRange,
   estimateWeeklySetRangeForTarget,
   type OptionalVolumeMuscleGroupId,
   type VolumeMuscleGroupId,
   type WeeklyRepTarget,
-} from "../training-volume";
+} from "../../training-volume";
 
 type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate" | "optional";
 

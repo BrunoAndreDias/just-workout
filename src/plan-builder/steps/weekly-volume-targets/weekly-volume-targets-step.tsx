@@ -1,15 +1,15 @@
 import { ArrowRight, ChevronLeft, Trash2 } from "lucide-react";
-import { Button } from "../../design-system/button";
-import { cn } from "../../design-system/cn";
-import { StepActions } from "../../design-system/step-screen";
+import { Button } from "../../../design-system/button";
+import { cn } from "../../../design-system/cn";
+import { StepActions } from "../../../design-system/step-screen";
+import type { RepRangeStyle } from "../../plan-blueprint";
 import {
-  getRepRangeStyleOptionCardClassName,
+  getSelectableOptionCardClassName,
   getSelectableOptionState,
-  RepRangeStyleStatusBadge,
-  repRangeStyleDescriptionStyles,
-  repRangeStyleDetailStyles,
-} from "../components/plan-builder-option-ui";
-import type { RepRangeStyle } from "../plan-blueprint";
+  SelectableOptionStatusBadge,
+  selectableOptionDescriptionStyles,
+  selectableOptionDetailStyles,
+} from "../../shared-ui/option-ui/selectable-option-ui";
 import {
   type OptionalVolumeMuscleGroupId,
   type VolumePreset,
@@ -17,7 +17,7 @@ import {
   type VolumePresetSource,
   volumePresets,
   type WeeklyRepTarget,
-} from "../training-volume";
+} from "../../training-volume";
 import {
   getOptionalWeeklyVolumeTargetRows,
   getRequiredWeeklyVolumeTargetRows,
@@ -210,7 +210,7 @@ function VolumePresetOptionRadio({
     <label
       className={cn(
         "volume-preset-option",
-        getRepRangeStyleOptionCardClassName(optionState),
+        getSelectableOptionCardClassName(optionState),
         isSelected ? "volume-preset-option--selected" : null,
       )}
     >
@@ -229,14 +229,16 @@ function VolumePresetOptionRadio({
             <div className="rep-range-option__title-row">
               <p className="volume-preset-option__title font-black">{option.title}</p>
               {option.isRecommended ? (
-                <RepRangeStyleStatusBadge tone="recommended">Recommended</RepRangeStyleStatusBadge>
+                <SelectableOptionStatusBadge tone="recommended">
+                  Recommended
+                </SelectableOptionStatusBadge>
               ) : null}
             </div>
           </div>
           <p
             className={cn(
               "volume-preset-option__copy",
-              repRangeStyleDescriptionStyles[optionState],
+              selectableOptionDescriptionStyles[optionState],
             )}
           >
             {volumePresetDescriptions[option.id]}
@@ -250,7 +252,7 @@ function VolumePresetOptionRadio({
 
 function VolumePresetTargets({ isSelected, option }: VolumePresetTargetsProps) {
   const optionState = getSelectableOptionState(isSelected);
-  const styles = repRangeStyleDetailStyles[optionState];
+  const styles = selectableOptionDetailStyles[optionState];
 
   return (
     <dl className="rep-range-targets">

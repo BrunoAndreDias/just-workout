@@ -3,7 +3,7 @@ import {
   getExerciseFoundationReadModel,
 } from "./exercise-foundation-read-model";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
-import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
+import { ExerciseFoundationStep } from "./steps/exercise-foundation/exercise-foundation-step";
 import type { TrainingVolumeConfiguration } from "./training-volume";
 import type { MainCompoundSelection } from "./weekly-movement-coverage";
 

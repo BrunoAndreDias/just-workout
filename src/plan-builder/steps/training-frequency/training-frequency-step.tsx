@@ -1,19 +1,19 @@
 import { ArrowRight, Bed, Calendar, Check, ChevronLeft, Dumbbell } from "lucide-react";
-import { Button } from "../../design-system/button";
-import { cn } from "../../design-system/cn";
-import { StepActions } from "../../design-system/step-screen";
+import { Button } from "../../../design-system/button";
+import { cn } from "../../../design-system/cn";
+import { StepActions } from "../../../design-system/step-screen";
 import {
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
   trainingFrequencyOptions,
-} from "../plan-blueprint";
+} from "../../plan-blueprint";
 import {
   getCompatibleTrainingSplits,
   getRecommendedTrainingSplitId,
   getTrainingSplit,
   type TrainingSplitDefinition,
   type TrainingSplitId,
-} from "../training-split";
+} from "../../training-split";
 import "./training-frequency-step.css";
 import "./training-frequency-responsive.css";
 import "./training-frequency-compact-responsive.css";
