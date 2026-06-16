@@ -18,23 +18,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../design-system/button";
 import { cn } from "../../design-system/cn";
 import { StepActions, StepPanel } from "../../design-system/step-screen";
-import {
-  type CompoundCapableMovementPatternId,
-  type ExerciseCatalogExercise,
-  getExerciseCatalogExercise,
-  getExerciseCatalogExercisesByMovementPattern,
-  isMainCompoundEligible,
-} from "../exercise-catalog";
-import type { MainCompoundRotationPool } from "../main-compound-rotation-pool";
-import type { TrainingFrequencyDaysPerWeek } from "../plan-blueprint-types";
-import type { TrainingSplitId } from "../training-split";
-import type { OptionalVolumeMuscleGroupId, WeeklyRepTarget } from "../training-volume";
+import type { CompoundCapableMovementPatternId } from "../exercise-catalog";
+import type {
+  ExerciseFoundationAccessoryExercise,
+  ExerciseFoundationCompoundOption,
+  ExerciseFoundationReadModel,
+  ExerciseFoundationRotationPoolReadModel,
+  ExerciseFoundationRowStatus,
+  MainCompoundPickerFilterId,
+} from "../exercise-foundation-read-model";
 import {
   formatMovementPatternLabel,
-  getWeeklyMovementCoverage,
   type MainCompoundSelection,
-  normalizeMainCompoundSelections,
-  type WeeklyMovementCoverageRow,
 } from "../weekly-movement-coverage";
 import "./exercise-foundation-step.css";
 import "./main-compound-drawer.css";
@@ -44,60 +39,21 @@ import "./exercise-foundation-page-overrides.css";
 import "./exercise-foundation-responsive.css";
 
 type ExerciseFoundationStepProps = {
-  mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
-  mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
   onMainCompoundSelectionChange: (
     selection: Pick<MainCompoundSelection, "exerciseId" | "movementPattern">,
   ) => Promise<void>;
-  onRotationPoolChange: (
-    rotationPool: Pick<MainCompoundRotationPool, "exerciseIds" | "movementPattern">,
-  ) => Promise<void>;
-  split: TrainingSplitId;
-  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
+  onRotationPoolChange: (rotationPool: {
+    exerciseIds: ReadonlyArray<string>;
+    movementPattern: CompoundCapableMovementPatternId;
+  }) => Promise<void>;
+  readModel: ExerciseFoundationReadModel;
 };
-
-type FoundationRowStatus = "missing" | "recommended" | "required" | "suggested";
-
-type SuggestedFoundationByPattern = Partial<Record<CompoundCapableMovementPatternId, string>>;
-
-type MainCompoundPickerFilterId =
-  | "all"
-  | "barbell"
-  | "beginner_friendly"
-  | "bodyweight"
-  | "dumbbells"
-  | "joint_friendly"
-  | "machine";
 
 type MainCompoundPickerFilter = {
   id: MainCompoundPickerFilterId;
   label: string;
-};
-
-type AccessoryMuscleGroupFilterId =
-  | "all"
-  | "arms"
-  | "calves"
-  | "core"
-  | "grip"
-  | "hamstrings"
-  | "hips"
-  | "shoulders";
-
-type AccessoryEquipmentFilterId = "bodyweight" | "cable" | "dumbbells" | "loaded" | "machine";
-
-type AccessoryExercise = {
-  beginnerFriendly: boolean;
-  equipment: AccessoryEquipmentFilterId;
-  group: "optional" | "recommended";
-  id: string;
-  muscleGroup: AccessoryMuscleGroupFilterId;
-  name: string;
-  optionalVolumeMuscleGroup?: OptionalVolumeMuscleGroupId;
-  rationale?: string;
 };
 
 const mainCompoundPickerFilters = [
@@ -110,101 +66,6 @@ const mainCompoundPickerFilters = [
   { id: "joint_friendly", label: "Joint-friendly" },
 ] as const satisfies ReadonlyArray<MainCompoundPickerFilter>;
 
-const fullBodySuggestedFoundation: SuggestedFoundationByPattern = {
-  hip_hamstring_dominant: "barbell-romanian-deadlifts",
-  horizontal_pull: "bent-over-barbell-rows",
-  horizontal_push: "flat-barbell-bench-press",
-  quad_dominant: "barbell-squats",
-  vertical_pull: "pull-ups",
-};
-
-const allPatternSuggestedFoundation: SuggestedFoundationByPattern = {
-  ...fullBodySuggestedFoundation,
-  vertical_push: "standing-overhead-barbell-press",
-};
-
-const suggestedFoundationBySplit = {
-  "alternating-full-body-a-b": fullBodySuggestedFoundation,
-  "full-body-2-day": fullBodySuggestedFoundation,
-  "full-body-3-day": fullBodySuggestedFoundation,
-  "rotating-push-pull-legs": allPatternSuggestedFoundation,
-  "upper-lower-4-day": allPatternSuggestedFoundation,
-  "upper-lower-full-body": allPatternSuggestedFoundation,
-} as const satisfies Record<TrainingSplitId, SuggestedFoundationByPattern>;
-
-const accessoryExercises: ReadonlyArray<AccessoryExercise> = [
-  {
-    beginnerFriendly: true,
-    equipment: "machine",
-    group: "recommended",
-    id: "leg-curl",
-    muscleGroup: "hamstrings",
-    name: "Leg curl",
-    rationale: "hamstring work",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "dumbbells",
-    group: "recommended",
-    id: "lateral-raise",
-    muscleGroup: "shoulders",
-    name: "Lateral raise",
-    rationale: "side delt work",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "bodyweight",
-    group: "recommended",
-    id: "decline-crunch",
-    muscleGroup: "core",
-    name: "Decline crunch",
-    optionalVolumeMuscleGroup: "abs",
-    rationale: "core frequency",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "dumbbells",
-    group: "optional",
-    id: "biceps-curl",
-    muscleGroup: "arms",
-    name: "Biceps curl",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "cable",
-    group: "optional",
-    id: "triceps-extension",
-    muscleGroup: "arms",
-    name: "Triceps extension",
-  },
-  {
-    beginnerFriendly: false,
-    equipment: "loaded",
-    group: "optional",
-    id: "farmer-walks",
-    muscleGroup: "grip",
-    name: "Farmer walks",
-    rationale: "grip & core",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "machine",
-    group: "optional",
-    id: "calf-raise",
-    muscleGroup: "calves",
-    name: "Calf raise",
-    optionalVolumeMuscleGroup: "calves",
-  },
-  {
-    beginnerFriendly: true,
-    equipment: "machine",
-    group: "optional",
-    id: "hip-abduction",
-    muscleGroup: "hips",
-    name: "Hip abduction",
-  },
-];
-
 const accessoryMuscleGroupFilters = [
   { id: "all", label: "Muscle group" },
   { id: "hamstrings", label: "Hamstrings" },
@@ -216,46 +77,12 @@ const accessoryMuscleGroupFilters = [
   { id: "hips", label: "Hips" },
 ] as const;
 
-function getEnabledOptionalVolumeMuscleGroups(
-  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>,
-): ReadonlySet<OptionalVolumeMuscleGroupId> {
-  return new Set(
-    weeklyRepTargets
-      .filter(
-        (
-          weeklyRepTarget,
-        ): weeklyRepTarget is WeeklyRepTarget & {
-          muscleGroup: OptionalVolumeMuscleGroupId;
-        } =>
-          weeklyRepTarget.isEnabled &&
-          (weeklyRepTarget.muscleGroup === "abs" || weeklyRepTarget.muscleGroup === "calves"),
-      )
-      .map((weeklyRepTarget) => weeklyRepTarget.muscleGroup),
-  );
-}
-
-function getAvailableAccessoryExercises(
-  weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>,
-): ReadonlyArray<AccessoryExercise> {
-  const enabledOptionalVolumeMuscleGroups = getEnabledOptionalVolumeMuscleGroups(weeklyRepTargets);
-
-  return accessoryExercises.filter(
-    (exercise) =>
-      exercise.optionalVolumeMuscleGroup === undefined ||
-      enabledOptionalVolumeMuscleGroups.has(exercise.optionalVolumeMuscleGroup),
-  );
-}
-
 export function ExerciseFoundationStep({
-  mainCompoundSelections,
-  mainCompoundRotationPools,
   onBackToVolume,
   onContinueToGenerate,
   onMainCompoundSelectionChange,
   onRotationPoolChange,
-  split,
-  trainingFrequencyDaysPerWeek,
-  weeklyRepTargets,
+  readModel,
 }: ExerciseFoundationStepProps) {
   const [activePickerPattern, setActivePickerPattern] =
     useState<CompoundCapableMovementPatternId | null>(null);
@@ -265,66 +92,21 @@ export function ExerciseFoundationStep({
   const [selectedAccessoryIds, setSelectedAccessoryIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const normalizedSelections = normalizeMainCompoundSelections(mainCompoundSelections);
-  const hasConfirmedSelections = normalizedSelections.length > 0;
-  const suggestedFoundation = suggestedFoundationBySplit[split];
-  const coverage = getWeeklyMovementCoverage({
-    mainCompoundSelections: normalizedSelections,
-    split,
-    trainingFrequencyDaysPerWeek,
-  });
-  const canContinueToGenerate = coverage.canConfirmExercises;
-  const confirmedSelectionByPattern = new Map(
-    normalizedSelections.map((selection) => [selection.movementPattern, selection]),
-  );
-  const selectedMainCompoundExerciseIds = new Set(
-    normalizedSelections.map((selection) => selection.exerciseId),
-  );
-  const rotationPoolByPattern = new Map(
-    mainCompoundRotationPools.map((pool) => [pool.movementPattern, pool]),
-  );
-  const recommendedGuidance = getRecommendedGuidance(coverage.rows);
-  const nextRequiredPattern = getNextMissingRequiredPattern(coverage.rows);
-  const canShowOptionalAccessoriesSummary = hasConfirmedSelections && coverage.canConfirmExercises;
-  const availableAccessoryExercises = useMemo(
-    () => getAvailableAccessoryExercises(weeklyRepTargets),
-    [weeklyRepTargets],
-  );
-  const selectedAccessories = availableAccessoryExercises.filter((exercise) =>
+  const selectedAccessories = readModel.accessoryExercises.filter((exercise) =>
     selectedAccessoryIds.has(exercise.id),
   );
   const selectedAccessoryCount = selectedAccessories.length;
-  const recommendedAccessoryCount = availableAccessoryExercises.filter(
-    (exercise) => exercise.group === "recommended",
-  ).length;
-  const optionalAccessoryCount = availableAccessoryExercises.filter(
-    (exercise) => exercise.group === "optional",
-  ).length;
-  const suggestedRequiredPatternCount = coverage.rows.filter(
-    (row) =>
-      row.requirement === "required" && suggestedFoundation[row.movementPattern] !== undefined,
-  ).length;
   const activePickerRow =
     activePickerPattern === null
       ? undefined
-      : coverage.rows.find((row) => row.movementPattern === activePickerPattern);
-  const activePickerConfirmedSelection =
-    activePickerPattern === null ? undefined : confirmedSelectionByPattern.get(activePickerPattern);
-  const activePickerSuggestedExerciseId =
-    activePickerPattern === null ? undefined : suggestedFoundation[activePickerPattern];
-  const activeRotationPoolSelection =
+      : readModel.rows.find((row) => row.movementPattern === activePickerPattern);
+  const activeRotationPoolRow =
     activeRotationPoolPattern === null
       ? undefined
-      : confirmedSelectionByPattern.get(activeRotationPoolPattern);
-  const activeRotationPool =
-    activeRotationPoolPattern === null
-      ? undefined
-      : rotationPoolByPattern.get(activeRotationPoolPattern);
+      : readModel.rows.find((row) => row.movementPattern === activeRotationPoolPattern);
 
   useEffect(() => {
-    const availableAccessoryExerciseIds = new Set(
-      availableAccessoryExercises.map((exercise) => exercise.id),
-    );
+    const availableAccessoryExerciseIds = new Set(readModel.accessoryExerciseIds);
 
     setSelectedAccessoryIds((currentAccessoryIds) => {
       const nextAccessoryIds = new Set(
@@ -337,7 +119,7 @@ export function ExerciseFoundationStep({
         ? currentAccessoryIds
         : nextAccessoryIds;
     });
-  }, [availableAccessoryExercises]);
+  }, [readModel.accessoryExerciseIds]);
 
   useEffect(() => {
     if (
@@ -408,16 +190,9 @@ export function ExerciseFoundationStep({
                 <h3 className="sr-only" id="exercise-foundation-title">
                   Exercise foundation overview
                 </h3>
-                <p className="exercise-foundation-status__title">
-                  {hasConfirmedSelections
-                    ? getConfirmedCoverageSummary(coverage)
-                    : getSuggestedFoundationSummary({
-                        requiredPatternCount: coverage.requiredPatternCount,
-                        suggestedRequiredPatternCount,
-                      })}
-                </p>
-                {recommendedGuidance ? (
-                  <p className="exercise-foundation-status__body">{recommendedGuidance}</p>
+                <p className="exercise-foundation-status__title">{readModel.summary}</p>
+                {readModel.guidance ? (
+                  <p className="exercise-foundation-status__body">{readModel.guidance}</p>
                 ) : null}
               </div>
             </section>
@@ -427,52 +202,33 @@ export function ExerciseFoundationStep({
               <span
                 className={cn(
                   "exercise-foundation-tabbar__locked",
-                  canContinueToGenerate ? "exercise-foundation-tabbar__locked--ready" : null,
+                  readModel.canContinueToGenerate
+                    ? "exercise-foundation-tabbar__locked--ready"
+                    : null,
                 )}
               >
-                {canContinueToGenerate ? (
+                {readModel.canContinueToGenerate ? (
                   <CircleCheck aria-hidden="true" size={15} strokeWidth={2.2} />
                 ) : (
                   <Lock aria-hidden="true" size={15} strokeWidth={2} />
                 )}
-                {canContinueToGenerate ? "Swaps ready" : "Swaps unlock after required picks"}
+                {readModel.canContinueToGenerate
+                  ? "Swaps ready"
+                  : "Swaps unlock after required picks"}
               </span>
             </div>
 
             <section aria-label="Main compound selections" className="exercise-foundation-card">
               <ul aria-label="Exercise foundation rows" className="exercise-foundation-list">
-                {coverage.rows.map((row) => {
-                  const confirmedSelection = confirmedSelectionByPattern.get(row.movementPattern);
-                  const suggestedExerciseId = suggestedFoundation[row.movementPattern];
-                  const status = getFoundationRowStatus({
-                    confirmedSelection,
-                    hasConfirmedSelections,
-                    requirement: row.requirement,
-                    suggestedExerciseId,
-                  });
-                  const shownExercise = getFoundationRowExercise({
-                    confirmedSelection,
-                    suggestedExerciseId,
-                  });
-                  const helperText = getFoundationRowHelperText(row.movementPattern);
-                  const optionPreview = getMainCompoundOptions(row.movementPattern);
-                  const metadata = getFoundationRowMetadata({
-                    optionCount: optionPreview.length,
-                    shownExerciseId: shownExercise?.exerciseId,
-                    status,
-                  });
+                {readModel.rows.map((row) => {
                   const isPickerOpen = activePickerPattern === row.movementPattern;
 
                   return (
                     <li
-                      aria-label={getFoundationRowAccessibleLabel({
-                        exerciseName: shownExercise?.exerciseName,
-                        row,
-                        status,
-                      })}
+                      aria-label={row.accessibleLabel}
                       className={cn(
                         "exercise-foundation-row",
-                        status === "missing" ? "exercise-foundation-row--missing" : null,
+                        row.isMissing ? "exercise-foundation-row--missing" : null,
                       )}
                       key={row.movementPattern}
                     >
@@ -489,31 +245,28 @@ export function ExerciseFoundationStep({
                           </span>
                           <div className="min-w-0">
                             <div className="exercise-foundation-row__heading">
-                              <h4>{formatMovementPatternLabel(row.movementPattern)}</h4>
+                              <h4>{row.movementPatternLabel}</h4>
                               <span>{row.bucket}</span>
                             </div>
-                            <p className="exercise-foundation-row__helper">{helperText}</p>
+                            <p className="exercise-foundation-row__helper">{row.helperText}</p>
                           </div>
                         </div>
 
                         <div className="exercise-foundation-row__selection">
-                          <p>
-                            {shownExercise?.exerciseName ??
-                              getMissingFoundationCopy(row.movementPattern)}
-                          </p>
-                          <span>{metadata}</span>
+                          <p>{row.shownExercise?.exerciseName ?? "No exercise selected yet."}</p>
+                          <span>{row.metadata}</span>
                         </div>
 
                         <div className="exercise-foundation-row__actions">
                           <span
-                            aria-label={getFoundationStatusAccessibleLabel(status)}
+                            aria-label={row.statusAccessibleLabel}
                             className={cn(
                               "exercise-foundation-row__status",
-                              getFoundationStatusClassName(status),
+                              getFoundationStatusClassName(row.status),
                             )}
                             role="status"
                           >
-                            {getFoundationStatusLabel(status)}
+                            {row.statusLabel}
                           </span>
                           <Button
                             aria-expanded={isPickerOpen}
@@ -531,23 +284,19 @@ export function ExerciseFoundationStep({
                             type="button"
                             variant="outline"
                           >
-                            {confirmedSelection ? "Change" : "Choose"}
+                            {row.confirmedSelection ? "Change" : "Choose"}
                           </Button>
                         </div>
                       </div>
 
-                      {confirmedSelection ? (
+                      {row.rotationPool ? (
                         <InlineRotationPoolEditor
                           movementPattern={row.movementPattern}
                           onEdit={() => {
                             setActivePickerPattern(null);
                             setActiveRotationPoolPattern(row.movementPattern);
                           }}
-                          rotationPoolExerciseIds={
-                            rotationPoolByPattern.get(row.movementPattern)?.exerciseIds
-                          }
-                          selectedMainCompoundExerciseIds={selectedMainCompoundExerciseIds}
-                          startingExerciseId={confirmedSelection.exerciseId}
+                          rotationPool={row.rotationPool}
                         />
                       ) : null}
                     </li>
@@ -561,30 +310,30 @@ export function ExerciseFoundationStep({
         <div>
           {activePickerRow ? (
             <MainCompoundPicker
-              currentExerciseId={activePickerConfirmedSelection?.exerciseId}
+              currentExerciseId={activePickerRow.confirmedSelection?.exerciseId}
               id={`main-compound-picker-${activePickerRow.movementPattern}`}
+              mainCompoundOptions={activePickerRow.mainCompoundOptions}
               movementPattern={activePickerRow.movementPattern}
+              movementPatternLabel={activePickerRow.movementPatternLabel}
               onClose={() => setActivePickerPattern(null)}
               onSelect={handleMainCompoundSelect}
-              suggestedExerciseId={activePickerSuggestedExerciseId}
             />
           ) : null}
 
-          {activeRotationPoolPattern && activeRotationPoolSelection ? (
+          {activeRotationPoolPattern && activeRotationPoolRow?.rotationPool ? (
             <RotationPoolPicker
-              currentExerciseIds={activeRotationPool?.exerciseIds}
-              excludedExerciseIds={selectedMainCompoundExerciseIds}
               id={`rotation-pool-picker-${activeRotationPoolPattern}`}
               movementPattern={activeRotationPoolPattern}
+              movementPatternLabel={activeRotationPoolRow.movementPatternLabel}
               onChange={(exerciseIds) =>
                 handleRotationPoolChange(activeRotationPoolPattern, exerciseIds)
               }
               onClose={() => setActiveRotationPoolPattern(null)}
-              startingExerciseId={activeRotationPoolSelection.exerciseId}
+              rotationPool={activeRotationPoolRow.rotationPool}
             />
           ) : null}
 
-          {canShowOptionalAccessoriesSummary ? (
+          {readModel.canShowOptionalAccessoriesSummary ? (
             <IsolationExercisesSummary
               isDrawerOpen={isAccessoryDrawerOpen}
               onConfigure={() => {
@@ -593,8 +342,8 @@ export function ExerciseFoundationStep({
                 setIsAccessoryDrawerOpen(true);
               }}
               onRemove={(accessoryId) => handleAccessorySelectionChange(accessoryId, false)}
-              optionalAccessoryCount={optionalAccessoryCount}
-              recommendedAccessoryCount={recommendedAccessoryCount}
+              optionalAccessoryCount={readModel.optionalAccessoryCount}
+              recommendedAccessoryCount={readModel.recommendedAccessoryCount}
               selectedAccessories={selectedAccessories}
               selectedExerciseCount={selectedAccessoryCount}
             />
@@ -608,7 +357,7 @@ export function ExerciseFoundationStep({
               Back to Volume
             </Button>
             <Button
-              disabled={!canContinueToGenerate}
+              disabled={!readModel.canContinueToGenerate}
               onClick={() => {
                 void onContinueToGenerate();
               }}
@@ -616,9 +365,9 @@ export function ExerciseFoundationStep({
               type="button"
               variant="builderPrimary"
             >
-              {canContinueToGenerate
+              {readModel.canContinueToGenerate
                 ? "Continue to Generate"
-                : getBlockedGenerateActionLabel(nextRequiredPattern)}
+                : getBlockedGenerateActionLabel(readModel.nextRequiredPattern)}
               <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
             </Button>
           </StepActions>
@@ -627,7 +376,7 @@ export function ExerciseFoundationStep({
 
       {isAccessoryDrawerOpen ? (
         <IsolationExercisesDrawer
-          accessoryExercises={availableAccessoryExercises}
+          accessoryExercises={readModel.accessoryExercises}
           onClose={() => setIsAccessoryDrawerOpen(false)}
           onSelectionChange={handleAccessorySelectionChange}
           selectedAccessoryIds={selectedAccessoryIds}
@@ -640,40 +389,13 @@ export function ExerciseFoundationStep({
 function InlineRotationPoolEditor({
   movementPattern,
   onEdit,
-  rotationPoolExerciseIds,
-  selectedMainCompoundExerciseIds,
-  startingExerciseId,
+  rotationPool,
 }: {
   movementPattern: CompoundCapableMovementPatternId;
   onEdit: () => void;
-  rotationPoolExerciseIds: ReadonlyArray<string> | undefined;
-  selectedMainCompoundExerciseIds: ReadonlySet<string>;
-  startingExerciseId: string;
+  rotationPool: ExerciseFoundationRotationPoolReadModel;
 }) {
-  const defaultRotationPool = getRotationPoolOptions({
-    excludedExerciseIds: selectedMainCompoundExerciseIds,
-    movementPattern,
-    startingExerciseId,
-  })
-    .slice(0, 3)
-    .map((exercise) => exercise.id);
-  const selectedExerciseIds = rotationPoolExerciseIds ?? defaultRotationPool;
-  const selectedExerciseIdSet = new Set(selectedExerciseIds);
-  const rotationPool = getRotationPoolOptions({
-    excludedExerciseIds: selectedMainCompoundExerciseIds,
-    movementPattern,
-    startingExerciseId,
-  }).filter((exercise) => selectedExerciseIdSet.has(exercise.id));
   const movementPatternLabel = formatMovementPatternLabel(movementPattern);
-  const availableOptionCount = getRotationPoolOptions({
-    excludedExerciseIds: selectedMainCompoundExerciseIds,
-    movementPattern,
-    startingExerciseId,
-  }).length;
-  const status = getRotationPoolSummaryStatus({
-    isSuggested: rotationPoolExerciseIds === undefined,
-    selectedExerciseCount: rotationPool.length,
-  });
 
   return (
     <section
@@ -682,12 +404,12 @@ function InlineRotationPoolEditor({
     >
       <div className="rotation-pool-inline-preview__header">
         <span className="rotation-pool-inline-preview__label">Rotation pool</span>
-        <span className="rotation-pool-inline-preview__status">{status}</span>
+        <span className="rotation-pool-inline-preview__status">{rotationPool.status}</span>
       </div>
       <div className="rotation-pool-inline-preview__actions">
         <Button
           aria-label={`Edit ${movementPatternLabel} rotation pool`}
-          disabled={availableOptionCount === 0}
+          disabled={rotationPool.availableOptionCount === 0}
           onClick={onEdit}
           size="sm"
           type="button"
@@ -699,50 +421,6 @@ function InlineRotationPoolEditor({
       </div>
     </section>
   );
-}
-
-function getRotationPoolSummaryStatus({
-  isSuggested,
-  selectedExerciseCount,
-}: {
-  isSuggested: boolean;
-  selectedExerciseCount: number;
-}): string {
-  if (selectedExerciseCount === 0) {
-    return "No swaps";
-  }
-
-  const state = isSuggested ? "suggested" : "selected";
-
-  return `${selectedExerciseCount} ${state}`;
-}
-
-function getRotationPoolOptions({
-  excludedExerciseIds,
-  movementPattern,
-  startingExerciseId,
-}: {
-  excludedExerciseIds: ReadonlySet<string>;
-  movementPattern: CompoundCapableMovementPatternId;
-  startingExerciseId: string;
-}): ReadonlyArray<ExerciseCatalogExercise & { role: "compound" }> {
-  const startingExercise = getExerciseCatalogExercise(startingExerciseId);
-
-  if (!startingExercise) {
-    return [];
-  }
-
-  const startingPrimaryMuscleGroups = new Set(startingExercise.primaryMuscleGroups);
-
-  return getMainCompoundOptions(movementPattern).filter((exercise) => {
-    if (exercise.id === startingExerciseId || excludedExerciseIds.has(exercise.id)) {
-      return false;
-    }
-
-    return exercise.primaryMuscleGroups.some((muscleGroup) =>
-      startingPrimaryMuscleGroups.has(muscleGroup),
-    );
-  });
 }
 
 function IsolationExercisesSummary({
@@ -759,7 +437,7 @@ function IsolationExercisesSummary({
   onRemove: (accessoryId: string) => void;
   optionalAccessoryCount: number;
   recommendedAccessoryCount: number;
-  selectedAccessories: ReadonlyArray<AccessoryExercise>;
+  selectedAccessories: ReadonlyArray<ExerciseFoundationAccessoryExercise>;
   selectedExerciseCount: number;
 }) {
   return (
@@ -831,7 +509,7 @@ function IsolationExercisesDrawer({
   onSelectionChange,
   selectedAccessoryIds,
 }: {
-  accessoryExercises: ReadonlyArray<AccessoryExercise>;
+  accessoryExercises: ReadonlyArray<ExerciseFoundationAccessoryExercise>;
   onClose: () => void;
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
@@ -892,7 +570,7 @@ function AccessoryExerciseList({
   onSelectionChange,
   selectedAccessoryIds,
 }: {
-  exercises: ReadonlyArray<AccessoryExercise>;
+  exercises: ReadonlyArray<ExerciseFoundationAccessoryExercise>;
   onSelectionChange: (accessoryId: string, isSelected: boolean) => void;
   selectedAccessoryIds: ReadonlySet<string>;
 }) {
@@ -944,42 +622,42 @@ function AccessoryExerciseList({
 function MainCompoundPicker({
   currentExerciseId,
   id,
+  mainCompoundOptions,
   movementPattern,
+  movementPatternLabel,
   onClose,
   onSelect,
-  suggestedExerciseId,
 }: {
   currentExerciseId: string | undefined;
   id: string;
+  mainCompoundOptions: ReadonlyArray<ExerciseFoundationCompoundOption>;
   movementPattern: CompoundCapableMovementPatternId;
+  movementPatternLabel: string;
   onClose: () => void;
   onSelect: (
     exerciseId: string,
     movementPattern: CompoundCapableMovementPatternId,
   ) => Promise<void>;
-  suggestedExerciseId: string | undefined;
 }) {
-  const options = getMainCompoundOptions(movementPattern);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilterId, setActiveFilterId] = useState<MainCompoundPickerFilterId>("all");
   const titleId = `${id}-title`;
-  const movementPatternLabel = formatMovementPatternLabel(movementPattern);
   const searchMovementPatternLabel = movementPatternLabel.toLowerCase();
   const formattedMovementPatternTitle = toTitleCase(movementPatternLabel);
   const filteredOptions = useMemo(
     () =>
-      options.filter((exercise) => {
+      mainCompoundOptions.filter((exercise) => {
         const normalizedSearchQuery = searchQuery.trim().toLowerCase();
         const matchesSearch =
           normalizedSearchQuery.length === 0 ||
           exercise.name.toLowerCase().includes(normalizedSearchQuery) ||
           exercise.id.includes(normalizedSearchQuery.replace(/\s+/g, "-"));
         const matchesFilter =
-          activeFilterId === "all" || getPickerOptionFilterIds(exercise).includes(activeFilterId);
+          activeFilterId === "all" || exercise.filterIds.includes(activeFilterId);
 
         return matchesSearch && matchesFilter;
       }),
-    [activeFilterId, options, searchQuery],
+    [activeFilterId, mainCompoundOptions, searchQuery],
   );
 
   return (
@@ -1056,7 +734,6 @@ function MainCompoundPicker({
           {filteredOptions.length > 0 ? (
             filteredOptions.map((exercise) => {
               const isCurrentSelection = currentExerciseId === exercise.id;
-              const filterTags = getPickerOptionFilterTags(exercise);
 
               return (
                 <label
@@ -1085,16 +762,10 @@ function MainCompoundPicker({
                   </span>
                   <span className="main-compound-drawer__option-copy">
                     <span className="main-compound-drawer__option-name">{exercise.name}</span>
-                    <span className="main-compound-drawer__option-meta">
-                      {getPickerOptionMetadata({
-                        currentExerciseId,
-                        exerciseId: exercise.id,
-                        suggestedExerciseId,
-                      })}
-                    </span>
+                    <span className="main-compound-drawer__option-meta">{exercise.metadata}</span>
                   </span>
                   <span className="main-compound-drawer__option-tags" aria-hidden="true">
-                    {filterTags.map((tag) => (
+                    {exercise.filterTags.map((tag) => (
                       <span className="main-compound-drawer__tag" key={tag}>
                         {tag}
                       </span>
@@ -1125,50 +796,41 @@ function MainCompoundPicker({
 }
 
 function RotationPoolPicker({
-  currentExerciseIds,
-  excludedExerciseIds,
   id,
   movementPattern,
+  movementPatternLabel,
   onChange,
   onClose,
-  startingExerciseId,
+  rotationPool,
 }: {
-  currentExerciseIds: ReadonlyArray<string> | undefined;
-  excludedExerciseIds: ReadonlySet<string>;
   id: string;
   movementPattern: CompoundCapableMovementPatternId;
+  movementPatternLabel: string;
   onChange: (exerciseIds: ReadonlyArray<string>) => Promise<void>;
   onClose: () => void;
-  startingExerciseId: string;
+  rotationPool: ExerciseFoundationRotationPoolReadModel;
 }) {
-  const options = getRotationPoolOptions({
-    excludedExerciseIds,
-    movementPattern,
-    startingExerciseId,
-  });
-  const defaultExerciseIds = options.slice(0, 3).map((exercise) => exercise.id);
-  const selectedExerciseIds = currentExerciseIds ?? defaultExerciseIds;
+  const selectedExerciseIds = rotationPool.selectedExerciseIds;
   const selectedExerciseIdSet = new Set(selectedExerciseIds);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilterId, setActiveFilterId] = useState<MainCompoundPickerFilterId>("all");
   const titleId = `${id}-title`;
-  const movementPatternLabel = formatMovementPatternLabel(movementPattern);
   const searchMovementPatternLabel = movementPatternLabel.toLowerCase();
   const formattedMovementPatternTitle = toTitleCase(movementPatternLabel);
   const filteredOptions = useMemo(
     () =>
-      options.filter((exercise) => {
+      rotationPool.options.filter((exercise) => {
         const normalizedSearchQuery = searchQuery.trim().toLowerCase();
         const matchesSearch =
           normalizedSearchQuery.length === 0 ||
           exercise.name.toLowerCase().includes(normalizedSearchQuery) ||
           exercise.id.includes(normalizedSearchQuery.replace(/\s+/g, "-"));
         const matchesFilter =
-          activeFilterId === "all" || getPickerOptionFilterIds(exercise).includes(activeFilterId);
+          activeFilterId === "all" || exercise.filterIds.includes(activeFilterId);
 
         return matchesSearch && matchesFilter;
       }),
-    [activeFilterId, options, searchQuery],
+    [activeFilterId, rotationPool.options, searchQuery],
   );
 
   function getNextExerciseIds(exerciseId: string, isSelected: boolean) {
@@ -1250,7 +912,6 @@ function RotationPoolPicker({
           {filteredOptions.length > 0 ? (
             filteredOptions.map((exercise) => {
               const isSelected = selectedExerciseIdSet.has(exercise.id);
-              const filterTags = getPickerOptionFilterTags(exercise);
 
               return (
                 <label
@@ -1276,12 +937,10 @@ function RotationPoolPicker({
                   </span>
                   <span className="main-compound-drawer__option-copy">
                     <span className="main-compound-drawer__option-name">{exercise.name}</span>
-                    <span className="main-compound-drawer__option-meta">
-                      Same movement pattern and primary muscle group
-                    </span>
+                    <span className="main-compound-drawer__option-meta">{exercise.metadata}</span>
                   </span>
                   <span className="main-compound-drawer__option-tags" aria-hidden="true">
-                    {filterTags.map((tag) => (
+                    {exercise.filterTags.map((tag) => (
                       <span className="main-compound-drawer__tag" key={tag}>
                         {tag}
                       </span>
@@ -1308,71 +967,7 @@ function RotationPoolPicker({
   );
 }
 
-function getFoundationRowStatus({
-  confirmedSelection,
-  hasConfirmedSelections,
-  requirement,
-  suggestedExerciseId,
-}: {
-  confirmedSelection: MainCompoundSelection | undefined;
-  hasConfirmedSelections: boolean;
-  requirement: "recommended" | "required";
-  suggestedExerciseId: string | undefined;
-}): FoundationRowStatus {
-  if (confirmedSelection !== undefined) {
-    return requirement === "required" ? "required" : "recommended";
-  }
-
-  if (hasConfirmedSelections && requirement === "required") {
-    return "missing";
-  }
-
-  if (suggestedExerciseId !== undefined) {
-    return "suggested";
-  }
-
-  return requirement === "required" ? "missing" : "recommended";
-}
-
-function getFoundationRowExercise({
-  confirmedSelection,
-  suggestedExerciseId,
-}: {
-  confirmedSelection: MainCompoundSelection | undefined;
-  suggestedExerciseId: string | undefined;
-}): { exerciseId: string; exerciseName: string } | null {
-  if (confirmedSelection !== undefined) {
-    return {
-      exerciseId: confirmedSelection.exerciseId,
-      exerciseName: getExerciseNameOrMissingCopy(
-        confirmedSelection.exerciseId,
-        confirmedSelection.movementPattern,
-      ),
-    };
-  }
-
-  if (suggestedExerciseId !== undefined) {
-    const exercise = getExerciseCatalogExercise(suggestedExerciseId);
-
-    return exercise
-      ? {
-          exerciseId: suggestedExerciseId,
-          exerciseName: exercise.name,
-        }
-      : null;
-  }
-
-  return null;
-}
-
-function getExerciseNameOrMissingCopy(
-  exerciseId: string,
-  movementPattern: CompoundCapableMovementPatternId,
-): string {
-  return getExerciseCatalogExercise(exerciseId)?.name ?? getMissingFoundationCopy(movementPattern);
-}
-
-function getFoundationStatusClassName(status: FoundationRowStatus): string {
+function getFoundationStatusClassName(status: ExerciseFoundationRowStatus): string {
   switch (status) {
     case "required":
       return "bg-emerald-100 text-emerald-900";
@@ -1382,73 +977,6 @@ function getFoundationStatusClassName(status: FoundationRowStatus): string {
       return "bg-stone-200 text-stone-800";
     case "suggested":
       return "bg-sky-100 text-sky-900";
-  }
-}
-
-function getFoundationStatusLabel(status: FoundationRowStatus): string {
-  switch (status) {
-    case "required":
-      return "Required";
-    case "missing":
-      return "Missing";
-    case "recommended":
-      return "Recommended";
-    case "suggested":
-      return "Suggested";
-  }
-}
-
-function getFoundationStatusAccessibleLabel(status: FoundationRowStatus): string {
-  switch (status) {
-    case "required":
-      return "Required movement pattern selected";
-    case "missing":
-      return "Required movement pattern missing";
-    case "recommended":
-      return "Recommended movement pattern not selected";
-    case "suggested":
-      return "Suggested exercise preview, not confirmed";
-  }
-}
-
-function getFoundationRowAccessibleLabel({
-  exerciseName,
-  row,
-  status,
-}: {
-  exerciseName: string | undefined;
-  row: WeeklyMovementCoverageRow;
-  status: FoundationRowStatus;
-}): string {
-  const description =
-    exerciseName ??
-    getMissingMovementPatternCopy({ bucket: row.bucket, movementPattern: row.movementPattern });
-
-  return `${formatMovementPatternLabel(row.movementPattern)}. ${getFoundationStatusAccessibleLabel(
-    status,
-  )}. ${description}`;
-}
-
-function getMissingFoundationCopy(movementPattern: CompoundCapableMovementPatternId): string {
-  return movementPattern === "vertical_push"
-    ? "No exercise selected yet."
-    : "No exercise selected yet.";
-}
-
-function getFoundationRowHelperText(movementPattern: CompoundCapableMovementPatternId): string {
-  switch (movementPattern) {
-    case "horizontal_push":
-      return "Chest, shoulders, triceps.";
-    case "horizontal_pull":
-      return "Mid-back and upper-back balance.";
-    case "vertical_pull":
-      return "Lats and upper back.";
-    case "vertical_push":
-      return "Overhead push balance.";
-    case "quad_dominant":
-      return "Knee-dominant leg work.";
-    case "hip_hamstring_dominant":
-      return "Hamstrings, glutes, posterior chain.";
   }
 }
 
@@ -1493,112 +1021,6 @@ function getFoundationIconClassName(movementPattern: CompoundCapableMovementPatt
   }
 }
 
-function getFoundationRowMetadata({
-  optionCount,
-  shownExerciseId,
-  status,
-}: {
-  optionCount: number;
-  shownExerciseId: string | undefined;
-  status: FoundationRowStatus;
-}): string {
-  const alternativeCount = shownExerciseId ? Math.max(optionCount - 1, 0) : optionCount;
-  const prefix = status === "suggested" ? "Suggested" : "Main";
-  const optionLabel = alternativeCount === 1 ? "option" : "options";
-
-  return `${prefix} · ${alternativeCount} ${optionLabel}`;
-}
-
-function getMainCompoundOptions(
-  movementPattern: CompoundCapableMovementPatternId,
-): ReadonlyArray<ExerciseCatalogExercise & { role: "compound" }> {
-  return getExerciseCatalogExercisesByMovementPattern(movementPattern).filter((exercise) =>
-    isMainCompoundEligible(exercise),
-  );
-}
-
-function getPickerOptionMetadata({
-  currentExerciseId,
-  exerciseId,
-  suggestedExerciseId,
-}: {
-  currentExerciseId: string | undefined;
-  exerciseId: string;
-  suggestedExerciseId: string | undefined;
-}): string {
-  if (currentExerciseId === exerciseId) {
-    return "Current selection";
-  }
-
-  if (suggestedExerciseId === exerciseId) {
-    return "Suggested, not confirmed";
-  }
-
-  return "Available main compound";
-}
-
-function getPickerOptionFilterIds(
-  exercise: ExerciseCatalogExercise,
-): ReadonlyArray<MainCompoundPickerFilterId> {
-  const normalizedName = exercise.name.toLowerCase();
-  const normalizedId = exercise.id.toLowerCase();
-  const filterIds = new Set<MainCompoundPickerFilterId>();
-
-  if (/\bbarbell\b/.test(normalizedName) || normalizedId.includes("barbell")) {
-    filterIds.add("barbell");
-  }
-
-  if (/\bdumbbell\b/.test(normalizedName) || normalizedId.includes("dumbbell")) {
-    filterIds.add("dumbbells");
-  }
-
-  if (normalizedName.includes("machine") || normalizedId.includes("machine")) {
-    filterIds.add("machine");
-  }
-
-  if (
-    normalizedId.includes("pull-up") ||
-    normalizedId.includes("push-up") ||
-    normalizedId.includes("chin-up") ||
-    normalizedId.includes("inverted-rows") ||
-    normalizedId.includes("dips")
-  ) {
-    filterIds.add("bodyweight");
-  }
-
-  if (
-    normalizedId.includes("machine") ||
-    normalizedId.includes("assisted") ||
-    normalizedId.includes("leg-press") ||
-    normalizedId.includes("lat-pull") ||
-    normalizedId.includes("pulldown") ||
-    normalizedId.includes("cable")
-  ) {
-    filterIds.add("beginner_friendly");
-  }
-
-  if (
-    normalizedId.includes("machine") ||
-    normalizedId.includes("neutral") ||
-    normalizedId.includes("assisted") ||
-    normalizedId.includes("chest-supported") ||
-    normalizedId.includes("seated")
-  ) {
-    filterIds.add("joint_friendly");
-  }
-
-  return Array.from(filterIds);
-}
-
-function getPickerOptionFilterTags(exercise: ExerciseCatalogExercise): ReadonlyArray<string> {
-  const filterIds = getPickerOptionFilterIds(exercise);
-  const tags = mainCompoundPickerFilters
-    .filter((filter) => filter.id !== "all" && filterIds.includes(filter.id))
-    .map((filter) => filter.label);
-
-  return tags.length > 0 ? tags.slice(0, 2) : ["Compound"];
-}
-
 function getAccessoryFilterLabel<TFilterId extends string>(
   filters: ReadonlyArray<{ id: TFilterId; label: string }>,
   filterId: TFilterId,
@@ -1613,48 +1035,6 @@ function toTitleCase(value: string): string {
     .join(" ");
 }
 
-function getSuggestedFoundationSummary({
-  requiredPatternCount,
-  suggestedRequiredPatternCount,
-}: {
-  requiredPatternCount: number;
-  suggestedRequiredPatternCount: number;
-}): string {
-  if (suggestedRequiredPatternCount === requiredPatternCount) {
-    return `${requiredPatternCount} suggested main compounds`;
-  }
-
-  return `${suggestedRequiredPatternCount} of ${requiredPatternCount} suggested main compounds`;
-}
-
-function getConfirmedCoverageSummary({
-  coveredRequiredPatternCount,
-  requiredPatternCount,
-}: {
-  coveredRequiredPatternCount: number;
-  requiredPatternCount: number;
-}): string {
-  const missingRequiredCount = requiredPatternCount - coveredRequiredPatternCount;
-
-  if (missingRequiredCount === 0) {
-    return `${coveredRequiredPatternCount} of ${requiredPatternCount} main compounds selected`;
-  }
-
-  return `${coveredRequiredPatternCount} of ${requiredPatternCount} main compounds selected, ${missingRequiredCount} missing`;
-}
-
-function getNextMissingRequiredPattern(
-  rows: ReadonlyArray<{
-    isCovered: boolean;
-    movementPattern: CompoundCapableMovementPatternId;
-    requirement: "recommended" | "required";
-  }>,
-): CompoundCapableMovementPatternId | null {
-  return (
-    rows.find((row) => row.requirement === "required" && !row.isCovered)?.movementPattern ?? null
-  );
-}
-
 function getBlockedGenerateActionLabel(
   movementPattern: CompoundCapableMovementPatternId | null,
 ): string {
@@ -1663,56 +1043,4 @@ function getBlockedGenerateActionLabel(
   }
 
   return `Choose ${formatMovementPatternLabel(movementPattern).toLowerCase()} exercise`;
-}
-
-function getMissingMovementPatternCopy({
-  bucket,
-  movementPattern,
-}: {
-  bucket: string;
-  movementPattern: CompoundCapableMovementPatternId;
-}): string {
-  return `${bucket} coverage missing: ${formatMovementPatternLabel(movementPattern)}.`;
-}
-
-function getRecommendedGuidance(
-  rows: ReadonlyArray<{
-    isCovered: boolean;
-    movementPattern: CompoundCapableMovementPatternId;
-    requirement: "recommended" | "required";
-  }>,
-): string | null {
-  const nextMissingRequiredPattern = getNextMissingRequiredPattern(rows);
-
-  if (nextMissingRequiredPattern !== null) {
-    return getMissingRequiredGuidance(nextMissingRequiredPattern);
-  }
-
-  const missingRecommendedVerticalPush = rows.find(
-    (row) =>
-      row.movementPattern === "vertical_push" &&
-      row.requirement === "recommended" &&
-      !row.isCovered,
-  );
-
-  return missingRecommendedVerticalPush ? "Add Vertical push." : null;
-}
-
-function getMissingRequiredGuidance(
-  movementPattern: CompoundCapableMovementPatternId,
-): string | null {
-  switch (movementPattern) {
-    case "horizontal_push":
-      return "Choose horizontal push next.";
-    case "horizontal_pull":
-      return "Choose horizontal pull next.";
-    case "vertical_pull":
-      return "Choose vertical pull next.";
-    case "quad_dominant":
-      return "Choose quad-dominant lift next.";
-    case "hip_hamstring_dominant":
-      return "Choose hip / hamstring lift next.";
-    case "vertical_push":
-      return "Choose vertical push next.";
-  }
 }

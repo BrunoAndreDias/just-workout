@@ -1,7 +1,9 @@
+import {
+  type ExerciseFoundationReadyBlueprint,
+  getExerciseFoundationReadModel,
+} from "./exercise-foundation-read-model";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
-import type { PlanBlueprint } from "./plan-blueprint";
 import { ExerciseFoundationStep } from "./steps/exercise-foundation-step";
-import type { TrainingSplitId } from "./training-split";
 import type { TrainingVolumeConfiguration } from "./training-volume";
 import type { MainCompoundSelection } from "./weekly-movement-coverage";
 
@@ -10,7 +12,7 @@ export const exerciseFoundationSetupCopy = {
   heading: "Exercises needs setup",
 } as const;
 
-export type ExerciseFoundationReadyBlueprint = PlanBlueprint & { split: TrainingSplitId };
+export type { ExerciseFoundationReadyBlueprint } from "./exercise-foundation-read-model";
 
 export type MainCompoundSelectionChange = {
   exerciseId: string;
@@ -37,10 +39,13 @@ export function PlanBuilderExerciseFoundationStep({
   onRotationPoolChange: (rotationPool: MainCompoundRotationPoolChange) => Promise<unknown>;
   weeklyRepTargets: TrainingVolumeConfiguration["weeklyRepTargets"];
 }) {
+  const readModel = getExerciseFoundationReadModel({
+    blueprint,
+    weeklyRepTargets,
+  });
+
   return (
     <ExerciseFoundationStep
-      mainCompoundSelections={blueprint.mainCompoundSelections}
-      mainCompoundRotationPools={blueprint.mainCompoundRotationPools}
       onBackToVolume={onBackToVolume}
       onContinueToGenerate={onContinueToGenerate}
       onMainCompoundSelectionChange={async (selection) => {
@@ -49,9 +54,7 @@ export function PlanBuilderExerciseFoundationStep({
       onRotationPoolChange={async (rotationPool) => {
         await onRotationPoolChange(rotationPool);
       }}
-      split={blueprint.split}
-      trainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
-      weeklyRepTargets={weeklyRepTargets}
+      readModel={readModel}
     />
   );
 }
