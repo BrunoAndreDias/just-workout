@@ -37,6 +37,11 @@ import {
   type WeeklyMovementCoverageRow,
 } from "../weekly-movement-coverage";
 import "./exercise-foundation-step.css";
+import "./main-compound-drawer.css";
+import "./isolation-exercises-summary.css";
+import "./rotation-pool-inline-preview.css";
+import "./exercise-foundation-page-overrides.css";
+import "./exercise-foundation-responsive.css";
 
 type ExerciseFoundationStepProps = {
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;

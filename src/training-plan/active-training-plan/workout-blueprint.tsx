@@ -7,6 +7,7 @@ import {
   formatMovementPattern,
   formatTargetMuscles,
 } from "./active-training-plan-read-model";
+import "./workout-blueprint.css";
 
 export function WorkoutBlueprint({ workoutTemplate }: { workoutTemplate: WorkoutTemplate }) {
   const supersetGroups = workoutTemplate.supersetGroups.filter(

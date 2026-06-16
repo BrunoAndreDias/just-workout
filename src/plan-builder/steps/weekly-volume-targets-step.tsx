@@ -25,6 +25,8 @@ import {
   type WeeklyVolumeTargetDisplayRow,
 } from "./weekly-volume-target-rows";
 import "./weekly-volume-targets-step.css";
+import "./weekly-volume-targets-responsive.css";
+import "./weekly-volume-targets-page-overrides.css";
 
 const volumePresetDescriptions = {
   balanced: "Middle of the backed weekly rep range.",

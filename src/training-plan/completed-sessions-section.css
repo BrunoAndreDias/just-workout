@@ -1,0 +1,233 @@
+.training-history-volume-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--training-history-ink-soft);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.training-history-volume-table th,
+.training-history-volume-table td {
+  border-bottom: 1px solid var(--training-history-border);
+  padding: 0.75rem 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.training-history-volume-table th {
+  color: var(--training-history-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.training-history-volume-table th:last-child,
+.training-history-volume-table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.training-history-volume-table td:last-child {
+  color: var(--training-history-accent-ink);
+  font-weight: 900;
+}
+
+.training-history-volume-table tbody tr:last-child td {
+  border-bottom-color: var(--training-history-border-heavy);
+}
+
+.training-history-list__items {
+  display: grid;
+  gap: 0;
+}
+
+.training-history-list__header,
+.training-history-session-row__summary {
+  display: grid;
+  grid-template-columns:
+    minmax(12rem, 0.88fr) minmax(10rem, 0.76fr) minmax(8rem, 0.76fr)
+    minmax(5.5rem, 0.3fr);
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.training-history-list__header {
+  border-bottom: 1px solid var(--training-history-border);
+  padding: 0.875rem 0;
+  color: var(--training-history-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.25rem;
+}
+
+.training-history-list__header span {
+  min-width: 0;
+}
+
+.training-history-session-row {
+  background: transparent;
+}
+
+.training-history-session-row__summary {
+  appearance: none;
+  width: 100%;
+  border-bottom: 1px solid var(--training-history-border);
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  padding: 0.875rem 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.training-history-session-row__summary:hover {
+  border-bottom-color: var(--training-history-border-heavy);
+  background: var(--training-history-accent-tint-soft);
+}
+
+.training-history-session-row__summary.training-history-session-row__summary--expanded {
+  border-bottom-color: var(--training-history-accent-border-strong);
+  background: var(--training-history-accent-tint);
+}
+
+.training-history-session-row__summary:focus-visible {
+  outline: 2px solid var(--training-history-focus-ring);
+  outline-offset: 2px;
+}
+
+.training-history-session-row__identity {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.training-history-session-row__identity strong {
+  color: var(--training-history-ink);
+  font-size: 1rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.training-history-session-row__date {
+  color: var(--training-history-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.training-history-session-row__metric {
+  color: var(--training-history-ink);
+  font-size: 0.875rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.training-history-session-row__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  justify-self: end;
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--training-history-accent-border-strong);
+  padding: 0 0 0.125rem;
+  color: var(--training-history-accent-ink);
+  font-size: 0.8125rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.training-history-session-row__chevron {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.25;
+  transition: transform 180ms ease;
+}
+
+.training-history-session-row__chevron--expanded {
+  transform: rotate(180deg);
+}
+
+.training-history-session-row__summary:hover .training-history-session-row__action {
+  border-color: var(--training-history-accent-ink);
+  color: var(--training-history-accent-ink-strong);
+}
+
+.training-history-session-details {
+  margin-top: 0.625rem;
+  padding-top: 0;
+}
+
+.training-history-session-details .training-history-volume-table {
+  min-width: 0;
+}
+
+.training-history-session-details .training-history-volume-table tbody tr:last-child td {
+  border-bottom-color: transparent;
+}
+
+.training-history-session-details-cards {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-history-session-detail-card {
+  border-top: 1px solid var(--training-history-border-medium);
+  padding: 0.95rem 0;
+  background: transparent;
+}
+
+.training-history-session-detail-card:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.training-history-session-detail-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.training-history-session-detail-card__metrics > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+@media (max-width: 720px) {
+  .training-history-list__header {
+    display: none;
+  }
+
+  .training-history-session-row__summary {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 0.875rem;
+  }
+
+  .training-history-session-row__metric {
+    display: grid;
+    gap: 0.125rem;
+    white-space: normal;
+  }
+
+  .training-history-session-row__metric::before {
+    content: attr(data-label);
+    color: var(--training-history-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .training-history-session-row__action {
+    justify-self: start;
+  }
+}

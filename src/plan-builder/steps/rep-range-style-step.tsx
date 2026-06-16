@@ -11,6 +11,8 @@ import {
 } from "../components/plan-builder-option-ui";
 import { type RepRangeStyle, type RepRangeStyleId, repRangeStyles } from "../plan-blueprint";
 import "./rep-range-style-step.css";
+import "./rep-range-style-responsive.css";
+import "./rep-range-style-page-overrides.css";
 
 type RepRangeStyleStepProps = {
   onBackToTrainingSchedule: () => void;

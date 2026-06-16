@@ -1,0 +1,51 @@
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr) 15.5rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1439px) and (min-height: 720px) {
+  .plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page--exercises {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plan-builder-page.plan-builder-page--exercises .plan-builder-right-rail {
+    display: none;
+  }
+}
+
+.plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
+  padding-bottom: 15rem;
+}
+
+@media (min-width: 640px) {
+  .plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
+    padding-bottom: 10rem;
+  }
+}
+
+/* Mobile exercise builder: keep the task visible, not the builder chrome. */
+@media (max-width: 639px) {
+  .plan-builder-page.plan-builder-page--exercises {
+    --jw-body-size: 0.875rem;
+    --jw-body-line-height: 1.25rem;
+    --jw-builder-body-size: 0.875rem;
+    --jw-builder-body-line-height: 1.3125rem;
+    --jw-builder-content-gap: 0.625rem;
+  }
+
+  .plan-builder-page.plan-builder-page--exercises .plan-builder-workspace-card {
+    padding: 1rem 0.875rem 8.5rem;
+  }
+
+  .plan-builder-page.plan-builder-page--exercises .step-actions {
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+  }
+}

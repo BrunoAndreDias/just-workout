@@ -1,0 +1,391 @@
+.training-plan-overview {
+  display: grid;
+  gap: 2.125rem;
+}
+
+.training-plan-overview-card {
+  min-width: 0;
+  border-top: 1px solid rgba(28, 25, 23, 0.11);
+  background: transparent;
+  padding: 1.75rem 0 0;
+}
+
+.training-plan-overview-card__title {
+  margin: 0;
+  color: #11181b;
+  font-family: var(--jw-font-heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.375rem;
+}
+
+.training-plan-overview-card__support {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: #3f474b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
+.training-plan-overview-card__support svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  color: #007780;
+  stroke-width: 2;
+}
+
+.training-plan-overview-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  align-items: center;
+  margin-top: 1.625rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.11);
+  padding-top: 0.875rem;
+}
+
+.training-plan-overview__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.movement-coverage-table-wrap {
+  overflow-x: clip;
+  margin-top: 1.375rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.movement-coverage-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: #293236;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.movement-coverage-table th,
+.movement-coverage-table td {
+  border-bottom: 1px solid rgba(28, 25, 23, 0.09);
+  padding: 0.625rem 0.375rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.movement-coverage-table thead th {
+  color: #11181b;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.movement-coverage-table thead th:first-child,
+.movement-coverage-table tbody th {
+  text-align: left;
+  width: 34%;
+}
+
+.movement-coverage-table tbody th {
+  color: #3f474b;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.movement-coverage-table tbody tr:last-child th,
+.movement-coverage-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.movement-coverage-table__dot,
+.movement-coverage-table__empty {
+  display: inline-flex;
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border-radius: 999px;
+}
+
+.movement-coverage-table__dot {
+  background: #007780;
+}
+
+.movement-coverage-table__empty {
+  border: 1px solid rgba(28, 25, 23, 0.14);
+}
+
+.muscle-emphasis-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 1rem;
+}
+
+.muscle-emphasis-panel {
+  display: grid;
+  gap: 0.625rem;
+  align-items: start;
+  min-width: 0;
+  background: transparent;
+  padding: 0 1.75rem;
+}
+
+.muscle-emphasis-panel:first-child {
+  padding-left: 0;
+}
+
+.muscle-emphasis-panel + .muscle-emphasis-panel {
+  border-left: 1px solid rgba(28, 25, 23, 0.12);
+}
+
+.muscle-emphasis-panel:last-child {
+  padding-right: 0;
+}
+
+.muscle-emphasis-panel__content {
+  min-width: 0;
+}
+
+.muscle-emphasis-panel__header {
+  display: block;
+}
+
+.muscle-emphasis-panel__day {
+  margin: 0;
+  color: #007780;
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1rem;
+}
+
+.muscle-emphasis-panel__content h3 {
+  margin: 0.125rem 0 0;
+  color: #11181b;
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.375rem;
+  overflow-wrap: anywhere;
+}
+
+.emphasis-chip-group {
+  margin-top: 0.875rem;
+}
+
+.emphasis-chip-group p {
+  margin: 0;
+  color: #596267;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1rem;
+}
+
+.emphasis-chip-group__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+  margin-top: 0.3125rem;
+}
+
+.emphasis-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.375rem;
+  border-radius: 999px;
+  padding: 0 0.4375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.emphasis-chip--primary {
+  color: #ffffff;
+  background: #007780;
+}
+
+.emphasis-chip--secondary {
+  color: #3f474b;
+  background: rgba(28, 25, 23, 0.08);
+}
+
+.muscle-emphasis-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 0;
+  color: #596267;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+}
+
+.muscle-emphasis-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.muscle-emphasis-legend__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+.muscle-emphasis-legend__dot--primary {
+  background: #007780;
+}
+
+.muscle-emphasis-legend__dot--secondary {
+  background: rgba(28, 25, 23, 0.18);
+}
+
+.active-training-plan-summary {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  background: transparent;
+  padding: 0;
+}
+
+.active-training-plan-summary__title {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #11181b;
+  font-family: var(--jw-font-heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.4rem;
+}
+
+.active-training-plan-summary__rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
+  grid-auto-flow: column;
+  column-gap: clamp(3rem, 8vw, 5.5rem);
+  row-gap: 0;
+  margin: 0;
+  padding-top: 0.25rem;
+}
+
+.active-training-plan-summary__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, auto);
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+  border-top: 1px solid rgba(28, 25, 23, 0.12);
+  padding: 0.875rem 0;
+}
+
+.active-training-plan-summary__row dt {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.625rem;
+  color: #43565d;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.125rem;
+}
+
+.active-training-plan-summary__row dd {
+  margin: 0;
+  color: #11181b;
+  font-size: 0.875rem;
+  font-weight: 750;
+  line-height: 1.25rem;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.active-training-plan-summary__icon {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  color: #00636a;
+  background: transparent;
+}
+
+.active-training-plan-summary__icon svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+@media (max-width: 920px) {
+  .active-training-plan-summary {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .active-training-plan-summary__rows {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-flow: row;
+  }
+
+  .training-plan-overview__main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .muscle-emphasis-list,
+  .compare-snapshot-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .muscle-emphasis-panel,
+  .compare-snapshot-column {
+    border-top: 1px solid rgba(28, 25, 23, 0.1);
+    padding: 1rem 0 0;
+  }
+
+  .muscle-emphasis-panel:first-child,
+  .compare-snapshot-column:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .muscle-emphasis-panel + .muscle-emphasis-panel,
+  .compare-snapshot-column + .compare-snapshot-column {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .training-plan-overview-card {
+    padding-top: 1rem;
+  }
+
+  .movement-coverage-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 0.75rem;
+  }
+
+  .movement-coverage-table th,
+  .movement-coverage-table td {
+    padding: 0.625rem 0.25rem;
+  }
+
+  .movement-coverage-table thead th:first-child,
+  .movement-coverage-table tbody th {
+    width: 52%;
+  }
+
+  .movement-coverage-table thead th:not(:first-child) {
+    white-space: normal;
+  }
+}

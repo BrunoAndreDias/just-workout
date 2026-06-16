@@ -1,0 +1,393 @@
+.plan-builder-page--exercises .step-panel {
+  margin-bottom: 0;
+}
+
+@media (min-width: 1024px) and (min-height: 700px) {
+  .plan-builder-page--exercises .exercise-accessories-summary {
+    margin-bottom: 5.75rem;
+  }
+}
+
+/* Compact anti-card pass for Exercise Foundation. */
+.plan-builder-page--exercises .exercise-foundation-workspace,
+.plan-builder-page--exercises .exercise-foundation-main {
+  gap: 0.75rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-status,
+.plan-builder-page--exercises .exercise-foundation-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.plan-builder-page--exercises .exercise-foundation-status {
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+}
+
+.plan-builder-page--exercises .exercise-foundation-status__icon {
+  width: 1.875rem;
+  height: 1.875rem;
+  box-shadow: none;
+}
+
+.plan-builder-page--exercises .exercise-foundation-status__title {
+  font-size: 0.9375rem;
+  line-height: 1.15rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-status__body {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-card {
+  overflow: visible;
+  border: 0;
+}
+
+.plan-builder-page--exercises .exercise-foundation-row {
+  padding: 0.7rem 0.8rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-row--missing {
+  background: rgba(255, 248, 238, 0.78);
+}
+
+.plan-builder-page--exercises .exercise-foundation-row__pattern {
+  grid-template-columns: 1.875rem minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-row__icon,
+.plan-builder-page--exercises .main-compound-drawer__option-icon {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 0.375rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-row__heading h4,
+.plan-builder-page--exercises .exercise-foundation-row__selection p {
+  font-size: 0.8125rem;
+  line-height: 1.05rem;
+}
+
+.plan-builder-page--exercises .exercise-foundation-row__helper,
+.plan-builder-page--exercises .exercise-foundation-row__selection span,
+.plan-builder-page--exercises .exercise-foundation-row__status,
+.plan-builder-page--exercises .rotation-pool-inline-preview__status {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--exercises .rotation-pool-inline-preview {
+  margin-top: 0.55rem;
+  background-color: transparent;
+}
+
+/* Final shared polish: keep Exercises in the same palette as the rest of Plan Builder. */
+.plan-builder-page--exercises .step-panel,
+.plan-builder-page--exercises .exercise-foundation-row,
+.plan-builder-page--exercises .main-compound-drawer__option,
+.plan-builder-page--exercises .accessory-selector {
+  border-color: var(--jw-step-border);
+  background-color: var(--jw-step-surface-soft);
+  color: var(--jw-step-ink);
+}
+
+.plan-builder-page--exercises .main-compound-drawer__option:hover,
+.plan-builder-page--exercises .accessory-selector:hover {
+  border-color: rgba(0, 119, 128, 0.3);
+  background-color: var(--jw-step-surface);
+}
+
+.plan-builder-page--exercises .main-compound-drawer__option.is-selected {
+  border-color: var(--jw-step-selected-border);
+  background-color: var(--jw-step-selected-bg);
+  color: var(--jw-step-selected-ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.12);
+}
+
+.plan-builder-page--exercises
+  .main-compound-drawer__option.is-selected
+  .main-compound-drawer__option-state {
+  border-color: var(--jw-step-selected-strong);
+  background-color: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--exercises .main-compound-status-pill,
+.plan-builder-page--exercises .accessory-selector__count {
+  background-color: rgba(0, 119, 128, 0.09);
+  color: var(--jw-step-selected-ink);
+}
+
+.plan-builder-page--exercises .exercise-foundation-row__description,
+.plan-builder-page--exercises .main-compound-drawer__option-description {
+  color: var(--jw-step-copy);
+}
+
+.plan-builder-page--exercises
+  .main-compound-drawer__options-fieldset
+  .main-compound-drawer__option {
+  border-color: transparent;
+  border-bottom-color: var(--jw-step-border);
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.plan-builder-page--exercises
+  .main-compound-drawer__options-fieldset
+  .main-compound-drawer__option:hover {
+  border-color: transparent;
+  border-bottom-color: rgba(0, 119, 128, 0.22);
+  background-color: rgba(0, 119, 128, 0.04);
+}
+
+.plan-builder-page--exercises
+  .main-compound-drawer__options-fieldset
+  .main-compound-drawer__option.is-selected {
+  border-color: rgba(0, 119, 128, 0.34);
+  background-color: var(--jw-step-selected-bg);
+}
+
+/* Phone layout: fewer repeated labels, flatter rows, larger touch targets. */
+@media (max-width: 639px) {
+  .plan-builder-page--exercises .exercise-foundation-workspace,
+  .plan-builder-page--exercises .exercise-foundation-main {
+    gap: 0.5rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-status {
+    display: block;
+    padding: 0.125rem 0 0.25rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-status__icon {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-status__title,
+  .plan-builder-page--exercises .exercise-foundation-status__body {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-status__body {
+    margin-top: 0.125rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-tabbar {
+    justify-content: flex-start;
+    min-height: 0;
+    margin-top: -0.125rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-tabbar__active {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-tabbar__locked {
+    min-height: 2rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.875rem;
+    line-height: 1.125rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-list {
+    gap: 0;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row {
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.75rem 0;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row:first-child {
+    border-top: 0;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row--missing {
+    margin: 0.25rem 0;
+    border: 1px solid var(--jw-step-warning-border);
+    border-radius: 0.5rem;
+    background: var(--jw-step-warning-bg);
+    padding: 0.75rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__grid {
+    grid-template-areas:
+      "pattern actions"
+      "selection selection";
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.375rem 0.625rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__pattern {
+    grid-area: pattern;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__icon,
+  .plan-builder-page--exercises .exercise-foundation-row__helper,
+  .plan-builder-page--exercises .exercise-foundation-row__heading span,
+  .plan-builder-page--exercises .exercise-foundation-row__selection span,
+  .plan-builder-page--exercises .exercise-foundation-row__status {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__heading h4,
+  .plan-builder-page--exercises .exercise-foundation-row__selection p {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__selection {
+    grid-area: selection;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__selection p {
+    white-space: normal;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__actions {
+    grid-area: actions;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.375rem;
+  }
+
+  .plan-builder-page--exercises .exercise-foundation-row__actions button,
+  .plan-builder-page--exercises .rotation-pool-inline-preview button,
+  .plan-builder-page--exercises
+    .exercise-accessories-summary
+    button:not(.exercise-accessories-selected__remove) {
+    min-height: 2.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--exercises .rotation-pool-inline-preview {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.625rem;
+    margin: 0.5rem 0 0;
+  }
+
+  .plan-builder-page--exercises .rotation-pool-inline-preview__header {
+    min-height: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .plan-builder-page--exercises .rotation-pool-inline-preview__label {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .rotation-pool-inline-preview__status {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-summary {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-summary__header {
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-summary__header h3,
+  .plan-builder-page--exercises .exercise-accessories-summary__header p {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-summary__header h3 + p,
+  .plan-builder-page--exercises .exercise-accessories-summary__empty {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-selected__item {
+    min-height: 2.75rem;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-selected__name,
+  .plan-builder-page--exercises .exercise-accessories-selected__meta {
+    font-size: 0.875rem;
+    line-height: 1.125rem;
+  }
+
+  .plan-builder-page--exercises .exercise-accessories-selected__remove {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__header {
+    padding: 0.875rem 0.875rem 0.75rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__title {
+    font-size: 1.125rem;
+    line-height: 1.375rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__helper,
+  .plan-builder-page--exercises .main-compound-drawer__footer,
+  .plan-builder-page--exercises .main-compound-drawer__option-tags {
+    display: none;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__controls {
+    gap: 0.625rem;
+    padding: 0.75rem 0.875rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__search {
+    min-height: 2.75rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.125rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__filter {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    font-size: 0.875rem;
+    line-height: 1.125rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__options,
+  .plan-builder-page--exercises
+    .main-compound-drawer__options-fieldset.main-compound-drawer__options,
+  .plan-builder-page--exercises .optional-accessories-drawer__options {
+    padding: 0.5rem 0.5rem 1rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__option,
+  .plan-builder-page--exercises
+    .main-compound-drawer__options-fieldset
+    .main-compound-drawer__option {
+    min-height: 3.5rem;
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.625rem;
+  }
+
+  .plan-builder-page--exercises .main-compound-drawer__option-name,
+  .plan-builder-page--exercises .main-compound-drawer__option-meta {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}

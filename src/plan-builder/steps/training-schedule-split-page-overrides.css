@@ -1,0 +1,522 @@
+.plan-builder-page--frequency .training-schedule-split__section-title,
+.plan-builder-page--frequency .training-schedule-split__layout > h3 {
+  border-bottom: 0;
+  padding-bottom: 0;
+  font-size: 1.15rem;
+  line-height: 1.35rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__section-title::after {
+  display: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split {
+  margin-top: 1.35rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  margin-top: 0;
+  border-color: rgba(28, 25, 23, 0.13);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.36);
+  padding: 1rem 1rem 0.95rem;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:hover {
+  border-color: rgba(0, 119, 128, 0.46);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: #007780;
+  background: rgba(248, 252, 252, 0.68);
+  box-shadow: 0 0 0 1px rgba(0, 119, 128, 0.04);
+}
+
+.plan-builder-page--frequency .training-schedule-split__title-row {
+  padding-right: 1.85rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__badge {
+  min-height: 1.35rem;
+  background: rgba(0, 119, 128, 0.09);
+  padding: 0 0.5rem;
+  color: #176870;
+  font-size: 0.75rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split h3 {
+  font-size: 1rem;
+  line-height: 1.25rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading p {
+  margin-top: 0.62rem;
+  overflow: visible;
+  color: #536575;
+  font-size: 0.9rem;
+  line-height: 1.28rem;
+  white-space: normal;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits {
+  gap: 0.55rem;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.1);
+  padding-top: 0.85rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits li {
+  gap: 0.55rem;
+  color: #183844;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits li::before {
+  display: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits svg {
+  flex: 0 0 auto;
+  color: #287983;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout {
+  margin-top: 1.35rem;
+  border-left: 0;
+  padding-left: 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  min-height: 5.25rem;
+  width: 100%;
+  grid-template-columns: 1fr;
+  gap: 0.32rem;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 0.65rem 0.45rem;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__layout-day:not(.training-schedule-split__layout-day--rest) {
+  border-color: rgba(0, 119, 128, 0.32);
+  background: rgba(248, 252, 252, 0.62);
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout svg {
+  display: block;
+  color: #287983;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest svg,
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest span {
+  color: #73706b;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout strong {
+  color: #53504b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout span {
+  color: #007780;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.05rem;
+  text-align: center;
+}
+
+@media (min-width: 720px) {
+  .training-schedule-split__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .training-schedule-split__cards .training-schedule-split__card:only-child {
+    max-width: 24rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout ol {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1799px) {
+  .plan-builder-page--frequency .training-schedule-split {
+    margin-top: 1rem;
+  }
+
+  .training-schedule-split__cards {
+    gap: 0.7rem;
+    margin-top: 0.75rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__card {
+    padding: 0.78rem 0.82rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split h3 {
+    font-size: 0.94rem;
+    line-height: 1.14rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__heading p {
+    margin-top: 0.42rem;
+    font-size: 0.78rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits {
+    gap: 0.38rem;
+    margin-top: 0.65rem;
+    padding-top: 0.6rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits li {
+    font-size: 0.75rem;
+    line-height: 0.9rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout {
+    margin-top: 0.9rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout ol {
+    gap: 0.42rem;
+    margin-top: 0.58rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout li {
+    min-height: 4.35rem;
+    padding: 0.48rem 0.26rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .plan-builder-page--frequency .training-schedule-split {
+    margin-top: 1.65rem;
+  }
+
+  .training-schedule-split__cards {
+    gap: 1rem;
+    margin-top: 1.35rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__card {
+    min-height: 17rem;
+    padding: 1.25rem 1.35rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout {
+    margin-top: 1.65rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout ol {
+    max-width: 66rem;
+    gap: 0.9rem;
+    margin-top: 1rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout li {
+    min-height: 6.35rem;
+  }
+}
+
+@media (min-width: 1800px) and (max-width: 2199px) {
+  .plan-builder-page--frequency .training-schedule-split__section-title,
+  .plan-builder-page--frequency .training-schedule-split__layout > h3 {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split {
+    margin-top: 1.15rem;
+  }
+
+  .training-schedule-split__cards {
+    gap: 0.85rem;
+    margin-top: 0.95rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__card {
+    min-height: 12.5rem;
+    padding: 1rem 1.05rem 0.9rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__heading p {
+    display: -webkit-box;
+    margin-top: 0.48rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    color: #44596b;
+    font-size: 0.84rem;
+    line-height: 1.14rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits {
+    gap: 0.42rem;
+    margin-top: 0.78rem;
+    padding-top: 0.68rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__benefits li {
+    font-size: 0.82rem;
+    line-height: 1rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout {
+    margin-top: 1.2rem;
+  }
+
+  .plan-builder-page--frequency .training-schedule-split__layout li {
+    min-height: 5.65rem;
+  }
+}
+
+.plan-builder-page--frequency .training-schedule-split {
+  margin-top: 0.875rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__cards {
+  gap: 0;
+  margin-top: 0.5rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card {
+  min-height: auto;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.75rem 0;
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:hover,
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  background: transparent;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: var(--jw-step-selected-border);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split h3 {
+  font-size: 0.875rem;
+  line-height: 1.1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading p,
+.plan-builder-page--frequency .training-schedule-split__benefits li,
+.plan-builder-page--frequency .training-schedule-split__layout span {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout {
+  margin-top: 0.875rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout ol {
+  gap: 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  min-height: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.55rem 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split__badge,
+.plan-builder-page--frequency .training-schedule-split__badge--selected {
+  background-color: rgba(0, 119, 128, 0.09);
+  color: var(--jw-step-selected-ink);
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest,
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest svg,
+.plan-builder-page--frequency .training-schedule-split__layout-day--rest span {
+  color: var(--jw-step-rest);
+}
+
+.plan-builder-page--frequency .training-schedule-split {
+  margin-top: 1rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__cards {
+  gap: var(--jw-option-card-gap);
+  margin-top: 0.65rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card {
+  min-height: var(--jw-option-card-min-height);
+  border: 1px solid var(--jw-option-card-border);
+  border-radius: var(--jw-option-card-radius);
+  background: var(--jw-option-card-bg);
+  padding: var(--jw-option-card-padding);
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:hover {
+  border-color: var(--jw-option-card-hover-border);
+  background: var(--jw-option-card-hover-bg);
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:focus-within {
+  outline: 0;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card:has(input:focus-visible) {
+  outline: 2px solid var(--jw-option-card-focus);
+  outline-offset: 2px;
+}
+
+.plan-builder-page--frequency .training-schedule-split__card--selected {
+  border-color: var(--jw-step-selected-border);
+  background: var(--jw-option-card-selected-bg);
+  color: var(--jw-step-selected-ink);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-schedule-split__selected-check {
+  top: 0.82rem;
+  right: 0.82rem;
+  width: 1.34rem;
+  height: 1.34rem;
+  border: 1px solid rgba(28, 25, 23, 0.18);
+  background: transparent;
+  color: transparent;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__card--selected
+  .training-schedule-split__selected-check {
+  border-color: var(--jw-step-selected-strong);
+  background: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--frequency .training-schedule-split__title-row {
+  padding-right: 1.9rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading h3 {
+  color: var(--jw-step-ink);
+  font-size: var(--jw-option-card-title-size);
+  font-weight: var(--jw-option-card-title-weight);
+  line-height: var(--jw-option-card-title-line-height);
+}
+
+.plan-builder-page--frequency .training-schedule-split__heading p {
+  display: block;
+  margin-top: var(--jw-option-card-copy-margin-top);
+  overflow: visible;
+  color: var(--jw-step-copy);
+  font-size: var(--jw-option-card-copy-size);
+  font-weight: var(--jw-option-card-copy-weight);
+  line-height: var(--jw-option-card-copy-line-height);
+  -webkit-line-clamp: initial;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits {
+  gap: 0.4rem;
+  margin-top: 0.68rem;
+  border-top: 1px solid var(--jw-option-card-detail-border);
+  padding-top: 0.58rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits li {
+  color: var(--jw-step-selected-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 0.98rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__benefits svg {
+  color: var(--jw-step-selected-strong);
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__benefits:not(.training-schedule-split__benefits--selected)
+  li {
+  color: var(--jw-step-muted);
+  font-weight: 600;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__benefits:not(.training-schedule-split__benefits--selected)
+  svg {
+  color: rgba(83, 104, 115, 0.72);
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__card:hover
+  .training-schedule-split__select-affordance,
+.plan-builder-page--frequency
+  .training-schedule-split__card:has(input:focus-visible)
+  .training-schedule-split__select-affordance {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout {
+  margin-top: 0.95rem;
+  border-top: 1px solid rgba(0, 119, 128, 0.16);
+  padding-top: 0.78rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout ol {
+  gap: 0.42rem;
+  margin-top: 0.58rem;
+}
+
+.plan-builder-page--frequency .training-schedule-split__layout li {
+  min-height: 3.9rem;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  border-radius: 0.45rem;
+  background: rgba(255, 253, 250, 0.4);
+  padding: 0.46rem 0.28rem;
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency
+  .training-schedule-split__layout-day:not(.training-schedule-split__layout-day--rest) {
+  border-color: rgba(0, 119, 128, 0.24);
+  background: rgba(242, 251, 250, 0.62);
+}
+
+.plan-builder-page.plan-builder-page--frequency .training-schedule-split__benefits {
+  border-top: 1px solid var(--jw-option-card-detail-border);
+}

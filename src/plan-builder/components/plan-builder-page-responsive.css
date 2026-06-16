@@ -1,0 +1,212 @@
+@media (min-width: 1280px) {
+  .plan-builder-page {
+    min-height: 100dvh;
+  }
+
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  body:has(.plan-builder-page) {
+    overflow-x: hidden;
+  }
+
+  .plan-builder-page {
+    display: grid;
+    max-width: 100%;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .plan-builder-workspace-card {
+    min-height: 100dvh;
+    padding-top: 1.65rem;
+    padding-right: 2rem;
+    padding-bottom: 1.25rem;
+    padding-left: 2rem;
+  }
+
+  .plan-builder-right-rail {
+    display: grid;
+    gap: 1rem;
+    min-height: calc(100dvh - 2rem);
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.875rem;
+    background: rgba(255, 253, 250, 0.55);
+    align-content: start;
+  }
+
+  .plan-builder-step-content {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-right-rail {
+    height: auto;
+    min-height: auto;
+    align-self: center;
+    align-content: start;
+    gap: 0.75rem;
+    overflow: visible;
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-right-rail {
+    height: auto;
+    min-height: auto;
+    align-content: start;
+    gap: 0.75rem;
+    overflow: visible;
+    padding-top: 0.75rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-right-rail {
+    height: auto;
+    min-height: auto;
+    align-content: start;
+    gap: 0.75rem;
+    overflow: visible;
+    padding-top: 0.75rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-right-rail {
+    height: auto;
+    min-height: auto;
+    align-content: start;
+    gap: 0.75rem;
+    overflow: visible;
+    padding-top: 0.75rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page .plan-builder-workspace-card {
+    min-height: 100dvh;
+    padding: 1.25rem 1.75rem 1rem;
+  }
+
+  .plan-builder-right-rail {
+    gap: 0.875rem;
+    padding-top: 1rem;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  body:has(.plan-builder-page) {
+    overflow-x: hidden;
+  }
+
+  .plan-builder-page .plan-builder-workspace-card {
+    min-height: 100dvh;
+    padding: 1.25rem clamp(1.25rem, 1.8vw, 2rem) 1rem;
+  }
+
+  .plan-builder-page .plan-builder-workspace-card > .plan-builder-header {
+    gap: 0.25rem;
+  }
+
+  .plan-builder-eyebrow {
+    font-size: 0.6875rem;
+    line-height: 0.875rem;
+  }
+
+  .plan-builder-title {
+    font-size: clamp(2.25rem, 2vw, var(--jw-builder-page-title-size));
+    line-height: var(--jw-builder-page-title-line-height);
+  }
+
+  .plan-builder-step-content {
+    margin-top: var(--jw-builder-content-gap);
+  }
+
+  .plan-builder-right-rail {
+    position: sticky;
+    top: 1rem;
+    display: grid;
+    align-self: start;
+    align-content: start;
+    gap: 0;
+    width: var(--jw-builder-rail-width);
+    max-height: calc(100dvh - 2rem);
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.75rem;
+    background: rgba(255, 253, 250, 0.62);
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-right-rail {
+    align-self: start;
+    justify-self: auto;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    min-height: 100dvh;
+    padding: 1rem 1.5rem 1rem;
+  }
+
+  .plan-builder-page.plan-builder-page .plan-builder-title {
+    font-size: clamp(2.25rem, 2vw, 2.75rem);
+  }
+
+  .plan-builder-page.plan-builder-page .plan-builder-stepper {
+    margin-top: 0.5rem;
+  }
+
+  .plan-builder-page.plan-builder-page .plan-builder-step-content {
+    margin-top: 0.75rem;
+  }
+
+  .plan-builder-page.plan-builder-page.plan-builder-page .plan-builder-right-rail {
+    position: fixed;
+    top: 50dvh;
+    right: max(
+      1rem,
+      calc((100vw - var(--jw-sidebar-width) - var(--jw-builder-page-max-width)) / 2 + 1rem)
+    );
+    display: grid;
+    width: var(--jw-builder-rail-width);
+    max-height: calc(100dvh - 3rem);
+    min-height: 0;
+    overflow: auto;
+    transform: translateY(-50%);
+    align-self: start;
+    align-content: start;
+    justify-self: auto;
+    gap: 0;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.75rem;
+    background: rgba(255, 253, 250, 0.72);
+    padding: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-main .plan-builder-page.plan-builder-page,
+  .app-shell-main .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    min-height: calc(100dvh - 3.8125rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .plan-builder-page.plan-builder-page .plan-builder-workspace-card {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}

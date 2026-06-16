@@ -6,6 +6,7 @@ import {
   hasMovementCoverage,
 } from "./active-training-plan-read-model";
 import { MovementCoverageRows } from "./movement-coverage-table";
+import "./compare-tab.css";
 
 export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   const workoutTemplates = trainingPlan.workoutTemplates;

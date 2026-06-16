@@ -4,6 +4,7 @@ import {
   type NextTrainingBlockLoadSuggestion,
   type NextTrainingBlockPreview,
 } from "../index";
+import "./training-block-progress.css";
 
 export function TrainingBlockProgress({
   blockProgressPercent,

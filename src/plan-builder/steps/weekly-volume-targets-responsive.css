@@ -1,0 +1,63 @@
+@media (min-width: 760px) {
+  .volume-preset-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  .training-volume-panel {
+    padding: 0;
+  }
+
+  .training-volume-targets-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+  }
+
+  .training-volume-target-section h4,
+  .training-volume-section-title {
+    font-size: 0.9rem;
+    line-height: 1rem;
+  }
+
+  .training-volume-target-section p {
+    margin-top: 0.1rem;
+    font-size: 0.66rem;
+    line-height: 0.85rem;
+  }
+
+  .training-volume-actions {
+    margin-top: 0.75rem;
+  }
+
+  .volume-preset-option {
+    min-height: 11.25rem;
+    padding: 0.82rem;
+  }
+
+  .volume-preset-option__copy {
+    margin-top: 0.55rem;
+    font-size: 0.81rem;
+    line-height: 1.18rem;
+  }
+
+  .volume-preset-option .rep-range-targets {
+    padding-top: 0.65rem;
+  }
+
+  .volume-preset-option .rep-range-target {
+    padding: 0.42rem 0;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 720px) and (max-height: 820px) {
+  .training-volume-panel {
+    padding: 0;
+  }
+
+  .training-volume-targets-grid {
+    gap: 0.55rem;
+    margin-top: 0.5rem;
+  }
+}

@@ -1,0 +1,52 @@
+.training-history-shell__action {
+  margin-top: 1rem;
+  width: fit-content;
+}
+
+.training-history-page {
+  --training-history-ink: #11181b;
+  --training-history-ink-soft: #293236;
+  --training-history-muted: #58656a;
+  --training-history-muted-soft: #4f5b60;
+  --training-history-disabled: rgba(88, 101, 106, 0.7);
+  --training-history-surface: #fffdfa;
+  --training-history-border: rgba(28, 25, 23, 0.1);
+  --training-history-border-soft: rgba(28, 25, 23, 0.08);
+  --training-history-border-medium: rgba(28, 25, 23, 0.12);
+  --training-history-border-strong: rgba(28, 25, 23, 0.14);
+  --training-history-border-heavy: rgba(28, 25, 23, 0.16);
+  --training-history-track: rgba(28, 25, 23, 0.08);
+  --training-history-accent: #007780;
+  --training-history-accent-ink: #075d63;
+  --training-history-accent-ink-strong: #004f55;
+  --training-history-accent-tint: rgba(0, 119, 128, 0.08);
+  --training-history-accent-tint-soft: rgba(0, 119, 128, 0.04);
+  --training-history-accent-border-strong: rgba(0, 119, 128, 0.45);
+  --training-history-focus-ring: rgba(0, 119, 128, 0.58);
+  --training-history-positive: #0a6c73;
+  --training-history-regression: #b5791d;
+  --training-history-regression-ink: #9a6417;
+  --training-history-neutral: #8f9aa0;
+  padding: var(--jw-page-padding-y) var(--jw-page-padding-x) 3rem;
+}
+
+.training-history-page .active-training-plan-loading {
+  color: var(--training-history-muted);
+}
+
+.training-history-layout {
+  display: grid;
+  gap: 2rem;
+  align-items: start;
+  max-width: 76rem;
+}
+
+@media (max-width: 900px) {
+  .training-history-page {
+    padding: 1.5rem;
+  }
+
+  .training-history-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

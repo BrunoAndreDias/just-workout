@@ -1,0 +1,141 @@
+.training-session-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--jw-page-padding-y) var(--jw-page-padding-x) 2rem;
+  color: #142126;
+  background: #ffffff;
+}
+
+.training-session-complete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  max-width: 48rem;
+  margin-top: 0;
+  border: 1px solid rgba(0, 119, 128, 0.22);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #075d63;
+  background: rgba(0, 119, 128, 0.07);
+}
+
+.training-session-complete svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  stroke-width: 2;
+}
+
+.training-session-complete h2,
+.training-session-complete p {
+  margin: 0;
+}
+
+.training-session-complete h2 {
+  color: #063f44;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.training-session-complete p {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.training-session-work {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.training-session-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.training-session-footer > span {
+  color: #4f5c62;
+  font-size: 0.8125rem;
+  font-weight: 750;
+}
+
+.training-session-volume-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  color: #4f5c62;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.training-session-volume-inline span {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.training-session-volume-inline__value {
+  color: #075d63;
+  font-weight: 850;
+}
+
+.training-session-complete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0 0.875rem;
+  color: #ffffff;
+  background: #006f77;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.training-session-complete-button:hover:not(:disabled) {
+  background: #005f66;
+}
+
+.training-session-complete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.training-session-complete-button:focus-visible {
+  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline-offset: 3px;
+}
+
+.training-session-complete-button svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.training-session-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .training-session-page {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .training-session-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

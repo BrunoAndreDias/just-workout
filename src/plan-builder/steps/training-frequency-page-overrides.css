@@ -1,0 +1,363 @@
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 6rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: 1rem;
+    bottom: 0;
+    left: calc(var(--jw-sidebar-width) + 1rem);
+    z-index: 40;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.82), #faf6ef 42%);
+    padding: 0.75rem 0 0.875rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1799px) and (min-height: 640px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 6rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: max(
+      1rem,
+      calc(
+        (100vw - var(--jw-sidebar-width) - var(--jw-builder-page-max-width)) /
+        2 +
+        var(--jw-builder-rail-width) +
+        2rem
+      )
+    );
+    bottom: 0;
+    left: max(
+      calc(var(--jw-sidebar-width) + 1.25rem),
+      calc((100vw + var(--jw-sidebar-width) - var(--jw-builder-page-max-width)) / 2 + 1.25rem)
+    );
+    z-index: 40;
+    margin-top: 0;
+    background: linear-gradient(180deg, rgba(250, 246, 239, 0.82), #faf6ef 42%);
+    padding: 0.75rem 0 0.875rem;
+  }
+}
+
+/* Weekly split chooser refresh. */
+.plan-builder-page--frequency .training-frequency-panel {
+  display: grid;
+  gap: 0;
+}
+
+.plan-builder-page--frequency .training-frequency-heading {
+  display: block;
+  margin-top: 0.95rem;
+}
+
+.plan-builder-page--frequency .training-frequency-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option {
+  position: relative;
+  min-height: 3.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.5rem 2.9rem 0.5rem 0.85rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover,
+.plan-builder-page--frequency .training-frequency-option:has(input:focus-visible) {
+  border-color: rgba(0, 119, 128, 0.55);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected {
+  border-color: #007780;
+  background: rgba(248, 252, 252, 0.72);
+}
+
+.plan-builder-page--frequency .training-frequency-option__check {
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  height: 1.35rem;
+  width: 1.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #287983;
+  color: #ffffff;
+  transform: translateY(-50%);
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon,
+.plan-builder-page--frequency .training-frequency-option__helper {
+  display: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__label {
+  margin-top: 0;
+  color: #244256;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2rem;
+}
+
+@media (min-width: 720px) {
+  .plan-builder-page--frequency .training-frequency-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .plan-builder-page--frequency .training-frequency-option {
+    padding-right: 2.7rem;
+    padding-left: 0.85rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option__check {
+    right: 0.65rem;
+    height: 1.2rem;
+    width: 1.2rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1799px) {
+  .plan-builder-page--frequency .training-frequency-options {
+    gap: 0.7rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option {
+    padding-right: 2.9rem;
+    padding-left: 1rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option__check {
+    right: 0.72rem;
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .plan-builder-page--frequency .training-frequency-options {
+    grid-template-columns: repeat(4, minmax(9.5rem, 1fr));
+    gap: 0.85rem;
+    max-width: 72rem;
+    margin-top: 1rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-option {
+    min-height: 3.3rem;
+  }
+}
+
+@media (min-width: 1800px) and (max-width: 2199px) {
+  .plan-builder-page--frequency .training-frequency-heading {
+    margin-top: 0.8rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-title {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-options {
+    margin-top: 0.55rem;
+  }
+}
+
+/* Compact anti-card pass for the Training Frequency step. */
+.plan-builder-page--frequency .training-frequency-panel {
+  gap: 0;
+}
+
+.plan-builder-page--frequency .training-frequency-options {
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option {
+  min-height: 4.75rem;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.55rem 0.25rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover,
+.plan-builder-page--frequency .training-frequency-option--selected {
+  background: transparent;
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected {
+  border-color: var(--jw-step-selected-border);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__check {
+  top: 0.35rem;
+  right: 0.25rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon,
+.plan-builder-page--frequency .training-frequency-option__icon-frame {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__day {
+  top: 0.58rem;
+  font-size: 0.68rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__label {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1rem;
+}
+
+.plan-builder-page--frequency .training-frequency-option__helper {
+  min-height: 0;
+  font-size: 0.75rem;
+  line-height: 0.95rem;
+}
+
+.plan-builder-page--frequency .training-frequency-recommendation,
+.plan-builder-page--frequency .training-frequency-note-row {
+  border-width: 1px 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.5rem 0;
+}
+
+.plan-builder-page--frequency .training-frequency-note-row {
+  border-color: var(--jw-step-warning-border);
+  background-color: var(--jw-step-warning-bg);
+  color: var(--jw-step-warning-ink);
+}
+
+@media (min-width: 1024px) and (min-height: 700px) {
+  .plan-builder-page--frequency .training-frequency-panel {
+    padding-bottom: 6rem;
+  }
+
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: fixed;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    z-index: 40;
+    width: min(
+      calc(100vw - (2 * var(--app-shell-frame-padding-x)) - 2px),
+      calc(var(--app-shell-frame-max-width) - (2 * var(--app-shell-frame-padding-x)) - 2px)
+    );
+    margin-top: 0;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(251, 248, 243, 0), #fbf8f3 38%);
+    padding: 0.875rem 1.75rem 1rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 699px) {
+  .plan-builder-page--frequency .training-frequency-actions {
+    position: static;
+    right: auto;
+    left: auto;
+    width: auto;
+    transform: none;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Selection affordance pass: flat controls with clear radio states. */
+.plan-builder-page--frequency .training-frequency-options {
+  gap: var(--jw-option-card-gap);
+}
+
+.plan-builder-page--frequency .training-frequency-option {
+  min-height: var(--jw-option-card-min-height);
+  align-items: flex-start;
+  border: 1px solid var(--jw-option-card-border);
+  border-radius: var(--jw-option-card-radius);
+  background: var(--jw-option-card-bg);
+  padding: var(--jw-option-card-padding);
+  padding-right: 2.85rem;
+  text-align: left;
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.plan-builder-page--frequency .training-frequency-option:hover {
+  border-color: var(--jw-option-card-hover-border);
+  background: var(--jw-option-card-hover-bg);
+}
+
+.plan-builder-page--frequency .training-frequency-option:focus-within {
+  outline: 0;
+}
+
+.plan-builder-page--frequency .training-frequency-option:has(input:focus-visible) {
+  outline: 2px solid var(--jw-option-card-focus);
+  outline-offset: 2px;
+}
+
+.plan-builder-page--frequency .training-frequency-option--selected,
+.plan-builder-page--frequency .training-frequency-option:has(input:checked) {
+  border-color: var(--jw-step-selected-border);
+  background: var(--jw-option-card-selected-bg);
+  color: var(--jw-step-selected-ink);
+  box-shadow: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__check {
+  top: 50%;
+  right: 0.82rem;
+  width: 1.32rem;
+  height: 1.32rem;
+  transform: translateY(-50%);
+  border-color: var(--jw-step-selected-strong);
+  background: var(--jw-step-selected-strong);
+  color: #ffffff;
+}
+
+.plan-builder-page--frequency .training-frequency-option__icon,
+.plan-builder-page--frequency .training-frequency-option__icon-frame {
+  display: none;
+}
+
+.plan-builder-page--frequency .training-frequency-option__label {
+  margin-top: 0;
+  color: var(--jw-step-ink);
+  font-size: var(--jw-option-card-title-size);
+  font-weight: var(--jw-option-card-title-weight);
+  line-height: var(--jw-option-card-title-line-height);
+}
+
+.plan-builder-page--frequency .training-frequency-option__helper {
+  margin-top: var(--jw-option-card-copy-margin-top);
+  color: var(--jw-step-copy);
+  font-size: var(--jw-option-card-copy-size);
+  font-weight: var(--jw-option-card-copy-weight);
+  line-height: var(--jw-option-card-copy-line-height);
+}
+
+.plan-builder-page.plan-builder-page--frequency .training-frequency-option {
+  padding-right: 2.85rem;
+}

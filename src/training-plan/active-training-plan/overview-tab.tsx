@@ -16,6 +16,7 @@ import {
   getNextWorkoutLabel,
 } from "./active-training-plan-read-model";
 import { MovementCoverageTable } from "./movement-coverage-table";
+import "./overview-tab.css";
 
 export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   const workoutTemplates = trainingPlan.workoutTemplates;

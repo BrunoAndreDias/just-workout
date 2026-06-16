@@ -1,0 +1,165 @@
+.training-schedule-split {
+  margin-top: 0.875rem;
+}
+
+.training-schedule-split__section-title,
+.training-schedule-split h3,
+.training-schedule-split h4 {
+  margin: 0;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-weight: 700;
+  letter-spacing: var(--jw-heading-tracking);
+}
+
+.training-schedule-split__section-title {
+  font-size: 1.15rem;
+  line-height: 1.35rem;
+}
+
+.training-schedule-split__card {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.58rem;
+  border: 1px solid #007780;
+  border-radius: 0.625rem;
+  background: rgba(251, 253, 252, 0.8);
+  padding: 0.58rem 0.72rem;
+  cursor: pointer;
+}
+
+.training-schedule-split__card:focus-within,
+.training-schedule-split__alternative:focus-within {
+  outline: 2px solid rgba(0, 119, 128, 0.36);
+  outline-offset: 2px;
+}
+
+.training-schedule-split__heading {
+  display: block;
+}
+
+.training-schedule-split__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.training-schedule-split__badge {
+  display: inline-flex;
+  min-height: 1.2rem;
+  align-items: center;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 0.2rem;
+  color: #49656a;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 0.9rem;
+}
+
+.training-schedule-split h3 {
+  font-size: 1.05rem;
+  line-height: 1.3rem;
+}
+
+.training-schedule-split__heading p {
+  max-width: none;
+  margin: 0.18rem 0 0;
+  color: #244256;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.18rem;
+}
+
+.training-schedule-split h4 {
+  font-size: 0.86rem;
+  line-height: 1.05rem;
+}
+
+.training-schedule-split ul,
+.training-schedule-split ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-schedule-split__benefits {
+  display: grid;
+  gap: 0.22rem;
+  margin-top: 0.4rem;
+}
+
+.training-schedule-split__benefits li {
+  display: flex;
+  min-height: 1.1rem;
+  align-items: center;
+  gap: 0.38rem;
+  color: #193b45;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1rem;
+}
+
+.training-schedule-split__benefits li::before {
+  width: 0.32rem;
+  height: 0.32rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(0, 119, 128, 0.48);
+  content: "";
+}
+
+.training-schedule-split__layout {
+  padding-top: 0;
+}
+
+.training-schedule-split__layout ol {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.28rem 0.45rem;
+  justify-content: start;
+  margin-top: 0.4rem;
+}
+
+.training-schedule-split__layout li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 0.32rem;
+  justify-self: start;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0.26rem 0.44rem;
+}
+
+.training-schedule-split__layout svg {
+  display: none;
+}
+
+.training-schedule-split__layout strong,
+.training-schedule-split__layout span {
+  display: inline;
+}
+
+.training-schedule-split__layout strong {
+  color: #244256;
+  font-size: 0.72rem;
+  line-height: 0.95rem;
+}
+
+.training-schedule-split__layout span {
+  color: #007780;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1rem;
+}
+
+.training-schedule-split__cards {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}

@@ -15,6 +15,14 @@ import {
   type TrainingSplitId,
 } from "../training-split";
 import "./training-frequency-step.css";
+import "./training-frequency-responsive.css";
+import "./training-frequency-compact-responsive.css";
+import "./training-frequency-large-viewport.css";
+import "./training-frequency-page-overrides.css";
+import "./training-schedule-split.css";
+import "./training-schedule-split-responsive.css";
+import "./training-schedule-split-page-overrides.css";
+import "./training-schedule-step-layout.css";
 
 type TrainingFrequencyStepProps = {
   canContinueToTrainingStyle: boolean;

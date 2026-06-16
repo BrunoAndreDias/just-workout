@@ -1,0 +1,301 @@
+.workout-blueprint {
+  display: grid;
+  position: relative;
+  gap: 1.875rem;
+  padding-top: 0;
+}
+
+.workout-blueprint__item {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 1.125rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.workout-blueprint__timeline {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
+  padding-top: 0.375rem;
+}
+
+.workout-blueprint__timeline::after {
+  position: absolute;
+  z-index: -1;
+  top: 2.5rem;
+  bottom: -2.5rem;
+  left: 50%;
+  width: 1px;
+  background: rgba(0, 119, 128, 0.28);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.workout-blueprint__item:last-child .workout-blueprint__timeline::after {
+  display: none;
+}
+
+.workout-blueprint__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+}
+
+.workout-blueprint__marker svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.2;
+}
+
+.workout-blueprint__marker--main {
+  color: #ffffff;
+  background: #007780;
+}
+
+.workout-blueprint__marker--optional {
+  border: 1px solid rgba(0, 119, 128, 0.24);
+  color: #007780;
+  background: #fffdf9;
+}
+
+.workout-section {
+  background: transparent;
+  padding: 0;
+}
+
+.workout-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workout-section__copy {
+  min-width: 0;
+}
+
+.workout-section__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+  align-items: baseline;
+  margin: 0;
+  color: #11181b;
+  font-family: var(--jw-font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.375rem;
+}
+
+.workout-section__title-suffix {
+  color: #506068;
+  font-family: var(--jw-font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1rem;
+}
+
+.workout-section__toggle {
+  display: none;
+}
+
+.workout-section__rows {
+  display: grid;
+  gap: 0;
+  margin-top: 1.5rem;
+}
+
+.exercise-plan-row {
+  display: grid;
+  grid-template-columns: minmax(22rem, 1.35fr) minmax(9rem, 0.45fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  min-width: 0;
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
+  background: transparent;
+  padding: 1rem 0;
+}
+
+.exercise-plan-row + .exercise-plan-row {
+  border-top-color: rgba(28, 25, 23, 0.08);
+}
+
+.exercise-plan-row__identity {
+  min-width: 0;
+}
+
+.exercise-plan-row__name-stack {
+  min-width: 0;
+}
+
+.exercise-plan-row__name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #11181b;
+  font-family: var(--jw-font-body);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.375rem;
+}
+
+.exercise-plan-row__movement,
+.exercise-plan-row__muscles {
+  margin: 0;
+  color: #43535b;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.375rem;
+}
+
+.exercise-plan-row__muscles {
+  color: #3f474b;
+}
+
+.exercise-plan-row__prescription {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1.75rem;
+  min-width: 0;
+  color: #293236;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.exercise-plan-row__prescription > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.055);
+  padding: 0 0.875rem;
+  white-space: nowrap;
+}
+
+.exercise-plan-row__prescription .exercise-plan-row__role-badge {
+  color: #3f474b;
+  background: rgba(28, 25, 23, 0.055);
+  font-weight: 600;
+}
+
+@media (max-width: 920px) {
+  .exercise-plan-row {
+    grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
+  }
+
+  .exercise-plan-row__prescription {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .workout-section {
+    padding-top: 0;
+  }
+
+  .workout-blueprint {
+    gap: 1.125rem;
+    padding-top: 0.5rem;
+  }
+
+  .workout-blueprint__item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .workout-blueprint__timeline {
+    display: none;
+  }
+
+  .workout-section__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .workout-section__title {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  .workout-section__toggle {
+    grid-column: 2;
+    grid-row: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 0;
+    border-radius: 999px;
+    color: #075d63;
+    background: rgba(0, 119, 128, 0.08);
+  }
+
+  .workout-section__toggle-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    transition: transform 180ms ease;
+  }
+
+  .workout-section__toggle[aria-expanded="false"] .workout-section__toggle-icon {
+    transform: rotate(-90deg);
+  }
+
+  .workout-section__toggle:focus-visible {
+    outline: 2px solid rgba(0, 119, 128, 0.58);
+    outline-offset: 2px;
+  }
+
+  .workout-section--collapsed-mobile .workout-section__body {
+    display: none;
+  }
+
+  .exercise-plan-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+  }
+
+  .exercise-plan-row__identity {
+    display: block;
+  }
+
+  .exercise-plan-row__name {
+    font-size: 0.875rem;
+    line-height: 1.1875rem;
+  }
+
+  .exercise-plan-row__movement,
+  .exercise-plan-row__muscles {
+    display: block;
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+
+  .exercise-plan-row__prescription {
+    justify-content: flex-start;
+    gap: 0.3125rem;
+  }
+
+  .exercise-plan-row__prescription > span {
+    min-width: auto;
+    min-height: 1.5rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+  }
+}

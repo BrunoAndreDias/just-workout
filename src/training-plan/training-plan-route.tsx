@@ -12,7 +12,6 @@ import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
 } from "./training-plan-query-options";
-import "./training-plan-route.css";
 
 export function TrainingPlansRoute() {
   const trainingPlansQuery = useQuery({

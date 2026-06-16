@@ -26,6 +26,8 @@ import {
   TrainingBlockProgress,
 } from "./training-block-progress";
 import { WorkoutBlueprint } from "./workout-blueprint";
+import "../training-plan-loading.css";
+import "./active-training-plan-page.css";
 
 export function ActiveTrainingPlanPage({
   onAcceptNextTrainingPlan,
