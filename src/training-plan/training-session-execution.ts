@@ -19,6 +19,20 @@ export type TrainingSessionExercise = {
   slot: TrainingPlanSlot;
 };
 
+export type TrainingSessionDraftChange = {
+  exerciseKey: string;
+  field: keyof TrainingSessionSetDraft;
+  setIndex: number;
+  slot: TrainingPlanSlot;
+  value: boolean | string;
+};
+
+export type TrainingSessionGroupProgress = {
+  completedSetCount: number;
+  isComplete: boolean;
+  plannedSetCount: number;
+};
+
 export function createTrainingSessionExercises(
   workoutTemplate: WorkoutTemplate,
 ): TrainingSessionExercise[] {
@@ -121,6 +135,43 @@ export function countCompletedTrainingSessionGroupSets({
 
     return total + exerciseDrafts.filter((draft) => draft.done).length;
   }, 0);
+}
+
+export function getTrainingSessionGroupProgress({
+  drafts,
+  groupId,
+  slots,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  groupId: string;
+  slots: ReadonlyArray<TrainingPlanSlot>;
+}): TrainingSessionGroupProgress {
+  const plannedSetCount = slots.length * 3;
+  const completedSetCount = countCompletedTrainingSessionGroupSets({ drafts, groupId, slots });
+
+  return {
+    completedSetCount,
+    isComplete: completedSetCount === plannedSetCount,
+    plannedSetCount,
+  };
+}
+
+export function applyTrainingSessionDraftChange({
+  drafts,
+  exerciseKey,
+  field,
+  setIndex,
+  slot,
+  value,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+} & TrainingSessionDraftChange): TrainingSessionExerciseDrafts {
+  return {
+    ...drafts,
+    [exerciseKey]: (drafts[exerciseKey] ?? createDefaultTrainingSessionSetDrafts(slot)).map(
+      (draft) => (draft.setIndex === setIndex ? { ...draft, [field]: value } : draft),
+    ),
+  };
 }
 
 export function getExpandedTrainingSessionGroupIdsAfterCompletion({

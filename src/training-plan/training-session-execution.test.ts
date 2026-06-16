@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 import {
+  applyTrainingSessionDraftChange,
   countCompletedTrainingSessionGroupSets,
   countCompletedTrainingSessionSets,
   createInitialTrainingSessionDrafts,
@@ -11,6 +12,7 @@ import {
   getPreviousTrainingSessionSetLabel,
   getTrainingSessionDefaultReps,
   getTrainingSessionExerciseKey,
+  getTrainingSessionGroupProgress,
 } from "./training-session-execution";
 
 describe("Training Session Execution", () => {
@@ -90,6 +92,55 @@ describe("Training Session Execution", () => {
         slots: [benchPressSlot, pullUpsSlot],
       }),
     ).toBe(2);
+  });
+
+  it("applies one set draft change without replacing unrelated exercise drafts", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises);
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+    const pullKey = getTrainingSessionExerciseKey("group-1", pullUpsSlot);
+    const unchangedPullDrafts = drafts[pullKey];
+
+    const updatedDrafts = applyTrainingSessionDraftChange({
+      drafts,
+      exerciseKey: benchKey,
+      field: "weight",
+      setIndex: 2,
+      slot: benchPressSlot,
+      value: "42.5",
+    });
+
+    expect(updatedDrafts[benchKey]).toEqual([
+      { done: false, reps: "8", setIndex: 1, weight: "" },
+      { done: false, reps: "8", setIndex: 2, weight: "42.5" },
+      { done: false, reps: "8", setIndex: 3, weight: "" },
+    ]);
+    expect(updatedDrafts[pullKey]).toBe(unchangedPullDrafts);
+  });
+
+  it("summarizes Superset Group progress from current set drafts", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises);
+
+    drafts[getTrainingSessionExerciseKey("group-1", benchPressSlot)] = [
+      { done: true, reps: "8", setIndex: 1, weight: "40" },
+      { done: true, reps: "8", setIndex: 2, weight: "40" },
+      { done: true, reps: "8", setIndex: 3, weight: "40" },
+    ];
+
+    expect(
+      getTrainingSessionGroupProgress({
+        drafts,
+        groupId: "group-1",
+        slots: [benchPressSlot, pullUpsSlot],
+      }),
+    ).toEqual({
+      completedSetCount: 3,
+      isComplete: false,
+      plannedSetCount: 6,
+    });
   });
 
   it("closes the completed Superset Group and opens the next incomplete group", () => {

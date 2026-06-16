@@ -9,6 +9,10 @@ import {
   type TrainingSession,
 } from "../index";
 import {
+  getStartNextWorkoutRouteTarget,
+  getStartWorkoutRouteTarget,
+} from "./active-training-plan-navigation";
+import {
   type ActiveTrainingPlanTab,
   type ActiveTrainingPlanTabId,
   getActiveTrainingPlanTabs,
@@ -92,13 +96,7 @@ function ActiveTrainingPlanActions({
         <button
           className="active-training-plan-hero__cta"
           onClick={() => {
-            void navigate({
-              params: {
-                planId: trainingPlan.id,
-                templateId: getNextWorkoutTemplateId(trainingPlan),
-              },
-              to: "/training-plans/$planId/sessions/new/$templateId",
-            });
+            void navigate(getStartNextWorkoutRouteTarget(trainingPlan));
           }}
           type="button"
         >
@@ -158,13 +156,7 @@ function MobileStartWorkoutCta({ trainingPlan }: { trainingPlan: TrainingPlan })
       <button
         className="active-training-plan-mobile-cta__button"
         onClick={() => {
-          void navigate({
-            params: {
-              planId: trainingPlan.id,
-              templateId: getNextWorkoutTemplateId(trainingPlan),
-            },
-            to: "/training-plans/$planId/sessions/new/$templateId",
-          });
+          void navigate(getStartNextWorkoutRouteTarget(trainingPlan));
         }}
         type="button"
       >
@@ -276,13 +268,12 @@ function ActiveTrainingPlanTabPanel({
               <button
                 className="workout-session-start__button"
                 onClick={() => {
-                  void navigate({
-                    params: {
+                  void navigate(
+                    getStartWorkoutRouteTarget({
                       planId: trainingPlan.id,
-                      templateId: activeWorkoutTemplate.id,
-                    },
-                    to: "/training-plans/$planId/sessions/new/$templateId",
-                  });
+                      workoutTemplateId: activeWorkoutTemplate.id,
+                    }),
+                  );
                 }}
                 type="button"
               >
@@ -311,8 +302,4 @@ function WorkoutSummaryPills() {
       <span>8–12 reps</span>
     </div>
   );
-}
-
-function getNextWorkoutTemplateId(trainingPlan: TrainingPlan): string {
-  return trainingPlan.workoutTemplates[0]?.id ?? "template-1";
 }

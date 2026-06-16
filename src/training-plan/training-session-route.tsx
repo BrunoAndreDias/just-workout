@@ -8,11 +8,15 @@ import {
 } from "./active-training-plan/active-training-plan-read-model";
 import { isBodyweightLoadExercise } from "./bodyweight-load";
 import { calculateVolumeByMovementPattern } from "./completed-load-volume";
-import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
+import type { SupersetGroup, TrainingPlanSlot } from "./training-plan";
+import {
+  trainingPlanQueryOptions,
+  trainingPlanSessionsQueryOptions,
+} from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 import {
-  countCompletedTrainingSessionGroupSets,
+  applyTrainingSessionDraftChange,
   countCompletedTrainingSessionSets,
   createDefaultTrainingSessionSetDrafts,
   createInitialTrainingSessionDrafts,
@@ -23,38 +27,28 @@ import {
   getPreviousTrainingSessionSetLabel,
   getTrainingSessionDefaultReps,
   getTrainingSessionExerciseKey,
+  getTrainingSessionGroupProgress,
   type TrainingSessionExerciseDrafts,
   type TrainingSessionSetDraft,
 } from "./training-session-execution";
+import {
+  getWorkoutTemplateForTrainingSessionRoute,
+  parseTrainingSessionRoutePathname,
+} from "./training-session-route-read-model";
 
 export function TrainingSessionRoute() {
   const routeParams = useTrainingSessionRouteParams();
-  const trainingPlanQuery = useQuery({
-    enabled: routeParams !== null,
-    queryFn: () => {
-      if (!routeParams) {
-        return null;
-      }
-
-      return trainingPlanService.getTrainingPlan(routeParams.planId);
-    },
-    queryKey: ["training-plan", routeParams?.planId],
-  });
-  const trainingSessionsQuery = useQuery({
-    enabled: routeParams !== null,
-    queryFn: () => {
-      if (!routeParams) {
-        return [];
-      }
-
-      return trainingPlanService.getTrainingSessionsForPlan(routeParams.planId);
-    },
-    queryKey: ["training-sessions", routeParams?.planId],
-  });
+  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
+  const trainingSessionsQuery = useQuery(
+    trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
+  );
   const trainingPlan = trainingPlanQuery.data;
   const previousTrainingSessions = trainingSessionsQuery.data ?? [];
   const workoutTemplate = trainingPlan
-    ? getWorkoutTemplate(trainingPlan.workoutTemplates, routeParams?.templateId ?? null)
+    ? getWorkoutTemplateForTrainingSessionRoute({
+        templateId: routeParams?.templateId ?? null,
+        workoutTemplates: trainingPlan.workoutTemplates,
+      })
     : null;
   const sessionExercises = useMemo(
     () => (workoutTemplate ? createTrainingSessionExercises(workoutTemplate) : []),
@@ -128,169 +122,20 @@ export function TrainingSessionRoute() {
       ) : null}
 
       <div className="training-session-work">
-        {workoutTemplate.supersetGroups.map((group, groupIndex) => {
-          const isOpen = expandedGroupIds.includes(group.id);
-          const groupSetCount = group.slots.length * 3;
-          const groupCompletedSets = countCompletedTrainingSessionGroupSets({
-            drafts,
-            groupId: group.id,
-            slots: group.slots,
-          });
-          const isGroupComplete = groupCompletedSets === groupSetCount;
-          const groupTitle = formatGroupTitle(group.title, workoutTemplate.label, groupIndex);
-          const toggleGroup = () => {
-            setExpandedGroupIds((currentGroupIds) =>
-              currentGroupIds.includes(group.id)
-                ? currentGroupIds.filter((groupId) => groupId !== group.id)
-                : [...currentGroupIds, group.id],
-            );
-          };
-
-          return (
-            <section
-              aria-labelledby={`training-session-group-${group.id}`}
-              className={getTrainingSessionGroupClassName(isGroupComplete, isOpen)}
-              key={group.id}
-            >
-              <header className="training-session-group__header">
-                <div>
-                  <h2
-                    aria-label={formatAccessibleGroupTitle(group.title)}
-                    id={`training-session-group-${group.id}`}
-                  >
-                    {groupTitle}
-                  </h2>
-                  <p>
-                    {isGroupComplete && !isOpen ? (
-                      <>
-                        <strong className="training-session-group__complete-state">
-                          <CheckCircle2 aria-hidden="true" />
-                          Complete
-                        </strong>
-                        <span>{groupSetCount} sets logged</span>
-                      </>
-                    ) : isOpen ? (
-                      <>
-                        <span>Superset</span>
-                        <span>3 rounds</span>
-                        <strong className="training-session-group__sets-completed">
-                          {groupCompletedSets}/{groupSetCount} sets completed
-                        </strong>
-                      </>
-                    ) : (
-                      <>
-                        <span>{group.slots.length} exercises</span>
-                        <span>{groupSetCount} planned sets</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <button
-                  aria-expanded={isOpen}
-                  aria-label={`${isOpen ? "Collapse" : "Expand"} ${groupTitle}`}
-                  className="training-session-group__toggle"
-                  onClick={toggleGroup}
-                  type="button"
-                >
-                  {isOpen ? (
-                    <ChevronUp aria-hidden="true" className="training-session-group__chevron" />
-                  ) : (
-                    <ChevronDown aria-hidden="true" className="training-session-group__chevron" />
-                  )}
-                </button>
-              </header>
-
-              {isOpen ? (
-                <>
-                  <p className="training-session-now">
-                    <span>Now</span>
-                    <strong
-                      className="training-session-now__exercise"
-                      data-exercise={group.slots[0]?.exerciseName ?? "Exercise"}
-                    />
-                    <small>
-                      {formatMovementPattern(group.slots[0]?.movementPattern ?? "horizontal_push")}{" "}
-                      · {formatExerciseRole(group.slots[0]?.role ?? "main_compound")} · Set 1 of 3 ·
-                      Target 8-12 reps
-                      <span className="training-session-prescription">3 x 8-12</span>
-                    </small>
-                  </p>
-                  <div className="training-session-table-wrap">
-                    <table className="training-session-table">
-                      <thead>
-                        <tr>
-                          <th scope="col">Round</th>
-                          <th scope="col">Exercise</th>
-                          <th scope="col">Pattern</th>
-                          <th scope="col">Previous</th>
-                          <th scope="col">Weight</th>
-                          <th scope="col">Reps</th>
-                          <th scope="col">Done</th>
-                        </tr>
-                      </thead>
-                      {[1, 2, 3].map((roundIndex) => (
-                        <RoundSessionRows
-                          drafts={drafts}
-                          groupId={group.id}
-                          key={`${group.id}-round-${roundIndex}`}
-                          onDraftChange={(exerciseKey, setIndex, field, value) => {
-                            setDrafts((currentDrafts) => {
-                              const slot = group.slots.find(
-                                (groupSlot) =>
-                                  getTrainingSessionExerciseKey(group.id, groupSlot) ===
-                                  exerciseKey,
-                              );
-
-                              if (!slot) {
-                                return currentDrafts;
-                              }
-
-                              const updatedDrafts = {
-                                ...currentDrafts,
-                                [exerciseKey]: (
-                                  currentDrafts[exerciseKey] ??
-                                  createDefaultTrainingSessionSetDrafts(slot)
-                                ).map((draft) =>
-                                  draft.setIndex === setIndex
-                                    ? { ...draft, [field]: value }
-                                    : draft,
-                                ),
-                              };
-
-                              if (
-                                field === "done" &&
-                                value === true &&
-                                countCompletedTrainingSessionGroupSets({
-                                  drafts: updatedDrafts,
-                                  groupId: group.id,
-                                  slots: group.slots,
-                                }) === groupSetCount
-                              ) {
-                                setExpandedGroupIds((currentGroupIds) =>
-                                  getExpandedTrainingSessionGroupIdsAfterCompletion({
-                                    completedGroupId: group.id,
-                                    currentGroupIds,
-                                    drafts: updatedDrafts,
-                                    groups: workoutTemplate.supersetGroups,
-                                  }),
-                                );
-                              }
-
-                              return updatedDrafts;
-                            });
-                          }}
-                          previousTrainingSessions={previousTrainingSessions}
-                          roundIndex={roundIndex}
-                          slots={group.slots}
-                        />
-                      ))}
-                    </table>
-                  </div>
-                </>
-              ) : null}
-            </section>
-          );
-        })}
+        {workoutTemplate.supersetGroups.map((group, groupIndex) => (
+          <TrainingSessionGroup
+            drafts={drafts}
+            expandedGroupIds={expandedGroupIds}
+            group={group}
+            groupIndex={groupIndex}
+            groups={workoutTemplate.supersetGroups}
+            key={group.id}
+            previousTrainingSessions={previousTrainingSessions}
+            setDrafts={setDrafts}
+            setExpandedGroupIds={setExpandedGroupIds}
+            workoutTemplateLabel={workoutTemplate.label}
+          />
+        ))}
       </div>
 
       <footer className="training-session-footer">
@@ -327,6 +172,251 @@ function TrainingSessionShell({ children }: { children: string }) {
       <p className="active-training-plan-loading">{children}</p>
     </section>
   );
+}
+
+function TrainingSessionGroup({
+  drafts,
+  expandedGroupIds,
+  group,
+  groupIndex,
+  groups,
+  previousTrainingSessions,
+  setDrafts,
+  setExpandedGroupIds,
+  workoutTemplateLabel,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  expandedGroupIds: ReadonlyArray<string>;
+  group: SupersetGroup;
+  groupIndex: number;
+  groups: ReadonlyArray<SupersetGroup>;
+  previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  setDrafts: (
+    updater: (drafts: TrainingSessionExerciseDrafts) => TrainingSessionExerciseDrafts,
+  ) => void;
+  setExpandedGroupIds: (
+    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
+  ) => void;
+  workoutTemplateLabel: string;
+}) {
+  const isOpen = expandedGroupIds.includes(group.id);
+  const groupProgress = getTrainingSessionGroupProgress({
+    drafts,
+    groupId: group.id,
+    slots: group.slots,
+  });
+  const groupTitle = formatGroupTitle(group.title, workoutTemplateLabel, groupIndex);
+
+  return (
+    <section
+      aria-labelledby={`training-session-group-${group.id}`}
+      className={getTrainingSessionGroupClassName(groupProgress.isComplete, isOpen)}
+    >
+      <header className="training-session-group__header">
+        <div>
+          <h2
+            aria-label={formatAccessibleGroupTitle(group.title)}
+            id={`training-session-group-${group.id}`}
+          >
+            {groupTitle}
+          </h2>
+          <TrainingSessionGroupSummary
+            group={group}
+            groupProgress={groupProgress}
+            isOpen={isOpen}
+          />
+        </div>
+        <button
+          aria-expanded={isOpen}
+          aria-label={`${isOpen ? "Collapse" : "Expand"} ${groupTitle}`}
+          className="training-session-group__toggle"
+          onClick={() => toggleTrainingSessionGroup(group.id, setExpandedGroupIds)}
+          type="button"
+        >
+          {isOpen ? (
+            <ChevronUp aria-hidden="true" className="training-session-group__chevron" />
+          ) : (
+            <ChevronDown aria-hidden="true" className="training-session-group__chevron" />
+          )}
+        </button>
+      </header>
+
+      {isOpen ? (
+        <>
+          <TrainingSessionNow group={group} />
+          <div className="training-session-table-wrap">
+            <table className="training-session-table">
+              <thead>
+                <tr>
+                  <th scope="col">Round</th>
+                  <th scope="col">Exercise</th>
+                  <th scope="col">Pattern</th>
+                  <th scope="col">Previous</th>
+                  <th scope="col">Weight</th>
+                  <th scope="col">Reps</th>
+                  <th scope="col">Done</th>
+                </tr>
+              </thead>
+              {[1, 2, 3].map((roundIndex) => (
+                <RoundSessionRows
+                  drafts={drafts}
+                  groupId={group.id}
+                  key={`${group.id}-round-${roundIndex}`}
+                  onDraftChange={(exerciseKey, setIndex, field, value) => {
+                    updateTrainingSessionGroupDraft({
+                      exerciseKey,
+                      field,
+                      group,
+                      groups,
+                      setDrafts,
+                      setExpandedGroupIds,
+                      setIndex,
+                      value,
+                    });
+                  }}
+                  previousTrainingSessions={previousTrainingSessions}
+                  roundIndex={roundIndex}
+                  slots={group.slots}
+                />
+              ))}
+            </table>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function TrainingSessionGroupSummary({
+  group,
+  groupProgress,
+  isOpen,
+}: {
+  group: SupersetGroup;
+  groupProgress: ReturnType<typeof getTrainingSessionGroupProgress>;
+  isOpen: boolean;
+}) {
+  return (
+    <p>
+      {groupProgress.isComplete && !isOpen ? (
+        <>
+          <strong className="training-session-group__complete-state">
+            <CheckCircle2 aria-hidden="true" />
+            Complete
+          </strong>
+          <span>{groupProgress.plannedSetCount} sets logged</span>
+        </>
+      ) : isOpen ? (
+        <>
+          <span>Superset</span>
+          <span>3 rounds</span>
+          <strong className="training-session-group__sets-completed">
+            {groupProgress.completedSetCount}/{groupProgress.plannedSetCount} sets completed
+          </strong>
+        </>
+      ) : (
+        <>
+          <span>{group.slots.length} exercises</span>
+          <span>{groupProgress.plannedSetCount} planned sets</span>
+        </>
+      )}
+    </p>
+  );
+}
+
+function TrainingSessionNow({ group }: { group: SupersetGroup }) {
+  return (
+    <p className="training-session-now">
+      <span>Now</span>
+      <strong
+        className="training-session-now__exercise"
+        data-exercise={group.slots[0]?.exerciseName ?? "Exercise"}
+      />
+      <small>
+        {formatMovementPattern(group.slots[0]?.movementPattern ?? "horizontal_push")} ·{" "}
+        {formatExerciseRole(group.slots[0]?.role ?? "main_compound")} · Set 1 of 3 · Target 8-12
+        reps
+        <span className="training-session-prescription">3 x 8-12</span>
+      </small>
+    </p>
+  );
+}
+
+function toggleTrainingSessionGroup(
+  groupId: string,
+  setExpandedGroupIds: (
+    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
+  ) => void,
+) {
+  setExpandedGroupIds((currentGroupIds) =>
+    currentGroupIds.includes(groupId)
+      ? currentGroupIds.filter((currentGroupId) => currentGroupId !== groupId)
+      : [...currentGroupIds, groupId],
+  );
+}
+
+function updateTrainingSessionGroupDraft({
+  exerciseKey,
+  field,
+  group,
+  groups,
+  setDrafts,
+  setExpandedGroupIds,
+  setIndex,
+  value,
+}: {
+  exerciseKey: string;
+  field: keyof TrainingSessionSetDraft;
+  group: SupersetGroup;
+  groups: ReadonlyArray<SupersetGroup>;
+  setDrafts: (
+    updater: (drafts: TrainingSessionExerciseDrafts) => TrainingSessionExerciseDrafts,
+  ) => void;
+  setExpandedGroupIds: (
+    updater: (groupIds: ReadonlyArray<string>) => ReadonlyArray<string>,
+  ) => void;
+  setIndex: number;
+  value: boolean | string;
+}) {
+  setDrafts((currentDrafts) => {
+    const slot = group.slots.find(
+      (groupSlot) => getTrainingSessionExerciseKey(group.id, groupSlot) === exerciseKey,
+    );
+
+    if (!slot) {
+      return currentDrafts;
+    }
+
+    const updatedDrafts = applyTrainingSessionDraftChange({
+      drafts: currentDrafts,
+      exerciseKey,
+      field,
+      setIndex,
+      slot,
+      value,
+    });
+
+    if (
+      field === "done" &&
+      value === true &&
+      getTrainingSessionGroupProgress({
+        drafts: updatedDrafts,
+        groupId: group.id,
+        slots: group.slots,
+      }).isComplete
+    ) {
+      setExpandedGroupIds((currentGroupIds) =>
+        getExpandedTrainingSessionGroupIdsAfterCompletion({
+          completedGroupId: group.id,
+          currentGroupIds,
+          drafts: updatedDrafts,
+          groups,
+        }),
+      );
+    }
+
+    return updatedDrafts;
+  });
 }
 
 function RoundSessionRows({
@@ -486,26 +576,8 @@ function getTrainingSessionGroupClassName(isComplete: boolean, isOpen: boolean):
 
 function useTrainingSessionRouteParams(): { planId: string; templateId: string } | null {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const match = /^\/training-plans\/([^/]+)\/sessions\/new\/([^/]+)$/.exec(pathname);
 
-  const planId = match?.[1];
-  const templateId = match?.[2];
-
-  if (!planId || !templateId) {
-    return null;
-  }
-
-  return {
-    planId: decodeURIComponent(planId),
-    templateId: decodeURIComponent(templateId),
-  };
-}
-
-function getWorkoutTemplate(
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>,
-  templateId: string | null,
-): WorkoutTemplate | null {
-  return workoutTemplates.find((template) => template.id === templateId) ?? null;
+  return parseTrainingSessionRoutePathname(pathname);
 }
 
 function formatAccessibleGroupTitle(title: string): string {
