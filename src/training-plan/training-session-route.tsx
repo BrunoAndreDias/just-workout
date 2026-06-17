@@ -9,14 +9,13 @@ import {
 import { trainingPlanService } from "./training-plan-service";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 import {
-  applyTrainingSessionExecutionChange,
+  applyTrainingSessionExecutionAction,
   createEmptyTrainingSessionExecutionState,
   createInitialTrainingSessionExecutionState,
   createTrainingSessionExecutionReadModel,
   hasTrainingSessionExecutionDrafts,
-  type TrainingSessionExecutionDraftChange,
+  type TrainingSessionExecutionAction,
   type TrainingSessionExecutionState,
-  toggleTrainingSessionExecutionGroup,
 } from "./training-session-execution";
 import { TrainingSessionGroup } from "./training-session-group";
 import {
@@ -102,21 +101,12 @@ export function TrainingSessionRoute() {
     await completeSession.mutateAsync(activeExecutionReadModel.entries);
   }
 
-  function handleExecutionChange(change: TrainingSessionExecutionDraftChange) {
+  function handleExecutionAction(action: TrainingSessionExecutionAction) {
     setExecutionState((currentState) =>
-      applyTrainingSessionExecutionChange({
-        change,
+      applyTrainingSessionExecutionAction({
+        action,
         state: currentState,
         workoutTemplate: activeWorkoutTemplate,
-      }),
-    );
-  }
-
-  function handleToggleGroup(groupId: string) {
-    setExecutionState((currentState) =>
-      toggleTrainingSessionExecutionGroup({
-        groupId,
-        state: currentState,
       }),
     );
   }
@@ -139,8 +129,7 @@ export function TrainingSessionRoute() {
           <TrainingSessionGroup
             group={group}
             key={group.groupId}
-            onDraftChange={handleExecutionChange}
-            onToggleGroup={handleToggleGroup}
+            onAction={handleExecutionAction}
           />
         ))}
       </div>

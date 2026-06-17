@@ -1,16 +1,12 @@
 import type { TrainingPlan, WorkoutTemplate } from "../index";
-import {
-  formatWeeklyCoverageCount,
-  formatWorkoutTemplateList,
-  getCompareSessionSummary,
-  hasMovementCoverage,
-} from "./active-training-plan-read-model";
+import { type CompareSessionSnapshotReadModel, getCompareReadModel } from "./compare-read-model";
+import { formatWeeklyCoverageCount, hasMovementCoverage } from "./movement-coverage-read-model";
 import { MovementCoverageRows } from "./movement-coverage-table";
 import "./compare-tab.css";
 
 export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   const workoutTemplates = trainingPlan.workoutTemplates;
-  const sessionCount = workoutTemplates.length;
+  const compareReadModel = getCompareReadModel(trainingPlan);
 
   return (
     <div className="training-plan-compare">
@@ -27,12 +23,11 @@ export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
               Movement patterns comparison
             </h2>
             <p className="training-plan-compare-card__helper">
-              See how {formatWorkoutTemplateList(workoutTemplates)} distribute movement patterns
-              across the week.
+              {compareReadModel.movementPatternHelper}
             </p>
           </div>
           <span className="training-plan-compare-card__chip">
-            {sessionCount} {sessionCount === 1 ? "session" : "sessions"}
+            {compareReadModel.sessionCountLabel}
           </span>
         </div>
         <CompareMovementTable workoutTemplates={workoutTemplates} />
@@ -46,14 +41,11 @@ export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
           Session snapshots
         </h2>
         <div className="compare-snapshot-grid">
-          {workoutTemplates.map((workoutTemplate) => (
-            <CompareSessionSnapshot key={workoutTemplate.id} workoutTemplate={workoutTemplate} />
+          {compareReadModel.sessionSnapshots.map((snapshot) => (
+            <CompareSessionSnapshot key={snapshot.id} snapshot={snapshot} />
           ))}
         </div>
-        <p className="compare-balance-callout">
-          This split distributes upper-body, lower-body, and accessory stress across the week so
-          each session has a distinct role.
-        </p>
+        <p className="compare-balance-callout">{compareReadModel.balanceCallout}</p>
       </section>
     </div>
   );
@@ -100,19 +92,17 @@ function CompareCoverageIndicator({ covered }: { covered: boolean }) {
   return <span className="compare-coverage compare-coverage--yes">Yes</span>;
 }
 
-function CompareSessionSnapshot({ workoutTemplate }: { workoutTemplate: WorkoutTemplate }) {
-  const summary = getCompareSessionSummary(workoutTemplate);
-
+function CompareSessionSnapshot({ snapshot }: { snapshot: CompareSessionSnapshotReadModel }) {
   return (
     <article className="compare-snapshot-column">
-      <h3>{workoutTemplate.label}</h3>
+      <h3>{snapshot.label}</h3>
       <dl className="compare-snapshot-summary">
-        <CompareSnapshotFact label="Weekly role" value={summary.weeklyRole} />
-        <CompareSnapshotFact label="Key focus" value={summary.keyFocus} />
-        <CompareSnapshotFact label="Main patterns" value={summary.mainPatterns} />
-        <CompareSnapshotFact label="Accessory work" value={summary.accessoryWork} />
+        <CompareSnapshotFact label="Weekly role" value={snapshot.weeklyRole} />
+        <CompareSnapshotFact label="Key focus" value={snapshot.keyFocus} />
+        <CompareSnapshotFact label="Main patterns" value={snapshot.mainPatterns} />
+        <CompareSnapshotFact label="Accessory work" value={snapshot.accessoryWork} />
       </dl>
-      <CompareSnapshotGroup label="Emphasis" items={summary.emphasis} tone="accent" />
+      <CompareSnapshotGroup label="Emphasis" items={snapshot.emphasis} tone="accent" />
     </article>
   );
 }

@@ -7,19 +7,18 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { TrainingPlan, WorkoutTemplate } from "../index";
-import {
-  formatSummaryRepRangeStyle,
-  formatWeeklyStructureSupport,
-  getEnabledVolumeTargetCount,
-  getMuscleEmphasis,
-  getNextWorkoutLabel,
-} from "./active-training-plan-read-model";
+import type { TrainingPlan } from "../index";
 import { MovementCoverageTable } from "./movement-coverage-table";
+import { getPlanSummaryReadModel } from "./plan-summary-read-model";
+import {
+  getWorkoutSplitSummaryReadModel,
+  type WorkoutTemplateMuscleEmphasisReadModel,
+} from "./workout-template-summary";
 import "./overview-tab.css";
 
 export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   const workoutTemplates = trainingPlan.workoutTemplates;
+  const workoutSplitSummary = getWorkoutSplitSummaryReadModel(workoutTemplates);
 
   return (
     <div className="training-plan-overview">
@@ -44,18 +43,14 @@ export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
             Workout split at a glance
           </h2>
           <div className="muscle-emphasis-list">
-            {workoutTemplates.map((template, index) => (
-              <MuscleEmphasisPanel
-                dayIndex={index + 1}
-                key={template.id}
-                workoutTemplate={template}
-              />
+            {workoutSplitSummary.templates.map((templateSummary) => (
+              <MuscleEmphasisPanel key={templateSummary.id} templateSummary={templateSummary} />
             ))}
           </div>
           <footer className="training-plan-overview-card__footer">
             <p className="training-plan-overview-card__support">
               <RotateCw aria-hidden="true" />
-              <span>{formatWeeklyStructureSupport(workoutTemplates)}</span>
+              <span>{workoutSplitSummary.support}</span>
             </p>
             <div className="muscle-emphasis-legend">
               <span>
@@ -75,32 +70,27 @@ export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
 }
 
 function MuscleEmphasisPanel({
-  dayIndex,
-  workoutTemplate,
+  templateSummary,
 }: {
-  dayIndex: number;
-  workoutTemplate: WorkoutTemplate;
+  templateSummary: WorkoutTemplateMuscleEmphasisReadModel;
 }) {
-  const primaryEmphasis = getMuscleEmphasis(workoutTemplate, ["main_compound"]);
-  const secondaryEmphasis = getMuscleEmphasis(workoutTemplate, [
-    "secondary_compound",
-    "isolation",
-    "abs",
-  ]);
-
   return (
     <article className="muscle-emphasis-panel">
       <div className="muscle-emphasis-panel__content">
         <div className="muscle-emphasis-panel__header">
           <div>
-            <p className="muscle-emphasis-panel__day">Day {dayIndex}</p>
-            <h3>{workoutTemplate.label}</h3>
+            <p className="muscle-emphasis-panel__day">Day {templateSummary.dayIndex}</p>
+            <h3>{templateSummary.label}</h3>
           </div>
         </div>
-        <EmphasisChipGroup label="Primary emphasis" muscles={primaryEmphasis} tone="primary" />
+        <EmphasisChipGroup
+          label="Primary emphasis"
+          muscles={templateSummary.primaryEmphasis}
+          tone="primary"
+        />
         <EmphasisChipGroup
           label="Secondary emphasis"
-          muscles={secondaryEmphasis}
+          muscles={templateSummary.secondaryEmphasis}
           tone="secondary"
         />
       </div>
@@ -132,6 +122,8 @@ function EmphasisChipGroup({
 }
 
 function PlanSummaryCard({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+  const summary = getPlanSummaryReadModel(trainingPlan);
+
   return (
     <aside
       className="active-training-plan-summary"
@@ -145,37 +137,37 @@ function PlanSummaryCard({ trainingPlan }: { trainingPlan: TrainingPlan }) {
         <PlanSummaryRow
           icon={<CalendarDays aria-hidden="true" />}
           label="Current plan"
-          value={trainingPlan.split}
+          value={summary.currentPlan}
         />
         <PlanSummaryRow
           icon={<Clock3 aria-hidden="true" />}
           label="Block length"
-          value={`${trainingPlan.trainingBlockWeeks} weeks`}
+          value={summary.blockLength}
         />
         <PlanSummaryRow
           icon={<ListChecks aria-hidden="true" />}
           label="Volume targets"
-          value={`${getEnabledVolumeTargetCount(trainingPlan)} enabled`}
+          value={summary.volumeTargets}
         />
         <PlanSummaryRow
           icon={<RotateCw aria-hidden="true" />}
           label="Rotation pools"
-          value={`${trainingPlan.mainCompoundRotationPools.length} configured`}
+          value={summary.rotationPools}
         />
         <PlanSummaryRow
           icon={<CalendarDays aria-hidden="true" />}
           label="Frequency"
-          value={`${trainingPlan.trainingFrequencyDaysPerWeek} days/week`}
+          value={summary.frequency}
         />
         <PlanSummaryRow
           icon={<Repeat2 aria-hidden="true" />}
           label="Next workout"
-          value={getNextWorkoutLabel(trainingPlan)}
+          value={summary.nextWorkout}
         />
         <PlanSummaryRow
           icon={<SlidersHorizontal aria-hidden="true" />}
           label="Rep range style"
-          value={formatSummaryRepRangeStyle(trainingPlan)}
+          value={summary.repRangeStyle}
         />
       </dl>
     </aside>

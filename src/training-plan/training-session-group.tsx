@@ -1,20 +1,24 @@
 import { CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import type {
-  TrainingSessionExecutionDraftChange,
+  TrainingSessionExecutionAction,
   TrainingSessionExecutionGroup,
   TrainingSessionExecutionGroupSummary,
   TrainingSessionExecutionSetRow,
+} from "./training-session-execution";
+import {
+  changeTrainingSessionExecutionSetDone,
+  changeTrainingSessionExecutionSetReps,
+  changeTrainingSessionExecutionSetWeight,
+  toggleTrainingSessionExecutionGroup,
 } from "./training-session-execution";
 import "./training-session-group.css";
 
 export function TrainingSessionGroup({
   group,
-  onDraftChange,
-  onToggleGroup,
+  onAction,
 }: {
   group: TrainingSessionExecutionGroup;
-  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
-  onToggleGroup: (groupId: string) => void;
+  onAction: (action: TrainingSessionExecutionAction) => void;
 }) {
   return (
     <section
@@ -32,7 +36,7 @@ export function TrainingSessionGroup({
           aria-expanded={group.isOpen}
           aria-label={`${group.isOpen ? "Collapse" : "Expand"} ${group.title}`}
           className="training-session-group__toggle"
-          onClick={() => onToggleGroup(group.groupId)}
+          onClick={() => onAction(toggleTrainingSessionExecutionGroup(group))}
           type="button"
         >
           {group.isOpen ? (
@@ -62,7 +66,7 @@ export function TrainingSessionGroup({
               {group.rounds.map((round) => (
                 <RoundSessionRows
                   key={`${group.groupId}-round-${round.roundIndex}`}
-                  onDraftChange={onDraftChange}
+                  onAction={onAction}
                   round={round}
                 />
               ))}
@@ -128,20 +132,17 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
 }
 
 function RoundSessionRows({
-  onDraftChange,
+  onAction,
   round,
 }: {
-  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
+  onAction: (action: TrainingSessionExecutionAction) => void;
   round: TrainingSessionExecutionGroup["rounds"][number];
 }) {
   return (
     <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
       {round.rows.map((row) => (
-        <tr
-          className={getTrainingSessionRowClassName(row)}
-          key={`${row.exerciseKey}-set-${row.setIndex}`}
-        >
-          <TrainingSessionSetCells onDraftChange={onDraftChange} row={row} />
+        <tr className={getTrainingSessionRowClassName(row)} key={row.setId}>
+          <TrainingSessionSetCells onAction={onAction} row={row} />
         </tr>
       ))}
     </tbody>
@@ -149,10 +150,10 @@ function RoundSessionRows({
 }
 
 function TrainingSessionSetCells({
-  onDraftChange,
+  onAction,
   row,
 }: {
-  onDraftChange: (change: TrainingSessionExecutionDraftChange) => void;
+  onAction: (action: TrainingSessionExecutionAction) => void;
   row: TrainingSessionExecutionSetRow;
 }) {
   return (
@@ -175,12 +176,7 @@ function TrainingSessionSetCells({
             inputMode="decimal"
             min={row.weightInputMin}
             onChange={(event) =>
-              onDraftChange({
-                exerciseKey: row.exerciseKey,
-                field: "weight",
-                setIndex: row.setIndex,
-                value: event.target.value,
-              })
+              onAction(changeTrainingSessionExecutionSetWeight(row, event.target.value))
             }
             type="number"
             value={row.weight}
@@ -199,12 +195,7 @@ function TrainingSessionSetCells({
           inputMode="numeric"
           min="0"
           onChange={(event) =>
-            onDraftChange({
-              exerciseKey: row.exerciseKey,
-              field: "reps",
-              setIndex: row.setIndex,
-              value: event.target.value,
-            })
+            onAction(changeTrainingSessionExecutionSetReps(row, event.target.value))
           }
           type="number"
           value={row.reps}
@@ -216,12 +207,7 @@ function TrainingSessionSetCells({
             aria-label={row.doneLabel}
             checked={row.done}
             onChange={(event) =>
-              onDraftChange({
-                exerciseKey: row.exerciseKey,
-                field: "done",
-                setIndex: row.setIndex,
-                value: event.target.checked,
-              })
+              onAction(changeTrainingSessionExecutionSetDone(row, event.target.checked))
             }
             type="checkbox"
           />

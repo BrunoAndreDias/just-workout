@@ -3,7 +3,10 @@ import type { TrainingPlanSlot, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 import {
   applyTrainingSessionDraftChange,
-  applyTrainingSessionExecutionChange,
+  applyTrainingSessionExecutionAction,
+  changeTrainingSessionExecutionSetDone,
+  changeTrainingSessionExecutionSetReps,
+  changeTrainingSessionExecutionSetWeight,
   countCompletedTrainingSessionGroupSets,
   countCompletedTrainingSessionSets,
   createInitialTrainingSessionDrafts,
@@ -253,53 +256,131 @@ describe("Training Session Execution", () => {
     expect(readModel.groups[0]?.rounds[0]?.rows[0]).toMatchObject({
       done: true,
       doneLabel: "Mark Flat Dumbbell Bench Press set 1 not done",
-      exerciseKey: benchKey,
       exerciseName: "Flat Dumbbell Bench Press",
       movementPatternLabel: "Horizontal push",
       prescriptionLabel: "3 x 8-12",
       previousSetLabel: "40kg x 10",
       reps: "10",
+      setId: expect.any(String),
       setIndex: 1,
       weight: "40",
       weightInputMin: "0",
     });
+    expect(readModel.groups[0]?.rounds[0]?.rows[0]).not.toHaveProperty("exerciseKey");
   });
 
-  it("applies execution changes and advances to the next incomplete Superset Group", () => {
+  it("applies Training Session set actions from read-model rows", () => {
     const workoutTemplate = createWorkoutTemplate();
-    const initialState = createInitialTrainingSessionExecutionState({ workoutTemplate });
-    let state = initialState;
+    let state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+    const secondBenchSet = readModel.groups[0]?.rounds[1]?.rows[0];
 
-    for (const slot of [benchPressSlot, pullUpsSlot]) {
-      for (const setIndex of [1, 2, 3]) {
-        state = applyTrainingSessionExecutionChange({
-          change: {
-            exerciseKey: getTrainingSessionExerciseKey("group-1", slot),
-            field: "done",
-            setIndex,
-            value: true,
-          },
-          state,
-          workoutTemplate,
-        });
-      }
+    if (!secondBenchSet) {
+      throw new Error("Expected the second bench set row.");
     }
 
-    expect(state.expandedGroupIds).toEqual(["group-2"]);
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetWeight(secondBenchSet, "42.5"),
+      state,
+      workoutTemplate,
+    });
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetReps(secondBenchSet, "9"),
+      state,
+      workoutTemplate,
+    });
+
+    const updatedReadModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+
+    expect(updatedReadModel.groups[0]?.rounds[1]?.rows[0]).toMatchObject({
+      reps: "9",
+      weight: "42.5",
+    });
+    expect(updatedReadModel.entries[0]?.sets[1]).toEqual({
+      reps: 9,
+      setIndex: 2,
+      weight: 42.5,
+    });
+  });
+
+  it("applies completion actions and advances to the next incomplete Superset Group", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    let state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+    const firstGroupRows = readModel.groups[0]?.rounds.flatMap((round) => round.rows) ?? [];
+
+    for (const row of firstGroupRows) {
+      state = applyTrainingSessionExecutionAction({
+        action: changeTrainingSessionExecutionSetDone(row, true),
+        state,
+        workoutTemplate,
+      });
+    }
+
+    const updatedReadModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+
+    expect(
+      updatedReadModel.groups.map((group) => ({
+        groupId: group.groupId,
+        isOpen: group.isOpen,
+      })),
+    ).toEqual([
+      { groupId: "group-1", isOpen: false },
+      { groupId: "group-2", isOpen: true },
+    ]);
   });
 
   it("keeps Training Session execution state details behind execution helpers", () => {
     const workoutTemplate = createWorkoutTemplate();
     const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+    const firstGroup = readModel.groups[0];
+
+    if (!firstGroup) {
+      throw new Error("Expected the first Superset Group.");
+    }
 
     expect(hasTrainingSessionExecutionDrafts(state)).toBe(true);
-    expect(state.expandedGroupIds).toEqual(["group-1"]);
-    expect(
-      toggleTrainingSessionExecutionGroup({
-        groupId: "group-1",
-        state,
-      }).expandedGroupIds,
-    ).toEqual([]);
+    expect(firstGroup.isOpen).toBe(true);
+
+    const toggledState = applyTrainingSessionExecutionAction({
+      action: toggleTrainingSessionExecutionGroup(firstGroup),
+      state,
+      workoutTemplate,
+    });
+    const toggledReadModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state: toggledState,
+      workoutTemplate,
+    });
+
+    expect(toggledReadModel.groups[0]?.isOpen).toBe(false);
   });
 });
 

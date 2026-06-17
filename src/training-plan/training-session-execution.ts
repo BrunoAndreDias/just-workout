@@ -46,23 +46,37 @@ export type TrainingSessionExecutionState = {
   expandedGroupIds: ReadonlyArray<string>;
 };
 
-export type TrainingSessionExecutionDraftChange = {
-  exerciseKey: string;
-  field: keyof TrainingSessionSetDraft;
-  setIndex: number;
-  value: boolean | string;
-};
+export type TrainingSessionExecutionAction =
+  | {
+      setId: string;
+      type: "change-set-done";
+      value: boolean;
+    }
+  | {
+      setId: string;
+      type: "change-set-reps";
+      value: string;
+    }
+  | {
+      setId: string;
+      type: "change-set-weight";
+      value: string;
+    }
+  | {
+      groupId: string;
+      type: "toggle-group";
+    };
 
 export type TrainingSessionExecutionSetRow = {
   done: boolean;
   doneLabel: string;
-  exerciseKey: string;
   exerciseName: string;
   inputId: string;
   movementPatternLabel: string;
   prescriptionLabel: string;
   previousSetLabel: string;
   reps: string;
+  setId: string;
   setIndex: number;
   weight: string;
   weightInputMin: string;
@@ -131,6 +145,48 @@ export function hasTrainingSessionExecutionDrafts(state: TrainingSessionExecutio
   return Object.keys(state.drafts).length > 0;
 }
 
+export function changeTrainingSessionExecutionSetDone(
+  row: Pick<TrainingSessionExecutionSetRow, "setId">,
+  value: boolean,
+): TrainingSessionExecutionAction {
+  return {
+    setId: row.setId,
+    type: "change-set-done",
+    value,
+  };
+}
+
+export function changeTrainingSessionExecutionSetReps(
+  row: Pick<TrainingSessionExecutionSetRow, "setId">,
+  value: string,
+): TrainingSessionExecutionAction {
+  return {
+    setId: row.setId,
+    type: "change-set-reps",
+    value,
+  };
+}
+
+export function changeTrainingSessionExecutionSetWeight(
+  row: Pick<TrainingSessionExecutionSetRow, "setId">,
+  value: string,
+): TrainingSessionExecutionAction {
+  return {
+    setId: row.setId,
+    type: "change-set-weight",
+    value,
+  };
+}
+
+export function toggleTrainingSessionExecutionGroup(
+  group: Pick<TrainingSessionExecutionGroup, "groupId">,
+): TrainingSessionExecutionAction {
+  return {
+    groupId: group.groupId,
+    type: "toggle-group",
+  };
+}
+
 export function createTrainingSessionExecutionReadModel({
   completedSession,
   previousTrainingSessions,
@@ -169,61 +225,48 @@ export function createTrainingSessionExecutionReadModel({
   };
 }
 
-export function toggleTrainingSessionExecutionGroup({
-  groupId,
-  state,
-}: {
-  groupId: string;
-  state: TrainingSessionExecutionState;
-}): TrainingSessionExecutionState {
-  return {
-    ...state,
-    expandedGroupIds: state.expandedGroupIds.includes(groupId)
-      ? state.expandedGroupIds.filter((currentGroupId) => currentGroupId !== groupId)
-      : [...state.expandedGroupIds, groupId],
-  };
-}
-
-export function applyTrainingSessionExecutionChange({
-  change,
+export function applyTrainingSessionExecutionAction({
+  action,
   state,
   workoutTemplate,
 }: {
-  change: TrainingSessionExecutionDraftChange;
+  action: TrainingSessionExecutionAction;
   state: TrainingSessionExecutionState;
   workoutTemplate: WorkoutTemplate;
 }): TrainingSessionExecutionState {
-  const group = workoutTemplate.supersetGroups.find((candidateGroup) =>
-    candidateGroup.slots.some(
-      (groupSlot) =>
-        getTrainingSessionExerciseKey(candidateGroup.id, groupSlot) === change.exerciseKey,
-    ),
-  );
-  const slot = group?.slots.find(
-    (groupSlot) => getTrainingSessionExerciseKey(group.id, groupSlot) === change.exerciseKey,
-  );
+  if (action.type === "toggle-group") {
+    return applyTrainingSessionExecutionGroupToggle({
+      groupId: action.groupId,
+      state,
+    });
+  }
 
-  if (!group || !slot) {
+  const target = findTrainingSessionExecutionSetActionTarget({
+    setId: action.setId,
+    workoutTemplate,
+  });
+
+  if (!target) {
     return state;
   }
 
   const drafts = applyTrainingSessionDraftChange({
     drafts: state.drafts,
-    exerciseKey: change.exerciseKey,
-    field: change.field,
-    setIndex: change.setIndex,
-    slot,
-    value: change.value,
+    exerciseKey: target.exerciseKey,
+    field: getTrainingSessionExecutionDraftField(action),
+    setIndex: target.setIndex,
+    slot: target.slot,
+    value: action.value,
   });
   const groupProgress = getTrainingSessionGroupProgress({
     drafts,
-    groupId: group.id,
-    slots: group.slots,
+    groupId: target.group.id,
+    slots: target.group.slots,
   });
   const expandedGroupIds =
-    change.field === "done" && change.value === true && groupProgress.isComplete
+    action.type === "change-set-done" && action.value === true && groupProgress.isComplete
       ? getExpandedTrainingSessionGroupIdsAfterCompletion({
-          completedGroupId: group.id,
+          completedGroupId: target.group.id,
           currentGroupIds: state.expandedGroupIds,
           drafts,
           groups: workoutTemplate.supersetGroups,
@@ -377,6 +420,21 @@ export function applyTrainingSessionDraftChange({
   };
 }
 
+function applyTrainingSessionExecutionGroupToggle({
+  groupId,
+  state,
+}: {
+  groupId: string;
+  state: TrainingSessionExecutionState;
+}): TrainingSessionExecutionState {
+  return {
+    ...state,
+    expandedGroupIds: state.expandedGroupIds.includes(groupId)
+      ? state.expandedGroupIds.filter((currentGroupId) => currentGroupId !== groupId)
+      : [...state.expandedGroupIds, groupId],
+  };
+}
+
 export function getExpandedTrainingSessionGroupIdsAfterCompletion({
   completedGroupId,
   currentGroupIds,
@@ -524,6 +582,11 @@ function createTrainingSessionExecutionSetRow({
   slot: TrainingPlanSlot;
 }): TrainingSessionExecutionSetRow {
   const exerciseKey = getTrainingSessionExerciseKey(groupId, slot);
+  const setId = getTrainingSessionExecutionSetId({
+    groupId,
+    setIndex: roundIndex,
+    slot,
+  });
   const draft =
     (drafts[exerciseKey] ?? createDefaultTrainingSessionSetDrafts(slot)).find(
       (setDraft) => setDraft.setIndex === roundIndex,
@@ -534,9 +597,8 @@ function createTrainingSessionExecutionSetRow({
     doneLabel: `Mark ${slot.exerciseName} set ${draft.setIndex} ${
       draft.done ? "not done" : "done"
     }`,
-    exerciseKey,
     exerciseName: slot.exerciseName,
-    inputId: `${exerciseKey}-set-${draft.setIndex}`,
+    inputId: `${setId}-input`,
     movementPatternLabel: formatMovementPattern(slot.movementPattern),
     prescriptionLabel: getTrainingSessionPrescriptionLabel(slot),
     previousSetLabel: getPreviousTrainingSessionSetLabel({
@@ -545,10 +607,75 @@ function createTrainingSessionExecutionSetRow({
       slot,
     }),
     reps: draft.reps || String(getTrainingSessionDefaultReps(slot)),
+    setId,
     setIndex: draft.setIndex,
     weight: draft.weight,
     weightInputMin: isBodyweightLoadExercise(slot) ? "-200" : "0",
   };
+}
+
+function findTrainingSessionExecutionSetActionTarget({
+  setId,
+  workoutTemplate,
+}: {
+  setId: string;
+  workoutTemplate: WorkoutTemplate;
+}): {
+  exerciseKey: string;
+  group: WorkoutTemplate["supersetGroups"][number];
+  setIndex: number;
+  slot: TrainingPlanSlot;
+} | null {
+  for (const group of workoutTemplate.supersetGroups) {
+    for (const slot of group.slots) {
+      for (const setIndex of [1, 2, 3]) {
+        if (
+          getTrainingSessionExecutionSetId({
+            groupId: group.id,
+            setIndex,
+            slot,
+          }) !== setId
+        ) {
+          continue;
+        }
+
+        return {
+          exerciseKey: getTrainingSessionExerciseKey(group.id, slot),
+          group,
+          setIndex,
+          slot,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function getTrainingSessionExecutionDraftField(
+  action: Exclude<TrainingSessionExecutionAction, { type: "toggle-group" }>,
+): keyof TrainingSessionSetDraft {
+  if (action.type === "change-set-done") {
+    return "done";
+  }
+
+  if (action.type === "change-set-reps") {
+    return "reps";
+  }
+
+  return "weight";
+}
+
+function getTrainingSessionExecutionSetId({
+  groupId,
+  setIndex,
+  slot,
+}: {
+  groupId: string;
+  setIndex: number;
+  slot: TrainingPlanSlot;
+}): string {
+  return `${getTrainingSessionExerciseKey(groupId, slot)}-set-${setIndex}`;
 }
 
 function getTrainingSessionPrescriptionLabel(_slot: TrainingPlanSlot): string {

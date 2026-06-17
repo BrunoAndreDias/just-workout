@@ -1,30 +1,26 @@
 import { ChevronDown, Clock3, Dumbbell, ListChecks } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { SupersetGroup, TrainingPlanSlot, WorkoutTemplate } from "../index";
+import type { WorkoutTemplate } from "../index";
 import {
-  formatExerciseRole,
-  formatMovementPattern,
-  formatTargetMuscles,
-} from "./active-training-plan-read-model";
+  getWorkoutBlueprintReadModel,
+  type WorkoutBlueprintExerciseRowReadModel,
+  type WorkoutBlueprintSectionReadModel,
+} from "./workout-blueprint-read-model";
 import "./workout-blueprint.css";
 
 export function WorkoutBlueprint({ workoutTemplate }: { workoutTemplate: WorkoutTemplate }) {
-  const supersetGroups = workoutTemplate.supersetGroups.filter(
-    (group) => group.type === "superset",
-  );
-  const isolationGroup =
-    workoutTemplate.supersetGroups.find((group) => group.type === "isolation") ?? null;
+  const blueprint = getWorkoutBlueprintReadModel(workoutTemplate);
 
   return (
     <div className="workout-blueprint">
       <WarmupBlueprintItem />
 
-      {supersetGroups.slice(0, 2).map((group, index) => (
-        <SupersetBlueprintItem group={group} index={index} key={group.id} />
+      {blueprint.supersets.map((section) => (
+        <SupersetBlueprintItem key={section.title} section={section} />
       ))}
 
-      <IsolationFinisherBlueprintItem isolationGroup={isolationGroup} />
+      <IsolationFinisherBlueprintItem section={blueprint.isolationFinisher} />
       <CooldownBlueprintItem />
     </div>
   );
@@ -47,22 +43,16 @@ function WarmupBlueprintItem() {
   );
 }
 
-function SupersetBlueprintItem({ group, index }: { group: SupersetGroup; index: number }) {
+function SupersetBlueprintItem({ section }: { section: WorkoutBlueprintSectionReadModel }) {
   return (
     <BlueprintTimelineItem
       icon={<Dumbbell aria-hidden="true" />}
       markerTone="main"
       section={
         <WorkoutSection
-          defaultExpandedOnMobile={index === 0}
-          rows={getExercisePlanRows(group, index === 0 ? "A" : "B").map((row) => (
-            <ExercisePlanRow
-              key={`${group.id}-${row.exerciseLabel}-${row.slot.exerciseId}`}
-              prescription="3 × 8–12"
-              slot={row.slot}
-            />
-          ))}
-          title={`Superset ${index + 1}`}
+          defaultExpandedOnMobile={section.defaultExpandedOnMobile}
+          rows={section.rows.map((row) => <ExercisePlanRow key={row.key} row={row} />)}
+          title={section.title}
         />
       }
     />
@@ -70,9 +60,9 @@ function SupersetBlueprintItem({ group, index }: { group: SupersetGroup; index: 
 }
 
 function IsolationFinisherBlueprintItem({
-  isolationGroup,
+  section,
 }: {
-  isolationGroup: SupersetGroup | null;
+  section: WorkoutBlueprintSectionReadModel;
 }) {
   return (
     <BlueprintTimelineItem
@@ -80,15 +70,9 @@ function IsolationFinisherBlueprintItem({
       markerTone="main"
       section={
         <WorkoutSection
-          defaultExpandedOnMobile={false}
-          rows={getExercisePlanRows(isolationGroup, "C").map((row) => (
-            <ExercisePlanRow
-              key={`${isolationGroup?.id ?? "isolation"}-${row.exerciseLabel}-${row.slot.exerciseId}`}
-              prescription="3 × 8–12"
-              slot={row.slot}
-            />
-          ))}
-          title="Isolation Finisher"
+          defaultExpandedOnMobile={section.defaultExpandedOnMobile}
+          rows={section.rows.map((row) => <ExercisePlanRow key={row.key} row={row} />)}
+          title={section.title}
         />
       }
     />
@@ -187,38 +171,24 @@ function OptionalActivityRow({ activity }: { activity: string }) {
   return <p className="optional-activity-row">{activity}</p>;
 }
 
-function ExercisePlanRow({ prescription, slot }: { prescription: string; slot: TrainingPlanSlot }) {
+function ExercisePlanRow({ row }: { row: WorkoutBlueprintExerciseRowReadModel }) {
   return (
     <article className="exercise-plan-row">
       <div className="exercise-plan-row__identity">
         <div className="exercise-plan-row__name-stack">
-          <h3 className="exercise-plan-row__name">{slot.exerciseName}</h3>
-          <p className="exercise-plan-row__movement">
-            {formatMovementPattern(slot.movementPattern)}
-          </p>
+          <h3 className="exercise-plan-row__name">{row.exerciseName}</h3>
+          <p className="exercise-plan-row__movement">{row.movementPattern}</p>
         </div>
       </div>
 
-      <p className="exercise-plan-row__muscles">{formatTargetMuscles(slot.targetMuscles)}</p>
+      <p className="exercise-plan-row__muscles">{row.targetMuscles}</p>
 
       <div className="exercise-plan-row__prescription">
-        <span>{prescription}</span>
-        <span className="exercise-plan-row__role-badge">{formatExerciseRole(slot.role)}</span>
+        <span>{row.prescription}</span>
+        <span className="exercise-plan-row__role-badge">{row.role}</span>
       </div>
     </article>
   );
-}
-
-function getExercisePlanRows(
-  group: SupersetGroup | null,
-  labelPrefix: "A" | "B" | "C",
-): Array<{ exerciseLabel: string; slot: TrainingPlanSlot }> {
-  const slots = group?.slots ?? [];
-
-  return slots.map((slot, index) => ({
-    exerciseLabel: labelPrefix + (index + 1),
-    slot,
-  }));
 }
 
 function slugify(value: string): string {
