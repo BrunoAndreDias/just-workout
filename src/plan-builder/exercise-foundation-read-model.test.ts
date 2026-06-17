@@ -106,6 +106,36 @@ describe("exercise foundation read model", () => {
     });
   });
 
+  it("uses Exercise Selection Preferences for suggested foundation rows", () => {
+    const readModel = createReadModel({
+      blueprint: createReadyBlueprint({
+        exerciseSelectionPreferences: {
+          ...createReadyBlueprint().exerciseSelectionPreferences,
+          avoidedExercises: [{ id: "avoided-1", rawText: "Flat Barbell Bench Press" }],
+          preferredExercises: [{ id: "preferred-1", rawText: "Flat Dumbbell Bench Press" }],
+        },
+      }),
+    });
+    const horizontalPushRow = readModel.rows.find(
+      (row) => row.movementPattern === "horizontal_push",
+    );
+
+    expect(horizontalPushRow).toMatchObject({
+      shownExercise: {
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+      },
+      status: "suggested",
+    });
+    expect(
+      horizontalPushRow?.mainCompoundOptions.find(
+        (option) => option.id === "flat-dumbbell-bench-press",
+      ),
+    ).toMatchObject({
+      metadata: "Suggested, not confirmed",
+    });
+  });
+
   it("returns saved and suggested rotation pool previews from selected main compounds", () => {
     const readModel = createReadModel({
       blueprint: createReadyBlueprint({

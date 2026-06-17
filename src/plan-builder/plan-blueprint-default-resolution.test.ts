@@ -193,6 +193,32 @@ describe("plan blueprint default resolution", () => {
     });
   });
 
+  it("uses Exercise Selection Preferences when recommending missing main compound defaults", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
+      exerciseSelectionPreferences: {
+        ...createTestPlanBlueprint().exerciseSelectionPreferences,
+        avoidedExercises: [{ id: "avoided-1", rawText: "Flat Barbell Bench Press" }],
+        preferredExercises: [{ id: "preferred-1", rawText: "Flat Dumbbell Bench Press" }],
+      },
+      repRanges: "balanced_hypertrophy",
+      split: "full-body-3-day",
+    });
+
+    const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+    expect(resolution.recommendedDefaults).toContainEqual({
+      exerciseId: "flat-dumbbell-bench-press",
+      kind: "main_compound_selection",
+      movementPattern: "horizontal_push",
+    });
+    expect(resolution.resolvedBlueprint.mainCompoundSelections).toContainEqual({
+      exerciseId: "flat-dumbbell-bench-press",
+      movementPattern: "horizontal_push",
+    });
+  });
+
   it("preserves configured main compounds and only recommends the missing Upper/Lower coverage patterns", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),

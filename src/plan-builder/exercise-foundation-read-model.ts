@@ -5,6 +5,7 @@ import {
   getExerciseCatalogExercisesByMovementPattern,
   isMainCompoundEligible,
 } from "./exercise-catalog";
+import { recommendMainCompoundSelection } from "./main-compound-recommendation";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { PlanBlueprint } from "./plan-blueprint";
 import type { TrainingSplitId } from "./training-split";
@@ -106,35 +107,12 @@ type AccessoryMuscleGroupFilterId =
 
 type AccessoryEquipmentFilterId = "bodyweight" | "cable" | "dumbbells" | "loaded" | "machine";
 
-type SuggestedFoundationByPattern = Partial<Record<CompoundCapableMovementPatternId, string>>;
 type PickerFilterRule = {
   id: MainCompoundPickerFilterId;
   nameIncludes?: ReadonlyArray<string>;
   namePatterns?: ReadonlyArray<RegExp>;
   textIncludes?: ReadonlyArray<string>;
 };
-
-const fullBodySuggestedFoundation: SuggestedFoundationByPattern = {
-  hip_hamstring_dominant: "barbell-romanian-deadlifts",
-  horizontal_pull: "bent-over-barbell-rows",
-  horizontal_push: "flat-barbell-bench-press",
-  quad_dominant: "barbell-squats",
-  vertical_pull: "pull-ups",
-};
-
-const allPatternSuggestedFoundation: SuggestedFoundationByPattern = {
-  ...fullBodySuggestedFoundation,
-  vertical_push: "standing-overhead-barbell-press",
-};
-
-const suggestedFoundationBySplit = {
-  "alternating-full-body-a-b": fullBodySuggestedFoundation,
-  "full-body-2-day": fullBodySuggestedFoundation,
-  "full-body-3-day": fullBodySuggestedFoundation,
-  "rotating-push-pull-legs": allPatternSuggestedFoundation,
-  "upper-lower-4-day": allPatternSuggestedFoundation,
-  "upper-lower-full-body": allPatternSuggestedFoundation,
-} as const satisfies Record<TrainingSplitId, SuggestedFoundationByPattern>;
 
 const accessoryExercises: ReadonlyArray<ExerciseFoundationAccessoryExercise> = [
   {
@@ -267,7 +245,6 @@ export function getExerciseFoundationReadModel({
   const rotationPoolByPattern = new Map(
     blueprint.mainCompoundRotationPools.map((pool) => [pool.movementPattern, pool]),
   );
-  const suggestedFoundation = suggestedFoundationBySplit[blueprint.split];
   const coverage = getWeeklyMovementCoverage({
     mainCompoundSelections: normalizedSelections,
     split: blueprint.split,
@@ -275,7 +252,11 @@ export function getExerciseFoundationReadModel({
   });
   const rows = coverage.rows.map((row) => {
     const confirmedSelection = confirmedSelectionByPattern.get(row.movementPattern);
-    const suggestedExerciseId = suggestedFoundation[row.movementPattern];
+    const suggestedExerciseId = getSuggestedFoundationExerciseId({
+      exerciseSelectionPreferences: blueprint.exerciseSelectionPreferences,
+      movementPattern: row.movementPattern,
+      requirement: row.requirement,
+    });
     const status = getFoundationRowStatus({
       confirmedSelection,
       hasConfirmedSelections,
@@ -355,6 +336,27 @@ export function getExerciseFoundationReadModel({
           suggestedRequiredPatternCount,
         }),
   };
+}
+
+function getSuggestedFoundationExerciseId({
+  exerciseSelectionPreferences,
+  movementPattern,
+  requirement,
+}: {
+  exerciseSelectionPreferences: ExerciseFoundationReadyBlueprint["exerciseSelectionPreferences"];
+  movementPattern: CompoundCapableMovementPatternId;
+  requirement: "recommended" | "required";
+}): string | undefined {
+  if (requirement === "recommended") {
+    return undefined;
+  }
+
+  return (
+    recommendMainCompoundSelection({
+      exerciseSelectionPreferences,
+      movementPattern,
+    })?.exerciseId ?? undefined
+  );
 }
 
 function getMainCompoundOptions({
