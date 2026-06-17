@@ -1,10 +1,8 @@
 import type { MovementPatternId } from "../plan-builder/exercise-catalog";
-import { formatMovementPattern } from "./active-training-plan/active-training-plan-read-model";
 import type { TrainingSessionExerciseEntry, TrainingSessionSetEntry } from "./training-session";
 
 export type CompletedLoadVolumeMovementRow = {
   movementPattern: MovementPatternId;
-  movementPatternLabel: string;
   volume: number;
 };
 
@@ -14,7 +12,6 @@ export type CompletedLoadVolumeExerciseReport = {
   exerciseName: string;
   loadedSetCount: number;
   movementPattern: MovementPatternId;
-  movementPatternLabel: string;
 };
 
 export type CompletedLoadVolumeSummary = {
@@ -73,16 +70,11 @@ export function createCompletedLoadVolumeExerciseReport(
     exerciseName: exercise.exerciseName,
     loadedSetCount,
     movementPattern: exercise.movementPattern,
-    movementPatternLabel: formatSessionMovementPattern(exercise.movementPattern),
   };
 }
 
 export function isLoadedSet(set: TrainingSessionSetEntry): boolean {
   return set.weight > 0 && set.reps > 0;
-}
-
-function formatSessionMovementPattern(movementPattern: MovementPatternId): string {
-  return formatMovementPattern(movementPattern).replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function addExerciseVolumeToMovementPattern(
@@ -97,7 +89,6 @@ function addExerciseVolumeToMovementPattern(
 
   volumeByPattern.set(exercise.movementPattern, {
     movementPattern: exercise.movementPattern,
-    movementPatternLabel: currentPattern?.movementPatternLabel ?? exercise.movementPatternLabel,
     volume: (currentPattern?.volume ?? 0) + exercise.completedLoadVolume,
   });
 }
@@ -106,6 +97,6 @@ function sortMovementVolumeRows(
   rows: ReadonlyArray<CompletedLoadVolumeMovementRow>,
 ): CompletedLoadVolumeMovementRow[] {
   return [...rows].sort((firstRow, secondRow) =>
-    firstRow.movementPatternLabel.localeCompare(secondRow.movementPatternLabel),
+    firstRow.movementPattern.localeCompare(secondRow.movementPattern),
   );
 }

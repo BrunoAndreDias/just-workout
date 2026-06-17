@@ -1,9 +1,14 @@
 import {
-  type CompletedLoadVolumeExerciseReport,
   type CompletedLoadVolumeMovementRow,
   summarizeCompletedLoadVolume,
 } from "./completed-load-volume";
 import type { TrainingPlan } from "./training-plan";
+import {
+  formatMovementPatternVolumeLabel,
+  type PresentedCompletedLoadVolumeExerciseReport,
+  type PresentedCompletedLoadVolumeMovementRow,
+  presentCompletedLoadVolumeSummary,
+} from "./training-plan-presentation";
 import type { TrainingSession } from "./training-session";
 
 type TrainingHistoryWeek = {
@@ -16,7 +21,7 @@ type TrainingHistoryWeek = {
 type TrainingHistoryWeekMetrics = {
   loadedSetCount: number;
   totalVolume: number;
-  volumeByMovementPattern: CompletedLoadVolumeMovementRow[];
+  volumeByMovementPattern: PresentedCompletedLoadVolumeMovementRow[];
 };
 
 type CompletedTrainingSession = TrainingSession & { completedAt: string };
@@ -33,7 +38,7 @@ type MovementPatternGroupVolume = {
   totalVolume: number;
 };
 
-export type TrainingHistorySessionExerciseReport = CompletedLoadVolumeExerciseReport;
+export type TrainingHistorySessionExerciseReport = PresentedCompletedLoadVolumeExerciseReport;
 
 export type TrainingHistorySessionReport = {
   completedAt: string;
@@ -156,7 +161,10 @@ function summarizeTrainingSessionReports(
 ): TrainingHistoryWeekMetrics {
   let loadedSetCount = 0;
   let totalVolume = 0;
-  const volumeByPattern = new Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow>();
+  const volumeByPattern = new Map<
+    TrainingSessionMovementPattern,
+    PresentedCompletedLoadVolumeMovementRow
+  >();
 
   for (const sessionReport of sessionReports) {
     for (const exerciseReport of sessionReport.exercises) {
@@ -251,8 +259,8 @@ function createTrainingHistoryWeekSummary(
 }
 
 function createMovementPatternComparisons(
-  selectedWeekVolumes: ReadonlyArray<CompletedLoadVolumeMovementRow>,
-  previousWeekVolumes: ReadonlyArray<CompletedLoadVolumeMovementRow>,
+  selectedWeekVolumes: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>,
+  previousWeekVolumes: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>,
 ): ReadonlyArray<TrainingHistoryMovementPatternComparison> {
   const selectedVolumeByPattern = createVolumeByPatternIndex(selectedWeekVolumes);
   const previousVolumeByPattern = createVolumeByPatternIndex(previousWeekVolumes);
@@ -275,12 +283,14 @@ function createMovementPatternComparisons(
 }
 
 function createVolumeByPatternIndex(
-  rows: ReadonlyArray<CompletedLoadVolumeMovementRow>,
-): Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow> {
+  rows: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>,
+): Map<TrainingSessionMovementPattern, PresentedCompletedLoadVolumeMovementRow> {
   return new Map(rows.map((row) => [row.movementPattern, row] as const));
 }
 
-function getMaxMovementPatternVolume(rows: ReadonlyArray<CompletedLoadVolumeMovementRow>): number {
+function getMaxMovementPatternVolume(
+  rows: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>,
+): number {
   return Math.max(0, ...rows.map((row) => row.volume));
 }
 
@@ -292,8 +302,8 @@ function createMovementPatternComparison({
 }: {
   maxCurrentVolume: number;
   movementPattern: TrainingSessionMovementPattern;
-  previousRow: CompletedLoadVolumeMovementRow | undefined;
-  selectedRow: CompletedLoadVolumeMovementRow | undefined;
+  previousRow: PresentedCompletedLoadVolumeMovementRow | undefined;
+  selectedRow: PresentedCompletedLoadVolumeMovementRow | undefined;
 }): TrainingHistoryMovementPatternComparison {
   const currentVolume = selectedRow?.volume ?? 0;
   const previousVolume = previousRow?.volume ?? 0;
@@ -305,7 +315,9 @@ function createMovementPatternComparison({
     deltaVolume: currentVolume - previousVolume,
     movementPattern,
     movementPatternLabel:
-      selectedRow?.movementPatternLabel ?? previousRow?.movementPatternLabel ?? "",
+      selectedRow?.movementPatternLabel ??
+      previousRow?.movementPatternLabel ??
+      formatMovementPatternVolumeLabel(movementPattern),
     previousVolume,
     relativeVolumePercentage: calculateRelativeVolumePercentage(currentVolume, maxCurrentVolume),
   };
@@ -464,7 +476,9 @@ function resolveLeadingPushPullPatternGroup(
 function createTrainingHistorySessionReport(
   trainingSession: CompletedTrainingSession,
 ): TrainingHistorySessionReport {
-  const completedLoadVolume = summarizeCompletedLoadVolume(trainingSession.exercises);
+  const completedLoadVolume = presentCompletedLoadVolumeSummary(
+    summarizeCompletedLoadVolume(trainingSession.exercises),
+  );
 
   return {
     completedAt: trainingSession.completedAt,
@@ -477,8 +491,8 @@ function createTrainingHistorySessionReport(
 }
 
 function updateMovementPatternVolume(
-  volumeByPattern: Map<TrainingSessionMovementPattern, CompletedLoadVolumeMovementRow>,
-  exerciseReport: CompletedLoadVolumeExerciseReport,
+  volumeByPattern: Map<TrainingSessionMovementPattern, PresentedCompletedLoadVolumeMovementRow>,
+  exerciseReport: TrainingHistorySessionExerciseReport,
 ) {
   if (exerciseReport.completedLoadVolume <= 0) {
     return;

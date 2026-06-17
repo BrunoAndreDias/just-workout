@@ -26,7 +26,6 @@ describe("Completed Load Volume", () => {
       exerciseName: "Pull-Ups",
       loadedSetCount: 0,
       movementPattern: "vertical_pull",
-      movementPatternLabel: "Vertical Pull",
     });
   });
 
@@ -80,12 +79,10 @@ describe("Completed Load Volume", () => {
     expect(summary.volumeByMovementPattern).toEqual([
       {
         movementPattern: "horizontal_push",
-        movementPatternLabel: "Horizontal Push",
         volume: 940,
       },
       {
         movementPattern: "vertical_push",
-        movementPatternLabel: "Vertical Push",
         volume: 300,
       },
     ]);

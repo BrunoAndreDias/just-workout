@@ -530,7 +530,6 @@ describe("TrainingPlanRoute", () => {
       volumeByMovementPattern: [
         {
           movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
         },
       ],
     });
@@ -1035,12 +1034,10 @@ async function seedCompletedTrainingSessions(
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_push",
-            movementPatternLabel: "Horizontal Push",
             volume: 400,
           },
           {
             movementPattern: "quad_dominant",
-            movementPatternLabel: "Quad Dominant",
             volume: 600,
           },
         ],
@@ -1083,22 +1080,18 @@ async function seedCompletedTrainingSessions(
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_push",
-            movementPatternLabel: "Horizontal Push",
             volume: 500,
           },
           {
             movementPattern: "quad_dominant",
-            movementPatternLabel: "Quad Dominant",
             volume: 1000,
           },
           {
             movementPattern: "horizontal_pull",
-            movementPatternLabel: "Horizontal Pull",
             volume: 300,
           },
           {
             movementPattern: "vertical_pull",
-            movementPatternLabel: "Vertical Pull",
             volume: 600,
           },
         ],
@@ -1129,12 +1122,10 @@ async function seedCompletedTrainingSessions(
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_push",
-            movementPatternLabel: "Horizontal Push",
             volume: 400,
           },
           {
             movementPattern: "horizontal_pull",
-            movementPatternLabel: "Horizontal Pull",
             volume: 300,
           },
         ],
@@ -1171,17 +1162,14 @@ async function seedCompletedTrainingSessions(
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_push",
-            movementPatternLabel: "Horizontal Push",
             volume: 360,
           },
           {
             movementPattern: "quad_dominant",
-            movementPatternLabel: "Quad Dominant",
             volume: 900,
           },
           {
             movementPattern: "vertical_push",
-            movementPatternLabel: "Vertical Push",
             volume: 200,
           },
         ],

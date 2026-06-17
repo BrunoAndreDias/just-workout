@@ -1,288 +1,115 @@
-import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
-  applyPlanBlueprintTransition,
-  createDefaultPlanBlueprint,
-  normalizePlanBlueprint,
-  type PlanBlueprint,
-  type PlanBlueprintTransition,
-  type RepRangeStyleId,
-  type TrainingFrequencyDaysPerWeek,
-} from "./plan-blueprint";
-import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
-import type { TrainingSplitId } from "./training-split";
-import type {
-  OptionalVolumeMuscleGroupId,
-  TrainingVolumeConfiguration,
-  VolumePresetId,
-} from "./training-volume";
-import type { MainCompoundSelection } from "./weekly-movement-coverage";
+  getOrCreatePlanBlueprint as getOrCreateCurrentPlanBlueprint,
+  persistPlanBlueprintCommand,
+  planBlueprintCommandBuilders,
+} from "./plan-blueprint-command";
 
-async function getOrCreatePlanBlueprint() {
-  const existingBlueprint = await getCurrentPlanBlueprint();
-
-  if (existingBlueprint) {
-    return normalizePlanBlueprint(existingBlueprint);
-  }
-
-  const blueprint = createDefaultPlanBlueprint({
-    id: crypto.randomUUID(),
-    timestamp: new Date().toISOString(),
-  });
-
-  return savePlanBlueprint(blueprint);
+async function updateTrainingFrequency(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateTrainingFrequency>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.updateTrainingFrequency(options));
 }
 
-type UpdateTrainingFrequencyOptions = {
-  timestamp?: string;
-  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-};
+async function updateTrainingSplit(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateTrainingSplit>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.updateTrainingSplit(options));
+}
 
-type UpdateTrainingSplitOptions =
-  | {
-      split: TrainingSplitId;
-      timestamp?: string;
-      trainingSplitId?: never;
-    }
-  | {
-      split?: never;
-      timestamp?: string;
-      trainingSplitId: TrainingSplitId;
-    };
+async function updateRepRangeStyle(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateRepRangeStyle>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.updateRepRangeStyle(options));
+}
 
-type UpdateRepRangeStyleOptions = {
-  repRangeStyle: RepRangeStyleId;
-  timestamp?: string;
-};
-
-type UpdateTrainingVolumePresetOptions = {
-  timestamp?: string;
-  volumePreset: VolumePresetId;
-};
-
-type UpdateOptionalVolumeTargetOptions = {
-  isEnabled: boolean;
-  muscleGroup: OptionalVolumeMuscleGroupId;
-  timestamp?: string;
-};
-
-type UpdateExerciseSelectionPreferencesOptions = {
-  exerciseSelectionPreferences: ExerciseSelectionPreferences;
-  timestamp?: string;
-};
-
-type SelectMainCompoundOptions = {
-  exerciseId: string;
-  movementPattern: MainCompoundSelection["movementPattern"];
-  timestamp?: string;
-};
-
-type UpdateMainCompoundRotationPoolOptions = {
-  exerciseIds: ReadonlyArray<string>;
-  movementPattern: MainCompoundSelection["movementPattern"];
-  timestamp?: string;
-};
-
-type ConfirmTrainingFrequencyOptions = {
-  timestamp?: string;
-  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
-};
-
-type ConfirmTrainingSplitOptions = {
-  split: TrainingSplitId;
-  timestamp?: string;
-};
-
-type ConfirmRepRangeStyleOptions = {
-  repRangeStyle: RepRangeStyleId;
-  timestamp?: string;
-};
-
-type ConfirmTrainingVolumeOptions = {
-  timestamp?: string;
-  trainingVolumeConfiguration: TrainingVolumeConfiguration;
-};
-
-type ConfirmExerciseSelectionPreferencesOptions = {
-  exerciseSelectionPreferences?: ExerciseSelectionPreferences;
-  timestamp?: string;
-};
-
-type InitializeTrainingVolumeOptions = {
-  timestamp?: string;
-};
-
-type ApplyResolvedPlanBlueprintOptions = {
-  blueprint: PlanBlueprint;
-};
-
-async function savePlanBlueprintTransition(transition: PlanBlueprintTransition) {
-  const blueprint = await getOrCreatePlanBlueprint();
-
-  return savePlanBlueprint(
-    applyPlanBlueprintTransition({
-      blueprint,
-      transition,
-    }),
+async function updateTrainingVolumePreset(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateTrainingVolumePreset>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateTrainingVolumePreset(options),
   );
 }
 
-async function updateTrainingFrequency({
-  timestamp = new Date().toISOString(),
-  trainingFrequencyDaysPerWeek,
-}: UpdateTrainingFrequencyOptions) {
-  return savePlanBlueprintTransition({
-    timestamp,
-    trainingFrequencyDaysPerWeek,
-    type: "selectTrainingFrequency",
-  });
+async function updateOptionalVolumeTarget(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateOptionalVolumeTarget>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateOptionalVolumeTarget(options),
+  );
 }
 
-async function updateTrainingSplit(options: UpdateTrainingSplitOptions) {
-  return savePlanBlueprintTransition({
-    split: options.split ?? options.trainingSplitId,
-    timestamp: options.timestamp ?? new Date().toISOString(),
-    type: "selectTrainingSplit",
-  });
+async function updateExerciseSelectionPreferences(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateExerciseSelectionPreferences>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateExerciseSelectionPreferences(options),
+  );
 }
 
-async function updateRepRangeStyle({
-  repRangeStyle,
-  timestamp = new Date().toISOString(),
-}: UpdateRepRangeStyleOptions) {
-  return savePlanBlueprintTransition({
-    repRangeStyle,
-    timestamp,
-    type: "selectRepRangeStyle",
-  });
+async function updateMainCompoundSelection(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateMainCompoundSelection>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateMainCompoundSelection(options),
+  );
 }
 
-async function updateTrainingVolumePreset({
-  timestamp = new Date().toISOString(),
-  volumePreset,
-}: UpdateTrainingVolumePresetOptions) {
-  return savePlanBlueprintTransition({
-    timestamp,
-    type: "selectTrainingVolumePreset",
-    volumePreset,
-  });
+async function updateMainCompoundRotationPool(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateMainCompoundRotationPool>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateMainCompoundRotationPool(options),
+  );
 }
 
-async function updateOptionalVolumeTarget({
-  isEnabled,
-  muscleGroup,
-  timestamp = new Date().toISOString(),
-}: UpdateOptionalVolumeTargetOptions) {
-  return savePlanBlueprintTransition({
-    isEnabled,
-    muscleGroup,
-    timestamp,
-    type: "setOptionalVolumeTargetEnabled",
-  });
+async function confirmSelectedTrainingFrequency(
+  options: Parameters<typeof planBlueprintCommandBuilders.confirmTrainingFrequency>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.confirmTrainingFrequency(options),
+  );
 }
 
-async function updateExerciseSelectionPreferences({
-  exerciseSelectionPreferences,
-  timestamp = new Date().toISOString(),
-}: UpdateExerciseSelectionPreferencesOptions) {
-  return savePlanBlueprintTransition({
-    exerciseSelectionPreferences,
-    timestamp,
-    type: "updateExerciseSelectionPreferences",
-  });
+async function confirmSelectedTrainingSplit(
+  options: Parameters<typeof planBlueprintCommandBuilders.confirmTrainingSplit>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.confirmTrainingSplit(options));
 }
 
-async function updateMainCompoundSelection({
-  exerciseId,
-  movementPattern,
-  timestamp = new Date().toISOString(),
-}: SelectMainCompoundOptions) {
-  return savePlanBlueprintTransition({
-    exerciseId,
-    movementPattern,
-    timestamp,
-    type: "selectMainCompound",
-  });
+async function confirmSelectedRepRangeStyle(
+  options: Parameters<typeof planBlueprintCommandBuilders.confirmRepRangeStyle>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.confirmRepRangeStyle(options));
 }
 
-async function updateMainCompoundRotationPool({
-  exerciseIds,
-  movementPattern,
-  timestamp = new Date().toISOString(),
-}: UpdateMainCompoundRotationPoolOptions) {
-  return savePlanBlueprintTransition({
-    exerciseIds,
-    movementPattern,
-    timestamp,
-    type: "updateMainCompoundRotationPool",
-  });
+async function confirmSelectedTrainingVolume(
+  options: Parameters<typeof planBlueprintCommandBuilders.confirmTrainingVolume>[0],
+) {
+  return persistPlanBlueprintCommand(planBlueprintCommandBuilders.confirmTrainingVolume(options));
 }
 
-async function confirmSelectedTrainingFrequency({
-  timestamp = new Date().toISOString(),
-  trainingFrequencyDaysPerWeek,
-}: ConfirmTrainingFrequencyOptions) {
-  return savePlanBlueprintTransition({
-    timestamp,
-    trainingFrequencyDaysPerWeek,
-    type: "confirmTrainingFrequency",
-  });
+async function confirmSelectedExerciseSelectionPreferences(
+  options?: Parameters<typeof planBlueprintCommandBuilders.confirmExerciseSelectionPreferences>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.confirmExerciseSelectionPreferences(options),
+  );
 }
 
-async function confirmSelectedTrainingSplit({
-  split,
-  timestamp = new Date().toISOString(),
-}: ConfirmTrainingSplitOptions) {
-  return savePlanBlueprintTransition({
-    split,
-    timestamp,
-    type: "confirmTrainingSplit",
-  });
+async function initializeTrainingVolume(
+  options?: Parameters<typeof planBlueprintCommandBuilders.initializeTrainingVolume>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.initializeTrainingVolume(options),
+  );
 }
 
-async function confirmSelectedRepRangeStyle({
-  repRangeStyle,
-  timestamp = new Date().toISOString(),
-}: ConfirmRepRangeStyleOptions) {
-  return savePlanBlueprintTransition({
-    repRangeStyle,
-    timestamp,
-    type: "confirmRepRangeStyle",
-  });
-}
-
-async function confirmSelectedTrainingVolume({
-  timestamp = new Date().toISOString(),
-  trainingVolumeConfiguration,
-}: ConfirmTrainingVolumeOptions) {
-  return savePlanBlueprintTransition({
-    timestamp,
-    trainingVolumeConfiguration,
-    type: "confirmTrainingVolume",
-  });
-}
-
-async function confirmSelectedExerciseSelectionPreferences({
-  exerciseSelectionPreferences,
-  timestamp = new Date().toISOString(),
-}: ConfirmExerciseSelectionPreferencesOptions = {}) {
-  return savePlanBlueprintTransition({
-    exerciseSelectionPreferences,
-    timestamp,
-    type: "confirmExerciseSelectionPreferences",
-  });
-}
-
-async function initializeTrainingVolume({
-  timestamp = new Date().toISOString(),
-}: InitializeTrainingVolumeOptions = {}) {
-  return savePlanBlueprintTransition({
-    timestamp,
-    type: "initializeTrainingVolume",
-  });
-}
-
-async function applyResolvedPlanBlueprint({ blueprint }: ApplyResolvedPlanBlueprintOptions) {
-  return savePlanBlueprint(blueprint);
+async function applyResolvedPlanBlueprint(
+  options: Parameters<typeof planBlueprintCommandBuilders.applyResolvedPlanBlueprint>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.applyResolvedPlanBlueprint(options),
+  );
 }
 
 export const planBuilderService = {
@@ -292,7 +119,7 @@ export const planBuilderService = {
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
   confirmSelectedTrainingVolume,
-  getOrCreatePlanBlueprint,
+  getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
   updateExerciseSelectionPreferences,
   updateMainCompoundRotationPool,

@@ -154,7 +154,6 @@ describe("buildTrainingHistoryWeekReport", () => {
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_push",
-            movementPatternLabel: "Horizontal Push",
             volume: 1000,
           },
         ],
@@ -166,7 +165,6 @@ describe("buildTrainingHistoryWeekReport", () => {
         volumeByMovementPattern: [
           {
             movementPattern: "horizontal_pull",
-            movementPatternLabel: "Horizontal Pull",
             volume: 400,
           },
         ],
@@ -217,15 +215,13 @@ function createTrainingSessions(): ReadonlyArray<TrainingSession> {
       volumeByMovementPattern: [
         {
           movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
           volume: 600,
         },
         {
           movementPattern: "horizontal_pull",
-          movementPatternLabel: "Horizontal Pull",
           volume: 400,
         },
-        { movementPattern: "quad_dominant", movementPatternLabel: "Quad Dominant", volume: 500 },
+        { movementPattern: "quad_dominant", volume: 500 },
       ],
     }),
     createTrainingSession({
@@ -235,10 +231,9 @@ function createTrainingSessions(): ReadonlyArray<TrainingSession> {
       volumeByMovementPattern: [
         {
           movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
           volume: 600,
         },
-        { movementPattern: "vertical_push", movementPatternLabel: "Vertical Push", volume: 350 },
+        { movementPattern: "vertical_push", volume: 350 },
       ],
     }),
     createTrainingSession({
@@ -248,12 +243,10 @@ function createTrainingSessions(): ReadonlyArray<TrainingSession> {
       volumeByMovementPattern: [
         {
           movementPattern: "horizontal_push",
-          movementPatternLabel: "Horizontal Push",
           volume: 900,
         },
         {
           movementPattern: "horizontal_pull",
-          movementPatternLabel: "Horizontal Pull",
           volume: 700,
         },
       ],
@@ -263,8 +256,8 @@ function createTrainingSessions(): ReadonlyArray<TrainingSession> {
       id: "previous-week-2",
       templateLabel: "Lower",
       volumeByMovementPattern: [
-        { movementPattern: "quad_dominant", movementPatternLabel: "Quad Dominant", volume: 500 },
-        { movementPattern: "vertical_pull", movementPatternLabel: "Vertical Pull", volume: 650 },
+        { movementPattern: "quad_dominant", volume: 500 },
+        { movementPattern: "vertical_pull", volume: 650 },
       ],
     }),
   ];
@@ -286,7 +279,7 @@ function createTrainingSession({
     createdAt: completedAt,
     exercises: volumeByMovementPattern.map((row, index) => ({
       exerciseId: `${id}-exercise-${index + 1}`,
-      exerciseName: row.movementPatternLabel,
+      exerciseName: `${id}-exercise-${index + 1}`,
       movementPattern: row.movementPattern,
       sets: row.volume > 0 ? [{ reps: 1, setIndex: 1, weight: row.volume }] : [],
     })),

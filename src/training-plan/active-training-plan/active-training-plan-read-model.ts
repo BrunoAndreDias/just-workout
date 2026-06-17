@@ -1,5 +1,8 @@
 import { repRangeStyleLabels } from "../../plan-builder/plan-blueprint-options";
 import type { TrainingPlan, TrainingPlanSlot, WorkoutTemplate } from "../index";
+import { formatMovementPattern } from "../training-plan-presentation";
+
+export { formatExerciseRole, formatMovementPattern } from "../training-plan-presentation";
 
 export type ActiveTrainingPlanTabId = "overview" | `workout-${number}` | "compare";
 
@@ -31,19 +34,6 @@ export const movementCoverageRows: MovementCoverageRow[] = [
   { label: "Arms", patterns: ["elbow_flexion", "elbow_extension"] },
   { label: "Calves / Core", patterns: ["calves_accessories", "core"] },
 ];
-
-const movementPatternLabels = {
-  calves_accessories: "Calves/accessories",
-  core: "Core",
-  elbow_extension: "Elbow extension",
-  elbow_flexion: "Elbow flexion",
-  hip_hamstring_dominant: "Hip/hamstring dominant",
-  horizontal_pull: "Horizontal pull",
-  horizontal_push: "Horizontal push",
-  quad_dominant: "Quad dominant",
-  vertical_pull: "Vertical pull",
-  vertical_push: "Vertical push",
-} as const satisfies Record<TrainingPlanSlot["movementPattern"], string>;
 
 const targetMuscleLabels = {
   abs: "Abs",
@@ -199,12 +189,6 @@ export function getMuscleEmphasis(
   return uniqueMuscles.length > 0 ? uniqueMuscles : ["Balanced full body"];
 }
 
-export function formatMovementPattern(
-  movementPattern: TrainingPlanSlot["movementPattern"],
-): string {
-  return movementPatternLabels[movementPattern];
-}
-
 export function formatTargetMuscles(targetMuscles: TrainingPlanSlot["targetMuscles"]): string {
   if (targetMuscles.length === 0) {
     return "Target muscles TBD";
@@ -215,18 +199,6 @@ export function formatTargetMuscles(targetMuscles: TrainingPlanSlot["targetMuscl
 
 function formatTargetMuscle(targetMuscle: TrainingPlanSlot["targetMuscles"][number]): string {
   return targetMuscleLabels[targetMuscle];
-}
-
-export function formatExerciseRole(role: TrainingPlanSlot["role"]): string {
-  switch (role) {
-    case "main_compound":
-      return "Main";
-    case "abs":
-    case "secondary_compound":
-      return "Accessory";
-    case "isolation":
-      return "Isolation";
-  }
 }
 
 export function formatSummaryRepRangeStyle(trainingPlan: TrainingPlan): string {

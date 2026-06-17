@@ -1,17 +1,16 @@
-import {
-  formatExerciseRole,
-  formatMovementPattern,
-} from "./active-training-plan/active-training-plan-read-model";
 import { isBodyweightLoadExercise } from "./bodyweight-load";
-import {
-  type CompletedLoadVolumeMovementRow,
-  calculateVolumeByMovementPattern,
-} from "./completed-load-volume";
+import { calculateVolumeByMovementPattern } from "./completed-load-volume";
 import type {
   TrainingPlanSlot,
   TrainingPlanStartingLoadSuggestion,
   WorkoutTemplate,
 } from "./training-plan";
+import {
+  formatExerciseRole,
+  formatMovementPattern,
+  type PresentedCompletedLoadVolumeMovementRow,
+  presentCompletedLoadVolumeMovementRows,
+} from "./training-plan-presentation";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 
 export type TrainingSessionSetDraft = {
@@ -102,7 +101,7 @@ export type TrainingSessionExecutionReadModel = {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   groups: ReadonlyArray<TrainingSessionExecutionGroup>;
   plannedSetCount: number;
-  volumeByMovementPattern: ReadonlyArray<CompletedLoadVolumeMovementRow>;
+  volumeByMovementPattern: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>;
 };
 
 export function createEmptyTrainingSessionExecutionState(): TrainingSessionExecutionState {
@@ -162,9 +161,11 @@ export function createTrainingSessionExecutionReadModel({
       }),
     ),
     plannedSetCount,
-    volumeByMovementPattern: completedSession
-      ? completedSession.volumeByMovementPattern
-      : calculateVolumeByMovementPattern(entries),
+    volumeByMovementPattern: presentCompletedLoadVolumeMovementRows(
+      completedSession
+        ? completedSession.volumeByMovementPattern
+        : calculateVolumeByMovementPattern(entries),
+    ),
   };
 }
 
