@@ -95,17 +95,17 @@ describe("Plan Builder workflow", () => {
     });
   });
 
-  it("reports Exercise setup requirements from the configured Training Schedule and Training Volume", () => {
-    const missingSetupWorkflow = getPlanBuilderWorkflow({
+  it("keeps Exercises immediately ready from the current Plan Blueprint", () => {
+    const immediateWorkflow = getPlanBuilderWorkflow({
       activeStep: "exercises",
       blueprint: createTestPlanBlueprint(),
     });
 
-    expect(missingSetupWorkflow.exerciseSetup).toMatchObject({
-      configuredBlueprint: null,
-      isReady: false,
-      requiresTrainingSchedule: true,
-      requiresVolume: true,
+    expect(immediateWorkflow.exerciseSetup).toMatchObject({
+      configuredBlueprint: createTestPlanBlueprint(),
+      isReady: true,
+      requiresTrainingSchedule: false,
+      requiresVolume: false,
     });
 
     const readyBlueprint = createTestPlanBlueprint({

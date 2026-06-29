@@ -128,6 +128,19 @@ describe("planBuilderService", () => {
     });
   });
 
+  it("resumes blueprints saved before Main Compound Preferences existed with empty buckets", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.mainCompoundPreferences;
+
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundPreferences: [],
+    });
+  });
+
   it("persists draft Exercise Selection Preferences without changing confirmed builder progress", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const configuredBlueprint: PlanBlueprint = {

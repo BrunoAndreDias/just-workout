@@ -183,6 +183,7 @@ function createCompleteBlueprint({
     },
     equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
+    mainCompoundPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,
     repRanges: "balanced_hypertrophy",

@@ -39,7 +39,7 @@ export const planBuilderOnePageSections = [
   {
     id: "exercises",
     title: "Exercises",
-    subtitle: "Main compounds and swaps",
+    subtitle: "Ranked main compounds",
     icon: Dumbbell,
   },
   {
@@ -198,18 +198,24 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
+  const rankedBucketCount = blueprint.mainCompoundPreferences.length;
+  const rankedPreferenceCount = blueprint.mainCompoundPreferences.reduce(
+    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
+    0,
+  );
+
   return [
     {
-      id: "exercises-main-lifts",
-      label: `${blueprint.mainCompoundSelections.length} main lifts selected`,
+      id: "exercises-ranked-buckets",
+      label: `${rankedBucketCount} movement buckets ranked`,
     },
     {
-      id: "exercises-rotation-pools",
-      label: `${blueprint.mainCompoundRotationPools.length} rotation pools`,
+      id: "exercises-ranked-preferences",
+      label: `${rankedPreferenceCount} main compound preferences`,
     },
     {
       id: "exercises-status",
-      label: hasConfiguredExercises(blueprint) ? "Ready to generate" : "Coverage still needed",
+      label: hasConfiguredExercises(blueprint) ? "Preferences saved" : "Open to rank preferences",
     },
   ] as const;
 }

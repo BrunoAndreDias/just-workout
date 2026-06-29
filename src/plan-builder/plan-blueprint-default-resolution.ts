@@ -119,6 +119,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
   if (resolvedSplit) {
     const missingMainCompoundSelections = recommendMissingMainCompoundSelections({
       exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
+      mainCompoundPreferences: resolvedBlueprint.mainCompoundPreferences,
       mainCompoundSelections: resolvedBlueprint.mainCompoundSelections,
       split: resolvedSplit,
       trainingFrequencyDaysPerWeek: resolvedBlueprint.trainingFrequencyDaysPerWeek,

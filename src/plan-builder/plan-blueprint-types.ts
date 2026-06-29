@@ -1,4 +1,5 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
+import type { MainCompoundPreferenceBucket } from "./main-compound-preferences";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import type {
@@ -63,6 +64,7 @@ export type PlanBlueprint = {
   volumePreset: VolumePresetId | null;
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
+  mainCompoundPreferences: ReadonlyArray<MainCompoundPreferenceBucket>;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
@@ -159,6 +161,13 @@ export type UpdateMainCompoundRotationPoolOptions = {
   timestamp: string;
 };
 
+export type UpdateMainCompoundPreferencesOptions = {
+  blueprint: PlanBlueprint;
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
 export type ConfirmTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
@@ -237,6 +246,12 @@ export type PlanBlueprintTransition =
       type: "updateMainCompoundRotationPool";
     }
   | {
+      exerciseIds: ReadonlyArray<string>;
+      movementPattern: MainCompoundSelection["movementPattern"];
+      timestamp: string;
+      type: "updateMainCompoundPreferences";
+    }
+  | {
       timestamp: string;
       trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
       type: "confirmTrainingFrequency";
@@ -272,6 +287,7 @@ export type StoredPlanBlueprint = Omit<
   | "confirmedBuilderSteps"
   | "exerciseSelectionPreferences"
   | "equipmentPresetSource"
+  | "mainCompoundPreferences"
   | "mainCompoundSelections"
   | "mainCompoundRotationPools"
   | "volumePreset"
@@ -281,6 +297,7 @@ export type StoredPlanBlueprint = Omit<
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
   exerciseSelectionPreferences?: unknown;
   equipmentPresetSource?: unknown;
+  mainCompoundPreferences?: unknown;
   mainCompoundSelections?: unknown;
   mainCompoundRotationPools?: unknown;
   volumePreset?: unknown;

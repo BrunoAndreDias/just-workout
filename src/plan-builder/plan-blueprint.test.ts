@@ -22,9 +22,11 @@ import {
   selectRepRangeStyle,
   selectTrainingFrequency,
   selectTrainingSplit,
+  selectTrainingVolumePreset,
   summarizePlanBlueprint,
   trainingFrequencyOptions,
   updateExerciseSelectionPreferences,
+  updateMainCompoundPreferences,
   updateMainCompoundRotationPool,
 } from "./plan-blueprint";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
@@ -90,6 +92,7 @@ describe("plan blueprint", () => {
       volumePreset: null,
       volumePresetSource: null,
       weeklyRepTargets: null,
+      mainCompoundPreferences: [],
       mainCompoundSelections: [],
       mainCompoundRotationPools: [],
       exerciseSelectionPreferences: {
@@ -602,6 +605,43 @@ describe("plan blueprint", () => {
     });
   });
 
+  it("preserves ranked Main Compound Preferences when schedule, rep range, or volume choices change", () => {
+    const blueprintWithPreferences = updateMainCompoundPreferences({
+      blueprint: createConfirmedPlanBlueprint(),
+      exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+      movementPattern: "horizontal_push",
+      timestamp: firstUpdateTimestamp,
+    });
+    const blueprintWithFrequencyChange = selectTrainingFrequency({
+      blueprint: blueprintWithPreferences,
+      timestamp: secondUpdateTimestamp,
+      trainingFrequencyDaysPerWeek: 5,
+    });
+    const blueprintWithSplitChange = selectTrainingSplit({
+      blueprint: blueprintWithFrequencyChange,
+      split: "rotating-push-pull-legs",
+      timestamp: secondUpdateTimestamp,
+    });
+    const blueprintWithRepRangeChange = selectRepRangeStyle({
+      blueprint: blueprintWithSplitChange,
+      repRangeStyle: "controlled_higher_reps",
+      timestamp: secondUpdateTimestamp,
+    });
+    const blueprintWithVolumeChange = selectTrainingVolumePreset({
+      blueprint: blueprintWithRepRangeChange,
+      timestamp: secondUpdateTimestamp,
+      volumePreset: "higher_volume",
+    });
+
+    expect(blueprintWithVolumeChange.mainCompoundPreferences).toEqual([
+      {
+        exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+        movementPattern: "horizontal_push",
+        updatedAt: firstUpdateTimestamp,
+      },
+    ]);
+  });
+
   it("updates Main Compound Rotation Pools without allowing selected main compound exercises", () => {
     const blueprint = createConfirmedPlanBlueprint({
       confirmedBuilderSteps: { exercises: true },
@@ -678,25 +718,19 @@ describe("plan blueprint", () => {
     });
   });
 
-  it("blocks Exercises confirmation when required Weekly Movement Coverage is missing", () => {
-    expect(() =>
-      confirmExerciseSelectionPreferences({
-        blueprint: createConfirmedPlanBlueprint({
-          mainCompoundSelections: [
-            {
-              exerciseId: "flat-barbell-bench-press",
-              movementPattern: "horizontal_push",
-            },
-            {
-              exerciseId: "bent-over-barbell-rows",
-              movementPattern: "horizontal_pull",
-            },
-          ],
-        }),
-        timestamp: firstUpdateTimestamp,
+  it("allows confirming Exercises with empty or partial Main Compound Preference buckets", () => {
+    const confirmedBlueprint = confirmExerciseSelectionPreferences({
+      blueprint: createConfirmedPlanBlueprint({
+        mainCompoundSelections: [
+          {
+            exerciseId: "flat-barbell-bench-press",
+            movementPattern: "horizontal_push",
+          },
+        ],
       }),
-    ).toThrowError(
-      "Exercises cannot be confirmed while required Weekly Movement Coverage is missing.",
-    );
+      timestamp: firstUpdateTimestamp,
+    });
+
+    expect(confirmedBlueprint.confirmedBuilderSteps.exercises).toBe(true);
   });
 });

@@ -75,13 +75,62 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
 
     await user.click(exercisesCard);
-    expect(await screen.findByRole("heading", { name: "Exercises needs setup" })).toBeVisible();
-    expect(
-      screen.getByText("Choose a compatible split and weekly volume before selecting exercises."),
-    ).toBeVisible();
+    expect(await screen.findByText("Horizontal push")).toBeVisible();
+    expect(screen.getByText("Hip/hamstring dominant")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
 
     await user.click(await getOnePageSectionButton("Generate"));
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
+  });
+
+  it("captures ranked Main Compound Preferences from Exercises and keeps them when returning", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    await user.click(within(horizontalPushRow).getByRole("button", { name: /rank preferences/i }));
+
+    const picker = await screen.findByRole("dialog", {
+      name: /rank your horizontal push preferences/i,
+    });
+
+    await user.click(within(picker).getByText("Flat Barbell Bench Press"));
+    await user.click(within(picker).getByText("Incline Dumbbell Bench Press"));
+    await user.click(
+      within(picker).getByRole("button", { name: /move incline dumbbell bench press up/i }),
+    );
+    await user.click(
+      within(picker).getByRole("button", { name: /close main compound preferences picker/i }),
+    );
+
+    expect(within(horizontalPushRow).getByText("Incline Dumbbell Bench Press")).toBeVisible();
+    expect(within(horizontalPushRow).getByText("1. Incline Dumbbell Bench Press")).toBeVisible();
+    expect(within(horizontalPushRow).getByText("2. Flat Barbell Bench Press")).toBeVisible();
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+    expect(
+      await screen.findByRole("heading", {
+        name: /how many days can you train per week\?/i,
+      }),
+    ).toBeVisible();
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const reopenedHorizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    expect(
+      within(reopenedHorizontalPushRow).getByText("Incline Dumbbell Bench Press"),
+    ).toBeVisible();
+    expect(
+      within(reopenedHorizontalPushRow).getByText("1. Incline Dumbbell Bench Press"),
+    ).toBeVisible();
+    expect(
+      within(reopenedHorizontalPushRow).getByText("2. Flat Barbell Bench Press"),
+    ).toBeVisible();
   });
 
   it("keeps Plan Builder navigation inside /plan-builder when moving backward from Generate", async () => {
@@ -96,7 +145,7 @@ describe("Plan Builder canonical route", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
-    expect(await screen.findByRole("heading", { name: "Exercises needs setup" })).toBeVisible();
+    expect(await screen.findByText("Horizontal push")).toBeVisible();
   });
 
   it("prompts before generating when Recommended Defaults are needed and cancels without persisting them", async () => {
@@ -213,4 +262,15 @@ async function getOnePageSectionButton(title: string) {
   }
 
   return button;
+}
+
+async function getMainCompoundPreferenceRow(title: string) {
+  const label = await screen.findByText(title);
+  const row = label.closest("li");
+
+  if (!row) {
+    throw new Error(`Expected a Main Compound Preference row for "${title}".`);
+  }
+
+  return row;
 }

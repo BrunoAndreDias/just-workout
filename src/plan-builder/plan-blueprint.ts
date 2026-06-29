@@ -6,6 +6,10 @@ import {
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import {
+  normalizeMainCompoundPreferences,
+  updateMainCompoundPreferenceBucket,
+} from "./main-compound-preferences";
+import {
   applyMainCompoundRotationPoolUpdate,
   normalizeMainCompoundRotationPools,
 } from "./main-compound-rotation-pool";
@@ -27,15 +31,8 @@ export {
   trainingFrequencyOptions,
 } from "./plan-blueprint-options";
 
-import {
-  defaultConfirmedBuilderSteps,
-  getConfirmedBuilderSteps,
-  isVolumeStepComplete,
-} from "./plan-blueprint-progress";
-import {
-  getWeeklyMovementCoverage,
-  normalizeMainCompoundSelections,
-} from "./weekly-movement-coverage";
+import { defaultConfirmedBuilderSteps, getConfirmedBuilderSteps } from "./plan-blueprint-progress";
+import { normalizeMainCompoundSelections } from "./weekly-movement-coverage";
 
 export {
   getPlanBuilderRedirectStep,
@@ -69,6 +66,7 @@ import type {
   StoredPlanBlueprint,
   TrainingFrequencyDaysPerWeek,
   UpdateExerciseSelectionPreferencesOptions,
+  UpdateMainCompoundPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
 } from "./plan-blueprint-types";
 import {
@@ -116,6 +114,7 @@ export function createDefaultPlanBlueprint({
     volumePresetSource: null,
     weeklyRepTargets: null,
     mainCompoundSelections: [],
+    mainCompoundPreferences: [],
     mainCompoundRotationPools: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
     equipmentPresetSource: null,
@@ -179,6 +178,13 @@ export function applyPlanBlueprintTransition({
         movementPattern: transition.movementPattern,
         timestamp: transition.timestamp,
       });
+    case "updateMainCompoundPreferences":
+      return updateMainCompoundPreferences({
+        blueprint,
+        exerciseIds: transition.exerciseIds,
+        movementPattern: transition.movementPattern,
+        timestamp: transition.timestamp,
+      });
     case "updateMainCompoundRotationPool":
       return updateMainCompoundRotationPool({
         blueprint,
@@ -233,6 +239,7 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
       blueprint.exerciseSelectionPreferences,
     ),
     equipmentPresetSource: normalizeEquipmentPresetSource(blueprint),
+    mainCompoundPreferences: normalizeMainCompoundPreferences(blueprint.mainCompoundPreferences),
     mainCompoundSelections,
     mainCompoundRotationPools: normalizeMainCompoundRotationPools({
       mainCompoundSelections,
@@ -494,6 +501,35 @@ export function selectMainCompound({
   };
 }
 
+export function updateMainCompoundPreferences({
+  blueprint,
+  exerciseIds,
+  movementPattern,
+  timestamp,
+}: UpdateMainCompoundPreferencesOptions): PlanBlueprint {
+  const nextMainCompoundPreferences = updateMainCompoundPreferenceBucket({
+    exerciseIds,
+    movementPattern,
+    preferences: blueprint.mainCompoundPreferences,
+    updatedAt: timestamp,
+  });
+  const hasPreferencesChanged = !areMainCompoundPreferencesEqual(
+    blueprint.mainCompoundPreferences,
+    nextMainCompoundPreferences,
+  );
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
+    },
+    mainCompoundPreferences: nextMainCompoundPreferences,
+    updatedAt: timestamp,
+  };
+}
+
 export function updateMainCompoundRotationPool({
   blueprint,
   exerciseIds,
@@ -618,26 +654,6 @@ export function confirmExerciseSelectionPreferences({
     });
   }
 
-  if (!isVolumeStepComplete(blueprintToConfirm)) {
-    throw new Error("Exercises cannot be confirmed before Training Volume is confirmed.");
-  }
-
-  if (!blueprintToConfirm.split) {
-    throw new Error("Exercises cannot be confirmed before a Training Split is selected.");
-  }
-
-  if (
-    !getWeeklyMovementCoverage({
-      mainCompoundSelections: blueprintToConfirm.mainCompoundSelections,
-      split: blueprintToConfirm.split,
-      trainingFrequencyDaysPerWeek: blueprintToConfirm.trainingFrequencyDaysPerWeek,
-    }).canConfirmExercises
-  ) {
-    throw new Error(
-      "Exercises cannot be confirmed while required Weekly Movement Coverage is missing.",
-    );
-  }
-
   return {
     ...blueprintToConfirm,
     confirmedBuilderSteps: {
@@ -718,6 +734,24 @@ function areExerciseSelectionPreferenceItemsEqual(
         item.id === right[index]?.id &&
         item.matchedExerciseId === right[index]?.matchedExerciseId &&
         item.rawText === right[index]?.rawText,
+    )
+  );
+}
+
+function areMainCompoundPreferencesEqual(
+  left: PlanBlueprint["mainCompoundPreferences"],
+  right: PlanBlueprint["mainCompoundPreferences"],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (preference, index) =>
+        preference.movementPattern === right[index]?.movementPattern &&
+        preference.updatedAt === right[index]?.updatedAt &&
+        preference.exerciseIds.length === right[index]?.exerciseIds.length &&
+        preference.exerciseIds.every((exerciseId, exerciseIndex) => {
+          return exerciseId === right[index]?.exerciseIds[exerciseIndex];
+        }),
     )
   );
 }

@@ -2,9 +2,11 @@ import {
   type CompoundCapableMovementPatternId,
   type ExerciseCatalogExercise,
   getExerciseCatalogExercise,
-  getExerciseCatalogExercisesByMovementPattern,
-  isMainCompoundEligible,
 } from "./exercise-catalog";
+import {
+  getMainCompoundMovementPatternHelperText,
+  getMainCompoundOptionList,
+} from "./main-compound-option-presentation";
 import { recommendMainCompoundSelection } from "./main-compound-recommendation";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { PlanBlueprint } from "./plan-blueprint";
@@ -107,13 +109,6 @@ type AccessoryMuscleGroupFilterId =
 
 type AccessoryEquipmentFilterId = "bodyweight" | "cable" | "dumbbells" | "loaded" | "machine";
 
-type PickerFilterRule = {
-  id: MainCompoundPickerFilterId;
-  nameIncludes?: ReadonlyArray<string>;
-  namePatterns?: ReadonlyArray<RegExp>;
-  textIncludes?: ReadonlyArray<string>;
-};
-
 const accessoryExercises: ReadonlyArray<ExerciseFoundationAccessoryExercise> = [
   {
     beginnerFriendly: true,
@@ -187,46 +182,6 @@ const accessoryExercises: ReadonlyArray<ExerciseFoundationAccessoryExercise> = [
   },
 ];
 
-const mainCompoundPickerFilterLabels = {
-  all: "Equipment",
-  barbell: "Barbell",
-  beginner_friendly: "Beginner-friendly",
-  bodyweight: "Bodyweight",
-  dumbbells: "Dumbbells",
-  joint_friendly: "Joint-friendly",
-  machine: "Machine",
-} as const satisfies Record<MainCompoundPickerFilterId, string>;
-
-const pickerFilterRules: ReadonlyArray<PickerFilterRule> = [
-  {
-    id: "barbell",
-    namePatterns: [/\bbarbell\b/],
-    textIncludes: ["barbell"],
-  },
-  {
-    id: "dumbbells",
-    namePatterns: [/\bdumbbell\b/],
-    textIncludes: ["dumbbell"],
-  },
-  {
-    id: "machine",
-    nameIncludes: ["machine"],
-    textIncludes: ["machine"],
-  },
-  {
-    id: "bodyweight",
-    textIncludes: ["pull-up", "push-up", "chin-up", "inverted-rows", "dips"],
-  },
-  {
-    id: "beginner_friendly",
-    textIncludes: ["machine", "assisted", "leg-press", "lat-pull", "pulldown", "cable"],
-  },
-  {
-    id: "joint_friendly",
-    textIncludes: ["machine", "neutral", "assisted", "chest-supported", "seated"],
-  },
-];
-
 export function getExerciseFoundationReadModel({
   blueprint,
   weeklyRepTargets,
@@ -282,7 +237,7 @@ export function getExerciseFoundationReadModel({
       }),
       bucket: row.bucket,
       confirmedSelection,
-      helperText: getFoundationRowHelperText(row.movementPattern),
+      helperText: getMainCompoundMovementPatternHelperText(row.movementPattern),
       isCovered: row.isCovered,
       isMissing: status === "missing",
       mainCompoundOptions,
@@ -368,20 +323,15 @@ function getMainCompoundOptions({
   movementPattern: CompoundCapableMovementPatternId;
   suggestedExerciseId: string | undefined;
 }): ReadonlyArray<ExerciseFoundationCompoundOption> {
-  return getExerciseCatalogExercisesByMovementPattern(movementPattern)
-    .filter((exercise): exercise is ExerciseCatalogExercise & { role: "compound" } =>
-      isMainCompoundEligible(exercise),
-    )
-    .map((exercise) =>
-      decorateCompoundOption({
-        exercise,
-        metadata: getPickerOptionMetadata({
-          currentExerciseId,
-          exerciseId: exercise.id,
-          suggestedExerciseId,
-        }),
+  return getMainCompoundOptionList({
+    getMetadata: (exercise) =>
+      getPickerOptionMetadata({
+        currentExerciseId,
+        exerciseId: exercise.id,
+        suggestedExerciseId,
       }),
-    );
+    movementPattern,
+  });
 }
 
 function getRotationPoolReadModel({
@@ -456,23 +406,6 @@ function getRotationPoolOptions({
       ...exercise,
       metadata: "Same movement pattern and primary muscle group",
     }));
-}
-
-function decorateCompoundOption({
-  exercise,
-  metadata,
-}: {
-  exercise: ExerciseCatalogExercise & { role: "compound" };
-  metadata: string;
-}): ExerciseFoundationCompoundOption {
-  const filterIds = getPickerOptionFilterIds(exercise);
-
-  return {
-    ...exercise,
-    filterIds,
-    filterTags: getPickerOptionFilterTags(filterIds),
-    metadata,
-  };
 }
 
 function getAccessoryReadModel(weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>): {
@@ -625,23 +558,6 @@ function getMissingFoundationCopy(_movementPattern: CompoundCapableMovementPatte
   return "No exercise selected yet.";
 }
 
-function getFoundationRowHelperText(movementPattern: CompoundCapableMovementPatternId): string {
-  switch (movementPattern) {
-    case "horizontal_push":
-      return "Chest, shoulders, triceps.";
-    case "horizontal_pull":
-      return "Mid-back and upper-back balance.";
-    case "vertical_pull":
-      return "Lats and upper back.";
-    case "vertical_push":
-      return "Overhead push balance.";
-    case "quad_dominant":
-      return "Knee-dominant leg work.";
-    case "hip_hamstring_dominant":
-      return "Hamstrings, glutes, posterior chain.";
-  }
-}
-
 function getFoundationRowMetadata({
   optionCount,
   shownExerciseId,
@@ -676,57 +592,6 @@ function getPickerOptionMetadata({
   }
 
   return "Available main compound";
-}
-
-function getPickerOptionFilterIds(
-  exercise: ExerciseCatalogExercise,
-): ReadonlyArray<MainCompoundPickerFilterId> {
-  const normalizedName = exercise.name.toLowerCase();
-  const normalizedId = exercise.id.toLowerCase();
-
-  return pickerFilterRules
-    .filter((rule) =>
-      doesPickerFilterRuleMatch({
-        normalizedId,
-        normalizedName,
-        rule,
-      }),
-    )
-    .map((rule) => rule.id);
-}
-
-function doesPickerFilterRuleMatch({
-  normalizedId,
-  normalizedName,
-  rule,
-}: {
-  normalizedId: string;
-  normalizedName: string;
-  rule: PickerFilterRule;
-}): boolean {
-  return (
-    hasAnyTextMatch(normalizedName, rule.nameIncludes) ||
-    hasAnyTextMatch(normalizedId, rule.textIncludes) ||
-    hasAnyPatternMatch(normalizedName, rule.namePatterns)
-  );
-}
-
-function hasAnyTextMatch(value: string, matches: ReadonlyArray<string> = []): boolean {
-  return matches.some((match) => value.includes(match));
-}
-
-function hasAnyPatternMatch(value: string, patterns: ReadonlyArray<RegExp> = []): boolean {
-  return patterns.some((pattern) => pattern.test(value));
-}
-
-function getPickerOptionFilterTags(
-  filterIds: ReadonlyArray<MainCompoundPickerFilterId>,
-): ReadonlyArray<string> {
-  const tags = filterIds
-    .filter((filterId) => filterId !== "all")
-    .map((filterId) => mainCompoundPickerFilterLabels[filterId]);
-
-  return tags.length > 0 ? tags.slice(0, 2) : ["Compound"];
 }
 
 function getRotationPoolSummaryStatus({

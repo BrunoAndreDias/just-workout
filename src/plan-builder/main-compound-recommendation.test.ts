@@ -33,6 +33,27 @@ describe("main compound recommendation", () => {
     });
   });
 
+  it("uses ranked Main Compound Preferences before flat Exercise Selection Preferences and defaults", () => {
+    expect(
+      recommendMainCompoundSelection({
+        exerciseSelectionPreferences: {
+          ...createDefaultExerciseSelectionPreferences(),
+          preferredExercises: [{ id: "preferred-1", rawText: "Flat Dumbbell Bench Press" }],
+        },
+        mainCompoundPreferences: [
+          {
+            exerciseIds: ["incline-dumbbell-bench-press", "flat-barbell-bench-press"],
+            movementPattern: "horizontal_push",
+          },
+        ],
+        movementPattern: "horizontal_push",
+      }),
+    ).toEqual({
+      exerciseId: "incline-dumbbell-bench-press",
+      movementPattern: "horizontal_push",
+    });
+  });
+
   it("treats avoided exercises as hard exclusions before falling back", () => {
     expect(
       recommendMainCompoundSelection({

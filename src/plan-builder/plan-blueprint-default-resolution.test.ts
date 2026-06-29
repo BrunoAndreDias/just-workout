@@ -219,6 +219,46 @@ describe("plan blueprint default resolution", () => {
     });
   });
 
+  it("resolves ranked Main Compound Preferences before falling back to Recommended Defaults", () => {
+    const blueprint = createTestPlanBlueprint({
+      ...createRecommendedTrainingVolumeConfiguration(),
+      equipmentPresetSource: "user_selected",
+      exerciseSelectionPreferences: {
+        ...createTestPlanBlueprint().exerciseSelectionPreferences,
+        avoidedExercises: [{ id: "avoided-1", rawText: "Flat Barbell Bench Press" }],
+      },
+      mainCompoundPreferences: [
+        {
+          exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      repRanges: "balanced_hypertrophy",
+      split: "full-body-3-day",
+    });
+
+    const resolution = resolvePlanBlueprintRecommendedDefaults(blueprint);
+
+    expect(resolution.recommendedDefaults).toContainEqual({
+      exerciseId: "incline-dumbbell-bench-press",
+      kind: "main_compound_selection",
+      movementPattern: "horizontal_push",
+    });
+    expect(resolution.recommendedDefaults).toContainEqual({
+      exerciseId: "pull-ups",
+      kind: "main_compound_selection",
+      movementPattern: "vertical_pull",
+    });
+    expect(resolution.resolvedBlueprint.mainCompoundSelections).toContainEqual({
+      exerciseId: "incline-dumbbell-bench-press",
+      movementPattern: "horizontal_push",
+    });
+    expect(resolution.resolvedBlueprint.mainCompoundSelections).toContainEqual({
+      exerciseId: "pull-ups",
+      movementPattern: "vertical_pull",
+    });
+  });
+
   it("preserves configured main compounds and only recommends the missing Upper/Lower coverage patterns", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),

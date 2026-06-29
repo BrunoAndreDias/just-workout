@@ -37,6 +37,7 @@ export type ExerciseFoundationOptionPickerProps = {
   options: ReadonlyArray<ExerciseFoundationCompoundOption>;
   searchLabel: string;
   searchPlaceholder: string;
+  selectedOptionsContent?: ReactNode;
   title: string;
 };
 
@@ -57,6 +58,7 @@ export function ExerciseFoundationOptionPicker({
   options,
   searchLabel,
   searchPlaceholder,
+  selectedOptionsContent,
   title,
 }: ExerciseFoundationOptionPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -181,6 +183,10 @@ export function ExerciseFoundationOptionPicker({
             })}
           </fieldset>
         </div>
+
+        {selectedOptionsContent ? (
+          <div className="main-compound-drawer__selected-options">{selectedOptionsContent}</div>
+        ) : null}
 
         {listSemantics.kind === "radiogroup" ? (
           <div

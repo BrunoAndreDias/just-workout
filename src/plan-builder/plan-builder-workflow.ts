@@ -24,7 +24,7 @@ export type PlanBuilderWorkflow = {
     shouldSelectDefaultRepRangeStyle: boolean;
   };
   exerciseSetup: {
-    configuredBlueprint: (PlanBlueprint & { split: NonNullable<PlanBlueprint["split"]> }) | null;
+    configuredBlueprint: PlanBlueprint | null;
     isReady: boolean;
     requiresTrainingSchedule: boolean;
     requiresVolume: boolean;
@@ -60,8 +60,7 @@ export function getPlanBuilderWorkflow({
   const selectedRepRangeStyleId = savedRepRangeStyleId ?? defaultRepRangeStyleId;
   const trainingVolumeConfiguration =
     blueprint && isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
-  const configuredBlueprint =
-    blueprint && hasCompatibleSelectedTrainingSplit(blueprint) ? blueprint : null;
+  const configuredBlueprint = blueprint ?? null;
   const visibleTrainingSplitId = blueprint
     ? getVisibleTrainingSplitId(blueprint)
     : "full-body-3-day";
@@ -76,9 +75,9 @@ export function getPlanBuilderWorkflow({
     },
     exerciseSetup: {
       configuredBlueprint,
-      isReady: configuredBlueprint !== null && trainingVolumeConfiguration !== null,
-      requiresTrainingSchedule: configuredBlueprint === null,
-      requiresVolume: trainingVolumeConfiguration === null,
+      isReady: configuredBlueprint !== null,
+      requiresTrainingSchedule: false,
+      requiresVolume: false,
     },
     generation: {
       defaultResolution,

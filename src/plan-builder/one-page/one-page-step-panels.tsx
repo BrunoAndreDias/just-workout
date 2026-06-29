@@ -1,12 +1,9 @@
 import type { getRepRangeStyle } from "../plan-blueprint";
 import { hasValidTrainingFrequency, type PlanBlueprint } from "../plan-blueprint";
 import {
-  exerciseFoundationSetupCopy,
-  getExerciseFoundationSetupGuidance,
-  type MainCompoundRotationPoolChange,
-  type MainCompoundSelectionChange,
-  PlanBuilderExerciseFoundationStep,
-} from "../plan-builder-exercise-foundation";
+  type MainCompoundPreferencesChange,
+  PlanBuilderMainCompoundPreferencesStep,
+} from "../plan-builder-main-compound-preferences";
 import { RepRangeStyleStep } from "../steps/rep-range-style/rep-range-style-step";
 import { TrainingFrequencyStep } from "../steps/training-frequency/training-frequency-step";
 import { WeeklyVolumeTargetsStep } from "../steps/weekly-volume-targets/weekly-volume-targets-step";
@@ -109,66 +106,19 @@ export function OnePageExercisesStep({
   blueprint,
   onBackToVolume,
   onContinueToGenerate,
-  onMainCompoundSelectionChange,
-  onRotationPoolChange,
-  trainingVolumeConfiguration,
+  onMainCompoundPreferencesChange,
 }: {
-  blueprint: PlanBlueprint & { split: TrainingSplitId };
+  blueprint: PlanBlueprint;
   onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
-  onMainCompoundSelectionChange: (selection: MainCompoundSelectionChange) => Promise<unknown>;
-  onRotationPoolChange: (rotationPool: MainCompoundRotationPoolChange) => Promise<unknown>;
-  trainingVolumeConfiguration: TrainingVolumeConfiguration;
+  onMainCompoundPreferencesChange: (preferences: MainCompoundPreferencesChange) => Promise<unknown>;
 }) {
   return (
-    <PlanBuilderExerciseFoundationStep
+    <PlanBuilderMainCompoundPreferencesStep
       blueprint={blueprint}
       onBackToVolume={onBackToVolume}
       onContinueToGenerate={onContinueToGenerate}
-      onMainCompoundSelectionChange={onMainCompoundSelectionChange}
-      onRotationPoolChange={onRotationPoolChange}
-      weeklyRepTargets={trainingVolumeConfiguration.weeklyRepTargets}
+      onMainCompoundPreferencesChange={onMainCompoundPreferencesChange}
     />
-  );
-}
-
-export function ExerciseFoundationSetupState({
-  onOpenTrainingSchedule,
-  onOpenVolume,
-  requiresTrainingSchedule,
-  requiresVolume,
-}: {
-  onOpenTrainingSchedule: () => void;
-  onOpenVolume: () => void;
-  requiresTrainingSchedule: boolean;
-  requiresVolume: boolean;
-}) {
-  const guidance = getExerciseFoundationSetupGuidance({
-    requiresTrainingSchedule,
-    requiresVolume,
-  });
-
-  return (
-    <section className="plan-builder-one-page__loading">
-      <h3>{exerciseFoundationSetupCopy.heading}</h3>
-      <p>{exerciseFoundationSetupCopy.description}</p>
-      <ul>
-        {guidance.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-      <div className="flex flex-wrap gap-3 pt-2">
-        {requiresTrainingSchedule ? (
-          <button onClick={onOpenTrainingSchedule} type="button">
-            Open Training schedule
-          </button>
-        ) : null}
-        {requiresVolume ? (
-          <button onClick={onOpenVolume} type="button">
-            Open Volume
-          </button>
-        ) : null}
-      </div>
-    </section>
   );
 }

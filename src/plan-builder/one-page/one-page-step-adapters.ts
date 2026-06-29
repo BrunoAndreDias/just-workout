@@ -9,8 +9,7 @@ import {
   useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
   useConfirmTrainingVolumeMutation,
-  useUpdateMainCompoundRotationPoolMutation,
-  useUpdateMainCompoundSelectionMutation,
+  useUpdateMainCompoundPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
@@ -27,10 +26,7 @@ import type {
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
 } from "../plan-blueprint";
-import type {
-  MainCompoundRotationPoolChange,
-  MainCompoundSelectionChange,
-} from "../plan-builder-exercise-foundation";
+import type { MainCompoundPreferencesChange } from "../plan-builder-main-compound-preferences";
 import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
 import type {
@@ -185,9 +181,7 @@ export function useOnePageExercisesStep({
 }) {
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
-  const { mutateAsync: updateMainCompoundRotationPool } =
-    useUpdateMainCompoundRotationPoolMutation();
-  const { mutateAsync: updateMainCompoundSelection } = useUpdateMainCompoundSelectionMutation();
+  const { mutateAsync: updateMainCompoundPreferences } = useUpdateMainCompoundPreferencesMutation();
 
   return {
     onContinueToGenerate: async () => {
@@ -196,20 +190,11 @@ export function useOnePageExercisesStep({
       });
       setActiveStep("generate");
     },
-    onMainCompoundSelectionChange: async ({
-      exerciseId,
-      movementPattern,
-    }: MainCompoundSelectionChange) =>
-      updateMainCompoundSelection({
-        exerciseId,
-        movementPattern,
-        timestamp: new Date().toISOString(),
-      }),
-    onRotationPoolChange: async ({
+    onMainCompoundPreferencesChange: async ({
       exerciseIds,
       movementPattern,
-    }: MainCompoundRotationPoolChange) =>
-      updateMainCompoundRotationPool({
+    }: MainCompoundPreferencesChange) =>
+      updateMainCompoundPreferences({
         exerciseIds,
         movementPattern,
         timestamp: new Date().toISOString(),

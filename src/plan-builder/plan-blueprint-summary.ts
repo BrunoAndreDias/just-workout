@@ -44,9 +44,13 @@ export function summarizePlanBlueprint(blueprint: PlanBlueprint): PlanBlueprintS
     : null;
 
   return {
-    generationStatus: isExercisesConfigured
-      ? "Ready to generate"
-      : planBlueprintSummaryFallbacks.generationStatus,
+    generationStatus:
+      isTrainingScheduleConfigured &&
+      selectedRepRangeStyleId !== null &&
+      isVolumeConfigured &&
+      isExercisesConfigured
+        ? "Ready to generate"
+        : planBlueprintSummaryFallbacks.generationStatus,
     muscleFrequency: splitSummary?.muscleFrequency ?? pendingSplitDetail,
     nextStep: getPlanBlueprintNextStep({
       hasCompatibleSplit: isTrainingScheduleConfigured,

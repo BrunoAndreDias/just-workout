@@ -24,7 +24,6 @@ import {
   useTrainingVolumeDefaultSelection,
 } from "./one-page-step-adapters";
 import {
-  ExerciseFoundationSetupState,
   OnePageExercisesStep,
   OnePageRepRangeStep,
   OnePageTrainingScheduleStep,
@@ -187,24 +186,10 @@ function renderOnePageActiveStep({
         />
       );
     case "exercises": {
-      const configuredBlueprint = workflow.exerciseSetup.configuredBlueprint;
-
-      if (!configuredBlueprint || !trainingVolumeConfiguration) {
-        return (
-          <ExerciseFoundationSetupState
-            onOpenTrainingSchedule={() => setActiveStep("frequency")}
-            onOpenVolume={() => setActiveStep("volume")}
-            requiresTrainingSchedule={workflow.exerciseSetup.requiresTrainingSchedule}
-            requiresVolume={workflow.exerciseSetup.requiresVolume}
-          />
-        );
-      }
-
       return (
         <OnePageExercisesStep
-          blueprint={configuredBlueprint}
+          blueprint={blueprint}
           onBackToVolume={() => setActiveStep("volume")}
-          trainingVolumeConfiguration={trainingVolumeConfiguration}
           {...exercisesStep}
         />
       );

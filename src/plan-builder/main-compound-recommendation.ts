@@ -9,6 +9,11 @@ import {
   type ExerciseSelectionPreferenceItem,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
+import {
+  getMainCompoundPreferenceExerciseIds,
+  type MainCompoundPreferenceBucket,
+  normalizeMainCompoundPreferences,
+} from "./main-compound-preferences";
 import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint-types";
 import type { TrainingSplitId } from "./training-split";
 import {
@@ -19,11 +24,13 @@ import {
 
 type RecommendMainCompoundSelectionOptions = {
   exerciseSelectionPreferences: unknown;
+  mainCompoundPreferences?: ReadonlyArray<MainCompoundPreferenceBucket> | unknown;
   movementPattern: CompoundCapableMovementPatternId;
 };
 
 type RecommendMissingMainCompoundSelectionsOptions = {
   exerciseSelectionPreferences: unknown;
+  mainCompoundPreferences?: ReadonlyArray<MainCompoundPreferenceBucket> | unknown;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   split: TrainingSplitId;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
@@ -31,10 +38,12 @@ type RecommendMissingMainCompoundSelectionsOptions = {
 
 export function recommendMainCompoundSelection({
   exerciseSelectionPreferences,
+  mainCompoundPreferences,
   movementPattern,
 }: RecommendMainCompoundSelectionOptions): MainCompoundSelection | null {
   const exerciseId = getRecommendedMainCompoundExerciseId({
     exerciseSelectionPreferences,
+    mainCompoundPreferences,
     movementPattern,
   });
 
@@ -43,6 +52,7 @@ export function recommendMainCompoundSelection({
 
 export function recommendMissingMainCompoundSelections({
   exerciseSelectionPreferences,
+  mainCompoundPreferences,
   mainCompoundSelections,
   split,
   trainingFrequencyDaysPerWeek,
@@ -64,6 +74,7 @@ export function recommendMissingMainCompoundSelections({
 
     const selection = recommendMainCompoundSelection({
       exerciseSelectionPreferences,
+      mainCompoundPreferences,
       movementPattern,
     });
 
@@ -73,6 +84,7 @@ export function recommendMissingMainCompoundSelections({
 
 function getRecommendedMainCompoundExerciseId({
   exerciseSelectionPreferences,
+  mainCompoundPreferences,
   movementPattern,
 }: RecommendMainCompoundSelectionOptions): string | null {
   const availableExercises =
@@ -84,30 +96,81 @@ function getRecommendedMainCompoundExerciseId({
       .map(getExerciseSelectionPreferenceExerciseId)
       .filter((exerciseId): exerciseId is string => exerciseId !== null),
   );
-  const preferredExerciseIds = preferences.preferredExercises
-    .map(getExerciseSelectionPreferenceExerciseId)
-    .filter((exerciseId): exerciseId is string => exerciseId !== null);
+  const rankedMainCompoundPreferenceExerciseIds = getMainCompoundPreferenceExerciseIds({
+    movementPattern,
+    preferences: normalizeMainCompoundPreferences(mainCompoundPreferences),
+  });
+  const preferredExerciseIds = getPreferredExerciseIds(preferences.preferredExercises);
+  const prioritizedExerciseId =
+    findFirstSelectableExerciseId({
+      availableExerciseIds,
+      avoidedExerciseIds,
+      exerciseIds: rankedMainCompoundPreferenceExerciseIds,
+    }) ??
+    findFirstSelectableExerciseId({
+      availableExerciseIds,
+      avoidedExerciseIds,
+      exerciseIds: preferredExerciseIds,
+    });
 
-  for (const preferredExerciseId of preferredExerciseIds) {
-    if (
-      availableExerciseIds.has(preferredExerciseId) &&
-      !avoidedExerciseIds.has(preferredExerciseId)
-    ) {
-      return preferredExerciseId;
-    }
+  if (prioritizedExerciseId !== null) {
+    return prioritizedExerciseId;
   }
 
   const recommendedExerciseId =
     recommendedMainCompoundExerciseIdsByMovementPattern[movementPattern];
 
   if (
-    availableExerciseIds.has(recommendedExerciseId) &&
-    !avoidedExerciseIds.has(recommendedExerciseId)
+    isSelectableExerciseId({
+      availableExerciseIds,
+      avoidedExerciseIds,
+      exerciseId: recommendedExerciseId,
+    })
   ) {
     return recommendedExerciseId;
   }
 
   return availableExercises.find((exercise) => !avoidedExerciseIds.has(exercise.id))?.id ?? null;
+}
+
+function getPreferredExerciseIds(
+  preferences: ReadonlyArray<ExerciseSelectionPreferenceItem>,
+): ReadonlyArray<string> {
+  return preferences
+    .map(getExerciseSelectionPreferenceExerciseId)
+    .filter((exerciseId): exerciseId is string => exerciseId !== null);
+}
+
+function findFirstSelectableExerciseId({
+  availableExerciseIds,
+  avoidedExerciseIds,
+  exerciseIds,
+}: {
+  availableExerciseIds: ReadonlySet<string>;
+  avoidedExerciseIds: ReadonlySet<string>;
+  exerciseIds: ReadonlyArray<string>;
+}): string | null {
+  return (
+    exerciseIds.find((exerciseId) =>
+      isSelectableExerciseId({
+        availableExerciseIds,
+        avoidedExerciseIds,
+        exerciseId,
+      }),
+    ) ?? null
+  );
+}
+
+function isSelectableExerciseId({
+  availableExerciseIds,
+  avoidedExerciseIds,
+  exerciseId,
+}: {
+  availableExerciseIds: ReadonlySet<string>;
+  avoidedExerciseIds: ReadonlySet<string>;
+  exerciseId: string;
+}): boolean {
+  return availableExerciseIds.has(exerciseId) && !avoidedExerciseIds.has(exerciseId);
 }
 
 function getExerciseSelectionPreferenceExerciseId(

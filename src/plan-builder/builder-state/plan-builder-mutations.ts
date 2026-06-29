@@ -73,6 +73,12 @@ type UpdateMainCompoundRotationPoolMutationVariables = {
   timestamp: string;
 };
 
+type UpdateMainCompoundPreferencesMutationVariables = {
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
 type ConfirmTrainingVolumeMutationVariables = {
   timestamp: string;
   trainingVolumeConfiguration: TrainingVolumeConfiguration;
@@ -177,6 +183,12 @@ export function useUpdateMainCompoundSelectionMutation() {
 export function useUpdateMainCompoundRotationPoolMutation() {
   return usePlanBlueprintMutation<UpdateMainCompoundRotationPoolMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateMainCompoundRotationPool,
+  });
+}
+
+export function useUpdateMainCompoundPreferencesMutation() {
+  return usePlanBlueprintMutation<UpdateMainCompoundPreferencesMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.updateMainCompoundPreferences,
   });
 }
 

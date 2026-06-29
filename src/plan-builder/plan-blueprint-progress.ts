@@ -12,7 +12,6 @@ import type {
 } from "./plan-blueprint-types";
 import { isTrainingSplitCompatible } from "./training-split";
 import { isTrainingVolumeConfiguration } from "./training-volume";
-import { getWeeklyMovementCoverage } from "./weekly-movement-coverage";
 
 export const defaultConfirmedBuilderSteps = {
   exercises: false,
@@ -105,26 +104,10 @@ export function hasConfiguredTrainingVolume(
   return isTrainingVolumeConfiguration(blueprint);
 }
 
-export function hasConfiguredExercises(blueprint: PlanBlueprint | null | undefined): boolean {
-  if (
-    !blueprint ||
-    !hasConfiguredTrainingSchedule(blueprint) ||
-    !hasConfiguredTrainingVolume(blueprint)
-  ) {
-    return false;
-  }
-
-  const split = blueprint.split;
-
-  if (!split) {
-    return false;
-  }
-
-  return getWeeklyMovementCoverage({
-    mainCompoundSelections: blueprint.mainCompoundSelections,
-    split,
-    trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
-  }).canConfirmExercises;
+export function hasConfiguredExercises(
+  blueprint: ExercisesStepCompletionCandidate | null | undefined,
+): boolean {
+  return isExercisesStepComplete(blueprint);
 }
 
 export function getPlanBuilderRedirectStep(
