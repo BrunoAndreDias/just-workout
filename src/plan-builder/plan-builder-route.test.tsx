@@ -83,6 +83,22 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   });
 
+  it("opens Exercises immediately from a brand-new Plan Builder", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    expect(await screen.findByText("Horizontal push")).toBeVisible();
+    expect(screen.getByText("Horizontal pull")).toBeVisible();
+    expect(screen.getByText("Vertical push")).toBeVisible();
+    expect(screen.getByText("Vertical pull")).toBeVisible();
+    expect(screen.getByText("Quad dominant")).toBeVisible();
+    expect(screen.getByText("Hip/hamstring dominant")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
+  });
+
   it("captures ranked Main Compound Preferences from Exercises and keeps them when returning", async () => {
     const user = userEvent.setup();
 
