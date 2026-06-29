@@ -642,6 +642,39 @@ describe("plan blueprint", () => {
     ]);
   });
 
+  it("keeps Exercises confirmed when ranked Main Compound Preferences are re-saved without changing order", () => {
+    const confirmedBlueprint = {
+      ...createConfirmedPlanBlueprint(),
+      confirmedBuilderSteps: {
+        ...createConfirmedPlanBlueprint().confirmedBuilderSteps,
+        exercises: true,
+      },
+      mainCompoundPreferences: [
+        {
+          exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push" as const,
+          updatedAt: firstUpdateTimestamp,
+        },
+      ],
+    };
+
+    const updatedBlueprint = updateMainCompoundPreferences({
+      blueprint: confirmedBlueprint,
+      exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+      movementPattern: "horizontal_push",
+      timestamp: secondUpdateTimestamp,
+    });
+
+    expect(updatedBlueprint.confirmedBuilderSteps.exercises).toBe(true);
+    expect(updatedBlueprint.mainCompoundPreferences).toEqual([
+      {
+        exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+        movementPattern: "horizontal_push",
+        updatedAt: secondUpdateTimestamp,
+      },
+    ]);
+  });
+
   it("updates Main Compound Rotation Pools without allowing selected main compound exercises", () => {
     const blueprint = createConfirmedPlanBlueprint({
       confirmedBuilderSteps: { exercises: true },

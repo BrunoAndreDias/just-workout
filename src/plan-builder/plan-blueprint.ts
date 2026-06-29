@@ -747,7 +747,6 @@ function areMainCompoundPreferencesEqual(
     left.every(
       (preference, index) =>
         preference.movementPattern === right[index]?.movementPattern &&
-        preference.updatedAt === right[index]?.updatedAt &&
         preference.exerciseIds.length === right[index]?.exerciseIds.length &&
         preference.exerciseIds.every((exerciseId, exerciseIndex) => {
           return exerciseId === right[index]?.exerciseIds[exerciseIndex];
