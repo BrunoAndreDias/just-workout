@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
-import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
+import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import type { TrainingPlan } from "./training-plan";
 import { generateActiveTrainingPlanFromCurrentPlanBlueprint } from "./training-plan-generation";
 

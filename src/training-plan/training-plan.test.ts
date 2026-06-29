@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
-import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
+import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { generateTrainingPlanFromBlueprint } from "./training-plan";
 
 describe("generateTrainingPlanFromBlueprint", () => {
@@ -283,6 +283,50 @@ describe("generateTrainingPlanFromBlueprint", () => {
     ).toHaveLength(0);
     expectWorkoutHasNoDuplicateExercises(fullBodyTemplate);
   });
+
+  it("builds rotating Push/Pull/Legs templates from the rotating split cycle", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        split: "rotating-push-pull-legs",
+        trainingFrequencyDaysPerWeek: 5,
+      }),
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(trainingPlan.split).toBe("Rotating Push/Pull/Legs");
+    expect(trainingPlan.workoutTemplates.map((template) => template.label)).toEqual([
+      "Push A",
+      "Pull A",
+      "Legs",
+      "Push B",
+      "Pull B",
+    ]);
+
+    const pushA = trainingPlan.workoutTemplates.find((template) => template.label === "Push A");
+    const pushB = trainingPlan.workoutTemplates.find((template) => template.label === "Push B");
+    const pullA = trainingPlan.workoutTemplates.find((template) => template.label === "Pull A");
+    const pullB = trainingPlan.workoutTemplates.find((template) => template.label === "Pull B");
+    const legs = trainingPlan.workoutTemplates.find((template) => template.label === "Legs");
+
+    expect(pushA?.supersetGroups.map((group) => group.title)).toEqual([
+      "Upper superset 1",
+      "Upper superset 2",
+      "Isolation finisher",
+    ]);
+    expect(legs?.supersetGroups.map((group) => group.title)).toEqual([
+      "Lower superset 1",
+      "Lower superset 2",
+      "Isolation finisher",
+    ]);
+    expect(getExerciseIds(pushA)).toContain("flat-barbell-bench-press");
+    expect(getExerciseIds(pushB)).toContain("standing-overhead-barbell-press");
+    expect(getExerciseIds(pullA)).toContain("bent-over-barbell-rows");
+    expect(getExerciseIds(pullB)).toContain("pull-ups");
+    expect(getExerciseIds(legs)).toEqual(
+      expect.arrayContaining(["barbell-squats", "barbell-romanian-deadlifts"]),
+    );
+  });
 });
 
 function expectWorkoutHasNoDuplicateExercises(
@@ -295,6 +339,16 @@ function expectWorkoutHasNoDuplicateExercises(
   );
 
   expect(new Set(exerciseIds).size).toBe(exerciseIds?.length);
+}
+
+function getExerciseIds(
+  template:
+    | ReturnType<typeof generateTrainingPlanFromBlueprint>["workoutTemplates"][number]
+    | undefined,
+) {
+  return (
+    template?.supersetGroups.flatMap((group) => group.slots).map((slot) => slot.exerciseId) ?? []
+  );
 }
 
 function createCompleteBlueprint({

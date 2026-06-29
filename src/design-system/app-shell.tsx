@@ -1,6 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarCheck, ClipboardList, Dumbbell, History, Play } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  getTrainingSessionHistoryHref,
+  getTrainingSessionStartHref,
+  isTrainingPlansNavigationPathname,
+  trainingPlanPaths,
+} from "../training-plan";
 import { cn } from "./cn";
 import "./app-shell.css";
 
@@ -16,7 +22,7 @@ type AppShellTrainingSessionTarget = {
 };
 
 const planBuilderNavigationHref = "/plan-builder";
-const trainingPlansNavigationHref = "/training-plans";
+const trainingPlansNavigationHref = trainingPlanPaths.list;
 
 type AppShellNavigationHref = typeof planBuilderNavigationHref | typeof trainingPlansNavigationHref;
 
@@ -51,10 +57,10 @@ const appShellNavigationPillClassName =
 
 export function AppShell({ children, currentPathname, trainingSessionTarget }: AppShellProps) {
   const trainingHistoryPath = trainingSessionTarget
-    ? `/training-plans/${trainingSessionTarget.planId}/sessions`
+    ? getTrainingSessionHistoryHref(trainingSessionTarget.planId)
     : null;
   const startTrainingPath = trainingSessionTarget
-    ? `/training-plans/${trainingSessionTarget.planId}/sessions/new/${trainingSessionTarget.templateId}`
+    ? getTrainingSessionStartHref(trainingSessionTarget)
     : null;
 
   return (
@@ -94,7 +100,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                     activeOptions={{ exact: true }}
                     className={appShellNavigationLinkClassName}
                     params={{ planId: trainingSessionTarget.planId }}
-                    to="/training-plans/$planId/sessions"
+                    to={trainingPlanPaths.sessionHistory}
                   >
                     <AppShellNavigationPill
                       icon={
@@ -117,7 +123,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                       planId: trainingSessionTarget.planId,
                       templateId: trainingSessionTarget.templateId,
                     }}
-                    to="/training-plans/$planId/sessions/new/$templateId"
+                    to={trainingPlanPaths.sessionStart}
                   >
                     <AppShellNavigationPill
                       icon={
@@ -170,10 +176,7 @@ function isAppShellNavigationItemActive(currentPathname: string, href: AppShellN
     case planBuilderNavigationHref:
       return currentPathname.startsWith(planBuilderNavigationHref);
     case trainingPlansNavigationHref:
-      return (
-        currentPathname === trainingPlansNavigationHref ||
-        /^\/training-plans\/[^/]+$/.test(currentPathname)
-      );
+      return isTrainingPlansNavigationPathname(currentPathname);
   }
 }
 

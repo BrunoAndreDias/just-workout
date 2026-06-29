@@ -1,4 +1,4 @@
-import type { MovementPatternId } from "../plan-builder/exercise-catalog";
+import type { MovementPatternId } from "../training-taxonomy";
 import type {
   CompletedLoadVolumeExerciseReport,
   CompletedLoadVolumeMovementRow,

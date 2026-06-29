@@ -7,22 +7,16 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { TrainingPlan } from "../index";
+import type { ActiveTrainingPlanPageOverviewReadModel } from "./active-training-plan-read-model";
 import { MovementCoverageTable } from "./movement-coverage-table";
-import { getPlanSummaryReadModel } from "./plan-summary-read-model";
-import {
-  getWorkoutSplitSummaryReadModel,
-  type WorkoutTemplateMuscleEmphasisReadModel,
-} from "./workout-template-summary";
+import type { PlanSummaryReadModel } from "./plan-summary-read-model";
+import type { WorkoutTemplateMuscleEmphasisReadModel } from "./workout-template-summary";
 import "./overview-tab.css";
 
-export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
-  const workoutTemplates = trainingPlan.workoutTemplates;
-  const workoutSplitSummary = getWorkoutSplitSummaryReadModel(workoutTemplates);
-
+export function OverviewTab({ readModel }: { readModel: ActiveTrainingPlanPageOverviewReadModel }) {
   return (
     <div className="training-plan-overview">
-      <PlanSummaryCard trainingPlan={trainingPlan} />
+      <PlanSummaryCard summary={readModel.summary} />
 
       <div className="training-plan-overview__main-grid">
         <section
@@ -32,7 +26,7 @@ export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
           <h2 className="training-plan-overview-card__title" id="training-plan-movement-coverage">
             Movement pattern coverage
           </h2>
-          <MovementCoverageTable workoutTemplates={workoutTemplates} />
+          <MovementCoverageTable readModel={readModel.movementCoverage} />
         </section>
 
         <section
@@ -43,14 +37,14 @@ export function OverviewTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
             Workout split at a glance
           </h2>
           <div className="muscle-emphasis-list">
-            {workoutSplitSummary.templates.map((templateSummary) => (
+            {readModel.workoutSplitSummary.templates.map((templateSummary) => (
               <MuscleEmphasisPanel key={templateSummary.id} templateSummary={templateSummary} />
             ))}
           </div>
           <footer className="training-plan-overview-card__footer">
             <p className="training-plan-overview-card__support">
               <RotateCw aria-hidden="true" />
-              <span>{workoutSplitSummary.support}</span>
+              <span>{readModel.workoutSplitSummary.support}</span>
             </p>
             <div className="muscle-emphasis-legend">
               <span>
@@ -121,9 +115,7 @@ function EmphasisChipGroup({
   );
 }
 
-function PlanSummaryCard({ trainingPlan }: { trainingPlan: TrainingPlan }) {
-  const summary = getPlanSummaryReadModel(trainingPlan);
-
+function PlanSummaryCard({ summary }: { summary: PlanSummaryReadModel }) {
   return (
     <aside
       className="active-training-plan-summary"

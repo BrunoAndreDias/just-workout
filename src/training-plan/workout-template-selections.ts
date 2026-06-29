@@ -1,4 +1,4 @@
-import type { MainCompoundSelection } from "../plan-builder/weekly-movement-coverage";
+import type { MainCompoundSelection } from "../training-taxonomy";
 
 export type WorkoutTemplateSelections = {
   hipHamstringDominant: MainCompoundSelection | null;

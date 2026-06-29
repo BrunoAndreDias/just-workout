@@ -1,14 +1,12 @@
+import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import type {
   ExerciseCatalogMuscleGroupId,
+  MainCompoundRotationPool,
   MovementPatternId,
-} from "../plan-builder/exercise-catalog";
-import type { MainCompoundRotationPool } from "../plan-builder/main-compound-rotation-pool";
-import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
-import { getTrainingSplit } from "../plan-builder/training-split";
-import type { WeeklyRepTarget } from "../plan-builder/training-volume";
-import { createAssignedTemplateDrafts } from "./template-draft-assignment";
+  WeeklyRepTarget,
+} from "../training-taxonomy";
 import type { TrainingBlock } from "./training-block";
-import { createWorkoutTemplates } from "./workout-template-generation";
+import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-template-generation";
 
 export type TrainingPlanSlot = {
   exerciseId: string;
@@ -87,13 +85,7 @@ export function generateTrainingPlanFromBlueprint({
     throw new Error("Cannot generate a Training Plan without Training Volume.");
   }
 
-  const trainingSplit = getTrainingSplit(split);
-  const templateDrafts = createAssignedTemplateDrafts({
-    mainCompoundSelections: blueprint.mainCompoundSelections,
-    schedule: trainingSplit.schedule,
-    split,
-    trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
-  });
+  const { splitLabel, workoutTemplates } = createTrainingPlanTemplatesForBlueprint({ blueprint });
 
   return {
     active: true,
@@ -102,15 +94,12 @@ export function generateTrainingPlanFromBlueprint({
     mainCompoundRotationPools: blueprint.mainCompoundRotationPools,
     repRangeStyle: repRanges,
     sourceBlueprintId: blueprint.id,
-    split: trainingSplit.label,
+    split: splitLabel,
     trainingBlockWeeks: 6,
     trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
     trainingGoal: blueprint.trainingGoal,
     updatedAt: timestamp,
     weeklyRepTargets,
-    workoutTemplates: createWorkoutTemplates({
-      split,
-      templateDrafts,
-    }),
+    workoutTemplates,
   };
 }

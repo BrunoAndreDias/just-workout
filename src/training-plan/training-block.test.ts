@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
-import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
+import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import {
   applyConfirmedMainCompoundRotations,
   applyNextTrainingBlockLoadSuggestionEdit,

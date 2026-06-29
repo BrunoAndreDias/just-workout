@@ -1,25 +1,13 @@
 import type { WorkoutTemplate } from "./training-plan";
-
-export type TrainingSessionRouteParams = {
-  planId: string;
-  templateId: string;
-};
+import {
+  parseTrainingSessionStartPathname,
+  type TrainingSessionRouteParams,
+} from "./training-plan-paths";
 
 export function parseTrainingSessionRoutePathname(
   pathname: string,
 ): TrainingSessionRouteParams | null {
-  const match = /^\/training-plans\/([^/]+)\/sessions\/new\/([^/]+)$/.exec(pathname);
-  const planId = match?.[1];
-  const templateId = match?.[2];
-
-  if (!planId || !templateId) {
-    return null;
-  }
-
-  return {
-    planId: decodeURIComponent(planId),
-    templateId: decodeURIComponent(templateId),
-  };
+  return parseTrainingSessionStartPathname(pathname);
 }
 
 export function getWorkoutTemplateForTrainingSessionRoute({

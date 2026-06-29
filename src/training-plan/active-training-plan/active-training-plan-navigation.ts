@@ -1,12 +1,10 @@
 import type { TrainingPlan, WorkoutTemplate } from "../training-plan";
+import {
+  getTrainingSessionStartRouteTarget,
+  type TrainingSessionStartRouteTarget,
+} from "../training-plan-paths";
 
-export type StartWorkoutRouteTarget = {
-  params: {
-    planId: string;
-    templateId: string;
-  };
-  to: "/training-plans/$planId/sessions/new/$templateId";
-};
+export type StartWorkoutRouteTarget = TrainingSessionStartRouteTarget;
 
 export function getStartNextWorkoutRouteTarget(
   trainingPlan: Pick<TrainingPlan, "id" | "workoutTemplates">,
@@ -24,13 +22,7 @@ export function getStartWorkoutRouteTarget({
   planId: string;
   workoutTemplateId: string;
 }): StartWorkoutRouteTarget {
-  return {
-    params: {
-      planId,
-      templateId: workoutTemplateId,
-    },
-    to: "/training-plans/$planId/sessions/new/$templateId",
-  };
+  return getTrainingSessionStartRouteTarget({ planId, templateId: workoutTemplateId });
 }
 
 export function getNextWorkoutTemplateId({

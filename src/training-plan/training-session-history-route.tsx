@@ -5,6 +5,7 @@ import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
 import { CompletedSessionsSection } from "./completed-sessions-section";
 import { buildTrainingHistoryWeekReport } from "./training-history-week";
+import { parseTrainingSessionHistoryPathname } from "./training-plan-paths";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
@@ -148,10 +149,8 @@ function useTrainingHistoryData(planId: string | null) {
 
 function useTrainingSessionHistoryPlanId(): string | null {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const match = /^\/training-plans\/([^/]+)\/sessions$/.exec(pathname);
-  const planId = match?.[1];
 
-  return planId ? decodeURIComponent(planId) : null;
+  return parseTrainingSessionHistoryPathname(pathname)?.planId ?? null;
 }
 
 function useTrainingHistoryCompactLayout() {

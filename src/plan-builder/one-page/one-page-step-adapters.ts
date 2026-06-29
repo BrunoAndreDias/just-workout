@@ -1,14 +1,14 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
-  useApplyResolvedPlanBlueprintMutation,
+  type PlanBuilderStep,
+  planBuilderBlueprintQueryKey,
+} from "../builder-state/plan-builder-config";
+import {
   useConfirmExerciseSelectionPreferencesMutation,
   useConfirmRepRangeStyleMutation,
-  useConfirmTrainingFrequencyMutation,
-  useConfirmTrainingSplitMutation,
   useConfirmTrainingVolumeMutation,
-  useGenerateTrainingPlanMutation,
   useUpdateMainCompoundRotationPoolMutation,
   useUpdateMainCompoundSelectionMutation,
   useUpdateOptionalVolumeTargetMutation,
@@ -17,6 +17,11 @@ import {
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "../builder-state/plan-builder-mutations";
+import {
+  acceptGenerateTrainingPlanRecommendedDefaults,
+  type GenerateTrainingPlanWorkflowResult,
+  startGenerateTrainingPlanWorkflow,
+} from "../generate-training-plan-workflow";
 import type {
   PlanBlueprintDefaultResolution,
   RepRangeStyleId,
@@ -26,6 +31,7 @@ import type {
   MainCompoundRotationPoolChange,
   MainCompoundSelectionChange,
 } from "../plan-builder-exercise-foundation";
+import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
 import type {
   OptionalVolumeMuscleGroupId,
@@ -81,22 +87,24 @@ export function useOnePageTrainingScheduleStep({
   selectedTrainingSplitId: TrainingSplitId;
   setActiveStep: (step: PlanBuilderStep) => void;
 }) {
+  const queryClient = useQueryClient();
   const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
   const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
-  const { mutateAsync: confirmSelectedTrainingFrequency } = useConfirmTrainingFrequencyMutation();
-  const { mutateAsync: confirmSelectedTrainingSplit } = useConfirmTrainingSplitMutation();
+  const { mutateAsync: continueTrainingSchedule } = useMutation({
+    mutationFn: planBuilderService.continueTrainingSchedule,
+    onSuccess: ({ blueprint }) => {
+      queryClient.setQueryData(planBuilderBlueprintQueryKey, blueprint);
+    },
+  });
 
   return {
     onContinueToTrainingStyle: async () => {
-      const timestamp = new Date().toISOString();
-
-      updateTrainingSplit({ split: selectedTrainingSplitId, timestamp });
-      await confirmSelectedTrainingFrequency({
-        timestamp,
+      const result = await continueTrainingSchedule({
+        split: selectedTrainingSplitId,
         trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
       });
-      await confirmSelectedTrainingSplit({ split: selectedTrainingSplitId, timestamp });
-      setActiveStep("rep-ranges");
+
+      setActiveStep(result.nextStep);
     },
     onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) =>
       updateTrainingFrequency({
@@ -218,26 +226,33 @@ export function useOnePageGenerateStep({
   navigate: ReturnType<typeof useNavigate>;
   onPendingDefaultResolutionChange: (resolution: PlanBlueprintDefaultResolution | null) => void;
 }) {
-  const { mutateAsync: applyResolvedPlanBlueprint, isPending: isApplyingResolvedBlueprint } =
-    useApplyResolvedPlanBlueprintMutation();
-  const { mutateAsync: generateTrainingPlan, isPending: isGenerating } =
-    useGenerateTrainingPlanMutation();
+  const { mutateAsync: startGenerateStep, isPending: isStartingGenerateStep } = useMutation({
+    mutationFn: startGenerateTrainingPlanWorkflow,
+  });
+  const {
+    mutateAsync: acceptRecommendedDefaultsAndGenerate,
+    isPending: isAcceptingRecommendedDefaults,
+  } = useMutation({
+    mutationFn: acceptGenerateTrainingPlanRecommendedDefaults,
+  });
 
-  async function generateAndNavigate() {
-    const trainingPlan = await generateTrainingPlan();
+  async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
+    if (result.status === "pending_recommended_defaults") {
+      onPendingDefaultResolutionChange(result.resolution);
 
-    await navigate({
-      params: { planId: trainingPlan.id },
-      to: "/training-plans/$planId",
-    });
+      return;
+    }
+
+    onPendingDefaultResolutionChange(null);
+    await navigate(result.routeTarget);
   }
 
   return {
-    isGenerating: isGenerating || isApplyingResolvedBlueprint,
+    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults,
     onAcceptRecommendedDefaults: async (resolution: PlanBlueprintDefaultResolution) => {
-      await applyResolvedPlanBlueprint({ blueprint: resolution.resolvedBlueprint });
-      onPendingDefaultResolutionChange(null);
-      await generateAndNavigate();
+      const result = await acceptRecommendedDefaultsAndGenerate({ resolution });
+
+      await applyWorkflowResult(result);
     },
     onCancelRecommendedDefaults: () => {
       onPendingDefaultResolutionChange(null);
@@ -249,12 +264,9 @@ export function useOnePageGenerateStep({
         return;
       }
 
-      if (!resolution.isReady) {
-        onPendingDefaultResolutionChange(resolution);
-        return;
-      }
+      const result = await startGenerateStep({ defaultResolution: resolution });
 
-      await generateAndNavigate();
+      await applyWorkflowResult(result);
     },
   };
 }

@@ -1,27 +1,28 @@
 import type { ReactNode } from "react";
-import type { WorkoutTemplate } from "../index";
-import {
-  hasMovementCoverage,
-  type MovementCoverageRow,
-  movementCoverageRows,
+import type {
+  ActiveTrainingPlanMovementCoverageCellReadModel,
+  ActiveTrainingPlanMovementCoverageRowReadModel,
+  ActiveTrainingPlanMovementCoverageTableReadModel,
 } from "./active-training-plan-read-model";
 
-type MovementCoverageRowsProps = {
-  renderCell: (template: WorkoutTemplate, row: MovementCoverageRow) => ReactNode;
-  renderTrailingCell?: (row: MovementCoverageRow) => ReactNode;
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>;
+type MovementCoverageRowsProps<Row extends ActiveTrainingPlanMovementCoverageRowReadModel> = {
+  readModel: {
+    rows: ReadonlyArray<Row>;
+  };
+  renderCell: (cell: ActiveTrainingPlanMovementCoverageCellReadModel, row: Row) => ReactNode;
+  renderTrailingCell?: (row: Row) => ReactNode;
 };
 
-export function MovementCoverageRows({
+export function MovementCoverageRows<Row extends ActiveTrainingPlanMovementCoverageRowReadModel>({
+  readModel,
   renderCell,
   renderTrailingCell,
-  workoutTemplates,
-}: MovementCoverageRowsProps) {
-  return movementCoverageRows.map((row) => (
+}: MovementCoverageRowsProps<Row>) {
+  return readModel.rows.map((row) => (
     <tr key={row.label}>
       <th scope="row">{row.label}</th>
-      {workoutTemplates.map((template) => (
-        <td key={`${row.label}-${template.id}`}>{renderCell(template, row)}</td>
+      {row.cells.map((cell) => (
+        <td key={`${row.label}-${cell.templateId}`}>{renderCell(cell, row)}</td>
       ))}
       {renderTrailingCell ? <td>{renderTrailingCell(row)}</td> : null}
     </tr>
@@ -45,9 +46,9 @@ function MovementCoverageDot({ covered }: { covered: boolean }) {
 }
 
 export function MovementCoverageTable({
-  workoutTemplates,
+  readModel,
 }: {
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>;
+  readModel: ActiveTrainingPlanMovementCoverageTableReadModel;
 }) {
   return (
     <div className="movement-coverage-table-wrap">
@@ -55,19 +56,17 @@ export function MovementCoverageTable({
         <thead>
           <tr>
             <th scope="col">Pattern</th>
-            {workoutTemplates.map((template) => (
-              <th key={template.id} scope="col">
-                {template.label}
+            {readModel.columns.map((column) => (
+              <th key={column.id} scope="col">
+                {column.label}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           <MovementCoverageRows
-            renderCell={(template, row) => (
-              <MovementCoverageDot covered={hasMovementCoverage(template, row.patterns)} />
-            )}
-            workoutTemplates={workoutTemplates}
+            readModel={readModel}
+            renderCell={(cell) => <MovementCoverageDot covered={cell.covered} />}
           />
         </tbody>
       </table>

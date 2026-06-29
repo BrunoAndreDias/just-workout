@@ -1,0 +1,107 @@
+export const trainingPlanPaths = {
+  list: "/training-plans",
+  plan: "/training-plans/$planId",
+  sessionHistory: "/training-plans/$planId/sessions",
+  sessionStart: "/training-plans/$planId/sessions/new/$templateId",
+} as const;
+
+export type TrainingPlanRouteParams = {
+  planId: string;
+};
+
+export type TrainingSessionRouteParams = TrainingPlanRouteParams & {
+  templateId: string;
+};
+
+export type TrainingPlanRouteTarget = {
+  params: TrainingPlanRouteParams;
+  to: typeof trainingPlanPaths.plan;
+};
+
+export type TrainingSessionHistoryRouteTarget = {
+  params: TrainingPlanRouteParams;
+  to: typeof trainingPlanPaths.sessionHistory;
+};
+
+export type TrainingSessionStartRouteTarget = {
+  params: TrainingSessionRouteParams;
+  to: typeof trainingPlanPaths.sessionStart;
+};
+
+export function getTrainingPlanRouteTarget(planId: string): TrainingPlanRouteTarget {
+  return {
+    params: { planId },
+    to: trainingPlanPaths.plan,
+  };
+}
+
+export function getTrainingSessionHistoryRouteTarget(
+  planId: string,
+): TrainingSessionHistoryRouteTarget {
+  return {
+    params: { planId },
+    to: trainingPlanPaths.sessionHistory,
+  };
+}
+
+export function getTrainingSessionStartRouteTarget({
+  planId,
+  templateId,
+}: TrainingSessionRouteParams): TrainingSessionStartRouteTarget {
+  return {
+    params: { planId, templateId },
+    to: trainingPlanPaths.sessionStart,
+  };
+}
+
+function getTrainingPlanHref(planId: string): string {
+  return `${trainingPlanPaths.list}/${encodeURIComponent(planId)}`;
+}
+
+export function getTrainingSessionHistoryHref(planId: string): string {
+  return `${getTrainingPlanHref(planId)}/sessions`;
+}
+
+export function getTrainingSessionStartHref({
+  planId,
+  templateId,
+}: TrainingSessionRouteParams): string {
+  return `${getTrainingSessionHistoryHref(planId)}/new/${encodeURIComponent(templateId)}`;
+}
+
+export function parseTrainingPlanPathname(pathname: string): TrainingPlanRouteParams | null {
+  const match = /^\/training-plans\/([^/]+)$/.exec(pathname);
+  const planId = match?.[1];
+
+  return planId ? { planId: decodeURIComponent(planId) } : null;
+}
+
+export function parseTrainingSessionHistoryPathname(
+  pathname: string,
+): TrainingPlanRouteParams | null {
+  const match = /^\/training-plans\/([^/]+)\/sessions$/.exec(pathname);
+  const planId = match?.[1];
+
+  return planId ? { planId: decodeURIComponent(planId) } : null;
+}
+
+export function parseTrainingSessionStartPathname(
+  pathname: string,
+): TrainingSessionRouteParams | null {
+  const match = /^\/training-plans\/([^/]+)\/sessions\/new\/([^/]+)$/.exec(pathname);
+  const planId = match?.[1];
+  const templateId = match?.[2];
+
+  if (!planId || !templateId) {
+    return null;
+  }
+
+  return {
+    planId: decodeURIComponent(planId),
+    templateId: decodeURIComponent(templateId),
+  };
+}
+
+export function isTrainingPlansNavigationPathname(pathname: string): boolean {
+  return pathname === trainingPlanPaths.list || parseTrainingPlanPathname(pathname) !== null;
+}

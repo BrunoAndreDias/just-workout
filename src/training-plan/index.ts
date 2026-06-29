@@ -15,5 +15,17 @@ export type {
   TrainingPlanSlot,
   WorkoutTemplate,
 } from "./training-plan";
+export {
+  getTrainingPlanRouteTarget,
+  getTrainingSessionHistoryHref,
+  getTrainingSessionStartHref,
+  isTrainingPlansNavigationPathname,
+  type TrainingPlanRouteTarget,
+  trainingPlanPaths,
+} from "./training-plan-paths";
+export { trainingPlansQueryOptions } from "./training-plan-query-options";
+export { TrainingPlanRoute, TrainingPlansRoute } from "./training-plan-route";
 export { trainingPlanService } from "./training-plan-service";
 export type { TrainingSession } from "./training-session";
+export { TrainingSessionHistoryRoute } from "./training-session-history-route";
+export { TrainingSessionRoute } from "./training-session-route";

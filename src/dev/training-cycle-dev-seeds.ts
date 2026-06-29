@@ -1,6 +1,5 @@
 import type { PlanBlueprint } from "../plan-builder";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
-import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
 import {
   generateTrainingPlanFromBlueprint,
   type TrainingPlan,
@@ -8,6 +7,7 @@ import {
 } from "../training-plan/training-plan";
 import { seedTrainingPlanData } from "../training-plan/training-plan-repository";
 import { createCompletedTrainingSession } from "../training-plan/training-session";
+import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 
 export type TrainingCycleDevSeedResult = {
   acceptedNextCyclePlanId: string;

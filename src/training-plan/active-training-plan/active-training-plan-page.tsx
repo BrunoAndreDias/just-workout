@@ -2,24 +2,18 @@ import { useNavigate } from "@tanstack/react-router";
 import { History, Play } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, PageMain } from "../../design-system/typography";
-import type { NextTrainingBlockTransitionWorkflow, TrainingPlan } from "../index";
+import type { NextTrainingBlockTransitionWorkflow } from "../training-block-transition";
+import type { TrainingPlan } from "../training-plan";
 import {
-  getStartNextWorkoutRouteTarget,
-  getStartWorkoutRouteTarget,
-} from "./active-training-plan-navigation";
-import {
-  type ActiveTrainingPlanTab,
+  type ActiveTrainingPlanPageActionsReadModel,
+  type ActiveTrainingPlanPageReadModel,
+  type ActiveTrainingPlanPageTabReadModel,
   type ActiveTrainingPlanTabId,
-  getActiveTrainingPlanTabs,
-  getWorkoutTemplateForTab,
+  getActiveTrainingPlanPageReadModel,
 } from "./active-training-plan-read-model";
 import { CompareTab } from "./compare-tab";
 import { OverviewTab } from "./overview-tab";
-import {
-  getBlockProgressPercent,
-  getCurrentBlockWeek,
-  TrainingBlockProgress,
-} from "./training-block-progress";
+import { TrainingBlockProgress } from "./training-block-progress";
 import { WorkoutBlueprint } from "./workout-blueprint";
 import "../training-plan-loading.css";
 import "./active-training-plan-page.css";
@@ -32,24 +26,18 @@ export function ActiveTrainingPlanPage({
   trainingPlan: TrainingPlan;
 }) {
   const [activeTabId, setActiveTabId] = useState<ActiveTrainingPlanTabId>("overview");
+  const readModel = getActiveTrainingPlanPageReadModel({ activeTabId, trainingPlan });
 
   return (
     <section className="active-training-plan-page-shell" aria-label="Active Training Plan">
-      <PageHeader
-        description={`${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`}
-        title={trainingPlan.split}
-      />
+      <PageHeader description={readModel.header.description} title={readModel.header.title} />
       <PageMain>
         <ActiveTrainingPlanActions
           nextTrainingBlockTransition={nextTrainingBlockTransition}
-          trainingPlan={trainingPlan}
+          readModel={readModel}
         />
-        <ActiveTrainingPlanTabs
-          activeTabId={activeTabId}
-          setActiveTabId={setActiveTabId}
-          trainingPlan={trainingPlan}
-        />
-        <MobileStartWorkoutCta trainingPlan={trainingPlan} />
+        <ActiveTrainingPlanTabs readModel={readModel} setActiveTabId={setActiveTabId} />
+        <MobileStartWorkoutCta action={readModel.actions.startNextWorkout} />
       </PageMain>
     </section>
   );
@@ -65,17 +53,12 @@ export function ActiveTrainingPlanLoading({ children }: { children: string }) {
 
 function ActiveTrainingPlanActions({
   nextTrainingBlockTransition,
-  trainingPlan,
+  readModel,
 }: {
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
-  trainingPlan: TrainingPlan;
+  readModel: ActiveTrainingPlanPageReadModel;
 }) {
   const navigate = useNavigate();
-  const blockWeek = getCurrentBlockWeek(trainingPlan);
-  const blockProgressPercent = getBlockProgressPercent({
-    blockWeek,
-    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-  });
 
   return (
     <div className="active-training-plan-actions-panel">
@@ -83,7 +66,7 @@ function ActiveTrainingPlanActions({
         <button
           className="active-training-plan-hero__cta"
           onClick={() => {
-            void navigate(getStartNextWorkoutRouteTarget(trainingPlan));
+            void navigate(readModel.actions.startNextWorkout.routeTarget);
           }}
           type="button"
         >
@@ -92,36 +75,35 @@ function ActiveTrainingPlanActions({
             className="active-training-plan-hero__cta-icon"
             fill="currentColor"
           />
-          <span>Start next workout</span>
+          <span>{readModel.actions.startNextWorkout.label}</span>
         </button>
         <button
           className="active-training-plan-hero__settings"
           onClick={() => {
-            void navigate({
-              params: {
-                planId: trainingPlan.id,
-              },
-              to: "/training-plans/$planId/sessions",
-            });
+            void navigate(readModel.actions.trainingHistory.routeTarget);
           }}
           type="button"
         >
           <History aria-hidden="true" className="active-training-plan-hero__settings-icon" />
-          <span>View training history</span>
+          <span>{readModel.actions.trainingHistory.label}</span>
         </button>
       </div>
       <TrainingBlockProgress
-        blockProgressPercent={blockProgressPercent}
-        blockWeek={blockWeek}
-        cycleNumber={trainingPlan.trainingBlock?.cycleNumber}
+        blockProgressPercent={readModel.progress.blockProgressPercent}
+        blockWeek={readModel.progress.blockWeek}
+        cycleNumber={readModel.progress.cycleNumber}
         nextTrainingBlockTransition={nextTrainingBlockTransition}
-        trainingBlockWeeks={trainingPlan.trainingBlockWeeks}
+        trainingBlockWeeks={readModel.progress.trainingBlockWeeks}
       />
     </div>
   );
 }
 
-function MobileStartWorkoutCta({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+function MobileStartWorkoutCta({
+  action,
+}: {
+  action: ActiveTrainingPlanPageActionsReadModel["startNextWorkout"];
+}) {
   const navigate = useNavigate();
 
   return (
@@ -129,7 +111,7 @@ function MobileStartWorkoutCta({ trainingPlan }: { trainingPlan: TrainingPlan })
       <button
         className="active-training-plan-mobile-cta__button"
         onClick={() => {
-          void navigate(getStartNextWorkoutRouteTarget(trainingPlan));
+          void navigate(action.routeTarget);
         }}
         type="button"
       >
@@ -138,58 +120,44 @@ function MobileStartWorkoutCta({ trainingPlan }: { trainingPlan: TrainingPlan })
           className="active-training-plan-mobile-cta__icon"
           fill="currentColor"
         />
-        <span>Start next workout</span>
+        <span>{action.label}</span>
       </button>
     </div>
   );
 }
 
 function ActiveTrainingPlanTabs({
-  activeTabId,
+  readModel,
   setActiveTabId,
-  trainingPlan,
 }: {
-  activeTabId: ActiveTrainingPlanTabId;
+  readModel: ActiveTrainingPlanPageReadModel;
   setActiveTabId: (activeTabId: ActiveTrainingPlanTabId) => void;
-  trainingPlan: TrainingPlan;
 }) {
-  const activeTrainingPlanTabs = getActiveTrainingPlanTabs(trainingPlan);
-  const activeTab = activeTrainingPlanTabs.find((tab) => tab.id === activeTabId);
-  const activeWorkoutTemplate = getWorkoutTemplateForTab(trainingPlan, activeTabId);
+  const activePanel = readModel.activeTab.panel;
 
   return (
     <div
       className={
         "active-training-plan-tabs" +
-        (activeWorkoutTemplate ? " active-training-plan-tabs--workout" : "")
+        (activePanel.kind === "workout" ? " active-training-plan-tabs--workout" : "")
       }
     >
       <div className="active-training-plan-tabs__bar">
-        <ActiveTrainingPlanTabList
-          activeTabId={activeTabId}
-          setActiveTabId={setActiveTabId}
-          tabs={activeTrainingPlanTabs}
-        />
-        {activeWorkoutTemplate ? <WorkoutSummaryPills /> : null}
+        <ActiveTrainingPlanTabList setActiveTabId={setActiveTabId} tabs={readModel.tabs} />
+        {activePanel.kind === "workout" ? <WorkoutSummaryPills /> : null}
       </div>
 
-      <ActiveTrainingPlanTabPanel
-        activeTab={activeTab}
-        activeTabId={activeTabId}
-        trainingPlan={trainingPlan}
-      />
+      <ActiveTrainingPlanTabPanel readModel={readModel} />
     </div>
   );
 }
 
 function ActiveTrainingPlanTabList({
-  activeTabId,
   setActiveTabId,
   tabs,
 }: {
-  activeTabId: ActiveTrainingPlanTabId;
   setActiveTabId: (activeTabId: ActiveTrainingPlanTabId) => void;
-  tabs: ActiveTrainingPlanTab[];
+  tabs: ActiveTrainingPlanPageTabReadModel[];
 }) {
   return (
     <div
@@ -200,7 +168,7 @@ function ActiveTrainingPlanTabList({
       {tabs.map((tab) => (
         <button
           aria-controls={`active-training-plan-tabpanel-${tab.id}`}
-          aria-selected={tab.id === activeTabId}
+          aria-selected={tab.isActive}
           className="active-training-plan-tabs__trigger"
           id={`active-training-plan-tab-${tab.id}`}
           key={tab.id}
@@ -215,54 +183,40 @@ function ActiveTrainingPlanTabList({
   );
 }
 
-function ActiveTrainingPlanTabPanel({
-  activeTab,
-  activeTabId,
-  trainingPlan,
-}: {
-  activeTab: ActiveTrainingPlanTab | undefined;
-  activeTabId: ActiveTrainingPlanTabId;
-  trainingPlan: TrainingPlan;
-}) {
-  const activeWorkoutTemplate = getWorkoutTemplateForTab(trainingPlan, activeTabId);
+function ActiveTrainingPlanTabPanel({ readModel }: { readModel: ActiveTrainingPlanPageReadModel }) {
   const navigate = useNavigate();
+  const activeTab = readModel.activeTab;
+  const panel = activeTab.panel;
 
   return (
     <div className="active-training-plan-content-grid">
       <div
-        aria-labelledby={`active-training-plan-tab-${activeTabId}`}
+        aria-labelledby={`active-training-plan-tab-${activeTab.id}`}
         className="active-training-plan-tabs__panel"
-        id={`active-training-plan-tabpanel-${activeTabId}`}
+        id={`active-training-plan-tabpanel-${activeTab.id}`}
         role="tabpanel"
       >
-        {activeWorkoutTemplate ? (
+        {panel.kind === "workout" ? (
           <>
             <div className="workout-session-start">
               <button
                 className="workout-session-start__button"
                 onClick={() => {
-                  void navigate(
-                    getStartWorkoutRouteTarget({
-                      planId: trainingPlan.id,
-                      workoutTemplateId: activeWorkoutTemplate.id,
-                    }),
-                  );
+                  void navigate(panel.startAction.routeTarget);
                 }}
                 type="button"
               >
                 <Play aria-hidden="true" fill="currentColor" />
-                <span>Start {activeWorkoutTemplate.label} session</span>
+                <span>{panel.startAction.label}</span>
               </button>
             </div>
-            <WorkoutBlueprint workoutTemplate={activeWorkoutTemplate} />
+            <WorkoutBlueprint workoutTemplate={panel.workoutTemplate} />
           </>
-        ) : activeTabId === "overview" ? (
-          <OverviewTab trainingPlan={trainingPlan} />
-        ) : activeTabId === "compare" ? (
-          <CompareTab trainingPlan={trainingPlan} />
-        ) : (
-          <p>{activeTab?.label} content placeholder</p>
-        )}
+        ) : panel.kind === "overview" ? (
+          <OverviewTab readModel={readModel.overview} />
+        ) : panel.kind === "compare" ? (
+          <CompareTab readModel={readModel.compare} />
+        ) : null}
       </div>
     </div>
   );

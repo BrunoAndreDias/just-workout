@@ -1,9 +1,10 @@
 import type { TrainingFrequencyDaysPerWeek } from "../plan-builder/plan-blueprint";
-import type { TrainingSplitId, TrainingSplitSchedule } from "../plan-builder/training-split";
 import {
   getWeeklyMovementCoverage,
   type MainCompoundSelection,
-} from "../plan-builder/weekly-movement-coverage";
+  type TrainingSplitId,
+  type TrainingSplitSchedule,
+} from "../training-taxonomy";
 
 export type WorkoutTemplateBucket = "Full Body" | "Legs" | "Lower" | "Pull" | "Push" | "Upper";
 

@@ -3,7 +3,7 @@ import {
   getExerciseCatalogExercisesByMovementPattern,
   isCompoundCapableMovementPattern,
   type MovementPatternId,
-} from "../plan-builder/exercise-catalog";
+} from "../training-taxonomy";
 import { isBodyweightLoadExercise } from "./bodyweight-load";
 import type { TrainingPlan, TrainingPlanStartingLoadSuggestion } from "./training-plan";
 import type { TrainingSession } from "./training-session";

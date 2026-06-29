@@ -7,7 +7,7 @@ import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
-import { createPresetWeeklyRepTargets } from "../plan-builder/training-volume";
+import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import type { TrainingSession } from "./index";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
 import {

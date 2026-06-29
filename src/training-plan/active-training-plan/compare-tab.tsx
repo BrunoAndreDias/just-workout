@@ -1,13 +1,13 @@
-import type { TrainingPlan, WorkoutTemplate } from "../index";
-import { type CompareSessionSnapshotReadModel, getCompareReadModel } from "./compare-read-model";
-import { formatWeeklyCoverageCount, hasMovementCoverage } from "./movement-coverage-read-model";
+import type {
+  ActiveTrainingPlanCompareMovementCoverageTableReadModel,
+  ActiveTrainingPlanMovementCoverageCellReadModel,
+  ActiveTrainingPlanPageCompareReadModel,
+} from "./active-training-plan-read-model";
+import type { CompareSessionSnapshotReadModel } from "./compare-read-model";
 import { MovementCoverageRows } from "./movement-coverage-table";
 import "./compare-tab.css";
 
-export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
-  const workoutTemplates = trainingPlan.workoutTemplates;
-  const compareReadModel = getCompareReadModel(trainingPlan);
-
+export function CompareTab({ readModel }: { readModel: ActiveTrainingPlanPageCompareReadModel }) {
   return (
     <div className="training-plan-compare">
       <section
@@ -22,15 +22,11 @@ export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
             >
               Movement patterns comparison
             </h2>
-            <p className="training-plan-compare-card__helper">
-              {compareReadModel.movementPatternHelper}
-            </p>
+            <p className="training-plan-compare-card__helper">{readModel.movementPatternHelper}</p>
           </div>
-          <span className="training-plan-compare-card__chip">
-            {compareReadModel.sessionCountLabel}
-          </span>
+          <span className="training-plan-compare-card__chip">{readModel.sessionCountLabel}</span>
         </div>
-        <CompareMovementTable workoutTemplates={workoutTemplates} />
+        <CompareMovementTable readModel={readModel.movementCoverage} />
       </section>
 
       <section
@@ -41,20 +37,20 @@ export function CompareTab({ trainingPlan }: { trainingPlan: TrainingPlan }) {
           Session snapshots
         </h2>
         <div className="compare-snapshot-grid">
-          {compareReadModel.sessionSnapshots.map((snapshot) => (
+          {readModel.sessionSnapshots.map((snapshot) => (
             <CompareSessionSnapshot key={snapshot.id} snapshot={snapshot} />
           ))}
         </div>
-        <p className="compare-balance-callout">{compareReadModel.balanceCallout}</p>
+        <p className="compare-balance-callout">{readModel.balanceCallout}</p>
       </section>
     </div>
   );
 }
 
 function CompareMovementTable({
-  workoutTemplates,
+  readModel,
 }: {
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>;
+  readModel: ActiveTrainingPlanCompareMovementCoverageTableReadModel;
 }) {
   return (
     <div className="compare-table-wrap">
@@ -62,9 +58,9 @@ function CompareMovementTable({
         <thead>
           <tr>
             <th scope="col">Movement pattern</th>
-            {workoutTemplates.map((template) => (
-              <th key={template.id} scope="col">
-                {template.label}
+            {readModel.columns.map((column) => (
+              <th key={column.id} scope="col">
+                {column.label}
               </th>
             ))}
             <th scope="col">Weekly coverage</th>
@@ -72,11 +68,9 @@ function CompareMovementTable({
         </thead>
         <tbody>
           <MovementCoverageRows
-            renderCell={(template, row) => (
-              <CompareCoverageIndicator covered={hasMovementCoverage(template, row.patterns)} />
-            )}
-            renderTrailingCell={(row) => formatWeeklyCoverageCount(workoutTemplates, row.patterns)}
-            workoutTemplates={workoutTemplates}
+            readModel={readModel}
+            renderCell={(cell) => <CompareCoverageIndicator covered={cell.covered} />}
+            renderTrailingCell={(row) => row.weeklyCoverage}
           />
         </tbody>
       </table>
@@ -84,7 +78,9 @@ function CompareMovementTable({
   );
 }
 
-function CompareCoverageIndicator({ covered }: { covered: boolean }) {
+function CompareCoverageIndicator({
+  covered,
+}: Pick<ActiveTrainingPlanMovementCoverageCellReadModel, "covered">) {
   if (!covered) {
     return <span className="compare-coverage compare-coverage--no">No</span>;
   }

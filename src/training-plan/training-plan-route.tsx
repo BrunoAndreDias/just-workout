@@ -6,21 +6,22 @@ import {
   ActiveTrainingPlanLoading,
   ActiveTrainingPlanPage,
 } from "./active-training-plan/active-training-plan-page";
+import { createNextTrainingBlockTransitionWorkflow } from "./training-block-transition";
+import type { TrainingPlan } from "./training-plan";
 import {
-  createNextTrainingBlockTransitionWorkflow,
-  type TrainingPlan,
-  trainingPlanService,
-} from "./index";
+  getTrainingPlanRouteTarget,
+  parseTrainingPlanPathname,
+  trainingPlanPaths,
+} from "./training-plan-paths";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
+  trainingPlansQueryOptions,
 } from "./training-plan-query-options";
+import { trainingPlanService } from "./training-plan-service";
 
 export function TrainingPlansRoute() {
-  const trainingPlansQuery = useQuery({
-    queryFn: () => trainingPlanService.getTrainingPlans(),
-    queryKey: ["training-plans"],
-  });
+  const trainingPlansQuery = useQuery(trainingPlansQueryOptions());
   const trainingPlans = trainingPlansQuery.data ?? [];
 
   if (trainingPlansQuery.isLoading) {
@@ -85,10 +86,7 @@ export function TrainingPlanRoute() {
       nextTrainingBlockTransition={
         createNextTrainingBlockTransitionWorkflow({
           onAcceptedTrainingPlan: (savedTrainingPlan) =>
-            navigate({
-              params: { planId: savedTrainingPlan.id },
-              to: "/training-plans/$planId",
-            }),
+            navigate(getTrainingPlanRouteTarget(savedTrainingPlan.id)),
           saveAcceptedTrainingPlan: (nextTrainingPlan) =>
             saveNextTrainingPlan.mutateAsync(nextTrainingPlan),
           trainingPlan,
@@ -102,9 +100,8 @@ export function TrainingPlanRoute() {
 
 function useTrainingPlanIdFromPathname(): string | null {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const match = /^\/training-plans\/([^/]+)$/.exec(pathname);
 
-  return match?.[1] ?? null;
+  return parseTrainingPlanPathname(pathname)?.planId ?? null;
 }
 
 function TrainingPlanListItem({ trainingPlan }: { trainingPlan: TrainingPlan }) {
@@ -112,7 +109,7 @@ function TrainingPlanListItem({ trainingPlan }: { trainingPlan: TrainingPlan }) 
     <Link
       className="rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm transition-colors hover:border-[#007780]/45 hover:bg-white"
       params={{ planId: trainingPlan.id }}
-      to="/training-plans/$planId"
+      to={trainingPlanPaths.plan}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-black text-stone-950">{trainingPlan.split}</h2>

@@ -3,7 +3,7 @@ import {
   type ExerciseCatalogMuscleGroupId,
   getExerciseCatalogExercise,
   type MovementPatternId,
-} from "../plan-builder/exercise-catalog";
+} from "../training-taxonomy";
 import type { TrainingPlanSlot } from "./training-plan";
 
 export type DefaultExerciseSlotKey =

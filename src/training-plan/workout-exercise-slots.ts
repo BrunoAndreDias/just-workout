@@ -1,5 +1,4 @@
-import { getExerciseCatalogExercise } from "../plan-builder/exercise-catalog";
-import type { MainCompoundSelection } from "../plan-builder/weekly-movement-coverage";
+import { getExerciseCatalogExercise, type MainCompoundSelection } from "../training-taxonomy";
 import {
   createDefaultExerciseSlot,
   type DefaultExerciseSlotKey,

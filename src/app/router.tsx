@@ -1,9 +1,13 @@
 import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { TrainingCycleDevSeedRoute } from "../dev/training-cycle-dev-seed-route";
 import { PlanBuilderOnePageRoute, planBuilderPaths } from "../plan-builder";
-import { TrainingPlanRoute, TrainingPlansRoute } from "../training-plan/training-plan-route";
-import { TrainingSessionHistoryRoute } from "../training-plan/training-session-history-route";
-import { TrainingSessionRoute } from "../training-plan/training-session-route";
+import {
+  TrainingPlanRoute,
+  TrainingPlansRoute,
+  TrainingSessionHistoryRoute,
+  TrainingSessionRoute,
+  trainingPlanPaths,
+} from "../training-plan";
 import { RootLayout } from "./root-layout";
 
 const rootRoute = createRootRoute({
@@ -30,25 +34,25 @@ const planBuilderEntryRoute = createRoute({
 const trainingPlanRoute = createRoute({
   component: TrainingPlanRoute,
   getParentRoute: () => rootRoute,
-  path: "/training-plans/$planId",
+  path: trainingPlanPaths.plan,
 });
 
 const trainingSessionRoute = createRoute({
   component: TrainingSessionRoute,
   getParentRoute: () => rootRoute,
-  path: "/training-plans/$planId/sessions/new/$templateId",
+  path: trainingPlanPaths.sessionStart,
 });
 
 const trainingSessionHistoryRoute = createRoute({
   component: TrainingSessionHistoryRoute,
   getParentRoute: () => rootRoute,
-  path: "/training-plans/$planId/sessions",
+  path: trainingPlanPaths.sessionHistory,
 });
 
 const trainingPlansRoute = createRoute({
   component: TrainingPlansRoute,
   getParentRoute: () => rootRoute,
-  path: "/training-plans",
+  path: trainingPlanPaths.list,
 });
 
 const trainingCycleDevSeedRoute = createRoute({
