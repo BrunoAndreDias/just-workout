@@ -1,7 +1,5 @@
-import { ArrowRight, CheckCircle2, ChevronLeft, Info } from "lucide-react";
-import { Button } from "../../../design-system/button";
+import { CheckCircle2, Info } from "lucide-react";
 import { cn } from "../../../design-system/cn";
-import { StepActions } from "../../../design-system/step-screen";
 import { type RepRangeStyle, type RepRangeStyleId, repRangeStyles } from "../../plan-blueprint";
 import {
   getSelectableOptionCardClassName,
@@ -15,8 +13,6 @@ import "./rep-range-style-responsive.css";
 import "./rep-range-style-page-overrides.css";
 
 type RepRangeStyleStepProps = {
-  onBackToTrainingSchedule: () => void;
-  onContinueToVolume: () => Promise<void>;
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   savedRepRangeStyleId: RepRangeStyleId | null;
   selectedRepRangeStyle: RepRangeStyle;
@@ -38,8 +34,6 @@ type RepRangeStyleTargetsProps = {
   targets: RepRangeStyle["targets"];
 };
 export function RepRangeStyleStep({
-  onBackToTrainingSchedule,
-  onContinueToVolume,
   onRepRangeStyleChange,
   savedRepRangeStyleId,
   selectedRepRangeStyle,
@@ -65,24 +59,6 @@ export function RepRangeStyleStep({
         <Info aria-hidden="true" size={18} strokeWidth={1.9} />
         <span>Rest times and progression rules will be added when the plan is generated.</span>
       </div>
-
-      <StepActions className="rep-range-actions">
-        <Button onClick={onBackToTrainingSchedule} size="step" type="button" variant="outline">
-          <ChevronLeft aria-hidden="true" size={20} />
-          Back to Training schedule
-        </Button>
-        <Button
-          onClick={() => {
-            void onContinueToVolume();
-          }}
-          size="step"
-          type="button"
-          variant="builderPrimary"
-        >
-          Continue to Volume
-          <ArrowRight aria-hidden="true" size={20} strokeWidth={2.4} />
-        </Button>
-      </StepActions>
     </section>
   );
 }

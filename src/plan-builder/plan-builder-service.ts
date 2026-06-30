@@ -3,7 +3,6 @@ import {
   persistPlanBlueprintCommand,
   planBlueprintCommandBuilders,
 } from "./plan-blueprint-command";
-import { planBuilderActions } from "./plan-builder-actions";
 
 async function updateTrainingFrequency(
   options: Parameters<typeof planBlueprintCommandBuilders.updateTrainingFrequency>[0],
@@ -128,7 +127,6 @@ export const planBuilderService = {
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
   confirmSelectedTrainingVolume,
-  continueTrainingSchedule: planBuilderActions.continueTrainingSchedule,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
   updateMainCompoundPreferences,

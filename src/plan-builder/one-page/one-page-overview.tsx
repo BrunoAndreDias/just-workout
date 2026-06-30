@@ -20,36 +20,42 @@ import "./one-page-overview.css";
 export const planBuilderOnePageSections = [
   {
     id: "frequency",
+    compactTitle: "Schedule",
     title: "Training schedule",
     subtitle: "Frequency and split",
     icon: CircleCheck,
   },
   {
     id: "rep-ranges",
+    compactTitle: "Rep ranges",
     title: "Rep ranges",
     subtitle: "Intensity target",
     icon: SlidersHorizontal,
   },
   {
     id: "volume",
+    compactTitle: "Volume",
     title: "Volume",
     subtitle: "Sets and weekly load",
     icon: Layers3,
   },
   {
     id: "exercises",
+    compactTitle: "Exercises",
     title: "Exercises",
     subtitle: "Ranked main compounds",
     icon: Dumbbell,
   },
   {
     id: "generate",
+    compactTitle: "Generate",
     title: "Generate",
     subtitle: "Review before creation",
     icon: Wand2,
   },
 ] as const satisfies ReadonlyArray<{
   id: PlanBuilderStep;
+  compactTitle: string;
   icon: typeof CircleCheck;
   subtitle: string;
   title: string;
@@ -97,7 +103,12 @@ export function PlanBuilderOnePageSectionCard({
           )}
         </span>
         <span className="plan-builder-one-page__section-copy">
-          <span className="plan-builder-one-page__section-title">{section.title}</span>
+          <span className="plan-builder-one-page__section-title">
+            <span className="plan-builder-one-page__section-title-full">{section.title}</span>
+            <span aria-hidden="true" className="plan-builder-one-page__section-title-compact">
+              {section.compactTitle}
+            </span>
+          </span>
           <span className="plan-builder-one-page__section-subtitle">{section.subtitle}</span>
         </span>
         <span className="plan-builder-one-page__status-pill" data-status={status.tone}>

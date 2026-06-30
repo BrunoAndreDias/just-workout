@@ -49,10 +49,6 @@
   line-height: var(--jw-body-line-height);
 }
 
-.training-frequency-actions {
-  margin-top: var(--jw-content-gap);
-}
-
 /* Final Training Frequency hierarchy: current step first, supporting notes as rows. */
 .training-frequency-panel {
   min-width: 0;
@@ -135,11 +131,6 @@
   margin-top: 0.25rem;
   font-size: 0.875rem;
   line-height: 1.125rem;
-}
-
-.training-frequency-actions {
-  margin-top: 0.875rem;
-  padding-top: 0;
 }
 
 /* Structural frequency-step refactor. */
@@ -276,14 +267,6 @@
   line-height: 0.98rem;
 }
 
-.training-frequency-actions {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 0.75rem;
-  margin-top: 0.875rem;
-  padding-top: 0;
-}
-
 /* Grouped Training schedule step. */
 .training-frequency-panel {
   gap: 0;
@@ -300,17 +283,4 @@
 
 .training-frequency-option {
   min-height: 5.75rem;
-}
-
-.training-frequency-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  margin-top: 0.75rem;
-  background: linear-gradient(180deg, rgba(250, 246, 239, 0.84), rgba(250, 246, 239, 0.98));
-  padding: 0.75rem 0 0;
-}
-
-.training-frequency-actions > * {
-  width: 100%;
 }

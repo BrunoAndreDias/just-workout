@@ -1,28 +1,36 @@
 .plan-builder-one-page {
   --plan-builder-one-page-sticky-offset: 4.875rem;
   min-height: 100%;
-  padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
+  padding: 1rem var(--jw-page-padding-x) var(--jw-page-padding-y);
 }
 
 .plan-builder-one-page__surface {
-  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
+  min-height: calc(
+    100dvh -
+    (2 * var(--app-shell-frame-padding-y)) -
+    4.9375rem -
+    (2 * var(--jw-page-padding-y))
+  );
 }
 
-.plan-builder-one-page .jw-page-header {
-  max-width: 58rem;
+@media (min-width: 900px) and (min-height: 760px) {
+  .app-shell:has(.plan-builder-one-page):not(:has(.plan-builder-one-page__active-panel))
+    .app-shell-surface {
+    height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 2px);
+    min-height: 0;
+  }
 }
 
-.plan-builder-one-page .jw-page-lead {
-  max-width: 58rem;
-  color: #244256;
-  white-space: normal;
+.plan-builder-one-page__main {
+  margin-top: 0;
 }
+
 .plan-builder-one-page__active-panel {
   display: grid;
   grid-template-rows: auto;
   align-content: start;
   min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 13.5rem);
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   scroll-margin-top: 5.75rem;
   border: 0;
   border-radius: 0;
@@ -57,7 +65,10 @@
 }
 @media (max-width: 680px) {
   .plan-builder-one-page {
-    padding: 1.125rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+    padding: 0.75rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+  }
+  .plan-builder-one-page__surface {
+    min-height: auto;
   }
   .plan-builder-one-page__active-panel {
     min-height: calc(100dvh - 10rem);

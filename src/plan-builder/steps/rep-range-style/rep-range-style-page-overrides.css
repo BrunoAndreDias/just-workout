@@ -162,21 +162,6 @@
   .plan-builder-page.plan-builder-page--rep-ranges .plan-builder-workspace-card {
     padding-bottom: 1rem;
   }
-
-  .plan-builder-page.plan-builder-page--rep-ranges .step-actions.rep-range-actions {
-    position: sticky;
-    right: auto;
-    bottom: 0;
-    left: auto;
-    z-index: 10;
-    margin-top: 0;
-    background: linear-gradient(180deg, rgba(250, 246, 239, 0.84), rgba(250, 246, 239, 0.98));
-    padding: 0.75rem 0 0;
-  }
-
-  .plan-builder-page.plan-builder-page--rep-ranges .step-actions.rep-range-actions > * {
-    width: auto;
-  }
 }
 
 /* Final shared polish: keep Rep ranges in the same palette and action rail as every step. */
@@ -217,22 +202,6 @@
 @media (min-width: 1024px) and (min-height: 700px) {
   .plan-builder-page.plan-builder-page--rep-ranges .plan-builder-workspace-card {
     padding-bottom: 6rem;
-  }
-
-  .plan-builder-page.plan-builder-page--rep-ranges .step-actions.rep-range-actions {
-    position: fixed;
-    right: auto;
-    bottom: 0;
-    left: 50%;
-    z-index: 40;
-    width: min(
-      calc(100vw - (2 * var(--app-shell-frame-padding-x)) - 2px),
-      calc(var(--app-shell-frame-max-width) - (2 * var(--app-shell-frame-padding-x)) - 2px)
-    );
-    margin-top: 0;
-    transform: translateX(-50%);
-    background: linear-gradient(180deg, rgba(251, 248, 243, 0), #fbf8f3 38%);
-    padding: 0.875rem 1.75rem 1rem;
   }
 }
 

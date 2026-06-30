@@ -82,15 +82,6 @@
   min-width: 0;
 }
 
-.training-volume-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  margin-top: 1.25rem;
-}
-
 .weekly-volume-target-groups {
   display: grid;
   gap: 0;

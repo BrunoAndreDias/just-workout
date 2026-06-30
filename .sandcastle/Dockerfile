@@ -27,6 +27,15 @@ RUN groupmod -o -g $AGENT_GID node && usermod -o -u $AGENT_UID -g $AGENT_GID -d 
 # Install Codex CLI (run as root before USER agent)
 RUN npm install -g @openai/codex
 
+# Install rtk so sandbox agents can follow docs/agents/rtk.md.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+  | sh -s -- -y --profile minimal --default-toolchain stable \
+  && /root/.cargo/bin/cargo install --git https://github.com/rtk-ai/rtk --tag v0.35.0 --locked rtk \
+  && install -m 755 /root/.cargo/bin/rtk /usr/local/bin/rtk \
+  && rtk --version \
+  && /root/.cargo/bin/rustup self uninstall -y \
+  && rm -rf /root/.cargo /root/.rustup
+
 # Activate the repo's pinned pnpm version so plain `pnpm` works in hooks and scripts.
 RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
 

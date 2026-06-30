@@ -30,14 +30,17 @@ describe("Plan Builder canonical route", () => {
   it("routes / into the canonical plan builder workspace and shows a single Plan Builder nav entry", async () => {
     const { router } = renderPlanBuilder({ initialEntries: ["/"] });
 
-    expect(await screen.findByRole("heading", { name: /^plan builder$/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /^plan builder$/i })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
 
-    expect(screen.getByText("Open any builder section from one focused workspace.")).toBeVisible();
+    expect(screen.getByText("Plan Blueprint sections")).toBeVisible();
     expect(await screen.findByRole("navigation", { name: /primary/i })).toBeVisible();
+    expect(
+      await screen.findByRole("navigation", { name: /plan blueprint sections/i }),
+    ).toBeVisible();
     expect(screen.getByRole("link", { name: /^plan builder$/i })).toBeVisible();
     expect(screen.queryByRole("link", { name: /builder overview/i })).not.toBeInTheDocument();
   });
@@ -196,7 +199,7 @@ describe("Plan Builder canonical route", () => {
     await user.click(await getOnePageSectionButton("Generate"));
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: /back to exercises/i }));
+    await user.click(await getOnePageSectionButton("Exercises"));
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
@@ -310,8 +313,13 @@ function renderPlanBuilder({
 }
 
 async function getOnePageSectionButton(title: string) {
-  const label = await screen.findByText(title);
-  const button = label.closest("button");
+  const navigation = await screen.findByRole("navigation", {
+    name: /plan blueprint sections/i,
+  });
+  const sectionTitle = await within(navigation).findByText(title, {
+    selector: ".plan-builder-one-page__section-title-full",
+  });
+  const button = sectionTitle.closest("button");
 
   if (!button) {
     throw new Error(`Expected a one-page section button for "${title}".`);

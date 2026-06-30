@@ -1,14 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import {
-  type PlanBuilderStep,
-  planBuilderBlueprintQueryKey,
-} from "../builder-state/plan-builder-config";
+import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   useConfirmExerciseSelectionPreferencesMutation,
-  useConfirmRepRangeStyleMutation,
-  useConfirmTrainingVolumeMutation,
   useUpdateMainCompoundPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
@@ -27,13 +22,8 @@ import type {
   TrainingFrequencyDaysPerWeek,
 } from "../plan-blueprint";
 import type { MainCompoundPreferencesChange } from "../plan-builder-main-compound-preferences";
-import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
-import type {
-  OptionalVolumeMuscleGroupId,
-  TrainingVolumeConfiguration,
-  VolumePresetId,
-} from "../training-volume";
+import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 
 export function useRepRangeDefaultSelection({
   defaultRepRangeStyleId,
@@ -74,34 +64,11 @@ export function useTrainingVolumeDefaultSelection({
   }, [initializeTrainingVolumeDefaults, shouldInitializeTrainingVolume]);
 }
 
-export function useOnePageTrainingScheduleStep({
-  blueprint,
-  selectedTrainingSplitId,
-  setActiveStep,
-}: {
-  blueprint: { trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek };
-  selectedTrainingSplitId: TrainingSplitId;
-  setActiveStep: (step: PlanBuilderStep) => void;
-}) {
-  const queryClient = useQueryClient();
+export function useOnePageTrainingScheduleStep() {
   const { mutate: updateTrainingFrequency } = useUpdateTrainingFrequencyMutation();
   const { mutate: updateTrainingSplit } = useUpdateTrainingSplitMutation();
-  const { mutateAsync: continueTrainingSchedule } = useMutation({
-    mutationFn: planBuilderService.continueTrainingSchedule,
-    onSuccess: ({ blueprint }) => {
-      queryClient.setQueryData(planBuilderBlueprintQueryKey, blueprint);
-    },
-  });
 
   return {
-    onContinueToTrainingStyle: async () => {
-      const result = await continueTrainingSchedule({
-        split: selectedTrainingSplitId,
-        trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
-      });
-
-      setActiveStep(result.nextStep);
-    },
     onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) =>
       updateTrainingFrequency({
         timestamp: new Date().toISOString(),
@@ -115,24 +82,10 @@ export function useOnePageTrainingScheduleStep({
   };
 }
 
-export function useOnePageRepRangeStep({
-  selectedRepRangeStyleId,
-  setActiveStep,
-}: {
-  selectedRepRangeStyleId: RepRangeStyleId;
-  setActiveStep: (step: PlanBuilderStep) => void;
-}) {
-  const { mutateAsync: confirmSelectedRepRangeStyle } = useConfirmRepRangeStyleMutation();
+export function useOnePageRepRangeStep() {
   const { mutate: updateRepRangeStyle } = useUpdateRepRangeStyleMutation();
 
   return {
-    onContinueToVolume: async () => {
-      await confirmSelectedRepRangeStyle({
-        repRangeStyle: selectedRepRangeStyleId,
-        timestamp: new Date().toISOString(),
-      });
-      setActiveStep("volume");
-    },
     onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) =>
       updateRepRangeStyle({
         repRangeStyle,
@@ -141,29 +94,11 @@ export function useOnePageRepRangeStep({
   };
 }
 
-export function useOnePageVolumeStep({
-  setActiveStep,
-  trainingVolumeConfiguration,
-}: {
-  setActiveStep: (step: PlanBuilderStep) => void;
-  trainingVolumeConfiguration: TrainingVolumeConfiguration | null;
-}) {
-  const { mutateAsync: confirmSelectedTrainingVolume } = useConfirmTrainingVolumeMutation();
+export function useOnePageVolumeStep() {
   const { mutate: updateTrainingVolumePreset } = useUpdateTrainingVolumePresetMutation();
   const { mutate: updateOptionalVolumeTarget } = useUpdateOptionalVolumeTargetMutation();
 
   return {
-    onContinueToExercises: async () => {
-      if (!trainingVolumeConfiguration) {
-        return;
-      }
-
-      await confirmSelectedTrainingVolume({
-        trainingVolumeConfiguration,
-        timestamp: new Date().toISOString(),
-      });
-      setActiveStep("exercises");
-    },
     onOptionalVolumeTargetToggle: (muscleGroup: OptionalVolumeMuscleGroupId, isEnabled: boolean) =>
       updateOptionalVolumeTarget({ isEnabled, muscleGroup, timestamp: new Date().toISOString() }),
     onVolumePresetChange: (volumePreset: VolumePresetId) =>

@@ -21,20 +21,13 @@ type RecommendedDefaultsConfirmationProps = {
 
 type GenerateTrainingPlanStepProps = {
   isGenerating: boolean;
-  onBackToExercises: () => void;
   onGenerateTrainingPlan: () => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
 };
 
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
-  const {
-    isGenerating,
-    onBackToExercises,
-    onGenerateTrainingPlan,
-    recommendedDefaultsConfirmation,
-    summary,
-  } = props;
+  const { isGenerating, onGenerateTrainingPlan, recommendedDefaultsConfirmation, summary } = props;
 
   return (
     <>
@@ -61,9 +54,6 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
             </dl>
 
             <StepActions className="mt-6">
-              <Button onClick={onBackToExercises} type="button" variant="outline">
-                Back to Exercises
-              </Button>
               <Button
                 disabled={isGenerating}
                 onClick={() => {

@@ -1,7 +1,5 @@
-import { ArrowRight, Bed, Calendar, Check, ChevronLeft, Dumbbell } from "lucide-react";
-import { Button } from "../../../design-system/button";
+import { Bed, Calendar, Check, Dumbbell } from "lucide-react";
 import { cn } from "../../../design-system/cn";
-import { StepActions } from "../../../design-system/step-screen";
 import {
   type TrainingFrequencyDaysPerWeek,
   type TrainingFrequencyOption,
@@ -25,8 +23,6 @@ import "./training-schedule-split-page-overrides.css";
 import "./training-schedule-step-layout.css";
 
 type TrainingFrequencyStepProps = {
-  canContinueToTrainingStyle: boolean;
-  onContinueToTrainingStyle: () => Promise<void>;
   onTrainingFrequencyChange: (trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek) => void;
   onTrainingSplitChange: (split: TrainingSplitId) => void;
   selectedTrainingSplitId: TrainingSplitId | null;
@@ -34,8 +30,6 @@ type TrainingFrequencyStepProps = {
 };
 
 export function TrainingFrequencyStep({
-  canContinueToTrainingStyle,
-  onContinueToTrainingStyle,
   onTrainingFrequencyChange,
   onTrainingSplitChange,
   selectedTrainingSplitId,
@@ -73,31 +67,6 @@ export function TrainingFrequencyStep({
         recommendedSplit={recommendedSplit}
         selectedSplit={selectedSplit}
       />
-
-      <StepActions className="training-frequency-actions">
-        <Button disabled size="step" type="button" variant="outline">
-          <ChevronLeft aria-hidden="true" size={20} />
-          Back
-        </Button>
-        {canContinueToTrainingStyle ? (
-          <Button
-            onClick={() => {
-              void onContinueToTrainingStyle();
-            }}
-            size="step"
-            type="button"
-            variant="builderPrimary"
-          >
-            Continue to Rep ranges
-            <ArrowRight aria-hidden="true" size={20} />
-          </Button>
-        ) : (
-          <Button disabled size="step" type="button" variant="builderPrimary">
-            Continue to Rep ranges
-            <ArrowRight aria-hidden="true" size={20} />
-          </Button>
-        )}
-      </StepActions>
     </section>
   );
 }

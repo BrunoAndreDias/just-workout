@@ -192,18 +192,6 @@
   .plan-builder-page--frequency .training-frequency-panel {
     padding-bottom: 0;
   }
-
-  .plan-builder-page--frequency .step-actions.training-frequency-actions {
-    position: static;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    width: auto;
-    margin-top: 0.72rem;
-    transform: none;
-    background: transparent;
-    padding: 0;
-  }
 }
 
 /* Rep range card parity: final selectable-card authority for Training schedule. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../../design-system/cn";
-import { PageHeader, PageMain } from "../../design-system/typography";
+import { PageMain } from "../../design-system/typography";
 import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import { usePlanBuilderBlueprint } from "../builder-state/plan-builder-mutations";
 import { getPlanBuilderWorkflow } from "../plan-builder-workflow";
@@ -95,42 +95,54 @@ export function PlanBuilderOnePageRoute() {
   return (
     <section className="plan-builder-one-page">
       <div className="plan-builder-one-page__surface">
-        <PageHeader
-          description="Open any builder section from one focused workspace."
-          title="Plan Builder"
-        />
+        <h1 className="sr-only">Plan Builder</h1>
 
-        <PageMain>
-          <ul
+        <PageMain className="plan-builder-one-page__main">
+          <nav
+            aria-label="Plan Blueprint sections"
             className={cn(
-              "plan-builder-one-page__section-grid",
-              isSectionGridCompact ? "plan-builder-one-page__section-grid--compact" : null,
-              isRestoringOverview
-                ? "plan-builder-one-page__section-grid--restoring-overview"
-                : null,
+              "plan-builder-one-page__section-nav",
+              isSectionGridCompact ? "plan-builder-one-page__section-nav--compact" : null,
             )}
           >
-            {planBuilderOnePageSections.map((section) => {
-              const status = workflow.sectionStatuses[section.id];
+            <div className="plan-builder-one-page__section-nav-header">
+              <p className="plan-builder-one-page__section-nav-title">Plan Blueprint sections</p>
+              <p className="plan-builder-one-page__section-nav-copy">
+                Choose a section, progress saves as you go.
+              </p>
+            </div>
 
-              if (!status) {
-                return null;
-              }
+            <ul
+              className={cn(
+                "plan-builder-one-page__section-grid",
+                isSectionGridCompact ? "plan-builder-one-page__section-grid--compact" : null,
+                isRestoringOverview
+                  ? "plan-builder-one-page__section-grid--restoring-overview"
+                  : null,
+              )}
+            >
+              {planBuilderOnePageSections.map((section) => {
+                const status = workflow.sectionStatuses[section.id];
 
-              return (
-                <PlanBuilderOnePageSectionCard
-                  blueprint={blueprint}
-                  isActive={activeStep === section.id || closingStep === section.id}
-                  isExpanded={activeStep === section.id}
-                  key={section.id}
-                  onSelect={() => selectPlanBuilderSection(section.id)}
-                  section={section}
-                  status={status}
-                  summary={summary}
-                />
-              );
-            })}
-          </ul>
+                if (!status) {
+                  return null;
+                }
+
+                return (
+                  <PlanBuilderOnePageSectionCard
+                    blueprint={blueprint}
+                    isActive={activeStep === section.id || closingStep === section.id}
+                    isExpanded={activeStep === section.id}
+                    key={section.id}
+                    onSelect={() => selectPlanBuilderSection(section.id)}
+                    section={section}
+                    status={status}
+                    summary={summary}
+                  />
+                );
+              })}
+            </ul>
+          </nav>
 
           {visibleStep ? (
             <section

@@ -9,7 +9,7 @@ The product name for the personal training app.
 _Avoid_: StrongPlan
 
 **Training Plan**:
-The final generated plan a user follows for their training. A **Training Plan** is created deliberately from a completed **Plan Blueprint**, contains the workout structure the user will perform over time, and keeps the **Training Frequency** it was built for.
+The final generated plan a user follows for their training. A **Training Plan** is created deliberately from a completed **Plan Builder**, contains the workout structure the user will perform over time, and keeps the **Training Frequency** it was built for.
 _Avoid_: Routine, program
 
 **Active Training Plan**:
@@ -44,32 +44,32 @@ _Avoid_: Core placeholder, optional abs slot
 The default lower-body **Workout Template** structure with two **Main Superset Groups** plus one **Isolation Finisher**. The first lower main superset emphasizes the quad-dominant main compound and pairs it with a hip/hamstring secondary exercise plus abs; the second emphasizes the hip/hamstring main compound and pairs it with a quad secondary exercise plus abs.
 _Avoid_: Single lower superset, lower circuit
 
-**Plan Blueprint**:
-The in-progress set of choices a user makes before generating a **Training Plan**. A new **Plan Blueprint** starts with a 3 days/week **Training Frequency**, and an unfinished **Plan Blueprint** can be resumed before generation.
-_Avoid_: Draft routine, temporary plan
-
 **Plan Builder**:
-The workspace where a user creates a **Plan Blueprint** and generates a **Training Plan**.
-_Avoid_: Builder Overview, routine builder, program wizard
+The workspace and in-progress set of choices a user uses before generating a **Training Plan**. A new **Plan Builder** starts with a 3 days/week **Training Frequency**, and unfinished **Plan Builder** choices can be resumed before generation.
+_Avoid_: Plan Blueprint, Builder Overview, routine builder, program wizard
 
 **Generate Step**:
-The final **Plan Builder** step where a user generates a **Training Plan** from the completed **Plan Blueprint**. A **Generate Step** can include a final blueprint review, but its canonical purpose is generation.
+The final **Plan Builder** step where a user generates a **Training Plan** from completed **Plan Builder** choices. A **Generate Step** can include a final builder review, but its canonical purpose is generation.
 _Avoid_: Review step, final review
 
+**Exercises Step**:
+The **Plan Builder** step where a user chooses **Main Compound Preferences**, **Main Compound Rotation Preferences**, **Isolation Exercise Preferences**, and avoided **Exercise Selection Preferences** from the exercise catalog. An **Exercises Step** can be opened from a new **Plan Builder** without manually completing earlier steps first, because exercise preferences do not depend on **Training Frequency**, **Training Split**, **Rep Range Style**, or **Training Volume**.
+_Avoid_: Exercise Foundation, custom workout builder, final workout slots
+
 **Recommended Default**:
-A **Plan Builder** choice that Just Workout can use because it is the recommended starting point. A **Recommended Default** is a valid **Plan Blueprint** choice; once the user accepts generation with defaults, those defaults become ordinary **Plan Blueprint** choices.
+A **Plan Builder** choice that Just Workout can use because it is the recommended starting point. A **Recommended Default** is a valid **Plan Builder** choice; once the user accepts generation with defaults, those defaults become ordinary **Plan Builder** choices.
 _Avoid_: Placeholder, unsaved default
 
 **Default Generation Confirmation**:
-The moment when a user asks to generate a **Training Plan** while some required **Plan Blueprint** choices still rely on **Recommended Defaults**. The confirmation names the defaults Just Workout will use before generation continues.
+The moment when a user asks to generate a **Training Plan** while some required **Plan Builder** choices still rely on **Recommended Defaults**. The confirmation names the defaults Just Workout will use before generation continues.
 _Avoid_: Missing-step warning, final review
 
 **Configured Builder Section**:
-A **Plan Builder** section whose current choices are valid for the current **Plan Blueprint**. A section can be configured whether or not the user visited sections in order or clicked a continue action.
+A **Plan Builder** section whose current choices are valid for the current **Plan Builder**. A section can be configured whether or not the user visited sections in order or clicked a continue action.
 _Avoid_: Confirmed step, dirty state, manually changed step
 
 **Stale Builder Output**:
-Downstream **Plan Builder** data that was derived from an earlier upstream choice after that upstream choice changes. Stale output can be preserved for review or recovery, but it no longer represents the current **Plan Blueprint** until the affected section is configured again.
+Downstream **Plan Builder** data that was derived from an earlier upstream choice after that upstream choice changes. Stale output can be preserved for review or recovery, but it no longer represents the current **Plan Builder** until the affected section is configured again.
 _Avoid_: Invalid generated data, broken state
 
 **Training Frequency**:
@@ -81,7 +81,7 @@ A selected seven-day span used to review completed Training Sessions for an Acti
 _Avoid_: Calendar week, reporting period
 
 **Training Split**:
-The high-level pattern for distributing training sessions across a week within a **Plan Blueprint** or generated **Training Plan**. A **Training Split** is selected after **Training Frequency** and can imply a suggested weekly layout without generating workout details.
+The high-level pattern for distributing training sessions across a week within the **Plan Builder** or generated **Training Plan**. A **Training Split** is selected after **Training Frequency** and can imply a suggested weekly layout without generating workout details.
 _Avoid_: Split string, routine type
 
 **Training Goal**:
@@ -89,7 +89,7 @@ The outcome the user wants the **Training Plan** to optimize for. The current **
 _Avoid_: Objective, routine type
 
 **Rep Range Style**:
-The intensity bias a user chooses in a **Plan Blueprint** before **Training Volume**, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad reps-per-set targets and informs how **Weekly Rep Targets** are estimated as sets and later translated into set and rep targets.
+The intensity bias a user chooses in the **Plan Builder** before **Training Volume**, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad reps-per-set targets and informs how **Weekly Rep Targets** are estimated as sets and later translated into set and rep targets.
 _Avoid_: Intensity setting, rep scheme, programming controls
 
 **Training Volume**:
@@ -133,12 +133,28 @@ The user-facing **Plan Builder** row for the baseline hamstrings **Weekly Rep Ta
 _Avoid_: Glutes baseline target, separate glutes target
 
 **Main Compound Selection**:
-A **Plan Blueprint** choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** can be user-picked or recommended by Just Workout before the **Training Plan** is generated.
-_Avoid_: Preferred exercise, catalog row, generated exercise
+A generation-ready choice that names the primary compound exercise selected as the foundation for a required or recommended **Movement Pattern**. **Main Compound Selections** are derived from **Exercise Selection Preferences** and **Weekly Movement Coverage** before the **Training Plan** is generated.
+_Avoid_: Exercise preference, catalog row, generated exercise
+
+**Exercise Selection Preference**:
+A **Plan Builder** choice that marks a catalog exercise as preferred or avoided before the final workout structure is known. **Exercise Selection Preferences** are independent of **Training Frequency**, **Training Split**, **Rep Range Style**, and **Training Volume**; later generation maps them into valid **Main Compound Selections**, accessory choices, or exclusions. Avoided exercises are hard exclusions because they can represent injury limits, unavailable equipment, or exercises the user does not know how to perform safely. If avoided exercises leave no valid option for a required **Movement Pattern**, generation should block with a clear problem instead of using an avoided exercise.
+_Avoid_: Main Compound Selection, final exercise slot, workout exercise
+
+**Main Compound Preference**:
+A ranked preferred catalog exercise the user would like Just Workout to consider for main compound work before the final workout structure is known. **Main Compound Preferences** belong to a **Movement Pattern** bucket; the highest-ranked valid preference is the strongest candidate, and lower-ranked preferences are fallback candidates. A **Main Compound Preference** can become a **Main Compound Selection** only if it fits that pattern's **Weekly Movement Coverage** role. Empty movement-pattern buckets are valid in the **Exercises Step**; generation fills them with **Recommended Defaults** when needed.
+_Avoid_: Main Compound Selection, final slot, required lift, unordered favorite
+
+**Main Compound Rotation Preference**:
+A ranked preferred catalog exercise the user would like available as a future rotation alternative inside a **Movement Pattern** bucket before the final main compound is selected. **Main Compound Rotation Preferences** use rank order when Just Workout derives future rotation candidates: the highest-ranked valid preference is the strongest rotation candidate, and lower-ranked preferences are fallback rotation candidates. Empty rotation preference buckets are valid; Just Workout can derive recommended rotation alternatives when needed. A **Main Compound Rotation Preference** can become part of a **Main Compound Rotation Pool** only if the generated **Main Compound Selection** for that bucket exists and the rotation exercise still fits the same movement-pattern and primary-muscle role.
+_Avoid_: Rotation Pool Compound Exercise, automatic exercise swap, backup exercise, unordered variation
+
+**Isolation Exercise Preference**:
+A ranked preferred catalog exercise the user would like Just Workout to consider for isolation or accessory work before the final workout structure is known. **Isolation Exercise Preferences** belong to **Primary Muscle Group** buckets because isolation work is chosen to target a muscle directly. They are optional guidance, not required choices; empty isolation preference buckets are valid and can be filled with **Recommended Defaults** when needed. They can guide generated accessory choices when they fit the selected **Training Volume**, available workout space, and target muscle group.
+_Avoid_: Isolation Finisher, final accessory slot, required isolation exercise
 
 **Main Compound Rotation Pool**:
-The set of alternative compound exercises associated with a **Main Compound Selection** that share its **Movement Pattern** and primary muscle group so **Just Workout** can replace that selected exercise at a **Training Block** boundary. A **Main Compound Rotation Pool** supports a different training stimulus over time; it does not include the current **Main Compound Selection** and does not add extra **Weekly Movement Coverage**.
-_Avoid_: Multiple main compound selections, preferred compounds, variation list
+The generated set of alternative compound exercises associated with a **Main Compound Selection** that share its **Movement Pattern** and primary muscle group so **Just Workout** can replace that selected exercise at a **Training Block** boundary. A **Main Compound Rotation Pool** can be derived from **Main Compound Rotation Preferences**, supports a different training stimulus over time, does not include the current **Main Compound Selection**, and does not add extra **Weekly Movement Coverage**.
+_Avoid_: Multiple main compound selections, preferred compounds, preference list
 
 **Rotation Pool Compound Exercise**:
 An eligible alternative compound exercise inside a **Main Compound Rotation Pool**. A **Rotation Pool Compound Exercise** can replace the current **Main Compound Selection** only when it shares the same **Movement Pattern** and primary muscle group.
@@ -149,7 +165,7 @@ A suggested set of main compound replacements presented at a **Training Block** 
 _Avoid_: Automatic exercise swap, hidden rotation, forced replacement
 
 **User-Defined Exercise**:
-An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**.
+An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**. User-defined exercise creation is a future capability; if no valid catalog exercise remains for a required **Movement Pattern**, generation blocks and explains the problem rather than creating a new exercise inline.
 _Avoid_: Custom exercise, free-text exercise
 
 **Primary Muscle Group**:
@@ -165,11 +181,11 @@ The exercise category that describes the main direction or joint action of a str
 _Avoid_: Exercise category, movement type
 
 **Weekly Movement Coverage**:
-The set of **Movement Patterns** a **Plan Blueprint** must cover across the training week before **Training Plan** generation. **Weekly Movement Coverage** is evaluated against the selected **Training Frequency** and **Training Split**; it is not a fixed per-screen checklist and does not require every workout day to contain every required pattern.
+The universal set of major **Movement Patterns** a **Training Plan** must cover across the training week before generation. **Training Frequency** and **Training Split** decide how that coverage is arranged, distributed, and explained; they do not remove core compound-capable movement-pattern expectations from a good **Training Plan**.
 _Avoid_: Hardcoded exercise checklist, per-day movement requirement
 
 **Coverage Rule Family**:
-A group of **Training Splits** that share the same **Weekly Movement Coverage** expectations. Full Body, Upper/Lower, and Push/Pull/Legs are distinct **Coverage Rule Families** because they explain missing movement coverage differently and can treat the same **Movement Pattern** as required or recommended.
+A group of **Training Splits** that share the same arrangement and explanation style for **Weekly Movement Coverage**. Full Body, Upper/Lower, and Push/Pull/Legs are distinct **Coverage Rule Families** because they place and explain the same core movement-pattern expectations differently.
 _Avoid_: Split id rule, UI checklist variant
 
 **Split Bucket**:
@@ -197,7 +213,7 @@ Whether an exercise is compound or isolation for training-plan evaluation. An **
 _Avoid_: Exercise type, lift kind
 
 **Equipment Preset**:
-The equipment environment a user chooses in the **Plan Blueprint** so **Just Workout** knows which exercise categories can be considered during later **Training Plan** generation.
+The equipment environment a user chooses in the **Plan Builder** so **Just Workout** knows which exercise categories can be considered during later **Training Plan** generation.
 _Avoid_: Equipment checklist, gym inventory
 
 **Full Gym Equipment Preset**:
@@ -206,6 +222,6 @@ _Avoid_: All equipment selected, editable equipment list
 
 ## Example Dialogue
 
-Developer: "When the user finishes the Plan Builder, do we save the Plan Blueprint?"
+Developer: "When the user finishes the Plan Builder, do we save the Plan Builder choices?"
 
-Domain expert: "No. The Plan Blueprint is only the setup state. Finishing the builder generates a Training Plan, and that is what the user follows."
+Domain expert: "No. The Plan Builder choices are only setup state. Finishing the builder generates a Training Plan, and that is what the user follows."

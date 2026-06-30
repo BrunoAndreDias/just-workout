@@ -174,15 +174,6 @@
   flex-shrink: 0;
 }
 
-.rep-range-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  margin-top: 0;
-}
-
 .training-volume-section-title,
 .rep-range-option__title,
 .volume-preset-option__title,

@@ -1,7 +1,6 @@
-import { ArrowRight, ChevronLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "../../../design-system/button";
 import { cn } from "../../../design-system/cn";
-import { StepActions } from "../../../design-system/step-screen";
 import type { RepRangeStyle } from "../../plan-blueprint";
 import {
   getSelectableOptionCardClassName,
@@ -49,9 +48,6 @@ const weeklyVolumeTargetStatusStyles = {
 } as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
 
 type WeeklyVolumeTargetsStepProps = {
-  canContinueToExercises: boolean;
-  onBackToRepRanges: () => void;
-  onContinueToExercises: () => Promise<void>;
   onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
   onVolumePresetChange: (volumePreset: VolumePresetId) => void;
   repRangeStyle: RepRangeStyle | null;
@@ -101,9 +97,6 @@ type WeeklyVolumeTargetStatusBadgeProps = {
 const mainWeeklyTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
 
 export function WeeklyVolumeTargetsStep({
-  canContinueToExercises,
-  onBackToRepRanges,
-  onContinueToExercises,
   onOptionalVolumeTargetToggle,
   onVolumePresetChange,
   repRangeStyle,
@@ -137,25 +130,6 @@ export function WeeklyVolumeTargetsStep({
               rows={requiredWeeklyVolumeTargetRows}
             />
           </div>
-
-          <StepActions className="training-volume-actions">
-            <Button onClick={onBackToRepRanges} size="step" type="button" variant="outline">
-              <ChevronLeft aria-hidden="true" size={20} />
-              Back to Rep ranges
-            </Button>
-            <Button
-              disabled={!canContinueToExercises}
-              onClick={() => {
-                void onContinueToExercises();
-              }}
-              size="step"
-              type="button"
-              variant="builderPrimary"
-            >
-              Continue to Exercises
-              <ArrowRight aria-hidden="true" size={20} />
-            </Button>
-          </StepActions>
         </section>
       </div>
     </div>

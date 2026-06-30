@@ -42,6 +42,7 @@ const planSchema = z.object({
 // Raise this if your backlog is large; lower it for a quick smoke-test run.
 const MAX_ITERATIONS = 10;
 const SANDBOX_IMAGE_NAME = "sandcastle:just-workout-v2";
+const COMPLETION_SIGNAL = "<promise>COMPLETE</promise>";
 
 // Hooks run inside the sandbox before the agent starts each iteration.
 // This repo uses pnpm, so refresh dependencies with the locked pnpm graph.
@@ -67,6 +68,25 @@ const ensureDockerImage = () => {
       ["exec", "sandcastle", "docker", "build-image", "--image-name", SANDBOX_IMAGE_NAME],
       { stdio: "inherit" },
     );
+  }
+};
+
+const getWorktreeStatus = () =>
+  execFileSync("git", ["status", "--short"], {
+    encoding: "utf8",
+  }).trim();
+
+const formatWorktreeStatusForPrompt = () => {
+  const status = getWorktreeStatus();
+  return status.length > 0 ? status : "(clean)";
+};
+
+const closeCompletedIssues = (issues: Array<{ id: string; title: string }>) => {
+  for (const issue of issues) {
+    console.log(`Closing issue ${issue.id}: ${issue.title}`);
+    execFileSync("gh", ["issue", "close", issue.id, "--comment", "Completed by Sandcastle"], {
+      stdio: "inherit",
+    });
   }
 };
 
@@ -175,6 +195,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
             promptFile: "./.sandcastle/review-prompt.md",
             promptArgs: {
               BRANCH: issue.branch,
+              ISSUE_NUMBER: issue.id,
             },
           });
 
@@ -238,24 +259,35 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // resolving any conflicts and running tests to confirm everything works.
   //
   // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
-  // uses to know which branches to merge and which issues to close.
+  // uses to know which branches to merge. Issue closure is handled by this
+  // runner after the merger emits the completion signal.
   // -------------------------------------------------------------------------
-  await sandcastle.run({
+  const merge = await sandcastle.run({
     hooks,
     sandbox: sandboxProvider,
     name: "merger",
     maxIterations: 1,
     agent: sandcastle.codex("gpt-5.4"),
+    completionSignal: COMPLETION_SIGNAL,
     promptFile: "./.sandcastle/merge-prompt.md",
     promptArgs: {
       // A markdown list of branch names, one per line.
       BRANCHES: completedBranches.map((b) => `- ${b}`).join("\n"),
       // A markdown list of issue IDs and titles, one per line.
       ISSUES: completedIssues.map((i) => `- ${i.id}: ${i.title}`).join("\n"),
+      STARTING_WORKTREE_STATUS: formatWorktreeStatusForPrompt(),
     },
   });
 
-  console.log("\nBranches merged.");
+  if (merge.completionSignal !== COMPLETION_SIGNAL) {
+    throw new Error(
+      "Merger did not signal completion. Issues were left open; check .sandcastle/logs/main-merger.log.",
+    );
+  }
+
+  closeCompletedIssues(completedIssues);
+
+  console.log("\nBranches merged and issues closed.");
 }
 
 console.log("\nAll done.");
