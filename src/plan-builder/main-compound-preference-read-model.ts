@@ -22,7 +22,6 @@ export type MainCompoundPreferenceRowReadModel = {
   movementPattern: CompoundCapableMovementPatternId;
   movementPatternLabel: string;
   preferences: ReadonlyArray<{ exerciseId: string; exerciseName: string }>;
-  topPreference: { exerciseId: string; exerciseName: string } | null;
 };
 
 export type MainCompoundPreferenceReadModel = {
@@ -43,8 +42,7 @@ export function getMainCompoundPreferenceReadModel({
       movementPattern,
       preferences: normalizedPreferences,
     });
-    const { metadata, preferences, topPreference } =
-      getRankedExercisePreferenceDetails(preferenceExerciseIds);
+    const { metadata, preferences } = getRankedExercisePreferenceDetails(preferenceExerciseIds);
 
     return {
       helperText: getMainCompoundMovementPatternHelperText(movementPattern),
@@ -56,7 +54,6 @@ export function getMainCompoundPreferenceReadModel({
       movementPattern,
       movementPatternLabel: formatMovementPatternLabel(movementPattern),
       preferences,
-      topPreference: topPreference ?? null,
     } satisfies MainCompoundPreferenceRowReadModel;
   });
   const rankedBucketCount = rows.filter((row) => row.preferences.length > 0).length;

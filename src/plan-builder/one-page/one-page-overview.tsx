@@ -209,17 +209,8 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const rankedBucketCount =
-    blueprint.mainCompoundPreferences.length + blueprint.isolationExercisePreferences.length;
-  const rankedPreferenceCount =
-    blueprint.mainCompoundPreferences.reduce(
-      (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
-      0,
-    ) +
-    blueprint.isolationExercisePreferences.reduce(
-      (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
-      0,
-    );
+  const rankedBucketCount = getRankedExercisePreferenceBucketCount(blueprint);
+  const rankedPreferenceCount = getRankedExercisePreferenceCount(blueprint);
 
   return [
     {
@@ -235,6 +226,32 @@ function getExercisesSectionDetails(blueprint: PlanBlueprint) {
       label: hasConfiguredExercises(blueprint) ? "Preferences saved" : "Open to rank preferences",
     },
   ] as const;
+}
+
+function getRankedExercisePreferenceBucketCount({
+  isolationExercisePreferences,
+  mainCompoundPreferences,
+}: Pick<PlanBlueprint, "isolationExercisePreferences" | "mainCompoundPreferences">): number {
+  return mainCompoundPreferences.length + isolationExercisePreferences.length;
+}
+
+function getRankedExercisePreferenceCount({
+  isolationExercisePreferences,
+  mainCompoundPreferences,
+}: Pick<PlanBlueprint, "isolationExercisePreferences" | "mainCompoundPreferences">): number {
+  return (
+    countRankedPreferenceExerciseIds(mainCompoundPreferences) +
+    countRankedPreferenceExerciseIds(isolationExercisePreferences)
+  );
+}
+
+function countRankedPreferenceExerciseIds(
+  preferences: ReadonlyArray<{ exerciseIds: ReadonlyArray<string> }>,
+): number {
+  return preferences.reduce(
+    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
+    0,
+  );
 }
 
 function getGenerateSectionDetails(summary: PlanBlueprintSummary) {

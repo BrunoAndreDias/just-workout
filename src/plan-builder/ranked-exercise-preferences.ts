@@ -8,7 +8,6 @@ export type RankedExercisePreferenceItem = {
 export function getRankedExercisePreferenceDetails(preferenceExerciseIds: ReadonlyArray<string>): {
   metadata: string;
   preferences: ReadonlyArray<RankedExercisePreferenceItem>;
-  topPreference: RankedExercisePreferenceItem | null;
 } {
   const preferences = preferenceExerciseIds.flatMap((exerciseId) => {
     const exercise = getExerciseCatalogExercise(exerciseId);
@@ -26,7 +25,6 @@ export function getRankedExercisePreferenceDetails(preferenceExerciseIds: Readon
   return {
     metadata: getRankedPreferenceMetadata(preferences.length),
     preferences,
-    topPreference: preferences[0] ?? null,
   };
 }
 

@@ -127,8 +127,7 @@ function normalizeBucketExerciseIds({
       const exercise = getExerciseCatalogExercise(canonicalExerciseId);
 
       if (
-        !exercise ||
-        exercise.role !== "isolation" ||
+        exercise?.role !== "isolation" ||
         !exercise.primaryMuscleGroups.includes(primaryMuscleGroup)
       ) {
         return null;
@@ -148,10 +147,7 @@ function isIsolationExercisePreferenceBucketCandidate(
 
   const candidate = value as Partial<IsolationExercisePreferenceBucket>;
 
-  return (
-    Array.isArray(candidate.exerciseIds) &&
-    isIsolationPreferencePrimaryMuscleGroup(candidate.primaryMuscleGroup)
-  );
+  return isIsolationPreferencePrimaryMuscleGroup(candidate.primaryMuscleGroup);
 }
 
 function isIsolationPreferencePrimaryMuscleGroup(

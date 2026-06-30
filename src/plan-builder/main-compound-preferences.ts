@@ -135,8 +135,5 @@ function isMainCompoundPreferenceBucketCandidate(
 
   const candidate = value as Partial<MainCompoundPreferenceBucket>;
 
-  return (
-    Array.isArray(candidate.exerciseIds) &&
-    isCompoundCapableMovementPattern(candidate.movementPattern)
-  );
+  return isCompoundCapableMovementPattern(candidate.movementPattern);
 }

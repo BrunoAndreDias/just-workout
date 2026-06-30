@@ -23,7 +23,6 @@ export type IsolationExercisePreferenceRowReadModel = {
   preferences: ReadonlyArray<{ exerciseId: string; exerciseName: string }>;
   primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
   primaryMuscleGroupLabel: string;
-  topPreference: { exerciseId: string; exerciseName: string } | null;
 };
 
 export type IsolationExercisePreferenceReadModel = {
@@ -46,8 +45,7 @@ export function getIsolationExercisePreferenceReadModel({
       preferences: normalizedPreferences,
       primaryMuscleGroup,
     });
-    const { metadata, preferences, topPreference } =
-      getRankedExercisePreferenceDetails(preferenceExerciseIds);
+    const { metadata, preferences } = getRankedExercisePreferenceDetails(preferenceExerciseIds);
 
     return {
       helperText: getIsolationPreferenceHelperText(primaryMuscleGroup),
@@ -59,7 +57,6 @@ export function getIsolationExercisePreferenceReadModel({
       preferences,
       primaryMuscleGroup,
       primaryMuscleGroupLabel: getPrimaryMuscleGroupLabel(primaryMuscleGroup),
-      topPreference: topPreference ?? null,
     } satisfies IsolationExercisePreferenceRowReadModel;
   });
   const rankedBucketCount = rows.filter((row) => row.preferences.length > 0).length;

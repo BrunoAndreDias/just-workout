@@ -90,8 +90,7 @@ function resolveIsolationPreferenceSlot({
       const exercise = getExerciseCatalogExercise(exerciseId);
 
       if (
-        !exercise ||
-        exercise.role !== "isolation" ||
+        exercise?.role !== "isolation" ||
         !exercise.primaryMuscleGroups.includes(primaryMuscleGroup)
       ) {
         continue;
