@@ -25,6 +25,7 @@ import {
   type TrainingVolumeConfiguration,
 } from "./training-volume";
 import {
+  formatMovementPatternLabel,
   getWeeklyMovementCoverage,
   type MainCompoundSelection,
   normalizeMainCompoundSelections,
@@ -187,7 +188,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
 
       blockingIssues.push({
         kind: "no_valid_main_compound_selection",
-        message: `${formatMovementPatternLabel(movementPattern)} has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.`,
+        message: `Weekly Movement Coverage is blocked for ${formatMovementPatternLabel(movementPattern)} because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.`,
         movementPattern,
       });
     }
@@ -219,13 +220,4 @@ function createMainCompoundSelectionRecommendedDefault(
     kind: "main_compound_selection",
     movementPattern: selection.movementPattern,
   };
-}
-
-function formatMovementPatternLabel(
-  movementPattern: MainCompoundSelection["movementPattern"],
-): string {
-  return movementPattern
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }

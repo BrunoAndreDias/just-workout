@@ -56,7 +56,7 @@ describe("Generate Training Plan workflow", () => {
         {
           kind: "no_valid_main_compound_selection",
           message:
-            "Horizontal Push has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.",
+            "Weekly Movement Coverage is blocked for Horizontal push because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.",
           movementPattern: "horizontal_push",
         },
       ],

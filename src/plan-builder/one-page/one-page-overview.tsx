@@ -43,7 +43,7 @@ export const planBuilderOnePageSections = [
     id: "exercises",
     compactTitle: "Exercises",
     title: "Exercises",
-    subtitle: "Ranked exercise preferences",
+    subtitle: "Exercises Step preference progress",
     icon: Dumbbell,
   },
   {
@@ -209,62 +209,54 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const rankedBucketCount = getRankedExercisePreferenceBucketCount(blueprint);
-  const rankedPreferenceCount = getRankedExercisePreferenceCount(blueprint);
+  const mainCompoundBucketCount = blueprint.mainCompoundPreferences.length;
+  const rotationBucketCount = blueprint.mainCompoundRotationPreferences.length;
+  const isolationBucketCount = blueprint.isolationExercisePreferences.length;
 
   return [
     {
-      id: "exercises-ranked-buckets",
-      label: `${rankedBucketCount} preference buckets ranked`,
+      id: "exercises-main-compound-preferences",
+      label: formatBucketProgressLabel({
+        count: mainCompoundBucketCount,
+        singularLabel: "Main Compound Preferences bucket ranked",
+        pluralLabel: "Main Compound Preferences buckets ranked",
+      }),
     },
     {
-      id: "exercises-ranked-preferences",
-      label: `${rankedPreferenceCount} exercise preferences`,
+      id: "exercises-main-compound-rotation-preferences",
+      label: formatBucketProgressLabel({
+        count: rotationBucketCount,
+        singularLabel: "Main Compound Rotation Preferences bucket ranked",
+        pluralLabel: "Main Compound Rotation Preferences buckets ranked",
+      }),
     },
     {
-      id: "exercises-status",
-      label: hasConfiguredExercises(blueprint) ? "Preferences saved" : "Open to rank preferences",
+      id: "exercises-isolation-preferences",
+      label: formatBucketProgressLabel({
+        count: isolationBucketCount,
+        singularLabel: "Isolation Exercise Preferences bucket ranked",
+        pluralLabel: "Isolation Exercise Preferences buckets ranked",
+      }),
+    },
+    {
+      id: "exercises-defaults",
+      label: hasConfiguredExercises(blueprint)
+        ? "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults"
+        : "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults",
     },
   ] as const;
 }
 
-function getRankedExercisePreferenceBucketCount({
-  isolationExercisePreferences,
-  mainCompoundPreferences,
-  mainCompoundRotationPreferences,
-}: Pick<
-  PlanBlueprint,
-  "isolationExercisePreferences" | "mainCompoundPreferences" | "mainCompoundRotationPreferences"
->): number {
-  return (
-    mainCompoundPreferences.length +
-    mainCompoundRotationPreferences.length +
-    isolationExercisePreferences.length
-  );
-}
-
-function getRankedExercisePreferenceCount({
-  isolationExercisePreferences,
-  mainCompoundPreferences,
-  mainCompoundRotationPreferences,
-}: Pick<
-  PlanBlueprint,
-  "isolationExercisePreferences" | "mainCompoundPreferences" | "mainCompoundRotationPreferences"
->): number {
-  return (
-    countRankedPreferenceExerciseIds(mainCompoundPreferences) +
-    countRankedPreferenceExerciseIds(mainCompoundRotationPreferences) +
-    countRankedPreferenceExerciseIds(isolationExercisePreferences)
-  );
-}
-
-function countRankedPreferenceExerciseIds(
-  preferences: ReadonlyArray<{ exerciseIds: ReadonlyArray<string> }>,
-): number {
-  return preferences.reduce(
-    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
-    0,
-  );
+function formatBucketProgressLabel({
+  count,
+  pluralLabel,
+  singularLabel,
+}: {
+  count: number;
+  pluralLabel: string;
+  singularLabel: string;
+}) {
+  return `${count} ${count === 1 ? singularLabel : pluralLabel}`;
 }
 
 function getGenerateSectionDetails(summary: PlanBlueprintSummary) {

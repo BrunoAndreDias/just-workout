@@ -123,7 +123,7 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
         saveActiveTrainingPlan,
       }),
     ).rejects.toThrow(
-      "Cannot generate a Training Plan because Horizontal Push has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.",
+      "Cannot generate a Training Plan because Weekly Movement Coverage is blocked for Horizontal push because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.",
     );
 
     expect(saveActiveTrainingPlan).not.toHaveBeenCalled();

@@ -106,6 +106,102 @@ describe("Plan Builder canonical route", () => {
     expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
   });
 
+  it("summarizes Exercises Step preference progress in the overview card", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    const exercisesCard = await getOnePageSectionButton("Exercises");
+
+    expect(
+      await within(exercisesCard).findByText("Exercises Step preference progress"),
+    ).toBeVisible();
+    expect(
+      await within(exercisesCard).findByText("0 Main Compound Preferences buckets ranked"),
+    ).toBeVisible();
+    expect(
+      await within(exercisesCard).findByText("0 Main Compound Rotation Preferences buckets ranked"),
+    ).toBeVisible();
+    expect(
+      await within(exercisesCard).findByText("0 Isolation Exercise Preferences buckets ranked"),
+    ).toBeVisible();
+    expect(
+      await within(exercisesCard).findByText(
+        "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults",
+      ),
+    ).toBeVisible();
+
+    await user.click(exercisesCard);
+
+    const horizontalPushPreferenceRow = await getMainCompoundPreferenceRow("Horizontal push");
+    await user.click(
+      within(horizontalPushPreferenceRow).getByRole("button", { name: /rank preferences/i }),
+    );
+    const mainCompoundPicker = await screen.findByRole("dialog", {
+      name: /rank your horizontal push preferences/i,
+    });
+    await user.click(within(mainCompoundPicker).getByText("Flat Barbell Bench Press"));
+    await user.click(within(mainCompoundPicker).getByText("Incline Dumbbell Bench Press"));
+    await user.click(
+      within(mainCompoundPicker).getByRole("button", {
+        name: /move incline dumbbell bench press up/i,
+      }),
+    );
+    await user.click(
+      within(mainCompoundPicker).getByRole("button", {
+        name: /close main compound preferences picker/i,
+      }),
+    );
+
+    const horizontalPushRotationRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
+    await user.click(
+      within(horizontalPushRotationRow).getByRole("button", { name: /rank rotation preferences/i }),
+    );
+    const rotationPicker = await screen.findByRole("dialog", {
+      name: /rank your horizontal push rotation preferences/i,
+    });
+    await user.click(within(rotationPicker).getByText("Flat Dumbbell Bench Press"));
+    await user.click(within(rotationPicker).getByText("Incline Barbell Bench Press"));
+    await user.click(
+      within(rotationPicker).getByRole("button", {
+        name: /move incline barbell bench press up/i,
+      }),
+    );
+    await user.click(
+      within(rotationPicker).getByRole("button", {
+        name: /close main compound rotation preferences picker/i,
+      }),
+    );
+
+    const bicepsRow = await getIsolationPreferenceRow("Biceps");
+    await user.click(within(bicepsRow).getByRole("button", { name: /rank preferences/i }));
+    const isolationPicker = await screen.findByRole("dialog", {
+      name: /rank your biceps preferences/i,
+    });
+    await user.click(within(isolationPicker).getByText("Standing Barbell Curls"));
+    await user.click(within(isolationPicker).getByText("Incline Dumbbell Curls"));
+    await user.click(
+      within(isolationPicker).getByRole("button", {
+        name: /move incline dumbbell curls up/i,
+      }),
+    );
+    await user.click(
+      within(isolationPicker).getByRole("button", {
+        name: /close isolation exercise preferences picker/i,
+      }),
+    );
+
+    expect(
+      within(exercisesCard).getByText("1 Main Compound Preferences bucket ranked"),
+    ).toBeVisible();
+    expect(
+      within(exercisesCard).getByText("1 Main Compound Rotation Preferences bucket ranked"),
+    ).toBeVisible();
+    expect(
+      within(exercisesCard).getByText("1 Isolation Exercise Preferences bucket ranked"),
+    ).toBeVisible();
+  });
+
   it("captures ranked Main Compound Preferences from Exercises and keeps them when returning", async () => {
     const user = userEvent.setup();
 
@@ -350,6 +446,16 @@ describe("Plan Builder canonical route", () => {
     expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
     expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
     expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
+    expect(
+      within(confirmation).getByText(
+        "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(confirmation).getByText(
+        "Recommended Default Main Compound Selection for Horizontal push: Flat Barbell Bench Press",
+      ),
+    ).toBeVisible();
 
     await user.click(
       within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
@@ -414,7 +520,12 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByText("Generation is blocked.")).toBeVisible();
     expect(
       screen.getByText(
-        "Horizontal Push has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.",
+        "Weekly Movement Coverage is blocked for Horizontal push because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Exercise Selection Preferences are hard exclusions. Just Workout will not generate an avoided exercise.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: /^generate training plan$/i })).toBeDisabled();

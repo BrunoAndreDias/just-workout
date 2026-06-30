@@ -12,6 +12,7 @@ import {
 import { PlanBuilderStepStatusCard } from "../../shared-ui/step-status-card/step-status-card";
 import { getTrainingSplitLabel } from "../../training-split";
 import { getVolumePreset } from "../../training-volume";
+import { formatMovementPatternLabel } from "../../weekly-movement-coverage";
 
 type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
@@ -45,9 +46,11 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
               Generate Training Plan
             </h3>
             <p className="mt-3 max-w-2xl text-sm text-stone-600">
-              Just Workout will create an active Training Plan from this completed Plan Blueprint.
-              The first generated plan uses split-derived Workout Templates, selected main
-              compounds, weekly volume targets, rep range style, and Superset Groups.
+              The Generate Step turns your Exercises Step preferences into final Main Compound
+              Selections, Main Compound Rotation Pools, and generated accessory choices. Just
+              Workout will create an active Training Plan from this completed Plan Blueprint using
+              split-derived Workout Templates, weekly volume targets, rep range style, and Superset
+              Groups.
             </p>
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
@@ -77,6 +80,10 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
             {blockingIssues.length > 0 ? (
               <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                 <p className="font-semibold">Generation is blocked.</p>
+                <p className="mt-2">
+                  Exercise Selection Preferences are hard exclusions. Just Workout will not generate
+                  an avoided exercise.
+                </p>
                 <ul className="mt-2 space-y-2">
                   {blockingIssues.map((issue) => (
                     <li key={`${issue.kind}-${issue.movementPattern}`}>{issue.message}</li>
@@ -141,6 +148,10 @@ function DefaultGenerationConfirmation({
           </h3>
           <p className="mt-3 text-sm text-stone-600">
             Just Workout will apply these Recommended Defaults before generation continues.
+          </p>
+          <p className="mt-2 text-sm text-stone-600">
+            The Generate Step will turn your Exercises Step preferences into final Main Compound
+            Selections, Main Compound Rotation Pools, and generated accessory choices.
           </p>
 
           <ul className="mt-5 space-y-3 text-sm text-stone-900">
@@ -216,6 +227,6 @@ function getRecommendedDefaultLabel(recommendedDefault: PlanBlueprintRecommended
     case "equipment_preset":
       return `${getEquipmentPreset(recommendedDefault.equipmentPreset).title} equipment preset`;
     case "main_compound_selection":
-      return getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound";
+      return `Recommended Default Main Compound Selection for ${formatMovementPatternLabel(recommendedDefault.movementPattern)}: ${getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound"}`;
   }
 }
