@@ -22,6 +22,13 @@ const legacyPlanBuilderStepPaths = [
   "/plan-builder/generate",
 ] as const;
 
+const upstreamPlanBuilderOptions = {
+  repRanges: "controlled_higher_reps",
+  split: "rotating-push-pull-legs",
+  trainingFrequencyDaysPerWeek: 4,
+  volumePreset: "higher_volume",
+} as const;
+
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
     await resetLocalDatabase();
@@ -158,6 +165,34 @@ describe("Plan Builder canonical route", () => {
     expect(within(reopenedBicepsRow).getByText("2. Standing Barbell Curls")).toBeVisible();
   });
 
+  it("persists ranked Isolation Exercise Preferences after upstream edits and reopening Plan Builder", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await rankBicepsIsolationPreferences(user);
+    await chooseUpstreamPlanBuilderOptions(user);
+
+    firstRender.unmount();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const reopenedBicepsRow = await getIsolationPreferenceRow("Biceps");
+
+    expect(within(reopenedBicepsRow).getByText("1. Incline Dumbbell Curls")).toBeVisible();
+    expect(within(reopenedBicepsRow).getByText("2. Standing Barbell Curls")).toBeVisible();
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      isolationExercisePreferences: [
+        {
+          exerciseIds: ["incline-dumbbell-curls", "standing-barbell-curls"],
+          primaryMuscleGroup: "biceps",
+        },
+      ],
+      ...upstreamPlanBuilderOptions,
+    });
+  });
+
   it("preserves ranked Main Compound Preferences after changing schedule, split, rep ranges, and volume", async () => {
     const user = userEvent.setup();
 
@@ -206,10 +241,7 @@ describe("Plan Builder canonical route", () => {
           movementPattern: "horizontal_push",
         },
       ],
-      repRanges: "controlled_higher_reps",
-      split: "rotating-push-pull-legs",
-      trainingFrequencyDaysPerWeek: 4,
-      volumePreset: "higher_volume",
+      ...upstreamPlanBuilderOptions,
     });
   });
 
