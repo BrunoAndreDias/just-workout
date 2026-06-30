@@ -1,7 +1,6 @@
 import {
   type CompoundCapableMovementPatternId,
   compoundCapableMovementPatterns,
-  getExerciseCatalogExercise,
 } from "./exercise-catalog";
 import type { ExerciseFoundationCompoundOption } from "./exercise-foundation-read-model";
 import {
@@ -13,6 +12,7 @@ import {
   normalizeMainCompoundPreferences,
 } from "./main-compound-preferences";
 import type { PlanBlueprint } from "./plan-blueprint";
+import { getRankedExercisePreferenceDetails } from "./ranked-exercise-preferences";
 import { formatMovementPatternLabel } from "./weekly-movement-coverage";
 
 export type MainCompoundPreferenceRowReadModel = {
@@ -22,7 +22,6 @@ export type MainCompoundPreferenceRowReadModel = {
   movementPattern: CompoundCapableMovementPatternId;
   movementPatternLabel: string;
   preferences: ReadonlyArray<{ exerciseId: string; exerciseName: string }>;
-  topPreference: { exerciseId: string; exerciseName: string } | null;
 };
 
 export type MainCompoundPreferenceReadModel = {
@@ -43,19 +42,7 @@ export function getMainCompoundPreferenceReadModel({
       movementPattern,
       preferences: normalizedPreferences,
     });
-    const preferences = preferenceExerciseIds.flatMap((exerciseId) => {
-      const exercise = getExerciseCatalogExercise(exerciseId);
-
-      return exercise
-        ? [
-            {
-              exerciseId,
-              exerciseName: exercise.name,
-            },
-          ]
-        : [];
-    });
-    const [topPreference] = preferences;
+    const { metadata, preferences } = getRankedExercisePreferenceDetails(preferenceExerciseIds);
 
     return {
       helperText: getMainCompoundMovementPatternHelperText(movementPattern),
@@ -63,14 +50,10 @@ export function getMainCompoundPreferenceReadModel({
         movementPattern,
         preferenceExerciseIds,
       }),
-      metadata:
-        preferences.length === 0
-          ? "Empty bucket"
-          : `${preferences.length} ranked ${preferences.length === 1 ? "preference" : "preferences"}`,
+      metadata,
       movementPattern,
       movementPatternLabel: formatMovementPatternLabel(movementPattern),
       preferences,
-      topPreference: topPreference ?? null,
     } satisfies MainCompoundPreferenceRowReadModel;
   });
   const rankedBucketCount = rows.filter((row) => row.preferences.length > 0).length;

@@ -6,6 +6,10 @@ import {
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import {
+  normalizeIsolationExercisePreferences,
+  updateIsolationExercisePreferenceBucket,
+} from "./isolation-exercise-preferences";
+import {
   normalizeMainCompoundPreferences,
   updateMainCompoundPreferenceBucket,
 } from "./main-compound-preferences";
@@ -70,6 +74,7 @@ import type {
   StoredPlanBlueprint,
   TrainingFrequencyDaysPerWeek,
   UpdateExerciseSelectionPreferencesOptions,
+  UpdateIsolationExercisePreferencesOptions,
   UpdateMainCompoundPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
   UpdateMainCompoundRotationPreferencesOptions,
@@ -121,6 +126,7 @@ export function createDefaultPlanBlueprint({
     mainCompoundSelections: [],
     mainCompoundPreferences: [],
     mainCompoundRotationPreferences: [],
+    isolationExercisePreferences: [],
     mainCompoundRotationPools: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
     equipmentPresetSource: null,
@@ -198,6 +204,13 @@ export function applyPlanBlueprintTransition({
         movementPattern: transition.movementPattern,
         timestamp: transition.timestamp,
       });
+    case "updateIsolationExercisePreferences":
+      return updateIsolationExercisePreferences({
+        blueprint,
+        exerciseIds: transition.exerciseIds,
+        primaryMuscleGroup: transition.primaryMuscleGroup,
+        timestamp: transition.timestamp,
+      });
     case "updateMainCompoundRotationPool":
       return updateMainCompoundRotationPool({
         blueprint,
@@ -252,6 +265,9 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
       blueprint.exerciseSelectionPreferences,
     ),
     equipmentPresetSource: normalizeEquipmentPresetSource(blueprint),
+    isolationExercisePreferences: normalizeIsolationExercisePreferences(
+      blueprint.isolationExercisePreferences,
+    ),
     mainCompoundPreferences: normalizeMainCompoundPreferences(blueprint.mainCompoundPreferences),
     mainCompoundRotationPreferences: normalizeMainCompoundRotationPreferences(
       blueprint.mainCompoundRotationPreferences,
@@ -575,6 +591,35 @@ export function updateMainCompoundRotationPreferences({
   };
 }
 
+function updateIsolationExercisePreferences({
+  blueprint,
+  exerciseIds,
+  primaryMuscleGroup,
+  timestamp,
+}: UpdateIsolationExercisePreferencesOptions): PlanBlueprint {
+  const nextIsolationExercisePreferences = updateIsolationExercisePreferenceBucket({
+    exerciseIds,
+    preferences: blueprint.isolationExercisePreferences,
+    primaryMuscleGroup,
+    updatedAt: timestamp,
+  });
+  const hasPreferencesChanged = !areIsolationExercisePreferencesEqual(
+    blueprint.isolationExercisePreferences,
+    nextIsolationExercisePreferences,
+  );
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
+    },
+    isolationExercisePreferences: nextIsolationExercisePreferences,
+    updatedAt: timestamp,
+  };
+}
+
 export function updateMainCompoundRotationPool({
   blueprint,
   exerciseIds,
@@ -792,6 +837,20 @@ function areMainCompoundPreferencesEqual(
     left.every(
       (preference, index) =>
         preference.movementPattern === right[index]?.movementPattern &&
+        areOrderedExerciseIdsEqual(preference.exerciseIds, right[index]?.exerciseIds ?? []),
+    )
+  );
+}
+
+function areIsolationExercisePreferencesEqual(
+  left: PlanBlueprint["isolationExercisePreferences"],
+  right: PlanBlueprint["isolationExercisePreferences"],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (preference, index) =>
+        preference.primaryMuscleGroup === right[index]?.primaryMuscleGroup &&
         areOrderedExerciseIdsEqual(preference.exerciseIds, right[index]?.exerciseIds ?? []),
     )
   );

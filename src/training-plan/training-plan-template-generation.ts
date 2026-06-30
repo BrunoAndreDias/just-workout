@@ -1,5 +1,6 @@
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { getTrainingSplit } from "../training-taxonomy";
+import { applyIsolationExercisePreferencesToWorkoutTemplates } from "./isolation-exercise-preference-selection";
 import { createAssignedTemplateDrafts } from "./template-draft-assignment";
 import type { WorkoutTemplate } from "./training-plan";
 import { createWorkoutTemplates } from "./workout-template-generation";
@@ -29,12 +30,16 @@ export function createTrainingPlanTemplatesForBlueprint({
     split,
     trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
   });
+  const workoutTemplates = createWorkoutTemplates({
+    split,
+    templateDrafts,
+  });
 
   return {
     splitLabel: trainingSplit.label,
-    workoutTemplates: createWorkoutTemplates({
-      split,
-      templateDrafts,
+    workoutTemplates: applyIsolationExercisePreferencesToWorkoutTemplates({
+      blueprint,
+      workoutTemplates,
     }),
   };
 }

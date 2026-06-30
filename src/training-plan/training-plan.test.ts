@@ -115,6 +115,40 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expectWorkoutHasNoDuplicateExercises(fullBodyTemplate);
   });
 
+  it("uses ranked Isolation Exercise Preferences for matching accessory slots and falls back when buckets are empty", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        isolationExercisePreferences: [
+          {
+            exerciseIds: ["incline-dumbbell-curls", "standing-barbell-curls"],
+            primaryMuscleGroup: "biceps",
+          },
+          {
+            exerciseIds: ["skull-crushers"],
+            primaryMuscleGroup: "triceps",
+          },
+          {
+            exerciseIds: ["flat-dumbbell-flyes"],
+            primaryMuscleGroup: "chest",
+          },
+        ],
+        split: "full-body-3-day",
+        trainingFrequencyDaysPerWeek: 3,
+      }),
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    const fullBodyTemplate = trainingPlan.workoutTemplates[0];
+
+    expect(fullBodyTemplate?.supersetGroups[2]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Incline Dumbbell Curls",
+      "Skull Crushers",
+      "Standing Calf Raises",
+    ]);
+    expectWorkoutHasNoDuplicateExercises(fullBodyTemplate);
+  });
+
   it("builds alternating Full Body A/B templates with concrete blueprint exercise variation", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint({
@@ -390,9 +424,11 @@ function getExerciseIds(
 }
 
 function createCompleteBlueprint({
+  isolationExercisePreferences = [],
   split = "upper-lower-4-day",
   trainingFrequencyDaysPerWeek = 4,
 }: {
+  isolationExercisePreferences?: PlanBlueprint["isolationExercisePreferences"];
   split?: PlanBlueprint["split"];
   trainingFrequencyDaysPerWeek?: PlanBlueprint["trainingFrequencyDaysPerWeek"];
 } = {}): PlanBlueprint {
@@ -413,6 +449,7 @@ function createCompleteBlueprint({
     },
     equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
+    isolationExercisePreferences,
     mainCompoundPreferences: [],
     mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],

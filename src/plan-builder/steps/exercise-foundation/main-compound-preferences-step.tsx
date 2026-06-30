@@ -1,14 +1,19 @@
-import { ArrowLeft, ArrowRight, ListChecks } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, Dumbbell, ListChecks } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
-import type { CompoundCapableMovementPatternId } from "../../exercise-catalog";
+import type {
+  CompoundCapableMovementPatternId,
+  ExerciseCatalogMuscleGroupId,
+} from "../../exercise-catalog";
+import type { IsolationExercisePreferenceReadModel } from "../../isolation-exercise-preference-read-model";
 import type {
   MainCompoundPreferenceReadModel,
   MainCompoundPreferenceRowReadModel,
 } from "../../main-compound-preference-read-model";
 import type { MainCompoundRotationPreferenceReadModel } from "../../main-compound-rotation-preference-read-model";
 import { FoundationPatternIcon, getFoundationIconClassName } from "./foundation-pattern-icon";
+import { IsolationExercisePreferencesPicker } from "./isolation-exercise-preferences-picker";
 import { MainCompoundPickerToggleButton } from "./main-compound-picker-toggle-button";
 import { MainCompoundPreferencesPicker } from "./main-compound-preferences-picker";
 import { MainCompoundRotationPreferencesPicker } from "./main-compound-rotation-preferences-picker";
@@ -18,10 +23,15 @@ import "./exercise-foundation-page-overrides.css";
 import "./exercise-foundation-responsive.css";
 
 type MainCompoundPreferencesStepProps = {
+  isolationReadModel: IsolationExercisePreferenceReadModel;
   mainCompoundReadModel: MainCompoundPreferenceReadModel;
   mainCompoundRotationReadModel: MainCompoundRotationPreferenceReadModel;
   onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
+  onIsolationExercisePreferencesChange: (preferences: {
+    exerciseIds: ReadonlyArray<string>;
+    primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
+  }) => Promise<void>;
   onMainCompoundPreferencesChange: (preferences: {
     exerciseIds: ReadonlyArray<string>;
     movementPattern: CompoundCapableMovementPatternId;
@@ -32,11 +42,25 @@ type MainCompoundPreferencesStepProps = {
   }) => Promise<void>;
 };
 
+type PreferenceBucketRowProps = {
+  helperText: string;
+  icon: ReactNode;
+  isPickerOpen: boolean;
+  metadata: string;
+  onTogglePicker: () => void;
+  preferences: ReadonlyArray<{ exerciseId: string; exerciseName: string }>;
+  title: string;
+  titleBadge: string;
+  togglePickerId: string;
+};
+
 export function MainCompoundPreferencesStep({
+  isolationReadModel,
   mainCompoundReadModel,
   mainCompoundRotationReadModel,
   onBackToVolume,
   onContinueToGenerate,
+  onIsolationExercisePreferencesChange,
   onMainCompoundPreferencesChange,
   onMainCompoundRotationPreferencesChange,
 }: MainCompoundPreferencesStepProps) {
@@ -44,6 +68,8 @@ export function MainCompoundPreferencesStep({
     kind: "main" | "rotation";
     movementPattern: CompoundCapableMovementPatternId;
   } | null>(null);
+  const [activeIsolationPickerMuscleGroup, setActiveIsolationPickerMuscleGroup] =
+    useState<ExerciseCatalogMuscleGroupId | null>(null);
   const activeMainCompoundPickerRow =
     activePicker?.kind === "main"
       ? mainCompoundReadModel.rows.find(
@@ -56,6 +82,12 @@ export function MainCompoundPreferencesStep({
           (row) => row.movementPattern === activePicker.movementPattern,
         )
       : undefined;
+  const activeIsolationPickerRow =
+    activeIsolationPickerMuscleGroup === null
+      ? undefined
+      : isolationReadModel.rows.find(
+          (row) => row.primaryMuscleGroup === activeIsolationPickerMuscleGroup,
+        );
 
   async function handleMainCompoundPreferencesChange(
     movementPattern: CompoundCapableMovementPatternId,
@@ -77,6 +109,16 @@ export function MainCompoundPreferencesStep({
     });
   }
 
+  async function handleIsolationExercisePreferencesChange(
+    primaryMuscleGroup: ExerciseCatalogMuscleGroupId,
+    exerciseIds: ReadonlyArray<string>,
+  ) {
+    await onIsolationExercisePreferencesChange({
+      exerciseIds,
+      primaryMuscleGroup,
+    });
+  }
+
   return (
     <div className="grid gap-6">
       <StepPanel
@@ -86,7 +128,7 @@ export function MainCompoundPreferencesStep({
         <div className="exercise-foundation-workspace">
           <div className="exercise-foundation-main">
             <section
-              aria-label="Main compound preferences status"
+              aria-label="Exercise preferences status"
               className="exercise-foundation-status"
             >
               <span aria-hidden="true" className="exercise-foundation-status__icon">
@@ -94,8 +136,26 @@ export function MainCompoundPreferencesStep({
               </span>
               <div>
                 <h3 className="sr-only" id="main-compound-preferences-title">
-                  Exercises preference overview
+                  Exercise preferences overview
                 </h3>
+                <p className="exercise-foundation-status__title">
+                  {`${mainCompoundReadModel.rankedBucketCount} main compound buckets ranked · ${mainCompoundRotationReadModel.rankedBucketCount} rotation buckets ranked · ${isolationReadModel.rankedBucketCount} isolation buckets ranked`}
+                </p>
+                <p className="exercise-foundation-status__body">
+                  Rank main compounds, future rotations, and optional isolation work. Empty buckets
+                  stay valid and Recommended Defaults can still fill gaps later.
+                </p>
+              </div>
+            </section>
+
+            <section
+              aria-label="Main compound preferences status"
+              className="exercise-foundation-status"
+            >
+              <span aria-hidden="true" className="exercise-foundation-status__icon">
+                <ListChecks size={22} strokeWidth={2.4} />
+              </span>
+              <div>
                 <p className="exercise-foundation-status__title">{mainCompoundReadModel.summary}</p>
                 <p className="exercise-foundation-status__body">{mainCompoundReadModel.guidance}</p>
               </div>
@@ -167,6 +227,58 @@ export function MainCompoundPreferencesStep({
               preferenceListLabel="ranked rotation preferences"
               readModelRows={mainCompoundRotationReadModel.rows}
             />
+
+            <section
+              aria-label="Isolation exercise preferences status"
+              className="exercise-foundation-status"
+            >
+              <span aria-hidden="true" className="exercise-foundation-status__icon">
+                <Dumbbell size={22} strokeWidth={2.4} />
+              </span>
+              <div>
+                <p className="exercise-foundation-status__title">{isolationReadModel.summary}</p>
+                <p className="exercise-foundation-status__body">{isolationReadModel.guidance}</p>
+              </div>
+            </section>
+
+            <section
+              aria-label="Isolation exercise preference buckets"
+              className="exercise-foundation-card"
+            >
+              <ul
+                aria-label="Isolation exercise preference rows"
+                className="exercise-foundation-list"
+              >
+                {isolationReadModel.rows.map((row) => {
+                  const isPickerOpen = activeIsolationPickerMuscleGroup === row.primaryMuscleGroup;
+
+                  return (
+                    <PreferenceBucketRow
+                      helperText={row.helperText}
+                      icon={
+                        <span aria-hidden="true" className="exercise-foundation-row__icon">
+                          <Dumbbell size={16} strokeWidth={2} />
+                        </span>
+                      }
+                      isPickerOpen={isPickerOpen}
+                      key={row.primaryMuscleGroup}
+                      metadata={row.metadata}
+                      onTogglePicker={() =>
+                        setActiveIsolationPickerMuscleGroup((currentMuscleGroup) =>
+                          currentMuscleGroup === row.primaryMuscleGroup
+                            ? null
+                            : row.primaryMuscleGroup,
+                        )
+                      }
+                      preferences={row.preferences}
+                      title={row.primaryMuscleGroupLabel}
+                      titleBadge="Primary muscle group"
+                      togglePickerId={`isolation-exercise-preferences-picker-${row.primaryMuscleGroup}`}
+                    />
+                  );
+                })}
+              </ul>
+            </section>
           </div>
         </div>
 
@@ -228,6 +340,25 @@ export function MainCompoundPreferencesStep({
           )}
         />
       ) : null}
+
+      {activeIsolationPickerRow ? (
+        <IsolationExercisePreferencesPicker
+          id={`isolation-exercise-preferences-picker-${activeIsolationPickerRow.primaryMuscleGroup}`}
+          isolationOptions={activeIsolationPickerRow.isolationOptions}
+          onChange={(exerciseIds) =>
+            handleIsolationExercisePreferencesChange(
+              activeIsolationPickerRow.primaryMuscleGroup,
+              exerciseIds,
+            )
+          }
+          onClose={() => setActiveIsolationPickerMuscleGroup(null)}
+          preferenceExerciseIds={activeIsolationPickerRow.preferences.map(
+            (preference) => preference.exerciseId,
+          )}
+          primaryMuscleGroup={activeIsolationPickerRow.primaryMuscleGroup}
+          primaryMuscleGroupLabel={activeIsolationPickerRow.primaryMuscleGroupLabel}
+        />
+      ) : null}
     </div>
   );
 }
@@ -287,7 +418,7 @@ function PreferenceBucketSection({
               </div>
 
               <div className="exercise-foundation-row__selection">
-                <p>{row.topPreference?.exerciseName ?? emptySelectionText}</p>
+                <p>{row.preferences[0]?.exerciseName ?? emptySelectionText}</p>
                 <span>{row.metadata}</span>
               </div>
 
@@ -317,5 +448,61 @@ function PreferenceBucketSection({
         ))}
       </ul>
     </section>
+  );
+}
+
+function PreferenceBucketRow({
+  helperText,
+  icon,
+  isPickerOpen,
+  metadata,
+  onTogglePicker,
+  preferences,
+  title,
+  titleBadge,
+  togglePickerId,
+}: PreferenceBucketRowProps) {
+  return (
+    <li className="exercise-foundation-row">
+      <div className="exercise-foundation-row__grid">
+        <div className="exercise-foundation-row__pattern">
+          {icon}
+          <div className="min-w-0">
+            <div className="exercise-foundation-row__heading">
+              <h4>{title}</h4>
+              <span>{titleBadge}</span>
+            </div>
+            <p className="exercise-foundation-row__helper">{helperText}</p>
+          </div>
+        </div>
+
+        <div className="exercise-foundation-row__selection">
+          <p>{preferences[0]?.exerciseName ?? "No preferences ranked yet."}</p>
+          <span>{metadata}</span>
+        </div>
+
+        <div className="exercise-foundation-row__actions">
+          <MainCompoundPickerToggleButton
+            isOpen={isPickerOpen}
+            label={preferences.length > 0 ? "Edit ranking" : "Rank preferences"}
+            onToggle={onTogglePicker}
+            pickerId={togglePickerId}
+          />
+        </div>
+      </div>
+
+      {preferences.length > 0 ? (
+        <ol
+          aria-label={`${title} ranked preferences`}
+          className="exercise-foundation-row__preferences"
+        >
+          {preferences.map((preference, index) => (
+            <li key={preference.exerciseId}>
+              {index + 1}. {preference.exerciseName}
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </li>
   );
 }

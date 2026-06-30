@@ -43,7 +43,7 @@ export const planBuilderOnePageSections = [
     id: "exercises",
     compactTitle: "Exercises",
     title: "Exercises",
-    subtitle: "Ranked compounds and rotations",
+    subtitle: "Ranked exercise preferences",
     icon: Dumbbell,
   },
   {
@@ -209,22 +209,62 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const rankedMainBucketCount = blueprint.mainCompoundPreferences.length;
-  const rankedRotationBucketCount = blueprint.mainCompoundRotationPreferences.length;
+  const rankedBucketCount = getRankedExercisePreferenceBucketCount(blueprint);
+  const rankedPreferenceCount = getRankedExercisePreferenceCount(blueprint);
+
   return [
     {
-      id: "exercises-ranked-main-buckets",
-      label: `${rankedMainBucketCount} main buckets ranked`,
+      id: "exercises-ranked-buckets",
+      label: `${rankedBucketCount} preference buckets ranked`,
     },
     {
-      id: "exercises-ranked-rotation-buckets",
-      label: `${rankedRotationBucketCount} rotation buckets ranked`,
+      id: "exercises-ranked-preferences",
+      label: `${rankedPreferenceCount} exercise preferences`,
     },
     {
       id: "exercises-status",
       label: hasConfiguredExercises(blueprint) ? "Preferences saved" : "Open to rank preferences",
     },
   ] as const;
+}
+
+function getRankedExercisePreferenceBucketCount({
+  isolationExercisePreferences,
+  mainCompoundPreferences,
+  mainCompoundRotationPreferences,
+}: Pick<
+  PlanBlueprint,
+  "isolationExercisePreferences" | "mainCompoundPreferences" | "mainCompoundRotationPreferences"
+>): number {
+  return (
+    mainCompoundPreferences.length +
+    mainCompoundRotationPreferences.length +
+    isolationExercisePreferences.length
+  );
+}
+
+function getRankedExercisePreferenceCount({
+  isolationExercisePreferences,
+  mainCompoundPreferences,
+  mainCompoundRotationPreferences,
+}: Pick<
+  PlanBlueprint,
+  "isolationExercisePreferences" | "mainCompoundPreferences" | "mainCompoundRotationPreferences"
+>): number {
+  return (
+    countRankedPreferenceExerciseIds(mainCompoundPreferences) +
+    countRankedPreferenceExerciseIds(mainCompoundRotationPreferences) +
+    countRankedPreferenceExerciseIds(isolationExercisePreferences)
+  );
+}
+
+function countRankedPreferenceExerciseIds(
+  preferences: ReadonlyArray<{ exerciseIds: ReadonlyArray<string> }>,
+): number {
+  return preferences.reduce(
+    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
+    0,
+  );
 }
 
 function getGenerateSectionDetails(summary: PlanBlueprintSummary) {

@@ -92,6 +92,7 @@ describe("plan blueprint", () => {
       volumePreset: null,
       volumePresetSource: null,
       weeklyRepTargets: null,
+      isolationExercisePreferences: [],
       mainCompoundPreferences: [],
       mainCompoundRotationPreferences: [],
       mainCompoundSelections: [],

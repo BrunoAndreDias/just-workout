@@ -154,6 +154,19 @@ describe("planBuilderService", () => {
     });
   });
 
+  it("resumes blueprints saved before Isolation Exercise Preferences existed with empty buckets", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.isolationExercisePreferences;
+
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      isolationExercisePreferences: [],
+    });
+  });
+
   it("persists draft Exercise Selection Preferences without changing confirmed builder progress", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const configuredBlueprint: PlanBlueprint = {

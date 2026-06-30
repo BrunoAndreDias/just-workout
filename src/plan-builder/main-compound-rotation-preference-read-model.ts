@@ -46,8 +46,6 @@ export function getMainCompoundRotationPreferenceReadModel({
           ]
         : [];
     });
-    const [topPreference] = preferences;
-
     return {
       helperText: getMainCompoundMovementPatternHelperText(movementPattern),
       mainCompoundOptions: getMainCompoundRotationOptions({
@@ -61,7 +59,6 @@ export function getMainCompoundRotationPreferenceReadModel({
       movementPattern,
       movementPatternLabel: formatMovementPatternLabel(movementPattern),
       preferences,
-      topPreference: topPreference ?? null,
     } satisfies MainCompoundRotationPreferenceRowReadModel;
   });
   const rankedBucketCount = rows.filter((row) => row.preferences.length > 0).length;

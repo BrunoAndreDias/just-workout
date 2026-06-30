@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   useConfirmExerciseSelectionPreferencesMutation,
+  useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
   useUpdateMainCompoundRotationPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
@@ -23,6 +24,7 @@ import type {
   TrainingFrequencyDaysPerWeek,
 } from "../plan-blueprint";
 import type {
+  IsolationExercisePreferencesChange,
   MainCompoundPreferencesChange,
   MainCompoundRotationPreferencesChange,
 } from "../plan-builder-main-compound-preferences";
@@ -120,6 +122,8 @@ export function useOnePageExercisesStep({
 }) {
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
+  const { mutateAsync: updateIsolationExercisePreferences } =
+    useUpdateIsolationExercisePreferencesMutation();
   const { mutateAsync: updateMainCompoundPreferences } = useUpdateMainCompoundPreferencesMutation();
   const { mutateAsync: updateMainCompoundRotationPreferences } =
     useUpdateMainCompoundRotationPreferencesMutation();
@@ -138,6 +142,15 @@ export function useOnePageExercisesStep({
       updateMainCompoundPreferences({
         exerciseIds,
         movementPattern,
+        timestamp: new Date().toISOString(),
+      }),
+    onIsolationExercisePreferencesChange: async ({
+      exerciseIds,
+      primaryMuscleGroup,
+    }: IsolationExercisePreferencesChange) =>
+      updateIsolationExercisePreferences({
+        exerciseIds,
+        primaryMuscleGroup,
         timestamp: new Date().toISOString(),
       }),
     onMainCompoundRotationPreferencesChange: async ({

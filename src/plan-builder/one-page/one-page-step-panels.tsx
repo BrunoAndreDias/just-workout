@@ -1,5 +1,6 @@
 import type { getRepRangeStyle, PlanBlueprint } from "../plan-blueprint";
 import {
+  type IsolationExercisePreferencesChange,
   type MainCompoundPreferencesChange,
   type MainCompoundRotationPreferencesChange,
   PlanBuilderMainCompoundPreferencesStep,
@@ -81,12 +82,16 @@ export function OnePageExercisesStep({
   blueprint,
   onBackToVolume,
   onContinueToGenerate,
+  onIsolationExercisePreferencesChange,
   onMainCompoundPreferencesChange,
   onMainCompoundRotationPreferencesChange,
 }: {
   blueprint: PlanBlueprint;
   onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
+  onIsolationExercisePreferencesChange: (
+    preferences: IsolationExercisePreferencesChange,
+  ) => Promise<unknown>;
   onMainCompoundPreferencesChange: (preferences: MainCompoundPreferencesChange) => Promise<unknown>;
   onMainCompoundRotationPreferencesChange: (
     preferences: MainCompoundRotationPreferencesChange,
@@ -97,6 +102,7 @@ export function OnePageExercisesStep({
       blueprint={blueprint}
       onBackToVolume={onBackToVolume}
       onContinueToGenerate={onContinueToGenerate}
+      onIsolationExercisePreferencesChange={onIsolationExercisePreferencesChange}
       onMainCompoundPreferencesChange={onMainCompoundPreferencesChange}
       onMainCompoundRotationPreferencesChange={onMainCompoundRotationPreferencesChange}
     />
