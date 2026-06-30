@@ -185,6 +185,12 @@ export function useOnePageGenerateStep({
   });
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
+    if (result.status === "blocked") {
+      onPendingDefaultResolutionChange(null);
+
+      return;
+    }
+
     if (result.status === "pending_recommended_defaults") {
       onPendingDefaultResolutionChange(result.resolution);
 

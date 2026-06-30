@@ -49,6 +49,32 @@ describe("Generate Training Plan workflow", () => {
     });
   });
 
+  it("returns blocked when generation has blocking issues", async () => {
+    const events: string[] = [];
+    const resolution = createDefaultResolution({
+      blockingIssues: [
+        {
+          kind: "no_valid_main_compound_selection",
+          message:
+            "Horizontal Push has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.",
+          movementPattern: "horizontal_push",
+        },
+      ],
+      isReady: false,
+    });
+
+    const result = await startGenerateTrainingPlanWorkflow({
+      defaultResolution: resolution,
+      dependencies: createWorkflowDependencies(events),
+    });
+
+    expect(result).toEqual({
+      blockingIssues: resolution.blockingIssues,
+      status: "blocked",
+    });
+    expect(events).toEqual([]);
+  });
+
   it("applies accepted Recommended Defaults before generating the Active Training Plan", async () => {
     const events: string[] = [];
     const resolution = createDefaultResolution({ isReady: false });
@@ -74,13 +100,16 @@ describe("Generate Training Plan workflow", () => {
 });
 
 function createDefaultResolution({
+  blockingIssues = [],
   isReady,
 }: {
+  blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
   isReady: boolean;
 }): PlanBlueprintDefaultResolution {
   const resolvedBlueprint = createResolvedBlueprint();
 
   return {
+    blockingIssues,
     isReady,
     recommendedDefaults: isReady
       ? []

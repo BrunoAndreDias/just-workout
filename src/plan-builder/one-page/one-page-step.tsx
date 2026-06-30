@@ -182,6 +182,7 @@ function renderOnePageActiveStep({
     case "generate":
       return (
         <GenerateTrainingPlanStep
+          blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
           isGenerating={generateStep.isGenerating}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
           recommendedDefaultsConfirmation={

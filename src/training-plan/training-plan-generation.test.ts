@@ -86,6 +86,48 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
 
     expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
   });
+
+  it("does not save a Training Plan when avoided exercises leave no valid non-avoided option for a required Movement Pattern", async () => {
+    const saveActiveTrainingPlan = vi.fn();
+
+    await expect(
+      generateActiveTrainingPlanFromCurrentPlanBlueprint({
+        createTrainingPlanId: () => "training-plan-test",
+        getCurrentPlanBlueprint: async () => ({
+          ...createCompleteBlueprint(),
+          exerciseSelectionPreferences: {
+            avoidedExercises: [
+              { id: "avoided-1", rawText: "Flat Barbell Bench Press" },
+              { id: "avoided-2", rawText: "Flat Dumbbell Bench Press" },
+              { id: "avoided-3", rawText: "Incline Barbell Bench Press" },
+              { id: "avoided-4", rawText: "Incline Dumbbell Bench Press" },
+              { id: "avoided-5", rawText: "Decline Barbell Bench Press" },
+              { id: "avoided-6", rawText: "Decline Dumbbell Bench Press" },
+              { id: "avoided-7", rawText: "Flat Chest Press Machine" },
+              { id: "avoided-8", rawText: "Incline Chest Press Machine" },
+              { id: "avoided-9", rawText: "Decline Chest Press Machine" },
+              { id: "avoided-10", rawText: "Dips (Parallel Bars, Slight Forward Lean)" },
+              { id: "avoided-11", rawText: "Push-Ups" },
+              { id: "avoided-12", rawText: "Dips (Elbows Close, No Forward Lean)" },
+              { id: "avoided-13", rawText: "Flat Close Grip Bench Press" },
+              { id: "avoided-14", rawText: "Decline Close Grip Bench Press" },
+              { id: "avoided-15", rawText: "Close Grip Push-Ups" },
+              { id: "avoided-16", rawText: "Bench Dips" },
+            ],
+            equipmentPreset: "full_gym",
+            preferredExercises: [],
+            strategy: "balanced",
+          },
+        }),
+        getTimestamp: () => "2026-06-07T10:00:00.000Z",
+        saveActiveTrainingPlan,
+      }),
+    ).rejects.toThrow(
+      "Cannot generate a Training Plan because Horizontal Push has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.",
+    );
+
+    expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
+  });
 });
 
 function createCompleteBlueprint(): PlanBlueprint {

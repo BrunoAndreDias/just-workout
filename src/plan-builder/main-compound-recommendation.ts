@@ -1,12 +1,12 @@
 import {
   type CompoundCapableMovementPatternId,
-  exerciseCatalogExercises,
-  getConcreteExerciseCatalogExerciseId,
   getExerciseCatalogExercisesByMovementPattern,
   isMainCompoundEligible,
 } from "./exercise-catalog";
 import {
   type ExerciseSelectionPreferenceItem,
+  getAvoidedExerciseIds,
+  getExerciseSelectionPreferenceExerciseId,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import {
@@ -90,11 +90,7 @@ function getRecommendedMainCompoundExerciseId({
     getExerciseCatalogExercisesByMovementPattern(movementPattern).filter(isMainCompoundEligible);
   const availableExerciseIds = new Set(availableExercises.map((exercise) => exercise.id));
   const preferences = normalizeExerciseSelectionPreferences(exerciseSelectionPreferences);
-  const avoidedExerciseIds = new Set(
-    preferences.avoidedExercises
-      .map(getExerciseSelectionPreferenceExerciseId)
-      .filter((exerciseId): exerciseId is string => exerciseId !== null),
-  );
+  const avoidedExerciseIds = getAvoidedExerciseIds(preferences);
   const rankedMainCompoundPreferenceExerciseIds = getMainCompoundPreferenceExerciseIds({
     movementPattern,
     preferences: normalizeMainCompoundPreferences(mainCompoundPreferences),
@@ -172,24 +168,6 @@ function isSelectableExerciseId({
   return availableExerciseIds.has(exerciseId) && !avoidedExerciseIds.has(exerciseId);
 }
 
-function getExerciseSelectionPreferenceExerciseId(
-  preference: ExerciseSelectionPreferenceItem,
-): string | null {
-  if (typeof preference.matchedExerciseId === "string") {
-    return getConcreteExerciseCatalogExerciseId(preference.matchedExerciseId);
-  }
-
-  const normalizedRawText = normalizeExercisePreferenceText(preference.rawText);
-
-  return exerciseIdByNormalizedName.get(normalizedRawText) ?? null;
-}
-
-const exerciseIdByNormalizedName = new Map(
-  exerciseCatalogExercises.map(
-    (exercise) => [normalizeExercisePreferenceText(exercise.name), exercise.id] as const,
-  ),
-);
-
 const recommendedMainCompoundExerciseIdsByMovementPattern = {
   hip_hamstring_dominant: "barbell-romanian-deadlifts",
   horizontal_pull: "bent-over-barbell-rows",
@@ -198,7 +176,3 @@ const recommendedMainCompoundExerciseIdsByMovementPattern = {
   vertical_pull: "pull-ups",
   vertical_push: "standing-overhead-barbell-press",
 } as const satisfies Record<CompoundCapableMovementPatternId, string>;
-
-function normalizeExercisePreferenceText(value: string): string {
-  return value.trim().replace(/\s+/g, " ").toLowerCase();
-}

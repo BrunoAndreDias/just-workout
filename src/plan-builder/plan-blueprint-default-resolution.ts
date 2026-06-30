@@ -1,5 +1,6 @@
 import {
   type EquipmentPresetId,
+  getAvoidedExerciseIds,
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import { recommendMissingMainCompoundSelections } from "./main-compound-recommendation";
@@ -24,6 +25,7 @@ import {
   type TrainingVolumeConfiguration,
 } from "./training-volume";
 import {
+  getWeeklyMovementCoverage,
   type MainCompoundSelection,
   normalizeMainCompoundSelections,
 } from "./weekly-movement-coverage";
@@ -51,15 +53,23 @@ export type PlanBlueprintRecommendedDefault =
     };
 
 export type PlanBlueprintDefaultResolution = {
+  blockingIssues: ReadonlyArray<PlanBlueprintGenerationBlockingIssue>;
   isReady: boolean;
   recommendedDefaults: ReadonlyArray<PlanBlueprintRecommendedDefault>;
   resolvedBlueprint: PlanBlueprint;
+};
+
+export type PlanBlueprintGenerationBlockingIssue = {
+  kind: "no_valid_main_compound_selection";
+  message: string;
+  movementPattern: MainCompoundSelection["movementPattern"];
 };
 
 export function resolvePlanBlueprintRecommendedDefaults(
   blueprint: PlanBlueprint,
 ): PlanBlueprintDefaultResolution {
   const recommendedDefaults: Array<PlanBlueprintRecommendedDefault> = [];
+  const blockingIssues: Array<PlanBlueprintGenerationBlockingIssue> = [];
   let resolvedBlueprint = blueprint;
 
   if (!isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek)) {
@@ -102,6 +112,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
   const normalizedExerciseSelectionPreferences = normalizeExerciseSelectionPreferences(
     blueprint.exerciseSelectionPreferences,
   );
+  const avoidedExerciseIds = getAvoidedExerciseIds(normalizedExerciseSelectionPreferences);
   const needsEquipmentPresetDefault =
     blueprint.equipmentPresetSource !== userSelectedEquipmentPresetSource;
 
@@ -120,6 +131,17 @@ export function resolvePlanBlueprintRecommendedDefaults(
   const resolvedSplit = resolvedBlueprint.split;
 
   if (resolvedSplit) {
+    const filteredMainCompoundSelections = normalizeMainCompoundSelections(
+      resolvedBlueprint.mainCompoundSelections,
+    ).filter((selection) => !avoidedExerciseIds.has(selection.exerciseId));
+
+    if (filteredMainCompoundSelections.length !== resolvedBlueprint.mainCompoundSelections.length) {
+      resolvedBlueprint = {
+        ...resolvedBlueprint,
+        mainCompoundSelections: filteredMainCompoundSelections,
+      };
+    }
+
     const missingMainCompoundSelections = recommendMissingMainCompoundSelections({
       exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
       mainCompoundPreferences: resolvedBlueprint.mainCompoundPreferences,
@@ -146,11 +168,35 @@ export function resolvePlanBlueprintRecommendedDefaults(
         mainCompoundSelections,
       };
     }
+
+    const requiredMovementPatterns = getWeeklyMovementCoverage({
+      mainCompoundSelections: resolvedBlueprint.mainCompoundSelections,
+      split: resolvedSplit,
+      trainingFrequencyDaysPerWeek: resolvedBlueprint.trainingFrequencyDaysPerWeek,
+    })
+      .rows.filter((row) => row.requirement === "required")
+      .map((row) => row.movementPattern);
+    const selectedMovementPatterns = new Set(
+      resolvedBlueprint.mainCompoundSelections.map((selection) => selection.movementPattern),
+    );
+
+    for (const movementPattern of requiredMovementPatterns) {
+      if (selectedMovementPatterns.has(movementPattern)) {
+        continue;
+      }
+
+      blockingIssues.push({
+        kind: "no_valid_main_compound_selection",
+        message: `${formatMovementPatternLabel(movementPattern)} has no valid non-avoided exercise. Remove an avoidance or choose another valid exercise for that Movement Pattern.`,
+        movementPattern,
+      });
+    }
   }
 
   resolvedBlueprint = {
     ...resolvedBlueprint,
     mainCompoundRotationPools: deriveMainCompoundRotationPools({
+      exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
       mainCompoundSelections: resolvedBlueprint.mainCompoundSelections,
       rotationPools: resolvedBlueprint.mainCompoundRotationPools,
       rotationPreferences: resolvedBlueprint.mainCompoundRotationPreferences,
@@ -158,7 +204,8 @@ export function resolvePlanBlueprintRecommendedDefaults(
   };
 
   return {
-    isReady: recommendedDefaults.length === 0,
+    blockingIssues,
+    isReady: recommendedDefaults.length === 0 && blockingIssues.length === 0,
     recommendedDefaults,
     resolvedBlueprint,
   };
@@ -172,4 +219,13 @@ function createMainCompoundSelectionRecommendedDefault(
     kind: "main_compound_selection",
     movementPattern: selection.movementPattern,
   };
+}
+
+function formatMovementPatternLabel(
+  movementPattern: MainCompoundSelection["movementPattern"],
+): string {
+  return movementPattern
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }

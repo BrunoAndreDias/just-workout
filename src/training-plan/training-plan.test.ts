@@ -149,6 +149,44 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expectWorkoutHasNoDuplicateExercises(fullBodyTemplate);
   });
 
+  it("treats avoided exercises as hard exclusions for Isolation Exercise Preferences during generation", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: {
+        ...createCompleteBlueprint({
+          isolationExercisePreferences: [
+            {
+              exerciseIds: ["incline-dumbbell-curls", "standing-barbell-curls"],
+              primaryMuscleGroup: "biceps",
+            },
+            {
+              exerciseIds: ["skull-crushers"],
+              primaryMuscleGroup: "triceps",
+            },
+          ],
+          split: "full-body-3-day",
+          trainingFrequencyDaysPerWeek: 3,
+        }),
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoided-1", rawText: "Incline Dumbbell Curls" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+      },
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    const fullBodyTemplate = trainingPlan.workoutTemplates[0];
+
+    expect(fullBodyTemplate?.supersetGroups[2]?.slots.map((slot) => slot.exerciseName)).toEqual([
+      "Standing Barbell Curls",
+      "Skull Crushers",
+      "Standing Calf Raises",
+    ]);
+    expect(getExerciseIds(fullBodyTemplate)).not.toContain("incline-dumbbell-curls");
+  });
+
   it("builds alternating Full Body A/B templates with concrete blueprint exercise variation", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint({
@@ -366,6 +404,12 @@ describe("generateTrainingPlanFromBlueprint", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: {
         ...createCompleteBlueprint(),
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoided-1", rawText: "Flat Dumbbell Bench Press" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
         mainCompoundRotationPreferences: [
           {
             exerciseIds: [
@@ -384,7 +428,7 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expect(trainingPlan.mainCompoundRotationPools).toEqual(
       expect.arrayContaining([
         {
-          exerciseIds: ["incline-barbell-bench-press", "flat-dumbbell-bench-press"],
+          exerciseIds: ["incline-barbell-bench-press"],
           movementPattern: "horizontal_push",
         },
         {
@@ -398,6 +442,11 @@ describe("generateTrainingPlanFromBlueprint", () => {
         (pool) => pool.movementPattern === "horizontal_push",
       )?.exerciseIds,
     ).not.toContain("flat-barbell-bench-press");
+    expect(
+      trainingPlan.mainCompoundRotationPools.find(
+        (pool) => pool.movementPattern === "horizontal_push",
+      )?.exerciseIds,
+    ).not.toContain("flat-dumbbell-bench-press");
   });
 });
 

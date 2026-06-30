@@ -1,4 +1,8 @@
-import { normalizePlanBlueprint, type PlanBlueprint } from "../plan-builder/plan-blueprint";
+import {
+  normalizePlanBlueprint,
+  type PlanBlueprint,
+  resolvePlanBlueprintRecommendedDefaults,
+} from "../plan-builder/plan-blueprint";
 import { getCurrentPlanBlueprint } from "../plan-builder/plan-builder-repository";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
 import { saveGeneratedTrainingPlan } from "./training-plan-repository";
@@ -27,8 +31,17 @@ export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
   }
 
   const timestamp = dependencies.getTimestamp();
+  const normalizedBlueprint = normalizePlanBlueprint(blueprint);
+  const resolution = resolvePlanBlueprintRecommendedDefaults(normalizedBlueprint);
+
+  if (resolution.blockingIssues.length > 0) {
+    throw new Error(
+      `Cannot generate a Training Plan because ${resolution.blockingIssues[0]?.message}`,
+    );
+  }
+
   const trainingPlan = generateTrainingPlanFromBlueprint({
-    blueprint: normalizePlanBlueprint(blueprint),
+    blueprint: normalizedBlueprint,
     id: dependencies.createTrainingPlanId(),
     timestamp,
   });

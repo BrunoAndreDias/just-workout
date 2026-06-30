@@ -6,6 +6,7 @@ import {
   getExerciseCatalogExercisesByMovementPattern,
   isMainCompoundEligible,
 } from "./exercise-catalog";
+import { getAvoidedExerciseIds } from "./exercise-selection-preferences";
 import {
   getMainCompoundRotationPreferenceExerciseIds,
   normalizeMainCompoundRotationPreferences,
@@ -112,14 +113,17 @@ export function applyMainCompoundRotationPoolUpdate({
 }
 
 export function deriveMainCompoundRotationPools({
+  exerciseSelectionPreferences,
   mainCompoundSelections,
   rotationPools,
   rotationPreferences,
 }: {
+  exerciseSelectionPreferences?: unknown;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   rotationPools: unknown;
   rotationPreferences: unknown;
 }): ReadonlyArray<MainCompoundRotationPool> {
+  const avoidedExerciseIds = getAvoidedExerciseIds(exerciseSelectionPreferences);
   const normalizedRotationPools = normalizeMainCompoundRotationPools({
     mainCompoundSelections,
     rotationPools,
@@ -149,6 +153,7 @@ export function deriveMainCompoundRotationPools({
 
     if (rotationPreferenceExerciseIds.length > 0) {
       const exerciseIds = getCompatibleRotationExerciseIds({
+        avoidedExerciseIds,
         candidateExerciseIds: rotationPreferenceExerciseIds,
         mainCompoundSelections,
         movementPattern,
@@ -165,6 +170,7 @@ export function deriveMainCompoundRotationPools({
     }
 
     const exerciseIds = getSuggestedRotationExerciseIds({
+      avoidedExerciseIds,
       mainCompoundSelections,
       movementPattern,
       startingExerciseId: selection.exerciseId,
@@ -189,11 +195,13 @@ function isMainCompoundRotationPoolCandidate(value: unknown): value is MainCompo
 }
 
 function getCompatibleRotationExerciseIds({
+  avoidedExerciseIds,
   candidateExerciseIds,
   mainCompoundSelections,
   movementPattern,
   startingExerciseId,
 }: {
+  avoidedExerciseIds: ReadonlySet<string>;
   candidateExerciseIds: ReadonlyArray<string>;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   movementPattern: CompoundCapableMovementPatternId;
@@ -221,6 +229,7 @@ function getCompatibleRotationExerciseIds({
       !exercise ||
       !isMainCompoundEligible(exercise) ||
       exercise.movementPattern !== movementPattern ||
+      avoidedExerciseIds.has(exercise.id) ||
       selectedMainExerciseIds.has(exercise.id) ||
       exercise.id === startingExerciseId
     ) {
@@ -234,15 +243,18 @@ function getCompatibleRotationExerciseIds({
 }
 
 function getSuggestedRotationExerciseIds({
+  avoidedExerciseIds,
   mainCompoundSelections,
   movementPattern,
   startingExerciseId,
 }: {
+  avoidedExerciseIds: ReadonlySet<string>;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   movementPattern: CompoundCapableMovementPatternId;
   startingExerciseId: string;
 }): Array<string> {
   return getCompatibleRotationExerciseIds({
+    avoidedExerciseIds,
     candidateExerciseIds: getExerciseCatalogExercisesByMovementPattern(movementPattern).map(
       (exercise) => exercise.id,
     ),

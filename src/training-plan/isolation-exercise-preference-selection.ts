@@ -1,3 +1,4 @@
+import { getAvoidedExerciseIds } from "../plan-builder/exercise-selection-preferences";
 import {
   getIsolationExercisePreferenceExerciseIds,
   normalizeIsolationExercisePreferences,
@@ -15,12 +16,16 @@ export function applyIsolationExercisePreferencesToWorkoutTemplates({
   blueprint,
   workoutTemplates,
 }: {
-  blueprint: Pick<PlanBlueprint, "isolationExercisePreferences" | "weeklyRepTargets">;
+  blueprint: Pick<
+    PlanBlueprint,
+    "exerciseSelectionPreferences" | "isolationExercisePreferences" | "weeklyRepTargets"
+  >;
   workoutTemplates: ReadonlyArray<WorkoutTemplate>;
 }): ReadonlyArray<WorkoutTemplate> {
   const normalizedPreferences = normalizeIsolationExercisePreferences(
     blueprint.isolationExercisePreferences,
   );
+  const avoidedExerciseIds = getAvoidedExerciseIds(blueprint.exerciseSelectionPreferences);
   const weeklyRepTargets = blueprint.weeklyRepTargets ?? [];
 
   if (normalizedPreferences.length === 0) {
@@ -47,6 +52,7 @@ export function applyIsolationExercisePreferencesToWorkoutTemplates({
           const resolvedSlot =
             resolveIsolationPreferenceSlot({
               slot,
+              avoidedExerciseIds,
               usedExerciseIds,
               preferences: normalizedPreferences,
               weeklyRepTargets,
@@ -63,11 +69,13 @@ export function applyIsolationExercisePreferencesToWorkoutTemplates({
 
 function resolveIsolationPreferenceSlot({
   slot,
+  avoidedExerciseIds,
   usedExerciseIds,
   preferences,
   weeklyRepTargets,
 }: {
   slot: TrainingPlanSlot;
+  avoidedExerciseIds: ReadonlySet<string>;
   usedExerciseIds: ReadonlySet<string>;
   preferences: ReturnType<typeof normalizeIsolationExercisePreferences>;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
@@ -83,7 +91,7 @@ function resolveIsolationPreferenceSlot({
     });
 
     for (const exerciseId of preferenceExerciseIds) {
-      if (usedExerciseIds.has(exerciseId)) {
+      if (usedExerciseIds.has(exerciseId) || avoidedExerciseIds.has(exerciseId)) {
         continue;
       }
 

@@ -18,6 +18,10 @@ export type GenerateTrainingPlanWorkflowGeneratedResult = {
 export type GenerateTrainingPlanWorkflowResult =
   | GenerateTrainingPlanWorkflowGeneratedResult
   | {
+      blockingIssues: PlanBlueprintDefaultResolution["blockingIssues"];
+      status: "blocked";
+    }
+  | {
       resolution: PlanBlueprintDefaultResolution;
       status: "pending_recommended_defaults";
     };
@@ -39,6 +43,13 @@ export async function startGenerateTrainingPlanWorkflow({
   defaultResolution: PlanBlueprintDefaultResolution;
   dependencies?: GenerateTrainingPlanWorkflowDependencies;
 }): Promise<GenerateTrainingPlanWorkflowResult> {
+  if (defaultResolution.blockingIssues.length > 0) {
+    return {
+      blockingIssues: defaultResolution.blockingIssues,
+      status: "blocked",
+    };
+  }
+
   if (!defaultResolution.isReady) {
     return {
       resolution: defaultResolution,

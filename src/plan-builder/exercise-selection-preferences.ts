@@ -1,4 +1,8 @@
-import type { MovementPatternId } from "./exercise-catalog";
+import {
+  exerciseCatalogExercises,
+  getConcreteExerciseCatalogExerciseId,
+  type MovementPatternId,
+} from "./exercise-catalog";
 import type { TrainingSplitId } from "./training-split";
 import type { WeeklyRepTarget } from "./training-volume";
 
@@ -213,6 +217,26 @@ export function normalizeExerciseSelectionPreferences(
       ? preferences.strategy
       : defaultExerciseSelectionStrategyId,
   };
+}
+
+export function getExerciseSelectionPreferenceExerciseId(
+  preference: ExerciseSelectionPreferenceItem,
+): string | null {
+  if (typeof preference.matchedExerciseId === "string") {
+    return preference.matchedExerciseId;
+  }
+
+  const comparisonKey = getExerciseSelectionPreferenceComparisonKey(preference.rawText);
+
+  return comparisonKey ? (concreteExerciseIdByComparisonKey.get(comparisonKey) ?? null) : null;
+}
+
+export function getAvoidedExerciseIds(exerciseSelectionPreferences: unknown): ReadonlySet<string> {
+  return new Set(
+    normalizeExerciseSelectionPreferences(exerciseSelectionPreferences)
+      .avoidedExercises.map(getExerciseSelectionPreferenceExerciseId)
+      .filter((exerciseId): exerciseId is string => exerciseId !== null),
+  );
 }
 
 function isExerciseSelectionStrategyId(value: unknown): value is ExerciseSelectionStrategyId {
@@ -560,3 +584,10 @@ function getOppositeExerciseSelectionPendingInputId(
 ): ExerciseSelectionPendingInputId {
   return inputId === "preferredExercise" ? "avoidedExercise" : "preferredExercise";
 }
+
+const concreteExerciseIdByComparisonKey = new Map<string, string>(
+  exerciseCatalogExercises.map((exercise) => [
+    getExerciseSelectionPreferenceComparisonKey(exercise.name) ?? exercise.name.toLowerCase(),
+    getConcreteExerciseCatalogExerciseId(exercise.id),
+  ]),
+);

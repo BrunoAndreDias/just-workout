@@ -20,6 +20,7 @@ type RecommendedDefaultsConfirmationProps = {
 };
 
 type GenerateTrainingPlanStepProps = {
+  blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
   isGenerating: boolean;
   onGenerateTrainingPlan: () => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
@@ -27,7 +28,13 @@ type GenerateTrainingPlanStepProps = {
 };
 
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
-  const { isGenerating, onGenerateTrainingPlan, recommendedDefaultsConfirmation, summary } = props;
+  const {
+    blockingIssues = [],
+    isGenerating,
+    onGenerateTrainingPlan,
+    recommendedDefaultsConfirmation,
+    summary,
+  } = props;
 
   return (
     <>
@@ -55,7 +62,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 
             <StepActions className="mt-6">
               <Button
-                disabled={isGenerating}
+                disabled={isGenerating || blockingIssues.length > 0}
                 onClick={() => {
                   void onGenerateTrainingPlan();
                 }}
@@ -66,6 +73,17 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
                 {isGenerating ? "Generating..." : "Generate Training Plan"}
               </Button>
             </StepActions>
+
+            {blockingIssues.length > 0 ? (
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                <p className="font-semibold">Generation is blocked.</p>
+                <ul className="mt-2 space-y-2">
+                  {blockingIssues.map((issue) => (
+                    <li key={`${issue.kind}-${issue.movementPattern}`}>{issue.message}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </StepPanel>
         </div>
 

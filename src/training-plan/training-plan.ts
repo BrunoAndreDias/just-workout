@@ -88,6 +88,7 @@ export function generateTrainingPlanFromBlueprint({
 
   const { splitLabel, workoutTemplates } = createTrainingPlanTemplatesForBlueprint({ blueprint });
   const mainCompoundRotationPools = deriveMainCompoundRotationPools({
+    exerciseSelectionPreferences: blueprint.exerciseSelectionPreferences,
     mainCompoundSelections: blueprint.mainCompoundSelections,
     rotationPools: blueprint.mainCompoundRotationPools,
     rotationPreferences: blueprint.mainCompoundRotationPreferences,
