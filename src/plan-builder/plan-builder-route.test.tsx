@@ -131,65 +131,9 @@ describe("Plan Builder canonical route", () => {
       ),
     ).toBeVisible();
 
-    await user.click(exercisesCard);
-
-    const horizontalPushPreferenceRow = await getMainCompoundPreferenceRow("Horizontal push");
-    await user.click(
-      within(horizontalPushPreferenceRow).getByRole("button", { name: /rank preferences/i }),
-    );
-    const mainCompoundPicker = await screen.findByRole("dialog", {
-      name: /rank your horizontal push preferences/i,
-    });
-    await user.click(within(mainCompoundPicker).getByText("Flat Barbell Bench Press"));
-    await user.click(within(mainCompoundPicker).getByText("Incline Dumbbell Bench Press"));
-    await user.click(
-      within(mainCompoundPicker).getByRole("button", {
-        name: /move incline dumbbell bench press up/i,
-      }),
-    );
-    await user.click(
-      within(mainCompoundPicker).getByRole("button", {
-        name: /close main compound preferences picker/i,
-      }),
-    );
-
-    const horizontalPushRotationRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
-    await user.click(
-      within(horizontalPushRotationRow).getByRole("button", { name: /rank rotation preferences/i }),
-    );
-    const rotationPicker = await screen.findByRole("dialog", {
-      name: /rank your horizontal push rotation preferences/i,
-    });
-    await user.click(within(rotationPicker).getByText("Flat Dumbbell Bench Press"));
-    await user.click(within(rotationPicker).getByText("Incline Barbell Bench Press"));
-    await user.click(
-      within(rotationPicker).getByRole("button", {
-        name: /move incline barbell bench press up/i,
-      }),
-    );
-    await user.click(
-      within(rotationPicker).getByRole("button", {
-        name: /close main compound rotation preferences picker/i,
-      }),
-    );
-
-    const bicepsRow = await getIsolationPreferenceRow("Biceps");
-    await user.click(within(bicepsRow).getByRole("button", { name: /rank preferences/i }));
-    const isolationPicker = await screen.findByRole("dialog", {
-      name: /rank your biceps preferences/i,
-    });
-    await user.click(within(isolationPicker).getByText("Standing Barbell Curls"));
-    await user.click(within(isolationPicker).getByText("Incline Dumbbell Curls"));
-    await user.click(
-      within(isolationPicker).getByRole("button", {
-        name: /move incline dumbbell curls up/i,
-      }),
-    );
-    await user.click(
-      within(isolationPicker).getByRole("button", {
-        name: /close isolation exercise preferences picker/i,
-      }),
-    );
+    await rankHorizontalPushPreferences(user);
+    await rankHorizontalPushRotationPreferences(user);
+    await rankBicepsIsolationPreferences(user);
 
     expect(
       within(exercisesCard).getByText("1 Main Compound Preferences bucket ranked"),
@@ -580,6 +524,14 @@ async function getOnePageSectionButton(title: string) {
   return button;
 }
 
+async function openExercisesSection(user: PlanBuilderTestUser) {
+  const exercisesCard = await getOnePageSectionButton("Exercises");
+
+  if (exercisesCard.getAttribute("aria-expanded") !== "true") {
+    await user.click(exercisesCard);
+  }
+}
+
 async function expectExercisesBucketsVisible() {
   expect((await screen.findAllByText("Horizontal push")).length).toBeGreaterThan(0);
   expect(screen.getAllByText("Horizontal pull").length).toBeGreaterThan(0);
@@ -638,7 +590,7 @@ async function getIsolationPreferenceRow(title: string) {
 }
 
 async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
-  await user.click(await getOnePageSectionButton("Exercises"));
+  await openExercisesSection(user);
 
   const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
 
@@ -661,7 +613,7 @@ async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
 }
 
 async function rankHorizontalPushRotationPreferences(user: PlanBuilderTestUser) {
-  await user.click(await getOnePageSectionButton("Exercises"));
+  await openExercisesSection(user);
 
   const horizontalPushRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
 
@@ -688,7 +640,7 @@ async function rankHorizontalPushRotationPreferences(user: PlanBuilderTestUser) 
 }
 
 async function rankBicepsIsolationPreferences(user: PlanBuilderTestUser) {
-  await user.click(await getOnePageSectionButton("Exercises"));
+  await openExercisesSection(user);
 
   const bicepsRow = await getIsolationPreferenceRow("Biceps");
 

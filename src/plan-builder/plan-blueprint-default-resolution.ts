@@ -188,7 +188,7 @@ export function resolvePlanBlueprintRecommendedDefaults(
 
       blockingIssues.push({
         kind: "no_valid_main_compound_selection",
-        message: `Weekly Movement Coverage is blocked for ${formatMovementPatternLabel(movementPattern)} because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.`,
+        message: getNoValidMainCompoundSelectionMessage(movementPattern),
         movementPattern,
       });
     }
@@ -220,4 +220,10 @@ function createMainCompoundSelectionRecommendedDefault(
     kind: "main_compound_selection",
     movementPattern: selection.movementPattern,
   };
+}
+
+function getNoValidMainCompoundSelectionMessage(
+  movementPattern: MainCompoundSelection["movementPattern"],
+): string {
+  return `Weekly Movement Coverage is blocked for ${formatMovementPatternLabel(movementPattern)} because Exercise Selection Preferences avoid every valid exercise in that Movement Pattern. Remove an avoidance or choose another valid exercise before generating.`;
 }

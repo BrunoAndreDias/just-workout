@@ -28,6 +28,12 @@ type GenerateTrainingPlanStepProps = {
   summary: PlanBlueprintSummary | null;
 };
 
+const generateStepPreferenceMappingCopy =
+  "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+
+const defaultGenerationPreferenceMappingCopy =
+  "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
@@ -46,11 +52,9 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
               Generate Training Plan
             </h3>
             <p className="mt-3 max-w-2xl text-sm text-stone-600">
-              The Generate Step turns your Exercises Step preferences into final Main Compound
-              Selections, Main Compound Rotation Pools, and generated accessory choices. Just
-              Workout will create an active Training Plan from this completed Plan Blueprint using
-              split-derived Workout Templates, weekly volume targets, rep range style, and Superset
-              Groups.
+              {generateStepPreferenceMappingCopy} Just Workout will create an active Training Plan
+              from this completed Plan Blueprint using split-derived Workout Templates, weekly
+              volume targets, rep range style, and Superset Groups.
             </p>
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
@@ -149,10 +153,7 @@ function DefaultGenerationConfirmation({
           <p className="mt-3 text-sm text-stone-600">
             Just Workout will apply these Recommended Defaults before generation continues.
           </p>
-          <p className="mt-2 text-sm text-stone-600">
-            The Generate Step will turn your Exercises Step preferences into final Main Compound
-            Selections, Main Compound Rotation Pools, and generated accessory choices.
-          </p>
+          <p className="mt-2 text-sm text-stone-600">{defaultGenerationPreferenceMappingCopy}</p>
 
           <ul className="mt-5 space-y-3 text-sm text-stone-900">
             {resolution.recommendedDefaults.map((recommendedDefault) => (
@@ -227,6 +228,15 @@ function getRecommendedDefaultLabel(recommendedDefault: PlanBlueprintRecommended
     case "equipment_preset":
       return `${getEquipmentPreset(recommendedDefault.equipmentPreset).title} equipment preset`;
     case "main_compound_selection":
-      return `Recommended Default Main Compound Selection for ${formatMovementPatternLabel(recommendedDefault.movementPattern)}: ${getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound"}`;
+      return getMainCompoundSelectionRecommendedDefaultLabel(recommendedDefault);
   }
+}
+
+function getMainCompoundSelectionRecommendedDefaultLabel(
+  recommendedDefault: Extract<PlanBlueprintRecommendedDefault, { kind: "main_compound_selection" }>,
+): string {
+  const exerciseName =
+    getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound";
+
+  return `Recommended Default Main Compound Selection for ${formatMovementPatternLabel(recommendedDefault.movementPattern)}: ${exerciseName}`;
 }
