@@ -223,7 +223,7 @@ export function getExerciseSelectionPreferenceExerciseId(
   preference: ExerciseSelectionPreferenceItem,
 ): string | null {
   if (typeof preference.matchedExerciseId === "string") {
-    return preference.matchedExerciseId;
+    return getConcreteExerciseCatalogExerciseId(preference.matchedExerciseId);
   }
 
   const comparisonKey = getExerciseSelectionPreferenceComparisonKey(preference.rawText);

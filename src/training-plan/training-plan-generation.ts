@@ -30,7 +30,6 @@ export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
     throw new Error("Cannot generate a Training Plan without a Plan Blueprint.");
   }
 
-  const timestamp = dependencies.getTimestamp();
   const normalizedBlueprint = normalizePlanBlueprint(blueprint);
   const resolution = resolvePlanBlueprintRecommendedDefaults(normalizedBlueprint);
 
@@ -40,8 +39,13 @@ export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
     );
   }
 
+  if (!resolution.isReady) {
+    throw new Error("Cannot generate a Training Plan while Recommended Defaults are pending.");
+  }
+
+  const timestamp = dependencies.getTimestamp();
   const trainingPlan = generateTrainingPlanFromBlueprint({
-    blueprint: normalizedBlueprint,
+    blueprint: resolution.resolvedBlueprint,
     id: dependencies.createTrainingPlanId(),
     timestamp,
   });

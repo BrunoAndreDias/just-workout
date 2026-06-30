@@ -8,6 +8,7 @@ import {
   type ExerciseSelectionPreferences,
   type ExerciseSelectionPreferenceValidationErrors,
   exerciseCatalogMuscleGroups,
+  getAvoidedExerciseIds,
   getEquipmentPreset,
   isExerciseSelectionPreferencesConfirmationReady,
   normalizeExerciseSelectionPreferences,
@@ -205,6 +206,22 @@ describe("exercise selection preferences", () => {
         "Covered when legs sessions come up in the rotation, with accessory work added as needed.",
       title: "Lower body movement patterns",
     });
+  });
+
+  it("resolves avoided matched exercise ids to concrete catalog exercise ids", () => {
+    expect(
+      Array.from(
+        getAvoidedExerciseIds({
+          avoidedExercises: [
+            {
+              id: "avoided-1",
+              matchedExerciseId: "flat-barbell-or-dumbbell-bench-press",
+              rawText: "Flat Barbell or Dumbbell Bench Press",
+            },
+          ],
+        }),
+      ),
+    ).toEqual(["flat-barbell-bench-press"]);
   });
 
   it("auto-commits valid pending exercise inputs with normalized text and clears the pending draft", () => {

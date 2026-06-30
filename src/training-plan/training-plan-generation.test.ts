@@ -128,6 +128,29 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
 
     expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
   });
+
+  it("does not save a Training Plan while avoided Main Compound Selections need replacement defaults", async () => {
+    const saveActiveTrainingPlan = vi.fn();
+
+    await expect(
+      generateActiveTrainingPlanFromCurrentPlanBlueprint({
+        createTrainingPlanId: () => "training-plan-test",
+        getCurrentPlanBlueprint: async () => ({
+          ...createCompleteBlueprint(),
+          exerciseSelectionPreferences: {
+            avoidedExercises: [{ id: "avoided-1", rawText: "Flat Barbell Bench Press" }],
+            equipmentPreset: "full_gym",
+            preferredExercises: [],
+            strategy: "balanced",
+          },
+        }),
+        getTimestamp: () => "2026-06-07T10:00:00.000Z",
+        saveActiveTrainingPlan,
+      }),
+    ).rejects.toThrow("Cannot generate a Training Plan while Recommended Defaults are pending.");
+
+    expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
+  });
 });
 
 function createCompleteBlueprint(): PlanBlueprint {
