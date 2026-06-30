@@ -22,6 +22,13 @@ const legacyPlanBuilderStepPaths = [
   "/plan-builder/generate",
 ] as const;
 
+const upstreamPlanBuilderOptions = {
+  repRanges: "controlled_higher_reps",
+  split: "rotating-push-pull-legs",
+  trainingFrequencyDaysPerWeek: 4,
+  volumePreset: "higher_volume",
+} as const;
+
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
     await resetLocalDatabase();
@@ -188,10 +195,7 @@ describe("Plan Builder canonical route", () => {
           primaryMuscleGroup: "biceps",
         },
       ],
-      repRanges: "controlled_higher_reps",
-      split: "rotating-push-pull-legs",
-      trainingFrequencyDaysPerWeek: 4,
-      volumePreset: "higher_volume",
+      ...upstreamPlanBuilderOptions,
     });
   });
 
@@ -243,10 +247,7 @@ describe("Plan Builder canonical route", () => {
           movementPattern: "horizontal_push",
         },
       ],
-      repRanges: "controlled_higher_reps",
-      split: "rotating-push-pull-legs",
-      trainingFrequencyDaysPerWeek: 4,
-      volumePreset: "higher_volume",
+      ...upstreamPlanBuilderOptions,
     });
   });
 
