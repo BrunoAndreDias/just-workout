@@ -1,10 +1,11 @@
+import type { CompoundCapableMovementPatternId } from "./exercise-catalog";
 import { getMainCompoundPreferenceReadModel } from "./main-compound-preference-read-model";
 import type { PlanBlueprint } from "./plan-blueprint";
 import { MainCompoundPreferencesStep } from "./steps/exercise-foundation/main-compound-preferences-step";
 
 export type MainCompoundPreferencesChange = {
   exerciseIds: ReadonlyArray<string>;
-  movementPattern: NonNullable<PlanBlueprint["mainCompoundPreferences"][number]>["movementPattern"];
+  movementPattern: CompoundCapableMovementPatternId;
 };
 
 export function PlanBuilderMainCompoundPreferencesStep({

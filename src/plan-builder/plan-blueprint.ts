@@ -747,11 +747,18 @@ function areMainCompoundPreferencesEqual(
     left.every(
       (preference, index) =>
         preference.movementPattern === right[index]?.movementPattern &&
-        preference.exerciseIds.length === right[index]?.exerciseIds.length &&
-        preference.exerciseIds.every((exerciseId, exerciseIndex) => {
-          return exerciseId === right[index]?.exerciseIds[exerciseIndex];
-        }),
+        areOrderedExerciseIdsEqual(preference.exerciseIds, right[index]?.exerciseIds ?? []),
     )
+  );
+}
+
+function areOrderedExerciseIdsEqual(
+  left: ReadonlyArray<string>,
+  right: ReadonlyArray<string>,
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((exerciseId, exerciseIndex) => exerciseId === right[exerciseIndex])
   );
 }
 

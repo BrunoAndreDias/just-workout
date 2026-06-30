@@ -11,7 +11,6 @@ import {
 } from "./exercise-selection-preferences";
 import {
   getMainCompoundPreferenceExerciseIds,
-  type MainCompoundPreferenceBucket,
   normalizeMainCompoundPreferences,
 } from "./main-compound-preferences";
 import type { TrainingFrequencyDaysPerWeek } from "./plan-blueprint-types";
@@ -24,13 +23,13 @@ import {
 
 type RecommendMainCompoundSelectionOptions = {
   exerciseSelectionPreferences: unknown;
-  mainCompoundPreferences?: ReadonlyArray<MainCompoundPreferenceBucket> | unknown;
+  mainCompoundPreferences?: unknown;
   movementPattern: CompoundCapableMovementPatternId;
 };
 
 type RecommendMissingMainCompoundSelectionsOptions = {
   exerciseSelectionPreferences: unknown;
-  mainCompoundPreferences?: ReadonlyArray<MainCompoundPreferenceBucket> | unknown;
+  mainCompoundPreferences?: unknown;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   split: TrainingSplitId;
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
