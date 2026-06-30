@@ -146,6 +146,37 @@ describe("Plan Builder canonical route", () => {
     ).toBeVisible();
   });
 
+  it("shows confirmed Exercises default language in the overview and Generate Step review copy", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      confirmedBuilderSteps: {
+        ...blueprint.confirmedBuilderSteps,
+        exercises: true,
+      },
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    const exercisesCard = await getOnePageSectionButton("Exercises");
+
+    expect(
+      await within(exercisesCard).findByText(
+        "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults",
+      ),
+    ).toBeVisible();
+
+    await user.click(await getOnePageSectionButton("Generate"));
+
+    expect(
+      await screen.findByText(
+        /The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices\./i,
+      ),
+    ).toBeVisible();
+  });
+
   it("captures ranked Main Compound Preferences from Exercises and keeps them when returning", async () => {
     const user = userEvent.setup();
 
