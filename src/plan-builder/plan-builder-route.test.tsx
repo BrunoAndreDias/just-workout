@@ -149,6 +149,65 @@ describe("Plan Builder canonical route", () => {
     ).toBeVisible();
   });
 
+  it("preserves ranked Main Compound Preferences after changing schedule, split, rep ranges, and volume", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    await user.click(within(horizontalPushRow).getByRole("button", { name: /rank preferences/i }));
+
+    const picker = await screen.findByRole("dialog", {
+      name: /rank your horizontal push preferences/i,
+    });
+
+    await user.click(within(picker).getByText("Flat Barbell Bench Press"));
+    await user.click(within(picker).getByText("Incline Dumbbell Bench Press"));
+    await user.click(
+      within(picker).getByRole("button", { name: /move incline dumbbell bench press up/i }),
+    );
+    await user.click(
+      within(picker).getByRole("button", { name: /close main compound preferences picker/i }),
+    );
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+    await user.click(screen.getByRole("radio", { name: /4 days per week/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /4 days per week/i })).toBeChecked();
+    });
+
+    await user.click(screen.getByRole("radio", { name: /rotating push\/pull\/legs/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /rotating push\/pull\/legs/i })).toBeChecked();
+    });
+
+    await user.click(await getOnePageSectionButton("Rep ranges"));
+    await user.click(screen.getByRole("radio", { name: /controlled higher reps/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /controlled higher reps/i })).toBeChecked();
+    });
+
+    await user.click(await getOnePageSectionButton("Volume"));
+    await user.click(screen.getByRole("radio", { name: /higher volume/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: /higher volume/i })).toBeChecked();
+    });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const reopenedHorizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    expect(
+      within(reopenedHorizontalPushRow).getByText("1. Incline Dumbbell Bench Press"),
+    ).toBeVisible();
+    expect(
+      within(reopenedHorizontalPushRow).getByText("2. Flat Barbell Bench Press"),
+    ).toBeVisible();
+  });
+
   it("keeps Plan Builder navigation inside /plan-builder when moving backward from Generate", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
