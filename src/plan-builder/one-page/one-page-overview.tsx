@@ -43,7 +43,7 @@ export const planBuilderOnePageSections = [
     id: "exercises",
     compactTitle: "Exercises",
     title: "Exercises",
-    subtitle: "Ranked main compounds",
+    subtitle: "Ranked compounds and rotations",
     icon: Dumbbell,
   },
   {
@@ -209,20 +209,16 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const rankedBucketCount = blueprint.mainCompoundPreferences.length;
-  const rankedPreferenceCount = blueprint.mainCompoundPreferences.reduce(
-    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
-    0,
-  );
-
+  const rankedMainBucketCount = blueprint.mainCompoundPreferences.length;
+  const rankedRotationBucketCount = blueprint.mainCompoundRotationPreferences.length;
   return [
     {
-      id: "exercises-ranked-buckets",
-      label: `${rankedBucketCount} movement buckets ranked`,
+      id: "exercises-ranked-main-buckets",
+      label: `${rankedMainBucketCount} main buckets ranked`,
     },
     {
-      id: "exercises-ranked-preferences",
-      label: `${rankedPreferenceCount} main compound preferences`,
+      id: "exercises-ranked-rotation-buckets",
+      label: `${rankedRotationBucketCount} rotation buckets ranked`,
     },
     {
       id: "exercises-status",

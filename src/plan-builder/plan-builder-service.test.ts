@@ -141,6 +141,19 @@ describe("planBuilderService", () => {
     });
   });
 
+  it("resumes blueprints saved before Main Compound Rotation Preferences existed with empty buckets", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.mainCompoundRotationPreferences;
+
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundRotationPreferences: [],
+    });
+  });
+
   it("persists draft Exercise Selection Preferences without changing confirmed builder progress", async () => {
     const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const configuredBlueprint: PlanBlueprint = {

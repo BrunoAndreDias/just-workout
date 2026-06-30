@@ -28,7 +28,44 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
       active: true,
       generatedAt: "2026-06-07T10:00:00.000Z",
       id: "training-plan-test",
-      mainCompoundRotationPools: [],
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: [
+            "flat-dumbbell-bench-press",
+            "incline-barbell-bench-press",
+            "incline-dumbbell-bench-press",
+          ],
+          movementPattern: "horizontal_push",
+        },
+        {
+          exerciseIds: ["bent-over-dumbbell-rows", "t-bar-rows", "seated-cable-rows"],
+          movementPattern: "horizontal_pull",
+        },
+        {
+          exerciseIds: [
+            "seated-overhead-barbell-press",
+            "seated-overhead-dumbbell-press",
+            "standing-overhead-dumbbell-press",
+          ],
+          movementPattern: "vertical_push",
+        },
+        {
+          exerciseIds: ["chin-ups", "lat-pull-downs", "neutral-grip-pulldown"],
+          movementPattern: "vertical_pull",
+        },
+        {
+          exerciseIds: ["dumbbell-squats", "barbell-front-squats", "dumbbell-front-squats"],
+          movementPattern: "quad_dominant",
+        },
+        {
+          exerciseIds: [
+            "dumbbell-romanian-deadlifts",
+            "barbell-straight-leg-deadlifts",
+            "dumbbell-straight-leg-deadlifts",
+          ],
+          movementPattern: "hip_hamstring_dominant",
+        },
+      ],
       sourceBlueprintId: "plan-blueprint-test",
       updatedAt: "2026-06-07T10:00:00.000Z",
     });
@@ -70,6 +107,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
     mainCompoundPreferences: [],
+    mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,
     repRanges: "balanced_hypertrophy",

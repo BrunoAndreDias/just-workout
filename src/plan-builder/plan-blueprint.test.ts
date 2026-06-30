@@ -93,6 +93,7 @@ describe("plan blueprint", () => {
       volumePresetSource: null,
       weeklyRepTargets: null,
       mainCompoundPreferences: [],
+      mainCompoundRotationPreferences: [],
       mainCompoundSelections: [],
       mainCompoundRotationPools: [],
       exerciseSelectionPreferences: {

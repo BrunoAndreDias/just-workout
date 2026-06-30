@@ -1,6 +1,7 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { MainCompoundPreferenceBucket } from "./main-compound-preferences";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
+import type { MainCompoundRotationPreferenceBucket } from "./main-compound-rotation-preferences";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
 import type {
   OptionalVolumeMuscleGroupId,
@@ -65,6 +66,7 @@ export type PlanBlueprint = {
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
   mainCompoundPreferences: ReadonlyArray<MainCompoundPreferenceBucket>;
+  mainCompoundRotationPreferences: ReadonlyArray<MainCompoundRotationPreferenceBucket>;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
@@ -161,6 +163,13 @@ export type UpdateMainCompoundRotationPoolOptions = {
   timestamp: string;
 };
 
+export type UpdateMainCompoundRotationPreferencesOptions = {
+  blueprint: PlanBlueprint;
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
 export type UpdateMainCompoundPreferencesOptions = {
   blueprint: PlanBlueprint;
   exerciseIds: ReadonlyArray<string>;
@@ -249,6 +258,12 @@ export type PlanBlueprintTransition =
       exerciseIds: ReadonlyArray<string>;
       movementPattern: MainCompoundSelection["movementPattern"];
       timestamp: string;
+      type: "updateMainCompoundRotationPreferences";
+    }
+  | {
+      exerciseIds: ReadonlyArray<string>;
+      movementPattern: MainCompoundSelection["movementPattern"];
+      timestamp: string;
       type: "updateMainCompoundPreferences";
     }
   | {
@@ -288,6 +303,7 @@ export type StoredPlanBlueprint = Omit<
   | "exerciseSelectionPreferences"
   | "equipmentPresetSource"
   | "mainCompoundPreferences"
+  | "mainCompoundRotationPreferences"
   | "mainCompoundSelections"
   | "mainCompoundRotationPools"
   | "volumePreset"
@@ -298,6 +314,7 @@ export type StoredPlanBlueprint = Omit<
   exerciseSelectionPreferences?: unknown;
   equipmentPresetSource?: unknown;
   mainCompoundPreferences?: unknown;
+  mainCompoundRotationPreferences?: unknown;
   mainCompoundSelections?: unknown;
   mainCompoundRotationPools?: unknown;
   volumePreset?: unknown;

@@ -3,7 +3,10 @@ import {
   normalizeExerciseSelectionPreferences,
 } from "./exercise-selection-preferences";
 import { recommendMissingMainCompoundSelections } from "./main-compound-recommendation";
-import { normalizeMainCompoundRotationPools } from "./main-compound-rotation-pool";
+import {
+  deriveMainCompoundRotationPools,
+  normalizeMainCompoundRotationPools,
+} from "./main-compound-rotation-pool";
 import { defaultRepRangeStyleId, isRepRangeStyleId } from "./plan-blueprint-options";
 import {
   type PlanBlueprint,
@@ -144,6 +147,15 @@ export function resolvePlanBlueprintRecommendedDefaults(
       };
     }
   }
+
+  resolvedBlueprint = {
+    ...resolvedBlueprint,
+    mainCompoundRotationPools: deriveMainCompoundRotationPools({
+      mainCompoundSelections: resolvedBlueprint.mainCompoundSelections,
+      rotationPools: resolvedBlueprint.mainCompoundRotationPools,
+      rotationPreferences: resolvedBlueprint.mainCompoundRotationPreferences,
+    }),
+  };
 
   return {
     isReady: recommendedDefaults.length === 0,

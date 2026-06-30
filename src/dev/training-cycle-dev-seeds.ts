@@ -214,6 +214,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     equipmentPresetSource: "user_selected",
     id: "dev-cycle-blueprint",
     mainCompoundPreferences: [],
+    mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,
     repRanges: "balanced_hypertrophy",

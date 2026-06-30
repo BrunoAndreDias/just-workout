@@ -1,3 +1,4 @@
+import { deriveMainCompoundRotationPools } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import type {
   ExerciseCatalogMuscleGroupId,
@@ -86,12 +87,17 @@ export function generateTrainingPlanFromBlueprint({
   }
 
   const { splitLabel, workoutTemplates } = createTrainingPlanTemplatesForBlueprint({ blueprint });
+  const mainCompoundRotationPools = deriveMainCompoundRotationPools({
+    mainCompoundSelections: blueprint.mainCompoundSelections,
+    rotationPools: blueprint.mainCompoundRotationPools,
+    rotationPreferences: blueprint.mainCompoundRotationPreferences,
+  });
 
   return {
     active: true,
     generatedAt: timestamp,
     id,
-    mainCompoundRotationPools: blueprint.mainCompoundRotationPools,
+    mainCompoundRotationPools,
     repRangeStyle: repRanges,
     sourceBlueprintId: blueprint.id,
     split: splitLabel,

@@ -327,6 +327,44 @@ describe("generateTrainingPlanFromBlueprint", () => {
       expect.arrayContaining(["barbell-squats", "barbell-romanian-deadlifts"]),
     );
   });
+
+  it("derives Main Compound Rotation Pools from ranked rotation preferences and empty buckets", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: {
+        ...createCompleteBlueprint(),
+        mainCompoundRotationPreferences: [
+          {
+            exerciseIds: [
+              "flat-barbell-bench-press",
+              "incline-barbell-bench-press",
+              "flat-dumbbell-bench-press",
+            ],
+            movementPattern: "horizontal_push",
+          },
+        ],
+      },
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(trainingPlan.mainCompoundRotationPools).toEqual(
+      expect.arrayContaining([
+        {
+          exerciseIds: ["incline-barbell-bench-press", "flat-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+        {
+          exerciseIds: ["chin-ups", "lat-pull-downs", "neutral-grip-pulldown"],
+          movementPattern: "vertical_pull",
+        },
+      ]),
+    );
+    expect(
+      trainingPlan.mainCompoundRotationPools.find(
+        (pool) => pool.movementPattern === "horizontal_push",
+      )?.exerciseIds,
+    ).not.toContain("flat-barbell-bench-press");
+  });
 });
 
 function expectWorkoutHasNoDuplicateExercises(
@@ -376,6 +414,7 @@ function createCompleteBlueprint({
     equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
     mainCompoundPreferences: [],
+    mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,
     repRanges: "balanced_hypertrophy",

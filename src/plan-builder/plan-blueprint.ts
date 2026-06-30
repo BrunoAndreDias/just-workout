@@ -13,6 +13,10 @@ import {
   applyMainCompoundRotationPoolUpdate,
   normalizeMainCompoundRotationPools,
 } from "./main-compound-rotation-pool";
+import {
+  normalizeMainCompoundRotationPreferences,
+  updateMainCompoundRotationPreferenceBucket,
+} from "./main-compound-rotation-preferences";
 import { isRepRangeStyleId } from "./plan-blueprint-options";
 
 export {
@@ -68,6 +72,7 @@ import type {
   UpdateExerciseSelectionPreferencesOptions,
   UpdateMainCompoundPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
+  UpdateMainCompoundRotationPreferencesOptions,
 } from "./plan-blueprint-types";
 import {
   type EquipmentPresetSource,
@@ -115,6 +120,7 @@ export function createDefaultPlanBlueprint({
     weeklyRepTargets: null,
     mainCompoundSelections: [],
     mainCompoundPreferences: [],
+    mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],
     exerciseSelectionPreferences: createDefaultExerciseSelectionPreferences(),
     equipmentPresetSource: null,
@@ -185,6 +191,13 @@ export function applyPlanBlueprintTransition({
         movementPattern: transition.movementPattern,
         timestamp: transition.timestamp,
       });
+    case "updateMainCompoundRotationPreferences":
+      return updateMainCompoundRotationPreferences({
+        blueprint,
+        exerciseIds: transition.exerciseIds,
+        movementPattern: transition.movementPattern,
+        timestamp: transition.timestamp,
+      });
     case "updateMainCompoundRotationPool":
       return updateMainCompoundRotationPool({
         blueprint,
@@ -240,6 +253,9 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
     ),
     equipmentPresetSource: normalizeEquipmentPresetSource(blueprint),
     mainCompoundPreferences: normalizeMainCompoundPreferences(blueprint.mainCompoundPreferences),
+    mainCompoundRotationPreferences: normalizeMainCompoundRotationPreferences(
+      blueprint.mainCompoundRotationPreferences,
+    ),
     mainCompoundSelections,
     mainCompoundRotationPools: normalizeMainCompoundRotationPools({
       mainCompoundSelections,
@@ -526,6 +542,35 @@ export function updateMainCompoundPreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundPreferences: nextMainCompoundPreferences,
+    updatedAt: timestamp,
+  };
+}
+
+export function updateMainCompoundRotationPreferences({
+  blueprint,
+  exerciseIds,
+  movementPattern,
+  timestamp,
+}: UpdateMainCompoundRotationPreferencesOptions): PlanBlueprint {
+  const nextMainCompoundRotationPreferences = updateMainCompoundRotationPreferenceBucket({
+    exerciseIds,
+    movementPattern,
+    preferences: blueprint.mainCompoundRotationPreferences,
+    updatedAt: timestamp,
+  });
+  const hasRotationPreferencesChanged = !areMainCompoundPreferencesEqual(
+    blueprint.mainCompoundRotationPreferences,
+    nextMainCompoundRotationPreferences,
+  );
+  const confirmedBuilderSteps = getConfirmedBuilderSteps(blueprint);
+
+  return {
+    ...blueprint,
+    confirmedBuilderSteps: {
+      ...confirmedBuilderSteps,
+      exercises: hasRotationPreferencesChanged ? false : confirmedBuilderSteps.exercises,
+    },
+    mainCompoundRotationPreferences: nextMainCompoundRotationPreferences,
     updatedAt: timestamp,
   };
 }

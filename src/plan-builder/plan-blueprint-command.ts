@@ -82,6 +82,12 @@ type UpdateMainCompoundRotationPoolCommandOptions = {
   timestamp?: string;
 };
 
+type UpdateMainCompoundRotationPreferencesCommandOptions = {
+  exerciseIds: ReadonlyArray<string>;
+  movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp?: string;
+};
+
 type UpdateMainCompoundPreferencesCommandOptions = {
   exerciseIds: ReadonlyArray<string>;
   movementPattern: MainCompoundSelection["movementPattern"];
@@ -238,6 +244,18 @@ export const planBlueprintCommandBuilders = {
       movementPattern,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),
       type: "updateMainCompoundRotationPool",
+    });
+  },
+  updateMainCompoundRotationPreferences({
+    exerciseIds,
+    movementPattern,
+    timestamp,
+  }: UpdateMainCompoundRotationPreferencesCommandOptions) {
+    return buildPlanBlueprintTransitionCommand({
+      exerciseIds,
+      movementPattern,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "updateMainCompoundRotationPreferences",
     });
   },
   updateMainCompoundPreferences({

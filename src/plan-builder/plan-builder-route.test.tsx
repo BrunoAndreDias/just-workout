@@ -80,8 +80,7 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByRole("group", { name: /volume preset/i })).toBeVisible();
 
     await user.click(exercisesCard);
-    expect(await screen.findByText("Horizontal push")).toBeVisible();
-    expect(screen.getByText("Hip/hamstring dominant")).toBeVisible();
+    await expectExercisesBucketsVisible();
     expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
 
     await user.click(await getOnePageSectionButton("Generate"));
@@ -95,12 +94,7 @@ describe("Plan Builder canonical route", () => {
 
     await user.click(await getOnePageSectionButton("Exercises"));
 
-    expect(await screen.findByText("Horizontal push")).toBeVisible();
-    expect(screen.getByText("Horizontal pull")).toBeVisible();
-    expect(screen.getByText("Vertical push")).toBeVisible();
-    expect(screen.getByText("Vertical pull")).toBeVisible();
-    expect(screen.getByText("Quad dominant")).toBeVisible();
-    expect(screen.getByText("Hip/hamstring dominant")).toBeVisible();
+    await expectExercisesBucketsVisible();
     expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
   });
 
@@ -192,6 +186,41 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
+  it("persists ranked Main Compound Rotation Preferences after upstream edits and reopening Plan Builder", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await rankHorizontalPushRotationPreferences(user);
+    await chooseUpstreamPlanBuilderOptions(user);
+
+    firstRender.unmount();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const reopenedHorizontalPushRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
+
+    expect(
+      within(reopenedHorizontalPushRow).getByText("1. Incline Barbell Bench Press"),
+    ).toBeVisible();
+    expect(
+      within(reopenedHorizontalPushRow).getByText("2. Flat Dumbbell Bench Press"),
+    ).toBeVisible();
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundRotationPreferences: [
+        {
+          exerciseIds: ["incline-barbell-bench-press", "flat-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      repRanges: "controlled_higher_reps",
+      split: "rotating-push-pull-legs",
+      trainingFrequencyDaysPerWeek: 4,
+      volumePreset: "higher_volume",
+    });
+  });
+
   it("keeps Plan Builder navigation inside /plan-builder when moving backward from Generate", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
@@ -204,7 +233,7 @@ describe("Plan Builder canonical route", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
-    expect(await screen.findByText("Horizontal push")).toBeVisible();
+    await expectExercisesBucketsVisible();
   });
 
   it("prompts before generating when Recommended Defaults are needed and cancels without persisting them", async () => {
@@ -328,12 +357,47 @@ async function getOnePageSectionButton(title: string) {
   return button;
 }
 
+async function expectExercisesBucketsVisible() {
+  expect((await screen.findAllByText("Horizontal push")).length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Horizontal pull").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Vertical push").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Vertical pull").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Quad dominant").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Hip/hamstring dominant").length).toBeGreaterThan(0);
+}
+
 async function getMainCompoundPreferenceRow(title: string) {
-  const label = await screen.findByText(title);
+  const rows = await screen.findAllByText(title);
+  const label = rows[0];
+
+  if (!label) {
+    throw new Error(`Expected a Main Compound Preference row for "${title}".`);
+  }
+
   const row = label.closest("li");
 
   if (!row) {
     throw new Error(`Expected a Main Compound Preference row for "${title}".`);
+  }
+
+  return row;
+}
+
+async function getMainCompoundRotationPreferenceRow(title: string) {
+  const label = await screen.findByRole("heading", {
+    name: "Main compound rotation preference buckets",
+  });
+  const section = label.closest("section");
+
+  if (!section) {
+    throw new Error("Expected a Main Compound Rotation Preference section.");
+  }
+
+  const rowLabel = await within(section).findByText(title);
+  const row = rowLabel.closest("li");
+
+  if (!row) {
+    throw new Error(`Expected a Main Compound Rotation Preference row for "${title}".`);
   }
 
   return row;
@@ -357,6 +421,33 @@ async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
   );
   await user.click(
     within(picker).getByRole("button", { name: /close main compound preferences picker/i }),
+  );
+
+  return horizontalPushRow;
+}
+
+async function rankHorizontalPushRotationPreferences(user: PlanBuilderTestUser) {
+  await user.click(await getOnePageSectionButton("Exercises"));
+
+  const horizontalPushRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
+
+  await user.click(
+    within(horizontalPushRow).getByRole("button", { name: /rank rotation preferences/i }),
+  );
+
+  const picker = await screen.findByRole("dialog", {
+    name: /rank your horizontal push rotation preferences/i,
+  });
+
+  await user.click(within(picker).getByText("Flat Dumbbell Bench Press"));
+  await user.click(within(picker).getByText("Incline Barbell Bench Press"));
+  await user.click(
+    within(picker).getByRole("button", { name: /move incline barbell bench press up/i }),
+  );
+  await user.click(
+    within(picker).getByRole("button", {
+      name: /close main compound rotation preferences picker/i,
+    }),
   );
 
   return horizontalPushRow;

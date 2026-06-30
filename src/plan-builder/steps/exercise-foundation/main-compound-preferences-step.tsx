@@ -3,43 +3,75 @@ import { useState } from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
 import type { CompoundCapableMovementPatternId } from "../../exercise-catalog";
-import type { MainCompoundPreferenceReadModel } from "../../main-compound-preference-read-model";
+import type {
+  MainCompoundPreferenceReadModel,
+  MainCompoundPreferenceRowReadModel,
+} from "../../main-compound-preference-read-model";
+import type { MainCompoundRotationPreferenceReadModel } from "../../main-compound-rotation-preference-read-model";
 import { FoundationPatternIcon, getFoundationIconClassName } from "./foundation-pattern-icon";
 import { MainCompoundPickerToggleButton } from "./main-compound-picker-toggle-button";
 import { MainCompoundPreferencesPicker } from "./main-compound-preferences-picker";
+import { MainCompoundRotationPreferencesPicker } from "./main-compound-rotation-preferences-picker";
 import "./exercise-foundation-step.css";
 import "./main-compound-drawer.css";
 import "./exercise-foundation-page-overrides.css";
 import "./exercise-foundation-responsive.css";
 
 type MainCompoundPreferencesStepProps = {
+  mainCompoundReadModel: MainCompoundPreferenceReadModel;
+  mainCompoundRotationReadModel: MainCompoundRotationPreferenceReadModel;
   onBackToVolume: () => void;
   onContinueToGenerate: () => Promise<void>;
   onMainCompoundPreferencesChange: (preferences: {
     exerciseIds: ReadonlyArray<string>;
     movementPattern: CompoundCapableMovementPatternId;
   }) => Promise<void>;
-  readModel: MainCompoundPreferenceReadModel;
+  onMainCompoundRotationPreferencesChange: (preferences: {
+    exerciseIds: ReadonlyArray<string>;
+    movementPattern: CompoundCapableMovementPatternId;
+  }) => Promise<void>;
 };
 
 export function MainCompoundPreferencesStep({
+  mainCompoundReadModel,
+  mainCompoundRotationReadModel,
   onBackToVolume,
   onContinueToGenerate,
   onMainCompoundPreferencesChange,
-  readModel,
+  onMainCompoundRotationPreferencesChange,
 }: MainCompoundPreferencesStepProps) {
-  const [activePickerPattern, setActivePickerPattern] =
-    useState<CompoundCapableMovementPatternId | null>(null);
-  const activePickerRow =
-    activePickerPattern === null
-      ? undefined
-      : readModel.rows.find((row) => row.movementPattern === activePickerPattern);
+  const [activePicker, setActivePicker] = useState<{
+    kind: "main" | "rotation";
+    movementPattern: CompoundCapableMovementPatternId;
+  } | null>(null);
+  const activeMainCompoundPickerRow =
+    activePicker?.kind === "main"
+      ? mainCompoundReadModel.rows.find(
+          (row) => row.movementPattern === activePicker.movementPattern,
+        )
+      : undefined;
+  const activeRotationPickerRow =
+    activePicker?.kind === "rotation"
+      ? mainCompoundRotationReadModel.rows.find(
+          (row) => row.movementPattern === activePicker.movementPattern,
+        )
+      : undefined;
 
   async function handleMainCompoundPreferencesChange(
     movementPattern: CompoundCapableMovementPatternId,
     exerciseIds: ReadonlyArray<string>,
   ) {
     await onMainCompoundPreferencesChange({
+      exerciseIds,
+      movementPattern,
+    });
+  }
+
+  async function handleMainCompoundRotationPreferencesChange(
+    movementPattern: CompoundCapableMovementPatternId,
+    exerciseIds: ReadonlyArray<string>,
+  ) {
+    await onMainCompoundRotationPreferencesChange({
       exerciseIds,
       movementPattern,
     });
@@ -62,76 +94,79 @@ export function MainCompoundPreferencesStep({
               </span>
               <div>
                 <h3 className="sr-only" id="main-compound-preferences-title">
-                  Main compound preferences overview
+                  Exercises preference overview
                 </h3>
-                <p className="exercise-foundation-status__title">{readModel.summary}</p>
-                <p className="exercise-foundation-status__body">{readModel.guidance}</p>
+                <p className="exercise-foundation-status__title">{mainCompoundReadModel.summary}</p>
+                <p className="exercise-foundation-status__body">{mainCompoundReadModel.guidance}</p>
               </div>
             </section>
 
+            <PreferenceBucketSection
+              buttonLabel="Rank preferences"
+              cardAriaLabel="Main compound preference buckets"
+              emptySelectionText="No preferences ranked yet."
+              headingId="main-compound-preference-buckets-title"
+              headingText="Main compound preference buckets"
+              isPickerOpen={(movementPattern) =>
+                activePicker?.kind === "main" && activePicker.movementPattern === movementPattern
+              }
+              listAriaLabel="Main compound preference rows"
+              onTogglePicker={(movementPattern) =>
+                setActivePicker((currentPicker) =>
+                  currentPicker?.kind === "main" &&
+                  currentPicker.movementPattern === movementPattern
+                    ? null
+                    : { kind: "main", movementPattern },
+                )
+              }
+              pickerIdPrefix="main-compound-preferences-picker"
+              preferenceListLabel="ranked preferences"
+              readModelRows={mainCompoundReadModel.rows}
+            />
+
             <section
-              aria-label="Main compound preference buckets"
-              className="exercise-foundation-card"
+              aria-label="Main compound rotation preference status"
+              className="exercise-foundation-status"
             >
-              <ul aria-label="Main compound preference rows" className="exercise-foundation-list">
-                {readModel.rows.map((row) => {
-                  const isPickerOpen = activePickerPattern === row.movementPattern;
-
-                  return (
-                    <li className="exercise-foundation-row" key={row.movementPattern}>
-                      <div className="exercise-foundation-row__grid">
-                        <div className="exercise-foundation-row__pattern">
-                          <span
-                            aria-hidden="true"
-                            className={`exercise-foundation-row__icon ${getFoundationIconClassName(row.movementPattern)}`}
-                          >
-                            <FoundationPatternIcon movementPattern={row.movementPattern} />
-                          </span>
-                          <div className="min-w-0">
-                            <div className="exercise-foundation-row__heading">
-                              <h4>{row.movementPatternLabel}</h4>
-                              <span>Universal movement pattern</span>
-                            </div>
-                            <p className="exercise-foundation-row__helper">{row.helperText}</p>
-                          </div>
-                        </div>
-
-                        <div className="exercise-foundation-row__selection">
-                          <p>{row.topPreference?.exerciseName ?? "No preferences ranked yet."}</p>
-                          <span>{row.metadata}</span>
-                        </div>
-
-                        <div className="exercise-foundation-row__actions">
-                          <MainCompoundPickerToggleButton
-                            isOpen={isPickerOpen}
-                            label={row.preferences.length > 0 ? "Edit ranking" : "Rank preferences"}
-                            onToggle={() =>
-                              setActivePickerPattern((currentPattern) =>
-                                currentPattern === row.movementPattern ? null : row.movementPattern,
-                              )
-                            }
-                            pickerId={`main-compound-preferences-picker-${row.movementPattern}`}
-                          />
-                        </div>
-                      </div>
-
-                      {row.preferences.length > 0 ? (
-                        <ol
-                          className="exercise-foundation-row__preferences"
-                          aria-label={`${row.movementPatternLabel} ranked preferences`}
-                        >
-                          {row.preferences.map((preference, index) => (
-                            <li key={preference.exerciseId}>
-                              {index + 1}. {preference.exerciseName}
-                            </li>
-                          ))}
-                        </ol>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+              <span aria-hidden="true" className="exercise-foundation-status__icon">
+                <ListChecks size={22} strokeWidth={2.4} />
+              </span>
+              <div>
+                <h3 className="sr-only" id="main-compound-rotation-preferences-title">
+                  Main compound rotation preferences overview
+                </h3>
+                <p className="exercise-foundation-status__title">
+                  {mainCompoundRotationReadModel.summary}
+                </p>
+                <p className="exercise-foundation-status__body">
+                  {mainCompoundRotationReadModel.guidance}
+                </p>
+              </div>
             </section>
+
+            <PreferenceBucketSection
+              buttonLabel="Rank rotation preferences"
+              cardAriaLabel="Main compound rotation preference buckets"
+              emptySelectionText="No rotation preferences ranked yet."
+              headingId="main-compound-rotation-preference-buckets-title"
+              headingText="Main compound rotation preference buckets"
+              isPickerOpen={(movementPattern) =>
+                activePicker?.kind === "rotation" &&
+                activePicker.movementPattern === movementPattern
+              }
+              listAriaLabel="Main compound rotation preference rows"
+              onTogglePicker={(movementPattern) =>
+                setActivePicker((currentPicker) =>
+                  currentPicker?.kind === "rotation" &&
+                  currentPicker.movementPattern === movementPattern
+                    ? null
+                    : { kind: "rotation", movementPattern },
+                )
+              }
+              pickerIdPrefix="main-compound-rotation-preferences-picker"
+              preferenceListLabel="ranked rotation preferences"
+              readModelRows={mainCompoundRotationReadModel.rows}
+            />
           </div>
         </div>
 
@@ -156,21 +191,131 @@ export function MainCompoundPreferencesStep({
         </div>
       </StepPanel>
 
-      {activePickerRow ? (
+      {activeMainCompoundPickerRow ? (
         <MainCompoundPreferencesPicker
-          id={`main-compound-preferences-picker-${activePickerRow.movementPattern}`}
-          mainCompoundOptions={activePickerRow.mainCompoundOptions}
-          movementPattern={activePickerRow.movementPattern}
-          movementPatternLabel={activePickerRow.movementPatternLabel}
+          id={`main-compound-preferences-picker-${activeMainCompoundPickerRow.movementPattern}`}
+          mainCompoundOptions={activeMainCompoundPickerRow.mainCompoundOptions}
+          movementPattern={activeMainCompoundPickerRow.movementPattern}
+          movementPatternLabel={activeMainCompoundPickerRow.movementPatternLabel}
           onChange={(exerciseIds) =>
-            handleMainCompoundPreferencesChange(activePickerRow.movementPattern, exerciseIds)
+            handleMainCompoundPreferencesChange(
+              activeMainCompoundPickerRow.movementPattern,
+              exerciseIds,
+            )
           }
-          onClose={() => setActivePickerPattern(null)}
-          preferenceExerciseIds={activePickerRow.preferences.map(
+          onClose={() => setActivePicker(null)}
+          preferenceExerciseIds={activeMainCompoundPickerRow.preferences.map(
+            (preference) => preference.exerciseId,
+          )}
+        />
+      ) : null}
+
+      {activeRotationPickerRow ? (
+        <MainCompoundRotationPreferencesPicker
+          id={`main-compound-rotation-preferences-picker-${activeRotationPickerRow.movementPattern}`}
+          mainCompoundOptions={activeRotationPickerRow.mainCompoundOptions}
+          movementPattern={activeRotationPickerRow.movementPattern}
+          movementPatternLabel={activeRotationPickerRow.movementPatternLabel}
+          onChange={(exerciseIds) =>
+            handleMainCompoundRotationPreferencesChange(
+              activeRotationPickerRow.movementPattern,
+              exerciseIds,
+            )
+          }
+          onClose={() => setActivePicker(null)}
+          preferenceExerciseIds={activeRotationPickerRow.preferences.map(
             (preference) => preference.exerciseId,
           )}
         />
       ) : null}
     </div>
+  );
+}
+
+function PreferenceBucketSection({
+  buttonLabel,
+  cardAriaLabel,
+  emptySelectionText,
+  headingId,
+  headingText,
+  isPickerOpen,
+  listAriaLabel,
+  onTogglePicker,
+  pickerIdPrefix,
+  preferenceListLabel,
+  readModelRows,
+}: {
+  buttonLabel: string;
+  cardAriaLabel: string;
+  emptySelectionText: string;
+  headingId: string;
+  headingText: string;
+  isPickerOpen: (movementPattern: CompoundCapableMovementPatternId) => boolean;
+  listAriaLabel: string;
+  onTogglePicker: (movementPattern: CompoundCapableMovementPatternId) => void;
+  pickerIdPrefix: string;
+  preferenceListLabel: string;
+  readModelRows: ReadonlyArray<MainCompoundPreferenceRowReadModel>;
+}) {
+  return (
+    <section
+      aria-labelledby={headingId}
+      aria-label={cardAriaLabel}
+      className="exercise-foundation-card"
+    >
+      <h3 className="sr-only" id={headingId}>
+        {headingText}
+      </h3>
+      <ul aria-label={listAriaLabel} className="exercise-foundation-list">
+        {readModelRows.map((row) => (
+          <li className="exercise-foundation-row" key={row.movementPattern}>
+            <div className="exercise-foundation-row__grid">
+              <div className="exercise-foundation-row__pattern">
+                <span
+                  aria-hidden="true"
+                  className={`exercise-foundation-row__icon ${getFoundationIconClassName(row.movementPattern)}`}
+                >
+                  <FoundationPatternIcon movementPattern={row.movementPattern} />
+                </span>
+                <div className="min-w-0">
+                  <div className="exercise-foundation-row__heading">
+                    <h4>{row.movementPatternLabel}</h4>
+                    <span>Universal movement pattern</span>
+                  </div>
+                  <p className="exercise-foundation-row__helper">{row.helperText}</p>
+                </div>
+              </div>
+
+              <div className="exercise-foundation-row__selection">
+                <p>{row.topPreference?.exerciseName ?? emptySelectionText}</p>
+                <span>{row.metadata}</span>
+              </div>
+
+              <div className="exercise-foundation-row__actions">
+                <MainCompoundPickerToggleButton
+                  isOpen={isPickerOpen(row.movementPattern)}
+                  label={row.preferences.length > 0 ? "Edit ranking" : buttonLabel}
+                  onToggle={() => onTogglePicker(row.movementPattern)}
+                  pickerId={`${pickerIdPrefix}-${row.movementPattern}`}
+                />
+              </div>
+            </div>
+
+            {row.preferences.length > 0 ? (
+              <ol
+                aria-label={`${row.movementPatternLabel} ${preferenceListLabel}`}
+                className="exercise-foundation-row__preferences"
+              >
+                {row.preferences.map((preference, index) => (
+                  <li key={preference.exerciseId}>
+                    {index + 1}. {preference.exerciseName}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

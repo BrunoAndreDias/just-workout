@@ -68,6 +68,7 @@ describe("plan blueprint default resolution", () => {
         ...blueprint,
         ...createRecommendedTrainingVolumeConfiguration(),
         equipmentPresetSource: "user_selected",
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
         mainCompoundSelections: completeMainCompoundSelections,
         repRanges: "balanced_hypertrophy",
         split: "full-body-3-day",
@@ -89,7 +90,10 @@ describe("plan blueprint default resolution", () => {
     expect(resolvePlanBlueprintRecommendedDefaults(blueprint)).toEqual({
       isReady: true,
       recommendedDefaults: [],
-      resolvedBlueprint: blueprint,
+      resolvedBlueprint: {
+        ...blueprint,
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
+      },
     });
   });
 
@@ -129,6 +133,7 @@ describe("plan blueprint default resolution", () => {
           preferredExercises: [{ id: "prefer-1", rawText: "Chest-supported row" }],
           strategy: "balanced",
         },
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
       },
     });
     expect(blueprint.repRanges).toBe("strength_leaning");
@@ -162,6 +167,7 @@ describe("plan blueprint default resolution", () => {
       resolvedBlueprint: {
         ...blueprint,
         equipmentPresetSource: "user_selected",
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
       },
     });
     expect(blueprint.equipmentPresetSource).toBeNull();
@@ -183,6 +189,7 @@ describe("plan blueprint default resolution", () => {
       recommendedDefaults: completeMainCompoundRecommendedDefaults,
       resolvedBlueprint: {
         ...blueprint,
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
         mainCompoundSelections: completeMainCompoundSelections,
       },
     });
@@ -300,6 +307,7 @@ describe("plan blueprint default resolution", () => {
       ],
       resolvedBlueprint: {
         ...blueprint,
+        mainCompoundRotationPools: completeMainCompoundRecommendedRotationPools,
         mainCompoundSelections: completeMainCompoundSelections,
       },
     });
@@ -352,6 +360,45 @@ const completeMainCompoundRecommendedDefaults = completeMainCompoundSelections.m
   ...selection,
   kind: "main_compound_selection" as const,
 }));
+
+const completeMainCompoundRecommendedRotationPools = [
+  {
+    exerciseIds: [
+      "flat-dumbbell-bench-press",
+      "incline-barbell-bench-press",
+      "incline-dumbbell-bench-press",
+    ],
+    movementPattern: "horizontal_push",
+  },
+  {
+    exerciseIds: ["bent-over-dumbbell-rows", "t-bar-rows", "seated-cable-rows"],
+    movementPattern: "horizontal_pull",
+  },
+  {
+    exerciseIds: [
+      "seated-overhead-barbell-press",
+      "seated-overhead-dumbbell-press",
+      "standing-overhead-dumbbell-press",
+    ],
+    movementPattern: "vertical_push",
+  },
+  {
+    exerciseIds: ["chin-ups", "lat-pull-downs", "neutral-grip-pulldown"],
+    movementPattern: "vertical_pull",
+  },
+  {
+    exerciseIds: ["dumbbell-squats", "barbell-front-squats", "dumbbell-front-squats"],
+    movementPattern: "quad_dominant",
+  },
+  {
+    exerciseIds: [
+      "dumbbell-romanian-deadlifts",
+      "barbell-straight-leg-deadlifts",
+      "dumbbell-straight-leg-deadlifts",
+    ],
+    movementPattern: "hip_hamstring_dominant",
+  },
+] as const;
 
 function expectMainCompoundCoverageCanConfirmExercises({
   mainCompoundSelections,

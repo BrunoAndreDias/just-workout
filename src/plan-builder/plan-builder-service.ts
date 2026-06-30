@@ -62,6 +62,14 @@ async function updateMainCompoundRotationPool(
   );
 }
 
+async function updateMainCompoundRotationPreferences(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateMainCompoundRotationPreferences>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateMainCompoundRotationPreferences(options),
+  );
+}
+
 async function updateMainCompoundPreferences(
   options: Parameters<typeof planBlueprintCommandBuilders.updateMainCompoundPreferences>[0],
 ) {
@@ -130,6 +138,7 @@ export const planBuilderService = {
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
   updateMainCompoundPreferences,
+  updateMainCompoundRotationPreferences,
   updateExerciseSelectionPreferences,
   updateMainCompoundRotationPool,
   updateMainCompoundSelection,

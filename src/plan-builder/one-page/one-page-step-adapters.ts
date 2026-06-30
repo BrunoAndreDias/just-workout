@@ -5,6 +5,7 @@ import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
   useConfirmExerciseSelectionPreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
+  useUpdateMainCompoundRotationPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
@@ -21,7 +22,10 @@ import type {
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
 } from "../plan-blueprint";
-import type { MainCompoundPreferencesChange } from "../plan-builder-main-compound-preferences";
+import type {
+  MainCompoundPreferencesChange,
+  MainCompoundRotationPreferencesChange,
+} from "../plan-builder-main-compound-preferences";
 import type { TrainingSplitId } from "../training-split";
 import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 
@@ -117,6 +121,8 @@ export function useOnePageExercisesStep({
   const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
     useConfirmExerciseSelectionPreferencesMutation();
   const { mutateAsync: updateMainCompoundPreferences } = useUpdateMainCompoundPreferencesMutation();
+  const { mutateAsync: updateMainCompoundRotationPreferences } =
+    useUpdateMainCompoundRotationPreferencesMutation();
 
   return {
     onContinueToGenerate: async () => {
@@ -130,6 +136,15 @@ export function useOnePageExercisesStep({
       movementPattern,
     }: MainCompoundPreferencesChange) =>
       updateMainCompoundPreferences({
+        exerciseIds,
+        movementPattern,
+        timestamp: new Date().toISOString(),
+      }),
+    onMainCompoundRotationPreferencesChange: async ({
+      exerciseIds,
+      movementPattern,
+    }: MainCompoundRotationPreferencesChange) =>
+      updateMainCompoundRotationPreferences({
         exerciseIds,
         movementPattern,
         timestamp: new Date().toISOString(),
