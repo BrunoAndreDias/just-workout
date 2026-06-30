@@ -30,6 +30,18 @@ const upstreamPlanBuilderOptions = {
   volumePreset: "higher_volume",
 } as const;
 
+const unconfirmedExerciseDefaultsOverviewCopy =
+  "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults";
+
+const confirmedExerciseDefaultsOverviewCopy =
+  "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults";
+
+const generateStepPreferenceMappingCopy =
+  "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+
+const defaultGenerationPreferenceMappingCopy =
+  "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
     await resetLocalDatabase();
@@ -126,9 +138,7 @@ describe("Plan Builder canonical route", () => {
       await within(exercisesCard).findByText("0 Isolation Exercise Preferences buckets ranked"),
     ).toBeVisible();
     expect(
-      await within(exercisesCard).findByText(
-        "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults",
-      ),
+      await within(exercisesCard).findByText(unconfirmedExerciseDefaultsOverviewCopy),
     ).toBeVisible();
 
     await rankHorizontalPushPreferences(user);
@@ -163,17 +173,13 @@ describe("Plan Builder canonical route", () => {
     const exercisesCard = await getOnePageSectionButton("Exercises");
 
     expect(
-      await within(exercisesCard).findByText(
-        "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults",
-      ),
+      await within(exercisesCard).findByText(confirmedExerciseDefaultsOverviewCopy),
     ).toBeVisible();
 
     await user.click(await getOnePageSectionButton("Generate"));
 
     expect(
-      await screen.findByText(
-        /The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices\./i,
-      ),
+      await screen.findByText(generateStepPreferenceMappingCopy, { exact: false }),
     ).toBeVisible();
   });
 
@@ -421,11 +427,7 @@ describe("Plan Builder canonical route", () => {
     expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
     expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
     expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
-    expect(
-      within(confirmation).getByText(
-        "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.",
-      ),
-    ).toBeVisible();
+    expect(within(confirmation).getByText(defaultGenerationPreferenceMappingCopy)).toBeVisible();
     expect(
       within(confirmation).getByText(
         "Recommended Default Main Compound Selection for Horizontal push: Flat Barbell Bench Press",
