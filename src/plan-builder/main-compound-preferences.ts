@@ -6,6 +6,10 @@ import {
   isCompoundCapableMovementPattern,
   isMainCompoundEligible,
 } from "./exercise-catalog";
+import {
+  isExerciseIdBucketCandidate,
+  normalizeRankedPreferenceExerciseIds,
+} from "./ranked-exercise-preferences";
 
 export type MainCompoundPreferenceBucket = {
   exerciseIds: ReadonlyArray<string>;
@@ -103,38 +107,29 @@ function normalizeBucketExerciseIds({
   exerciseIds,
   movementPattern,
 }: Pick<MainCompoundPreferenceBucket, "exerciseIds" | "movementPattern">): Array<string> {
-  if (!Array.isArray(exerciseIds)) {
-    return [];
-  }
+  return normalizeRankedPreferenceExerciseIds({
+    exerciseIds,
+    normalizeExerciseId: (exerciseId) => {
+      const canonicalExerciseId = getConcreteExerciseCatalogExerciseId(exerciseId);
+      const exercise = getExerciseCatalogExercise(canonicalExerciseId);
 
-  const canonicalExerciseIds = new Set<string>();
+      if (
+        !exercise ||
+        !isMainCompoundEligible(exercise) ||
+        exercise.movementPattern !== movementPattern
+      ) {
+        return null;
+      }
 
-  for (const exerciseId of exerciseIds) {
-    if (typeof exerciseId !== "string") {
-      continue;
-    }
-
-    const canonicalExerciseId = getConcreteExerciseCatalogExerciseId(exerciseId);
-    const exercise = getExerciseCatalogExercise(canonicalExerciseId);
-
-    if (
-      !exercise ||
-      !isMainCompoundEligible(exercise) ||
-      exercise.movementPattern !== movementPattern
-    ) {
-      continue;
-    }
-
-    canonicalExerciseIds.add(canonicalExerciseId);
-  }
-
-  return [...canonicalExerciseIds];
+      return canonicalExerciseId;
+    },
+  });
 }
 
 function isMainCompoundPreferenceBucketCandidate(
   value: unknown,
 ): value is MainCompoundPreferenceBucket {
-  if (!value || typeof value !== "object") {
+  if (!isExerciseIdBucketCandidate(value)) {
     return false;
   }
 

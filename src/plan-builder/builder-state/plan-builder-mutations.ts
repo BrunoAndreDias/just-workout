@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type TrainingPlan, trainingPlanService } from "../../training-plan";
+import type { ExerciseCatalogMuscleGroupId } from "../exercise-catalog";
 import type { ExerciseSelectionPreferences } from "../exercise-selection-preferences";
 import {
   type PlanBlueprint,
@@ -76,6 +77,12 @@ type UpdateMainCompoundRotationPoolMutationVariables = {
 type UpdateMainCompoundPreferencesMutationVariables = {
   exerciseIds: ReadonlyArray<string>;
   movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp: string;
+};
+
+type UpdateIsolationExercisePreferencesMutationVariables = {
+  exerciseIds: ReadonlyArray<string>;
+  primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
   timestamp: string;
 };
 
@@ -189,6 +196,12 @@ export function useUpdateMainCompoundRotationPoolMutation() {
 export function useUpdateMainCompoundPreferencesMutation() {
   return usePlanBlueprintMutation<UpdateMainCompoundPreferencesMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateMainCompoundPreferences,
+  });
+}
+
+export function useUpdateIsolationExercisePreferencesMutation() {
+  return usePlanBlueprintMutation<UpdateIsolationExercisePreferencesMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.updateIsolationExercisePreferences,
   });
 }
 

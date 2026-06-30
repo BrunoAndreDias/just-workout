@@ -1,4 +1,5 @@
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
+import type { IsolationExercisePreferenceBucket } from "./isolation-exercise-preferences";
 import type { MainCompoundPreferenceBucket } from "./main-compound-preferences";
 import type { MainCompoundRotationPool } from "./main-compound-rotation-pool";
 import type { TrainingSplitId, TrainingSplitSummary } from "./training-split";
@@ -65,6 +66,7 @@ export type PlanBlueprint = {
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
   mainCompoundPreferences: ReadonlyArray<MainCompoundPreferenceBucket>;
+  isolationExercisePreferences: ReadonlyArray<IsolationExercisePreferenceBucket>;
   mainCompoundSelections: ReadonlyArray<MainCompoundSelection>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
@@ -168,6 +170,13 @@ export type UpdateMainCompoundPreferencesOptions = {
   timestamp: string;
 };
 
+export type UpdateIsolationExercisePreferencesOptions = {
+  blueprint: PlanBlueprint;
+  exerciseIds: ReadonlyArray<string>;
+  primaryMuscleGroup: IsolationExercisePreferenceBucket["primaryMuscleGroup"];
+  timestamp: string;
+};
+
 export type ConfirmTrainingFrequencyOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
@@ -252,6 +261,12 @@ export type PlanBlueprintTransition =
       type: "updateMainCompoundPreferences";
     }
   | {
+      exerciseIds: ReadonlyArray<string>;
+      primaryMuscleGroup: IsolationExercisePreferenceBucket["primaryMuscleGroup"];
+      timestamp: string;
+      type: "updateIsolationExercisePreferences";
+    }
+  | {
       timestamp: string;
       trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek;
       type: "confirmTrainingFrequency";
@@ -287,6 +302,7 @@ export type StoredPlanBlueprint = Omit<
   | "confirmedBuilderSteps"
   | "exerciseSelectionPreferences"
   | "equipmentPresetSource"
+  | "isolationExercisePreferences"
   | "mainCompoundPreferences"
   | "mainCompoundSelections"
   | "mainCompoundRotationPools"
@@ -297,6 +313,7 @@ export type StoredPlanBlueprint = Omit<
   confirmedBuilderSteps?: Partial<PlanBuilderConfirmedSteps>;
   exerciseSelectionPreferences?: unknown;
   equipmentPresetSource?: unknown;
+  isolationExercisePreferences?: unknown;
   mainCompoundPreferences?: unknown;
   mainCompoundSelections?: unknown;
   mainCompoundRotationPools?: unknown;

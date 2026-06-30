@@ -183,6 +183,7 @@ function createCompleteBlueprint({
     },
     equipmentPresetSource: "user_selected",
     id: "plan-blueprint-test",
+    isolationExercisePreferences: [],
     mainCompoundPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,

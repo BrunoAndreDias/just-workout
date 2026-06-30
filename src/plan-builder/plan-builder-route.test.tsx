@@ -137,6 +137,33 @@ describe("Plan Builder canonical route", () => {
     ).toBeVisible();
   });
 
+  it("captures ranked Isolation Exercise Preferences from Exercises and keeps them when returning", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    const bicepsRow = await rankBicepsIsolationPreferences(user);
+
+    expect(within(bicepsRow).getByText("Incline Dumbbell Curls")).toBeVisible();
+    expect(within(bicepsRow).getByText("1. Incline Dumbbell Curls")).toBeVisible();
+    expect(within(bicepsRow).getByText("2. Standing Barbell Curls")).toBeVisible();
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+    expect(
+      await screen.findByRole("heading", {
+        name: /how many days can you train per week\?/i,
+      }),
+    ).toBeVisible();
+
+    await user.click(await getOnePageSectionButton("Exercises"));
+
+    const reopenedBicepsRow = await getIsolationPreferenceRow("Biceps");
+
+    expect(within(reopenedBicepsRow).getByText("Incline Dumbbell Curls")).toBeVisible();
+    expect(within(reopenedBicepsRow).getByText("1. Incline Dumbbell Curls")).toBeVisible();
+    expect(within(reopenedBicepsRow).getByText("2. Standing Barbell Curls")).toBeVisible();
+  });
+
   it("preserves ranked Main Compound Preferences after changing schedule, split, rep ranges, and volume", async () => {
     const user = userEvent.setup();
 
@@ -339,6 +366,17 @@ async function getMainCompoundPreferenceRow(title: string) {
   return row;
 }
 
+async function getIsolationPreferenceRow(title: string) {
+  const label = await screen.findByText(title);
+  const row = label.closest("li");
+
+  if (!row) {
+    throw new Error(`Expected an Isolation Exercise Preference row for "${title}".`);
+  }
+
+  return row;
+}
+
 async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
   await user.click(await getOnePageSectionButton("Exercises"));
 
@@ -360,6 +398,27 @@ async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
   );
 
   return horizontalPushRow;
+}
+
+async function rankBicepsIsolationPreferences(user: PlanBuilderTestUser) {
+  await user.click(await getOnePageSectionButton("Exercises"));
+
+  const bicepsRow = await getIsolationPreferenceRow("Biceps");
+
+  await user.click(within(bicepsRow).getByRole("button", { name: /rank preferences/i }));
+
+  const picker = await screen.findByRole("dialog", {
+    name: /rank your biceps preferences/i,
+  });
+
+  await user.click(within(picker).getByText("Standing Barbell Curls"));
+  await user.click(within(picker).getByText("Incline Dumbbell Curls"));
+  await user.click(within(picker).getByRole("button", { name: /move incline dumbbell curls up/i }));
+  await user.click(
+    within(picker).getByRole("button", { name: /close isolation exercise preferences picker/i }),
+  );
+
+  return bicepsRow;
 }
 
 async function chooseUpstreamPlanBuilderOptions(user: PlanBuilderTestUser) {

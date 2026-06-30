@@ -1,3 +1,4 @@
+import type { ExerciseCatalogMuscleGroupId } from "./exercise-catalog";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
   applyPlanBlueprintTransition,
@@ -85,6 +86,12 @@ type UpdateMainCompoundRotationPoolCommandOptions = {
 type UpdateMainCompoundPreferencesCommandOptions = {
   exerciseIds: ReadonlyArray<string>;
   movementPattern: MainCompoundSelection["movementPattern"];
+  timestamp?: string;
+};
+
+type UpdateIsolationExercisePreferencesCommandOptions = {
+  exerciseIds: ReadonlyArray<string>;
+  primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
   timestamp?: string;
 };
 
@@ -250,6 +257,18 @@ export const planBlueprintCommandBuilders = {
       movementPattern,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),
       type: "updateMainCompoundPreferences",
+    });
+  },
+  updateIsolationExercisePreferences({
+    exerciseIds,
+    primaryMuscleGroup,
+    timestamp,
+  }: UpdateIsolationExercisePreferencesCommandOptions) {
+    return buildPlanBlueprintTransitionCommand({
+      exerciseIds,
+      primaryMuscleGroup,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "updateIsolationExercisePreferences",
     });
   },
   updateMainCompoundSelection({

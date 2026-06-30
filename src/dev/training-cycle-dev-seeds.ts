@@ -213,6 +213,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     },
     equipmentPresetSource: "user_selected",
     id: "dev-cycle-blueprint",
+    isolationExercisePreferences: [],
     mainCompoundPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,

@@ -43,7 +43,7 @@ export const planBuilderOnePageSections = [
     id: "exercises",
     compactTitle: "Exercises",
     title: "Exercises",
-    subtitle: "Ranked main compounds",
+    subtitle: "Ranked exercise preferences",
     icon: Dumbbell,
   },
   {
@@ -209,20 +209,26 @@ function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
 }
 
 function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const rankedBucketCount = blueprint.mainCompoundPreferences.length;
-  const rankedPreferenceCount = blueprint.mainCompoundPreferences.reduce(
-    (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
-    0,
-  );
+  const rankedBucketCount =
+    blueprint.mainCompoundPreferences.length + blueprint.isolationExercisePreferences.length;
+  const rankedPreferenceCount =
+    blueprint.mainCompoundPreferences.reduce(
+      (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
+      0,
+    ) +
+    blueprint.isolationExercisePreferences.reduce(
+      (preferenceCount, preference) => preferenceCount + preference.exerciseIds.length,
+      0,
+    );
 
   return [
     {
       id: "exercises-ranked-buckets",
-      label: `${rankedBucketCount} movement buckets ranked`,
+      label: `${rankedBucketCount} preference buckets ranked`,
     },
     {
       id: "exercises-ranked-preferences",
-      label: `${rankedPreferenceCount} main compound preferences`,
+      label: `${rankedPreferenceCount} exercise preferences`,
     },
     {
       id: "exercises-status",

@@ -70,6 +70,14 @@ async function updateMainCompoundPreferences(
   );
 }
 
+async function updateIsolationExercisePreferences(
+  options: Parameters<typeof planBlueprintCommandBuilders.updateIsolationExercisePreferences>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateIsolationExercisePreferences(options),
+  );
+}
+
 async function confirmSelectedTrainingFrequency(
   options: Parameters<typeof planBlueprintCommandBuilders.confirmTrainingFrequency>[0],
 ) {
@@ -129,6 +137,7 @@ export const planBuilderService = {
   confirmSelectedTrainingVolume,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
+  updateIsolationExercisePreferences,
   updateMainCompoundPreferences,
   updateExerciseSelectionPreferences,
   updateMainCompoundRotationPool,
