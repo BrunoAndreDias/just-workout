@@ -152,11 +152,13 @@
   display: grid;
   align-content: start;
   gap: 0.5rem;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem 1rem 1.25rem;
 }
 
 .main-compound-drawer__options-fieldset {
+  min-width: 0;
   margin: 0;
   border: 0;
 }
@@ -168,6 +170,7 @@
 
 .main-compound-drawer__option {
   display: grid;
+  min-width: 0;
   min-height: 4.1rem;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
@@ -230,12 +233,14 @@
 
 .main-compound-drawer__option-tags {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.35rem;
 }
 
 .main-compound-drawer__tag {
+  max-width: 100%;
   border-radius: 999px;
   background: #e8f5f4;
   padding: 0.22rem 0.45rem;
@@ -243,10 +248,12 @@
   font-size: 0.7rem;
   font-weight: 800;
   line-height: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .main-compound-drawer__option-state {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   width: 1.35rem;
@@ -261,30 +268,132 @@
   background: #007780;
 }
 
+.main-compound-drawer__selected-options {
+  border-bottom: 1px solid rgba(28, 25, 23, 0.08);
+  background: #fffdfa;
+  padding: 0.9rem 1rem 0.85rem;
+}
+
+.main-compound-drawer__selected-title {
+  margin: 0;
+  color: #120f0d;
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1.15rem;
+}
+
+.main-compound-drawer__selected-empty {
+  margin: 0.45rem 0 0;
+  border: 1px dashed rgba(28, 25, 23, 0.18);
+  border-radius: 0.5rem;
+  background: #ffffff;
+  padding: 0.75rem 0.8rem;
+  color: #526873;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2rem;
+}
+
+.main-compound-drawer__selected-list {
+  display: grid;
+  max-height: 13.5rem;
+  gap: 0.45rem;
+  overflow-y: auto;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-compound-drawer__selected-item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(0, 119, 128, 0.2);
+  border-radius: 0.5rem;
+  background: #f2fbfa;
+  padding: 0.65rem 0.7rem;
+}
+
+.main-compound-drawer__selected-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.main-compound-drawer__selected-rank {
+  color: #00666e;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 0.95rem;
+}
+
+.main-compound-drawer__selected-name {
+  min-width: 0;
+  color: #120f0d;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.main-compound-drawer__selected-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.main-compound-drawer__selected-actions button {
+  display: inline-flex;
+  width: 1.9rem;
+  height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0.425rem;
+  background: transparent;
+  color: #31505d;
+  cursor: pointer;
+}
+
+.main-compound-drawer__selected-actions button:hover:not(:disabled) {
+  border-color: rgba(0, 119, 128, 0.2);
+  background: #ffffff;
+  color: #005d64;
+}
+
+.main-compound-drawer__selected-actions button:focus-visible {
+  outline: 2px solid #007780;
+  outline-offset: 2px;
+}
+
+.main-compound-drawer__selected-actions button:disabled {
+  color: rgba(49, 80, 93, 0.34);
+  cursor: not-allowed;
+}
+
 .main-compound-drawer__options-fieldset .main-compound-drawer__option {
-  min-height: 0;
+  min-height: 4.75rem;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
     "icon copy state"
     ". tags state";
   align-items: start;
-  gap: 0.45rem 0.75rem;
-  border-color: transparent;
-  border-bottom-color: rgba(28, 25, 23, 0.1);
-  border-radius: 0;
-  background: transparent;
-  padding: 0.8rem 0.7rem;
+  gap: 0.5rem 0.75rem;
+  border-color: rgba(28, 25, 23, 0.1);
+  border-radius: 0.625rem;
+  background: #ffffff;
+  padding: 0.8rem 0.75rem;
 }
 
 .main-compound-drawer__options-fieldset .main-compound-drawer__option:hover {
-  border-color: transparent;
-  border-bottom-color: rgba(0, 119, 128, 0.22);
-  background: rgba(0, 119, 128, 0.04);
+  border-color: rgba(0, 119, 128, 0.28);
+  background: #fbfffe;
 }
 
 .main-compound-drawer__options-fieldset .main-compound-drawer__option.is-selected {
-  border-color: rgba(0, 119, 128, 0.34);
-  border-radius: 0.5rem;
+  border-color: rgba(0, 119, 128, 0.48);
   background: #f2fbfa;
 }
 

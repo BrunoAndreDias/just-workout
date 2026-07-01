@@ -2,6 +2,13 @@
   min-width: 0;
 }
 
+.plan-builder-one-page__section-nav--compact {
+  width: min(100%, var(--jw-builder-page-max-width));
+  margin-bottom: 0.875rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .plan-builder-one-page__section-nav-header {
   display: flex;
   align-items: baseline;
@@ -51,16 +58,19 @@
 }
 
 .plan-builder-one-page__section-grid--compact {
-  position: sticky;
-  top: var(--plan-builder-one-page-sticky-offset);
-  z-index: 30;
+  position: relative;
+  top: auto;
+  z-index: 10;
+  width: 100%;
+  max-width: 100%;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.25rem;
+  gap: 0.125rem;
   margin-top: 0;
-  border-bottom: 1px solid rgba(28, 25, 23, 0.1);
-  background: rgba(255, 253, 249, 0.98);
-  padding: 0.375rem 0 0.5rem;
-  backdrop-filter: blur(12px);
+  overflow: clip;
+  border: 1px solid rgba(28, 25, 23, 0.09);
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.25rem;
 }
 
 .plan-builder-one-page__section-card {
@@ -102,16 +112,27 @@
 .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-card {
   min-height: 2.75rem;
   border-color: transparent;
-  border-radius: 0.5rem 0.5rem 0 0;
+  border-width: 0;
+  border-radius: 0.45rem;
   background: transparent;
   animation: plan-builder-option-condense 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: top center;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
 }
 
 .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-card--active {
   border-color: transparent;
   background: rgba(0, 119, 128, 0.08);
   box-shadow: inset 0 -2px 0 #007780;
+}
+
+.plan-builder-one-page__section-grid--compact
+  .plan-builder-one-page__section-card:not(.plan-builder-one-page__section-card--active):hover {
+  background: rgba(28, 25, 23, 0.04);
+  transform: none;
 }
 
 .plan-builder-one-page__section-grid--restoring-overview .plan-builder-one-page__section-card {
@@ -142,15 +163,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   min-height: 2.75rem;
-  padding: 0.625rem 0.5rem;
+  padding: 0.625rem 0.75rem;
   text-align: center;
 }
 
 .plan-builder-one-page__section-button:focus-visible {
   outline: 2px solid rgba(0, 119, 128, 0.7);
   outline-offset: -0.2rem;
+}
+
+.plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-button:focus-visible {
+  border-radius: 0.45rem;
+  outline-offset: -0.125rem;
 }
 
 .plan-builder-one-page__section-icon {
@@ -276,31 +302,33 @@
 .plan-builder-one-page__section-grid--compact
   .plan-builder-one-page__section-card[data-status="complete"]
   .plan-builder-one-page__section-button {
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .plan-builder-one-page__section-grid--compact
   .plan-builder-one-page__section-card[data-status="complete"]
   .plan-builder-one-page__section-icon {
   display: inline-flex;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.05rem;
+  height: 1.05rem;
   flex: 0 0 auto;
+  background: rgba(8, 116, 76, 0.12);
+  color: #08744c;
 }
 
 .plan-builder-one-page__section-grid--compact
   .plan-builder-one-page__section-card[data-status="complete"]
   .plan-builder-one-page__section-icon
   svg {
-  width: 0.78rem;
-  height: 0.78rem;
+  width: 0.68rem;
+  height: 0.68rem;
 }
 
 .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-title {
   overflow: hidden;
-  color: #3f555f;
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: #31505d;
+  font-size: 0.8125rem;
+  font-weight: 760;
   line-height: 1rem;
   text-align: center;
   text-overflow: ellipsis;
@@ -372,11 +400,11 @@
 
   .plan-builder-one-page__section-grid--compact {
     display: flex;
-    gap: 0.25rem;
-    margin-right: -1rem;
-    margin-left: -1rem;
-    padding-right: 1rem;
-    padding-left: 1rem;
+    gap: 0.125rem;
+    margin-right: 0;
+    margin-left: 0;
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
   }
 
   .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-card {
@@ -388,24 +416,24 @@
 @keyframes plan-builder-option-condense {
   0% {
     opacity: 0.74;
-    transform: translateY(0.35rem) scaleY(1.18);
+    transform: translateY(0.22rem);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes plan-builder-option-expand {
   0% {
     opacity: 0.9;
-    transform: translateY(-0.3rem) scaleY(0.92);
+    transform: translateY(-0.18rem);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0);
   }
 }
 

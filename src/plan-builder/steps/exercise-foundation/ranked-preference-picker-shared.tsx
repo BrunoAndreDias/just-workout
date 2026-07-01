@@ -71,6 +71,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
   onMovePreference,
   onRemovePreference,
   options,
+  rankLabel,
   title,
 }: {
   ariaLabel: string;
@@ -78,6 +79,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
   onMovePreference: (exerciseId: string, direction: "up" | "down") => void;
   onRemovePreference: (exerciseId: string) => void;
   options: ReadonlyArray<TOption>;
+  rankLabel?: (rank: number) => string;
   title: string;
 }) {
   return (
@@ -95,7 +97,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
               <li className="main-compound-drawer__selected-item" key={option.id}>
                 <div className="main-compound-drawer__selected-copy">
                   <span className="main-compound-drawer__selected-rank">
-                    Preference #{index + 1}
+                    {rankLabel ? rankLabel(index + 1) : `Preference #${index + 1}`}
                   </span>
                   <span className="main-compound-drawer__selected-name">{option.name}</span>
                 </div>

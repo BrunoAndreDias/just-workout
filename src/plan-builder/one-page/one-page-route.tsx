@@ -25,6 +25,7 @@ export function PlanBuilderOnePageRoute() {
   const [isRestoringOverview, setIsRestoringOverview] = useState(false);
   const closeAnimationTimeoutRef = useRef<number | null>(null);
   const overviewRestoreTimeoutRef = useRef<number | null>(null);
+  const sectionGridRef = useRef<HTMLUListElement | null>(null);
   const visibleStep = activeStep ?? closingStep;
   const isClosingSelectedStep = activeStep === null && closingStep !== null;
   const isSectionGridCompact = activeStep !== null || closingStep !== null;
@@ -41,6 +42,37 @@ export function PlanBuilderOnePageRoute() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isSectionGridCompact || !visibleStep) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const activeSection = sectionGridRef.current?.querySelector(
+        ".plan-builder-one-page__section-card--active",
+      );
+
+      if (
+        !(activeSection instanceof HTMLElement) ||
+        typeof activeSection.scrollIntoView !== "function"
+      ) {
+        return;
+      }
+
+      const prefersReducedMotion =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      activeSection.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [isSectionGridCompact, visibleStep]);
 
   function clearOverviewTransitionTimers() {
     if (closeAnimationTimeoutRef.current !== null) {
@@ -120,6 +152,7 @@ export function PlanBuilderOnePageRoute() {
                   ? "plan-builder-one-page__section-grid--restoring-overview"
                   : null,
               )}
+              ref={sectionGridRef}
             >
               {planBuilderOnePageSections.map((section) => {
                 const status = workflow.sectionStatuses[section.id];

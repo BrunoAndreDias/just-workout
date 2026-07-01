@@ -1,7 +1,7 @@
 .plan-builder-one-page {
   --plan-builder-one-page-sticky-offset: 4.875rem;
   min-height: 100%;
-  padding: 1rem var(--jw-page-padding-x) var(--jw-page-padding-y);
+  padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
 }
 
 .plan-builder-one-page__surface {
@@ -30,12 +30,12 @@
   grid-template-rows: auto;
   align-content: start;
   min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 13.5rem);
-  margin-top: 1rem;
+  margin-top: 0;
   scroll-margin-top: 5.75rem;
   border: 0;
   border-radius: 0;
   background: transparent;
-  padding: 0.25rem 0 0;
+  padding: 0;
   box-shadow: none;
   overflow: clip;
   animation: plan-builder-active-panel-reveal 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -65,7 +65,7 @@
 }
 @media (max-width: 680px) {
   .plan-builder-one-page {
-    padding: 0.75rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+    padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
   }
   .plan-builder-one-page__surface {
     min-height: auto;

@@ -38,6 +38,7 @@ export type ExerciseFoundationOptionPickerProps = {
   searchLabel: string;
   searchPlaceholder: string;
   selectedOptionsContent?: ReactNode;
+  showSearchAndFilters?: boolean;
   title: string;
 };
 
@@ -59,6 +60,7 @@ export function ExerciseFoundationOptionPicker({
   searchLabel,
   searchPlaceholder,
   selectedOptionsContent,
+  showSearchAndFilters = true,
   title,
 }: ExerciseFoundationOptionPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -153,36 +155,38 @@ export function ExerciseFoundationOptionPicker({
           <p className="main-compound-drawer__helper">{helperText}</p>
         </div>
 
-        <div className="main-compound-drawer__controls">
-          <label className="main-compound-drawer__search">
-            <Search aria-hidden="true" size={18} strokeWidth={2} />
-            <span className="sr-only">{searchLabel}</span>
-            <input
-              onChange={(event) => setSearchQuery(event.currentTarget.value)}
-              placeholder={searchPlaceholder}
-              type="search"
-              value={searchQuery}
-            />
-          </label>
-          <fieldset className="main-compound-drawer__filters">
-            <legend className="sr-only">{filterLegend}</legend>
-            {mainCompoundPickerFilters.map((filter) => {
-              const isActive = activeFilterId === filter.id;
+        {showSearchAndFilters ? (
+          <div className="main-compound-drawer__controls">
+            <label className="main-compound-drawer__search">
+              <Search aria-hidden="true" size={18} strokeWidth={2} />
+              <span className="sr-only">{searchLabel}</span>
+              <input
+                onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                placeholder={searchPlaceholder}
+                type="search"
+                value={searchQuery}
+              />
+            </label>
+            <fieldset className="main-compound-drawer__filters">
+              <legend className="sr-only">{filterLegend}</legend>
+              {mainCompoundPickerFilters.map((filter) => {
+                const isActive = activeFilterId === filter.id;
 
-              return (
-                <button
-                  aria-pressed={isActive}
-                  className={cn("main-compound-drawer__filter", isActive && "is-active")}
-                  key={filter.id}
-                  onClick={() => setActiveFilterId(filter.id)}
-                  type="button"
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
-          </fieldset>
-        </div>
+                return (
+                  <button
+                    aria-pressed={isActive}
+                    className={cn("main-compound-drawer__filter", isActive && "is-active")}
+                    key={filter.id}
+                    onClick={() => setActiveFilterId(filter.id)}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </fieldset>
+          </div>
+        ) : null}
 
         {selectedOptionsContent ? (
           <div className="main-compound-drawer__selected-options">{selectedOptionsContent}</div>

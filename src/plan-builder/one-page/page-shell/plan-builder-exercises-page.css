@@ -12,6 +12,7 @@
 
 @media (min-width: 1280px) and (min-height: 720px) {
   .plan-builder-page.plan-builder-page--exercises {
+    min-height: auto;
     grid-template-columns: minmax(0, 1fr);
   }
 

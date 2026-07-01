@@ -86,6 +86,11 @@
   padding-left: 0.875rem;
 }
 
+.app-shell-navigation-link--disabled {
+  cursor: default;
+  opacity: 0.92;
+}
+
 .app-shell-main {
   min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
   background: transparent;
