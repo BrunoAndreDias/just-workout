@@ -30,7 +30,11 @@ export function TrainingSessionGroup({
           <h2 aria-label={group.accessibleTitle} id={`training-session-group-${group.groupId}`}>
             {group.title}
           </h2>
-          <TrainingSessionGroupSummary groupSummary={group.summary} isOpen={group.isOpen} />
+          <TrainingSessionGroupSummary
+            groupSummary={group.summary}
+            isOpen={group.isOpen}
+            roundCount={group.rounds.length}
+          />
         </div>
         <button
           aria-expanded={group.isOpen}
@@ -66,6 +70,7 @@ export function TrainingSessionGroup({
               {group.rounds.map((round) => (
                 <RoundSessionRows
                   key={`${group.groupId}-round-${round.roundIndex}`}
+                  lastPlannedRoundIndex={group.rounds[group.rounds.length - 1]?.roundIndex ?? 0}
                   onAction={onAction}
                   round={round}
                 />
@@ -81,9 +86,11 @@ export function TrainingSessionGroup({
 function TrainingSessionGroupSummary({
   groupSummary,
   isOpen,
+  roundCount,
 }: {
   groupSummary: TrainingSessionExecutionGroupSummary;
   isOpen: boolean;
+  roundCount: number;
 }) {
   return (
     <p>
@@ -98,7 +105,7 @@ function TrainingSessionGroupSummary({
       ) : isOpen ? (
         <>
           <span>Superset</span>
-          <span>3 rounds</span>
+          <span>{roundCount} rounds</span>
           <strong className="training-session-group__sets-completed">
             {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
           </strong>
@@ -134,14 +141,22 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
 function RoundSessionRows({
   onAction,
   round,
+  lastPlannedRoundIndex,
 }: {
   onAction: (action: TrainingSessionExecutionAction) => void;
   round: TrainingSessionExecutionGroup["rounds"][number];
+  lastPlannedRoundIndex: number;
 }) {
   return (
     <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
       {round.rows.map((row) => (
-        <tr className={getTrainingSessionRowClassName(row)} key={row.setId}>
+        <tr
+          className={getTrainingSessionRowClassName({
+            done: row.done,
+            isFuture: row.setIndex === lastPlannedRoundIndex,
+          })}
+          key={row.setId}
+        >
           <TrainingSessionSetCells onAction={onAction} row={row} />
         </tr>
       ))}
@@ -220,13 +235,11 @@ function TrainingSessionSetCells({
   );
 }
 
-function getTrainingSessionRowClassName(
-  row: Pick<TrainingSessionExecutionSetRow, "done" | "setIndex">,
-): string {
+function getTrainingSessionRowClassName(row: { done: boolean; isFuture: boolean }): string {
   return [
     "training-session-exercise-row",
     row.done ? "training-session-exercise-row--done" : "",
-    row.setIndex === 3 ? "training-session-exercise-row--future" : "",
+    row.isFuture ? "training-session-exercise-row--future" : "",
   ]
     .filter(Boolean)
     .join(" ");
