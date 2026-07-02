@@ -33,13 +33,11 @@ import "./one-page-step.css";
 export function PlanBuilderOnePageStepContent({
   activeStep,
   blueprint,
-  setActiveStep,
   summary,
   workflow,
 }: {
   activeStep: PlanBuilderStep;
   blueprint: PlanBlueprint | undefined;
-  setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary | null;
   workflow: PlanBuilderWorkflow;
 }) {
@@ -51,7 +49,6 @@ export function PlanBuilderOnePageStepContent({
     <PlanBuilderOnePageUnlockedStep
       activeStep={activeStep}
       blueprint={blueprint}
-      setActiveStep={setActiveStep}
       summary={summary}
       workflow={workflow}
     />
@@ -61,13 +58,11 @@ export function PlanBuilderOnePageStepContent({
 function PlanBuilderOnePageUnlockedStep({
   activeStep,
   blueprint,
-  setActiveStep,
   summary,
   workflow,
 }: {
   activeStep: PlanBuilderStep;
   blueprint: PlanBlueprint;
-  setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary;
   workflow: PlanBuilderWorkflow;
 }) {
@@ -82,7 +77,7 @@ function PlanBuilderOnePageUnlockedStep({
   const frequencyStep = useOnePageTrainingScheduleStep();
   const repRangeStep = useOnePageRepRangeStep();
   const volumeStep = useOnePageVolumeStep();
-  const exercisesStep = useOnePageExercisesStep({ setActiveStep });
+  const exercisesStep = useOnePageExercisesStep();
   const generateStep = useOnePageGenerateStep({
     defaultResolution: workflow.generation.defaultResolution,
     navigate,
@@ -108,7 +103,6 @@ function PlanBuilderOnePageUnlockedStep({
     pendingDefaultResolution,
     repRangeStep,
     selectedRepRangeStyle,
-    setActiveStep,
     summary,
     visibleTrainingSplitId,
     volumeStep,
@@ -125,7 +119,6 @@ function renderOnePageActiveStep({
   pendingDefaultResolution,
   repRangeStep,
   selectedRepRangeStyle,
-  setActiveStep,
   summary,
   visibleTrainingSplitId,
   volumeStep,
@@ -139,7 +132,6 @@ function renderOnePageActiveStep({
   pendingDefaultResolution: PlanBlueprintDefaultResolution | null;
   repRangeStep: ReturnType<typeof useOnePageRepRangeStep>;
   selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
-  setActiveStep: (step: PlanBuilderStep) => void;
   summary: PlanBlueprintSummary;
   visibleTrainingSplitId: PlanBuilderWorkflow["visibleTrainingSplitId"];
   volumeStep: ReturnType<typeof useOnePageVolumeStep>;
@@ -171,13 +163,7 @@ function renderOnePageActiveStep({
         />
       );
     case "exercises": {
-      return (
-        <OnePageExercisesStep
-          blueprint={blueprint}
-          onBackToVolume={() => setActiveStep("volume")}
-          {...exercisesStep}
-        />
-      );
+      return <OnePageExercisesStep blueprint={blueprint} {...exercisesStep} />;
     }
     case "generate":
       return (

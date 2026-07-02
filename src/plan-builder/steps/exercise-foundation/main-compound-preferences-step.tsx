@@ -1,22 +1,22 @@
+import { Activity, ChevronDown, CirclePlus, Dumbbell } from "lucide-react";
 import {
-  Activity,
-  ArrowLeft,
-  ArrowRight,
-  ChevronDown,
-  CirclePlus,
-  Dumbbell,
-  Info,
-} from "lucide-react";
-import { type ReactNode, useState } from "react";
-import { Button } from "../../../design-system/button";
-import { StepActions, StepPanel } from "../../../design-system/step-screen";
+  type KeyboardEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { StepPanel } from "../../../design-system/step-screen";
 import type {
   CompoundCapableMovementPatternId,
   ExerciseCatalogMuscleGroupId,
   MovementPatternId,
 } from "../../exercise-catalog";
 import type {
-  IsolationExercisePreferenceOption,
   IsolationExercisePreferenceReadModel,
   IsolationExercisePreferenceRowReadModel,
 } from "../../isolation-exercise-preference-read-model";
@@ -39,8 +39,6 @@ type MainCompoundPreferencesStepProps = {
   isolationReadModel: IsolationExercisePreferenceReadModel;
   mainCompoundReadModel: MainCompoundPreferenceReadModel;
   mainCompoundRotationReadModel: MainCompoundRotationPreferenceReadModel;
-  onBackToVolume: () => void;
-  onContinueToGenerate: () => Promise<void>;
   onIsolationExercisePreferencesChange: (preferences: {
     exerciseIds: ReadonlyArray<string>;
     primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
@@ -105,8 +103,6 @@ export function MainCompoundPreferencesStep({
   isolationReadModel,
   mainCompoundReadModel,
   mainCompoundRotationReadModel,
-  onBackToVolume,
-  onContinueToGenerate,
   onIsolationExercisePreferencesChange,
   onMainCompoundPreferencesChange,
   onMainCompoundRotationPreferencesChange,
@@ -136,17 +132,8 @@ export function MainCompoundPreferencesStep({
           (row) => row.primaryMuscleGroup === activeIsolationPickerMuscleGroup,
         );
 
-  async function updateMainSelection(row: MainCompoundPreferenceRowReadModel, exerciseId: string) {
-    await onMainCompoundPreferencesChange({
-      exerciseIds: moveExerciseToFront(row.preferences, exerciseId),
-      movementPattern: row.movementPattern,
-    });
-  }
-
-  async function addMainExercise(row: MainCompoundPreferenceRowReadModel) {
-    const exerciseId = getNextExerciseId(row.mainCompoundOptions, row.preferences);
-
-    if (!exerciseId) {
+  async function addMainExercise(row: MainCompoundPreferenceRowReadModel, exerciseId: string) {
+    if (row.preferences.some((preference) => preference.exerciseId === exerciseId)) {
       return;
     }
 
@@ -156,20 +143,8 @@ export function MainCompoundPreferencesStep({
     });
   }
 
-  async function updateRotationSelection(
-    row: MainCompoundPreferenceRowReadModel,
-    exerciseId: string,
-  ) {
-    await onMainCompoundRotationPreferencesChange({
-      exerciseIds: moveExerciseToFront(row.preferences, exerciseId),
-      movementPattern: row.movementPattern,
-    });
-  }
-
-  async function addRotationExercise(row: MainCompoundPreferenceRowReadModel) {
-    const exerciseId = getNextExerciseId(row.mainCompoundOptions, row.preferences);
-
-    if (!exerciseId) {
+  async function addRotationExercise(row: MainCompoundPreferenceRowReadModel, exerciseId: string) {
+    if (row.preferences.some((preference) => preference.exerciseId === exerciseId)) {
       return;
     }
 
@@ -179,23 +154,10 @@ export function MainCompoundPreferencesStep({
     });
   }
 
-  async function updateIsolationSelection(
+  async function addIsolationExercise(
     row: IsolationExercisePreferenceRowReadModel,
     exerciseId: string,
   ) {
-    await onIsolationExercisePreferencesChange({
-      exerciseIds: moveExerciseToFront(row.preferences, exerciseId),
-      primaryMuscleGroup: row.primaryMuscleGroup,
-    });
-  }
-
-  async function addIsolationExercise(row: IsolationExercisePreferenceRowReadModel) {
-    const exerciseId = getNextExerciseId(row.isolationOptions, row.preferences);
-
-    if (!exerciseId) {
-      return;
-    }
-
     await onIsolationExercisePreferencesChange({
       exerciseIds: appendExercise(row.preferences, exerciseId),
       primaryMuscleGroup: row.primaryMuscleGroup,
@@ -210,7 +172,6 @@ export function MainCompoundPreferencesStep({
             body="Choose your primary lifts across key movement patterns."
             heading="Main Compounds"
             headingId="main-compound-preference-buckets-title"
-            note="Aim for 5-6 main lifts. These form the foundation of your training."
             number="1"
             summary="Recommended 5-6"
           >
@@ -227,11 +188,8 @@ export function MainCompoundPreferencesStep({
                 return (
                   <MovementPatternBucket
                     key={row.movementPattern}
-                    onAddExercise={() => {
-                      void addMainExercise(row);
-                    }}
-                    onSelectionChange={(exerciseId) => {
-                      void updateMainSelection(row, exerciseId);
+                    onAddExercise={(exerciseId) => {
+                      void addMainExercise(row, exerciseId);
                     }}
                     onToggleRanker={() =>
                       setActivePicker({ kind: "main", movementPattern: row.movementPattern })
@@ -263,11 +221,8 @@ export function MainCompoundPreferencesStep({
                 return (
                   <RotationMovementPatternBucket
                     key={row.movementPattern}
-                    onAddExercise={() => {
-                      void addRotationExercise(row);
-                    }}
-                    onSelectionChange={(exerciseId) => {
-                      void updateRotationSelection(row, exerciseId);
+                    onAddExercise={(exerciseId) => {
+                      void addRotationExercise(row, exerciseId);
                     }}
                     onToggleRanker={() =>
                       setActivePicker({ kind: "rotation", movementPattern: row.movementPattern })
@@ -283,7 +238,6 @@ export function MainCompoundPreferencesStep({
             body="Add accessory work to round out your program."
             heading="Isolation (Optional Accessories)"
             headingId="isolation-exercise-preference-buckets-title"
-            note="Choose 3-8 isolation exercises depending on your goals and available time."
             number="3"
             summary="Recommended 3-8 total"
           >
@@ -300,11 +254,8 @@ export function MainCompoundPreferencesStep({
                 return (
                   <IsolationGroup
                     key={row.primaryMuscleGroup}
-                    onAddExercise={() => {
-                      void addIsolationExercise(row);
-                    }}
-                    onSelectionChange={(exerciseId) => {
-                      void updateIsolationSelection(row, exerciseId);
+                    onAddExercise={(exerciseId) => {
+                      void addIsolationExercise(row, exerciseId);
                     }}
                     onToggleRanker={() =>
                       setActiveIsolationPickerMuscleGroup(row.primaryMuscleGroup)
@@ -316,24 +267,6 @@ export function MainCompoundPreferencesStep({
             </ul>
           </ExercisePoolSection>
         </div>
-
-        <StepActions className="exercise-selection-actions">
-          <Button onClick={onBackToVolume} size="step" type="button" variant="outline">
-            <ArrowLeft aria-hidden="true" size={20} strokeWidth={1.9} />
-            Back to Volume
-          </Button>
-          <Button
-            onClick={() => {
-              void onContinueToGenerate();
-            }}
-            size="step"
-            type="button"
-            variant="builderPrimary"
-          >
-            Continue to Generate
-            <ArrowRight aria-hidden="true" size={20} strokeWidth={1.9} />
-          </Button>
-        </StepActions>
 
         <ExerciseSelectionCompatibilityControls
           onRotationPickerOpen={(movementPattern) =>
@@ -347,7 +280,6 @@ export function MainCompoundPreferencesStep({
         <MainCompoundPreferencesPicker
           id={`main-compound-preferences-picker-${activeMainCompoundPickerRow.movementPattern}`}
           mainCompoundOptions={activeMainCompoundPickerRow.mainCompoundOptions}
-          movementPattern={activeMainCompoundPickerRow.movementPattern}
           movementPatternLabel={activeMainCompoundPickerRow.movementPatternLabel}
           onChange={(exerciseIds) =>
             onMainCompoundPreferencesChange({
@@ -366,7 +298,6 @@ export function MainCompoundPreferencesStep({
         <MainCompoundRotationPreferencesPicker
           id={`main-compound-rotation-preferences-picker-${activeRotationPickerRow.movementPattern}`}
           mainCompoundOptions={activeRotationPickerRow.mainCompoundOptions}
-          movementPattern={activeRotationPickerRow.movementPattern}
           movementPatternLabel={activeRotationPickerRow.movementPatternLabel}
           onChange={(exerciseIds) =>
             onMainCompoundRotationPreferencesChange({
@@ -437,7 +368,6 @@ function ExercisePoolSection({
   children,
   heading,
   headingId,
-  note,
   number,
   summary,
 }: {
@@ -445,7 +375,6 @@ function ExercisePoolSection({
   children: ReactNode;
   heading: string;
   headingId: string;
-  note?: string;
   number: string;
   summary: string;
 }) {
@@ -469,33 +398,62 @@ function ExercisePoolSection({
       </header>
 
       {children}
-
-      {note ? (
-        <p className="exercise-pool-section__note">
-          <Info aria-hidden="true" size={14} strokeWidth={2} />
-          {note}
-        </p>
-      ) : null}
     </section>
   );
 }
 
 function MovementPatternBucket({
   onAddExercise,
-  onSelectionChange,
   onToggleRanker,
   row,
 }: {
-  onAddExercise: () => void;
-  onSelectionChange: (exerciseId: string) => void;
+  onAddExercise: (exerciseId: string) => void;
   onToggleRanker: () => void;
   row: MainCompoundPreferenceRowReadModel;
 }) {
-  const selectedExercise = getSelectedExercise({
-    defaultExerciseId: defaultMainExerciseByPattern[row.movementPattern],
-    options: row.mainCompoundOptions,
-    preferences: row.preferences,
-  });
+  const defaultExerciseId = defaultMainExerciseByPattern[row.movementPattern];
+  const selectedExerciseIds = useMemo(
+    () => row.preferences.map((preference) => preference.exerciseId),
+    [row.preferences],
+  );
+  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+  const [draftExerciseId, setDraftExerciseId] = useState(() =>
+    getInitialDraftExerciseId({
+      defaultExerciseId,
+      options: row.mainCompoundOptions,
+      selectedExerciseIds: selectedExerciseIdSet,
+    }),
+  );
+  const canAddExercise = draftExerciseId ? !selectedExerciseIdSet.has(draftExerciseId) : false;
+
+  useEffect(() => {
+    setDraftExerciseId((currentExerciseId) => {
+      if (currentExerciseId && !selectedExerciseIdSet.has(currentExerciseId)) {
+        return currentExerciseId;
+      }
+
+      return getNextAvailableExerciseId({
+        options: row.mainCompoundOptions,
+        previousExerciseId: currentExerciseId ?? defaultExerciseId,
+        selectedExerciseIds: selectedExerciseIdSet,
+      });
+    });
+  }, [defaultExerciseId, row.mainCompoundOptions, selectedExerciseIdSet]);
+
+  function handleAddExercise() {
+    if (!draftExerciseId) {
+      return;
+    }
+
+    onAddExercise(draftExerciseId);
+    setDraftExerciseId(
+      getNextAvailableExerciseId({
+        options: row.mainCompoundOptions,
+        previousExerciseId: draftExerciseId,
+        selectedExerciseIds: new Set([...selectedExerciseIdSet, draftExerciseId]),
+      }),
+    );
+  }
 
   return (
     <li
@@ -515,19 +473,29 @@ function MovementPatternBucket({
         </div>
       </div>
 
-      <ExerciseDropdown
-        ariaLabel={`Choose ${row.movementPatternLabel} exercise`}
-        onChange={onSelectionChange}
-        options={row.mainCompoundOptions}
-        selectedExerciseId={selectedExercise?.id}
-        selectedExerciseIds={row.preferences.map((preference) => preference.exerciseId)}
-      />
+      <div className="exercise-selection-picker-row">
+        <ExerciseDropdown
+          ariaLabel={`Choose ${row.movementPatternLabel} exercise`}
+          isAttachedToAddButton
+          onChange={setDraftExerciseId}
+          options={row.mainCompoundOptions}
+          selectedExerciseId={draftExerciseId}
+          selectedExerciseIds={selectedExerciseIds}
+        />
+        <button
+          aria-label={`Add another ${row.movementPatternLabel} exercise`}
+          className="exercise-selection-add-button"
+          disabled={!canAddExercise}
+          onClick={handleAddExercise}
+          title="Add exercise"
+          type="button"
+        >
+          <CirclePlus aria-hidden="true" size={15} strokeWidth={2.2} />
+        </button>
+      </div>
 
-      <button className="exercise-selection-secondary-button" onClick={onAddExercise} type="button">
-        + Add exercise
-      </button>
       <MainCompoundPickerToggleButton
-        accessibleLabel={`Rank ${row.movementPatternLabel} preferences`}
+        className="exercise-rank-preferences-button"
         isOpen={false}
         label="Rank preferences"
         onToggle={onToggleRanker}
@@ -540,20 +508,56 @@ function MovementPatternBucket({
 
 function RotationMovementPatternBucket({
   onAddExercise,
-  onSelectionChange,
   onToggleRanker,
   row,
 }: {
-  onAddExercise: () => void;
-  onSelectionChange: (exerciseId: string) => void;
+  onAddExercise: (exerciseId: string) => void;
   onToggleRanker: () => void;
   row: MainCompoundPreferenceRowReadModel;
 }) {
-  const selectedExercise = getSelectedExercise({
-    defaultExerciseId: defaultRotationExerciseByPattern[row.movementPattern],
-    options: row.mainCompoundOptions,
-    preferences: row.preferences,
-  });
+  const defaultExerciseId = defaultRotationExerciseByPattern[row.movementPattern];
+  const selectedExerciseIds = useMemo(
+    () => row.preferences.map((preference) => preference.exerciseId),
+    [row.preferences],
+  );
+  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+  const [draftExerciseId, setDraftExerciseId] = useState(() =>
+    getInitialDraftExerciseId({
+      defaultExerciseId,
+      options: row.mainCompoundOptions,
+      selectedExerciseIds: selectedExerciseIdSet,
+    }),
+  );
+  const canAddExercise = draftExerciseId ? !selectedExerciseIdSet.has(draftExerciseId) : false;
+
+  useEffect(() => {
+    setDraftExerciseId((currentExerciseId) => {
+      if (currentExerciseId && !selectedExerciseIdSet.has(currentExerciseId)) {
+        return currentExerciseId;
+      }
+
+      return getNextAvailableExerciseId({
+        options: row.mainCompoundOptions,
+        previousExerciseId: currentExerciseId ?? defaultExerciseId,
+        selectedExerciseIds: selectedExerciseIdSet,
+      });
+    });
+  }, [defaultExerciseId, row.mainCompoundOptions, selectedExerciseIdSet]);
+
+  function handleAddExercise() {
+    if (!draftExerciseId) {
+      return;
+    }
+
+    onAddExercise(draftExerciseId);
+    setDraftExerciseId(
+      getNextAvailableExerciseId({
+        options: row.mainCompoundOptions,
+        previousExerciseId: draftExerciseId,
+        selectedExerciseIds: new Set([...selectedExerciseIdSet, draftExerciseId]),
+      }),
+    );
+  }
 
   return (
     <li
@@ -573,21 +577,32 @@ function RotationMovementPatternBucket({
         </div>
       </div>
 
-      <ExerciseDropdown
-        ariaLabel={`Choose ${row.movementPatternLabel} rotation exercise`}
-        onChange={onSelectionChange}
-        options={row.mainCompoundOptions}
-        selectedExerciseId={selectedExercise?.id}
-        selectedExerciseIds={row.preferences.map((preference) => preference.exerciseId)}
-      />
+      <div className="exercise-selection-picker-row">
+        <ExerciseDropdown
+          ariaLabel={`Choose ${row.movementPatternLabel} rotation exercise`}
+          isAttachedToAddButton
+          onChange={setDraftExerciseId}
+          options={row.mainCompoundOptions}
+          selectedExerciseId={draftExerciseId}
+          selectedExerciseIds={selectedExerciseIds}
+        />
+        <button
+          aria-label={`Add another ${row.movementPatternLabel} rotation exercise`}
+          className="exercise-selection-add-button"
+          disabled={!canAddExercise}
+          onClick={handleAddExercise}
+          title="Add exercise"
+          type="button"
+        >
+          <CirclePlus aria-hidden="true" size={15} strokeWidth={2.2} />
+        </button>
+      </div>
 
-      <button className="exercise-selection-secondary-button" onClick={onAddExercise} type="button">
-        + Add exercise
-      </button>
       <MainCompoundPickerToggleButton
-        accessibleLabel={`Rank ${row.movementPatternLabel} rotation preferences`}
+        accessibleLabel="Rank rotation preferences"
+        className="exercise-rank-preferences-button"
         isOpen={false}
-        label="Rank rotation preferences"
+        label="Rank rotation"
         onToggle={onToggleRanker}
         pickerId={`main-compound-rotation-preferences-picker-${row.movementPattern}`}
       />
@@ -598,12 +613,14 @@ function RotationMovementPatternBucket({
 
 function ExerciseDropdown({
   ariaLabel,
+  isAttachedToAddButton = false,
   onChange,
   options,
   selectedExerciseId,
   selectedExerciseIds,
 }: {
   ariaLabel: string;
+  isAttachedToAddButton?: boolean;
   onChange: (exerciseId: string) => void;
   options: ReadonlyArray<SelectableExercise>;
   selectedExerciseId: string | undefined;
@@ -612,63 +629,284 @@ function ExerciseDropdown({
   const selectedExercise = options.find((exercise) => exercise.id === selectedExerciseId);
   const selectedExerciseIdSet = new Set(selectedExerciseIds);
   const availableOptions = options.filter((exercise) => !selectedExerciseIdSet.has(exercise.id));
+  const buttonId = useId();
+  const listboxId = useId();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeOptionIndex, setActiveOptionIndex] = useState(() =>
+    Math.max(
+      0,
+      availableOptions.findIndex((exercise) => exercise.id === selectedExerciseId),
+    ),
+  );
+  const [menuStyle, setMenuStyle] = useState<{
+    left: number;
+    maxHeight: number;
+    top: number;
+    width: number;
+  } | null>(null);
+  const activeOption = availableOptions[activeOptionIndex];
+
+  const updateMenuPosition = useCallback(() => {
+    const button = buttonRef.current;
+
+    if (!button) {
+      return;
+    }
+
+    const rect = button.getBoundingClientRect();
+    const viewportPadding = 12;
+    const desiredWidth = Math.max(
+      rect.width,
+      Math.min(320, window.innerWidth - viewportPadding * 2),
+    );
+    const width = Math.min(desiredWidth, window.innerWidth - viewportPadding * 2);
+    const left = Math.min(
+      Math.max(viewportPadding, rect.left),
+      Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
+    );
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const shouldOpenAbove = spaceBelow < 176 && spaceAbove > spaceBelow;
+    const availableHeight = shouldOpenAbove ? spaceAbove : spaceBelow;
+    const maxHeight = Math.max(152, Math.min(288, availableHeight - 6));
+    const top = shouldOpenAbove
+      ? Math.max(viewportPadding, rect.top - maxHeight - 6)
+      : rect.bottom + 6;
+
+    setMenuStyle({ left, maxHeight, top, width });
+  }, []);
+
+  useEffect(() => {
+    setActiveOptionIndex(
+      Math.max(
+        0,
+        availableOptions.findIndex((exercise) => exercise.id === selectedExerciseId),
+      ),
+    );
+  }, [availableOptions, selectedExerciseId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [isOpen, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        rootRef.current &&
+        !rootRef.current.contains(event.target) &&
+        !menuRef.current?.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isOpen]);
+
+  function chooseExercise(exerciseId: string) {
+    onChange(exerciseId);
+    setIsOpen(false);
+    window.requestAnimationFrame(() => buttonRef.current?.focus());
+  }
+
+  function handleButtonKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+
+      if (!isOpen) {
+        setIsOpen(true);
+        return;
+      }
+
+      const nextIndex =
+        event.key === "ArrowDown"
+          ? Math.min(activeOptionIndex + 1, availableOptions.length - 1)
+          : Math.max(activeOptionIndex - 1, 0);
+
+      setActiveOptionIndex(nextIndex);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+
+      if (isOpen && activeOption) {
+        chooseExercise(activeOption.id);
+        return;
+      }
+
+      setIsOpen((current) => !current);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setIsOpen(false);
+    }
+  }
 
   return (
-    <label
-      className={`exercise-dropdown${selectedExercise ? " exercise-dropdown--has-selection" : ""}`}
+    <div
+      className={`exercise-dropdown${selectedExercise ? " exercise-dropdown--has-selection" : ""}${
+        isAttachedToAddButton ? " exercise-dropdown--attached" : ""
+      }`}
+      ref={rootRef}
     >
       <span className="sr-only">{ariaLabel}</span>
-      <select
+      <button
+        aria-activedescendant={
+          isOpen && activeOption ? `${listboxId}-option-${activeOption.id}` : undefined
+        }
+        aria-controls={listboxId}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         aria-label={ariaLabel}
-        onChange={(event) => onChange(event.target.value)}
-        value={selectedExerciseId ?? ""}
+        className="exercise-dropdown__button"
+        id={buttonId}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={handleButtonKeyDown}
+        ref={buttonRef}
+        role="combobox"
+        type="button"
       >
-        {selectedExerciseId ? null : <option value="">Choose exercise</option>}
-        {selectedExercise ? (
-          <option
-            aria-label={formatExerciseName(selectedExercise.name)}
-            hidden
-            value={selectedExercise.id}
-          />
-        ) : null}
-        {availableOptions.map((exercise) => (
-          <option key={exercise.id} value={exercise.id}>
-            {formatExerciseName(exercise.name)}
-          </option>
-        ))}
-      </select>
-      {selectedExercise ? (
-        <span aria-hidden="true" className="exercise-dropdown__selected-value">
-          {formatExerciseName(selectedExercise.name)}
+        <span className="exercise-dropdown__selected-value">
+          {selectedExercise ? formatExerciseName(selectedExercise.name) : "Choose exercise"}
         </span>
-      ) : null}
-      <ChevronDown aria-hidden="true" size={15} strokeWidth={2.2} />
-    </label>
+        <ChevronDown aria-hidden="true" size={15} strokeWidth={2.2} />
+      </button>
+      {isOpen
+        ? createPortal(
+            <div
+              aria-labelledby={buttonId}
+              className="exercise-dropdown__menu"
+              id={listboxId}
+              ref={menuRef}
+              role="listbox"
+              style={
+                menuStyle
+                  ? {
+                      left: `${menuStyle.left}px`,
+                      maxHeight: `${menuStyle.maxHeight}px`,
+                      top: `${menuStyle.top}px`,
+                      width: `${menuStyle.width}px`,
+                    }
+                  : undefined
+              }
+            >
+              {availableOptions.map((exercise, index) => (
+                <button
+                  aria-selected={exercise.id === selectedExerciseId}
+                  className="exercise-dropdown__option"
+                  data-exercise-id={exercise.id}
+                  id={`${listboxId}-option-${exercise.id}`}
+                  key={exercise.id}
+                  onClick={() => chooseExercise(exercise.id)}
+                  onMouseEnter={() => setActiveOptionIndex(index)}
+                  role="option"
+                  type="button"
+                >
+                  {formatExerciseName(exercise.name)}
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
   );
 }
 
 function IsolationGroup({
   onAddExercise,
-  onSelectionChange,
   onToggleRanker,
   row,
 }: {
-  onAddExercise: () => void;
-  onSelectionChange: (exerciseId: string) => void;
+  onAddExercise: (exerciseId: string) => void;
   onToggleRanker: () => void;
   row: IsolationExercisePreferenceRowReadModel;
 }) {
-  const selectedExercise = getSelectedExercise({
-    defaultExerciseId: defaultIsolationExerciseByMuscleGroup[row.primaryMuscleGroup],
-    options: row.isolationOptions,
-    preferences: row.preferences,
-  });
-  const secondaryOptions = getSecondaryIsolationOptions(row, selectedExercise?.id);
+  const defaultExerciseId = defaultIsolationExerciseByMuscleGroup[row.primaryMuscleGroup];
+  const selectedExerciseIds = useMemo(
+    () => row.preferences.map((preference) => preference.exerciseId),
+    [row.preferences],
+  );
+  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+  const [draftExerciseId, setDraftExerciseId] = useState(() =>
+    getInitialDraftExerciseId({
+      defaultExerciseId,
+      options: row.isolationOptions,
+      selectedExerciseIds: selectedExerciseIdSet,
+    }),
+  );
+  const [isDraftManuallySelected, setIsDraftManuallySelected] = useState(false);
+  const canAddExercise = draftExerciseId ? !selectedExerciseIdSet.has(draftExerciseId) : false;
+
+  useEffect(() => {
+    setDraftExerciseId((currentExerciseId) => {
+      const topPreferenceExerciseId = row.preferences[0]?.exerciseId;
+
+      if (!isDraftManuallySelected && topPreferenceExerciseId) {
+        return topPreferenceExerciseId;
+      }
+
+      if (currentExerciseId && !selectedExerciseIdSet.has(currentExerciseId)) {
+        return currentExerciseId;
+      }
+
+      return getNextAvailableExerciseId({
+        options: row.isolationOptions,
+        previousExerciseId: currentExerciseId ?? defaultExerciseId,
+        selectedExerciseIds: selectedExerciseIdSet,
+      });
+    });
+  }, [
+    defaultExerciseId,
+    isDraftManuallySelected,
+    row.isolationOptions,
+    row.preferences,
+    selectedExerciseIdSet,
+  ]);
+
+  function handleAddExercise() {
+    if (!draftExerciseId) {
+      return;
+    }
+
+    onAddExercise(draftExerciseId);
+    setIsDraftManuallySelected(true);
+    setDraftExerciseId(
+      getNextAvailableExerciseId({
+        options: row.isolationOptions,
+        previousExerciseId: draftExerciseId,
+        selectedExerciseIds: new Set([...selectedExerciseIdSet, draftExerciseId]),
+      }),
+    );
+  }
 
   return (
     <li
       aria-label={`${row.primaryMuscleGroupLabel} isolation exercises`}
-      className="isolation-group"
+      className="movement-pattern-bucket movement-pattern-bucket--isolation isolation-group"
     >
       <div className="isolation-group__heading">
         <span aria-hidden="true" className="isolation-group__icon">
@@ -676,34 +914,44 @@ function IsolationGroup({
         </span>
         <div>
           <h4>{formatIsolationGroupLabel(row.primaryMuscleGroupLabel)}</h4>
-          <p>{row.preferences.length > 0 ? row.metadata : "1 selected"}</p>
+          <p>{row.preferences.length > 0 ? row.metadata : "Add accessories"}</p>
         </div>
       </div>
 
-      <ExerciseDropdown
-        ariaLabel={`Choose ${row.primaryMuscleGroupLabel} isolation exercise`}
-        onChange={onSelectionChange}
-        options={row.isolationOptions}
-        selectedExerciseId={selectedExercise?.id}
-        selectedExerciseIds={row.preferences.map((preference) => preference.exerciseId)}
-      />
-
-      <div className="isolation-group__add-list">
-        {secondaryOptions.map((exercise) => (
-          <button
-            className="isolation-group__add-row"
-            key={exercise.id}
-            onClick={onAddExercise}
-            type="button"
-          >
-            <span>{formatExerciseName(exercise.name)}</span>
-            <CirclePlus aria-hidden="true" size={15} strokeWidth={2} />
-          </button>
-        ))}
+      <div className="exercise-selection-picker-row">
+        <ExerciseDropdown
+          ariaLabel={`Choose ${row.primaryMuscleGroupLabel} isolation exercise`}
+          isAttachedToAddButton
+          onChange={(exerciseId) => {
+            setIsDraftManuallySelected(true);
+            setDraftExerciseId(exerciseId);
+          }}
+          options={row.isolationOptions}
+          selectedExerciseId={draftExerciseId}
+          selectedExerciseIds={selectedExerciseIds}
+        />
+        <button
+          aria-label={`Add another ${row.primaryMuscleGroupLabel} isolation exercise`}
+          className="exercise-selection-add-button"
+          disabled={!canAddExercise}
+          onClick={handleAddExercise}
+          title="Add exercise"
+          type="button"
+        >
+          <CirclePlus aria-hidden="true" size={15} strokeWidth={2.2} />
+        </button>
       </div>
-      <button className="sr-only" onClick={onToggleRanker} type="button">
-        Rank preferences
-      </button>
+
+      <MainCompoundPickerToggleButton
+        className="exercise-rank-preferences-button"
+        isOpen={false}
+        label="Rank preferences"
+        onToggle={() => {
+          setIsDraftManuallySelected(false);
+          onToggleRanker();
+        }}
+        pickerId={`isolation-exercise-preferences-picker-${row.primaryMuscleGroup}`}
+      />
       <PreferenceSummary preferences={row.preferences} />
     </li>
   );
@@ -731,31 +979,53 @@ function PreferenceSummary({
   );
 }
 
-function getSelectedExercise({
+function getInitialDraftExerciseId({
   defaultExerciseId,
   options,
-  preferences,
+  selectedExerciseIds,
 }: {
   defaultExerciseId: string | undefined;
   options: ReadonlyArray<SelectableExercise>;
-  preferences: ReadonlyArray<{ exerciseId: string; exerciseName: string }>;
+  selectedExerciseIds: ReadonlySet<string>;
 }) {
-  const selectedExerciseId = preferences[0]?.exerciseId ?? defaultExerciseId;
+  if (
+    defaultExerciseId &&
+    !selectedExerciseIds.has(defaultExerciseId) &&
+    options.some((exercise) => exercise.id === defaultExerciseId)
+  ) {
+    return defaultExerciseId;
+  }
 
-  return (
-    options.find((exercise) => exercise.id === selectedExerciseId) ??
-    options.find((exercise) => exercise.id === preferences[0]?.exerciseId) ??
-    options[0]
-  );
+  return getNextAvailableExerciseId({ options, selectedExerciseIds });
 }
 
-function getNextExerciseId(
-  options: ReadonlyArray<SelectableExercise>,
-  preferences: ReadonlyArray<{ exerciseId: string }>,
-) {
-  const selectedExerciseIds = new Set(preferences.map((preference) => preference.exerciseId));
+function getNextAvailableExerciseId({
+  options,
+  previousExerciseId,
+  selectedExerciseIds,
+}: {
+  options: ReadonlyArray<SelectableExercise>;
+  previousExerciseId?: string;
+  selectedExerciseIds: ReadonlySet<string>;
+}) {
+  const availableOptions = options.filter((exercise) => !selectedExerciseIds.has(exercise.id));
 
-  return options.find((exercise) => !selectedExerciseIds.has(exercise.id))?.id;
+  if (availableOptions.length === 0) {
+    return undefined;
+  }
+
+  const previousIndex = previousExerciseId
+    ? options.findIndex((exercise) => exercise.id === previousExerciseId)
+    : -1;
+
+  if (previousIndex === -1) {
+    return availableOptions[0]?.id;
+  }
+
+  return (
+    options.slice(previousIndex + 1).find((exercise) => !selectedExerciseIds.has(exercise.id))
+      ?.id ?? availableOptions[0]?.id
+  );
 }
 
 function appendExercise(
@@ -765,32 +1035,6 @@ function appendExercise(
   return [...preferences.map((preference) => preference.exerciseId), exerciseId].filter(
     (candidate, index, exerciseIds) => exerciseIds.indexOf(candidate) === index,
   );
-}
-
-function moveExerciseToFront(
-  preferences: ReadonlyArray<{ exerciseId: string }>,
-  exerciseId: string,
-): ReadonlyArray<string> {
-  return [
-    exerciseId,
-    ...preferences
-      .map((preference) => preference.exerciseId)
-      .filter((candidate) => candidate !== exerciseId),
-  ];
-}
-
-function getSecondaryIsolationOptions(
-  row: IsolationExercisePreferenceRowReadModel,
-  selectedExerciseId: string | undefined,
-): ReadonlyArray<IsolationExercisePreferenceOption> {
-  const selectedExerciseIds = new Set([
-    selectedExerciseId,
-    ...row.preferences.map((preference) => preference.exerciseId),
-  ]);
-
-  return row.isolationOptions
-    .filter((exercise) => !selectedExerciseIds.has(exercise.id))
-    .slice(0, 2);
 }
 
 function getIsolationIcon(primaryMuscleGroup: ExerciseCatalogMuscleGroupId) {

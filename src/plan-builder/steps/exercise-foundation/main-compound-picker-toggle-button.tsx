@@ -3,12 +3,14 @@ import { Button } from "../../../design-system/button";
 
 export function MainCompoundPickerToggleButton({
   accessibleLabel,
+  className,
   isOpen,
   label,
   onToggle,
   pickerId,
 }: {
   accessibleLabel?: string;
+  className?: string;
   isOpen: boolean;
   label: string;
   onToggle: () => void;
@@ -19,6 +21,7 @@ export function MainCompoundPickerToggleButton({
       aria-expanded={isOpen}
       aria-controls={isOpen ? pickerId : undefined}
       aria-label={accessibleLabel}
+      className={className}
       onClick={onToggle}
       size="sm"
       type="button"

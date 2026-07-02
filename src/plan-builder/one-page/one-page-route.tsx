@@ -32,6 +32,10 @@ export function PlanBuilderOnePageRoute() {
   const workflow = getPlanBuilderWorkflow({ activeStep: visibleStep, blueprint });
 
   useEffect(() => {
+    resetPlanBuilderViewportScroll();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (closeAnimationTimeoutRef.current !== null) {
         window.clearTimeout(closeAnimationTimeoutRef.current);
@@ -88,6 +92,7 @@ export function PlanBuilderOnePageRoute() {
 
   function openPlanBuilderSection(step: PlanBuilderStep) {
     clearOverviewTransitionTimers();
+    resetPlanBuilderViewportScroll();
     setIsRestoringOverview(false);
     setClosingStep(null);
     setActiveStep(step);
@@ -196,7 +201,6 @@ export function PlanBuilderOnePageRoute() {
                 <PlanBuilderOnePageStepContent
                   activeStep={visibleStep}
                   blueprint={blueprint}
-                  setActiveStep={openPlanBuilderSection}
                   summary={summary}
                   workflow={workflow}
                 />
@@ -207,4 +211,8 @@ export function PlanBuilderOnePageRoute() {
       </div>
     </section>
   );
+}
+
+function resetPlanBuilderViewportScroll() {
+  window.scrollTo({ left: 0, top: 0, behavior: "auto" });
 }

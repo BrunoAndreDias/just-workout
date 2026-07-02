@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, it } from "vitest";
+import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
 import { getActiveTrainingPlans } from "../training-plan/training-plan-repository";
@@ -45,6 +45,10 @@ const defaultGenerationPreferenceMappingCopy =
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
     await resetLocalDatabase();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("routes / into the canonical plan builder workspace and shows a single Plan Builder nav entry", async () => {
@@ -107,6 +111,19 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   });
 
+  it("resets viewport scroll when entering a Plan Builder section", async () => {
+    const user = userEvent.setup();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    scrollTo.mockClear();
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+
+    expect(scrollTo).toHaveBeenCalledWith({ behavior: "auto", left: 0, top: 0 });
+  });
+
   it("opens Exercises immediately from a brand-new Plan Builder", async () => {
     const user = userEvent.setup();
 
@@ -116,6 +133,8 @@ describe("Plan Builder canonical route", () => {
 
     await expectExercisesBucketsVisible();
     expect(screen.queryByRole("heading", { name: "Exercises needs setup" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /continue to generate/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /back to volume/i })).toBeNull();
   });
 
   it("summarizes Exercises Step preference progress in the overview card", async () => {
@@ -190,7 +209,6 @@ describe("Plan Builder canonical route", () => {
 
     const horizontalPushRow = await rankHorizontalPushPreferences(user);
 
-    expect(within(horizontalPushRow).getByText("Incline Dumbbell Bench Press")).toBeVisible();
     expect(within(horizontalPushRow).getByText("1. Incline Dumbbell Bench Press")).toBeVisible();
     expect(within(horizontalPushRow).getByText("2. Flat Barbell Bench Press")).toBeVisible();
 
@@ -206,14 +224,193 @@ describe("Plan Builder canonical route", () => {
     const reopenedHorizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
 
     expect(
-      within(reopenedHorizontalPushRow).getByText("Incline Dumbbell Bench Press"),
-    ).toBeVisible();
-    expect(
       within(reopenedHorizontalPushRow).getByText("1. Incline Dumbbell Bench Press"),
     ).toBeVisible();
     expect(
       within(reopenedHorizontalPushRow).getByText("2. Flat Barbell Bench Press"),
     ).toBeVisible();
+  });
+
+  it("stages compound dropdown choices until the add button is clicked", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await openExercisesSection(user);
+
+    const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    await selectExerciseDropdownOption(
+      user,
+      horizontalPushRow,
+      /choose horizontal push exercise/i,
+      "incline-dumbbell-bench-press",
+    );
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundPreferences: [],
+      mainCompoundRotationPreferences: [],
+    });
+
+    await user.click(
+      within(horizontalPushRow).getByRole("button", {
+        name: /add another horizontal push exercise/i,
+      }),
+    );
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        mainCompoundPreferences: [
+          {
+            exerciseIds: ["incline-dumbbell-bench-press"],
+            movementPattern: "horizontal_push",
+          },
+        ],
+        mainCompoundRotationPreferences: [],
+      });
+    });
+
+    await expectAddedExerciseRemovedAndNextSelected(
+      user,
+      horizontalPushRow,
+      /choose horizontal push exercise/i,
+      "incline-dumbbell-bench-press",
+      "Decline Barbell Bench Press",
+    );
+
+    const horizontalPushRotationRow = await getVisibleMainCompoundRotationRow("Horizontal push");
+
+    await selectExerciseDropdownOption(
+      user,
+      horizontalPushRotationRow,
+      /choose horizontal push rotation exercise/i,
+      "incline-barbell-bench-press",
+    );
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundRotationPreferences: [],
+    });
+
+    await user.click(
+      within(horizontalPushRotationRow).getByRole("button", {
+        name: /add another horizontal push rotation exercise/i,
+      }),
+    );
+
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        mainCompoundRotationPreferences: [
+          {
+            exerciseIds: ["incline-barbell-bench-press"],
+            movementPattern: "horizontal_push",
+          },
+        ],
+      });
+    });
+
+    await expectAddedExerciseRemovedAndNextSelected(
+      user,
+      horizontalPushRotationRow,
+      /choose horizontal push rotation exercise/i,
+      "incline-barbell-bench-press",
+      "Incline Dumbbell Bench Press",
+    );
+  });
+
+  it("opens a clean Horizontal Push ranking drawer for existing preferences only", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      mainCompoundPreferences: [
+        {
+          exerciseIds: [
+            "decline-chest-press-machine",
+            "incline-dumbbell-bench-press",
+            "flat-barbell-bench-press",
+            "flat-dumbbell-bench-press",
+            "incline-barbell-bench-press",
+          ],
+          movementPattern: "horizontal_push",
+        },
+      ],
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await openExercisesSection(user);
+    const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    await user.click(within(horizontalPushRow).getByRole("button", { name: /rank preferences/i }));
+
+    const drawer = await screen.findByRole("dialog", {
+      name: /rank horizontal push preferences/i,
+    });
+
+    expect(within(drawer).getByText("Drag exercises to change priority.")).toBeVisible();
+    expect(within(drawer).getByText("5 ranked")).toBeVisible();
+    expect(within(drawer).getByText("#1")).toBeVisible();
+    expect(within(drawer).getByText("Decline Chest Press Machine")).toBeVisible();
+    expect(within(drawer).getByText("#5")).toBeVisible();
+    expect(within(drawer).getByText("Incline Barbell Bench Press")).toBeVisible();
+    expect(within(drawer).queryByRole("searchbox")).toBeNull();
+    expect(within(drawer).queryByText(/available exercises/i)).toBeNull();
+    expect(within(drawer).queryByText("Dips (Parallel Bars, Slight Forward Lean)")).toBeNull();
+    expect(within(drawer).queryByRole("button", { name: /move .* up/i })).toBeNull();
+    expect(within(drawer).queryByRole("button", { name: /move .* down/i })).toBeNull();
+  });
+
+  it("cancels Horizontal Push ranking changes without saving", async () => {
+    const user = userEvent.setup();
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      mainCompoundPreferences: [
+        {
+          exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await openExercisesSection(user);
+    const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
+
+    await user.click(within(horizontalPushRow).getByRole("button", { name: /rank preferences/i }));
+
+    const drawer = await screen.findByRole("dialog", {
+      name: /rank horizontal push preferences/i,
+    });
+
+    await user.click(
+      within(drawer).getByRole("button", {
+        name: /drag incline dumbbell bench press to reorder/i,
+      }),
+    );
+    await user.keyboard("{Alt>}{ArrowUp}{/Alt}");
+    expect(within(drawer).getByText("#1").nextSibling?.textContent).toBe(
+      "Incline Dumbbell Bench Press",
+    );
+
+    await user.click(within(drawer).getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: /rank horizontal push preferences/i }),
+      ).toBeNull();
+    });
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      mainCompoundPreferences: [
+        {
+          exerciseIds: ["flat-barbell-bench-press", "incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+    });
   });
 
   it("captures ranked Isolation Exercise Preferences from Exercises and keeps them when returning", async () => {
@@ -611,6 +808,26 @@ async function getMainCompoundRotationPreferenceRow(title: string) {
   return row;
 }
 
+async function getVisibleMainCompoundRotationRow(title: string) {
+  const heading = await screen.findByRole("heading", {
+    name: "Rotation (Backup Exercises)",
+  });
+  const section = heading.closest("section");
+
+  if (!section) {
+    throw new Error("Expected a visible Main Compound Rotation Preference section.");
+  }
+
+  const rowLabel = await within(section).findByText(title);
+  const row = rowLabel.closest("li");
+
+  if (!row) {
+    throw new Error(`Expected a visible Main Compound Rotation Preference row for "${title}".`);
+  }
+
+  return row;
+}
+
 async function getIsolationPreferenceRow(title: string) {
   const label = await screen.findByText(title);
   const row = label.closest("li");
@@ -627,19 +844,25 @@ async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
 
   const horizontalPushRow = await getMainCompoundPreferenceRow("Horizontal push");
 
+  await addMainCompoundPreference(user, horizontalPushRow, "flat-barbell-bench-press");
+  await addMainCompoundPreference(user, horizontalPushRow, "incline-dumbbell-bench-press");
+
   await user.click(within(horizontalPushRow).getByRole("button", { name: /rank preferences/i }));
 
   const picker = await screen.findByRole("dialog", {
-    name: /rank your horizontal push preferences/i,
+    name: /rank horizontal push preferences/i,
   });
 
-  await user.click(within(picker).getByText("Flat Barbell Bench Press"));
-  await user.click(within(picker).getByText("Incline Dumbbell Bench Press"));
   await user.click(
-    within(picker).getByRole("button", { name: /move incline dumbbell bench press up/i }),
+    within(picker).getByRole("button", {
+      name: /drag incline dumbbell bench press to reorder/i,
+    }),
   );
-  await user.click(
-    within(picker).getByRole("button", { name: /close main compound preferences picker/i }),
+  await user.keyboard("{Alt>}{ArrowUp}{/Alt}");
+  await user.click(within(picker).getByRole("button", { name: /save ranking/i }));
+
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog", { name: /rank horizontal push preferences/i })).toBeNull(),
   );
 
   return horizontalPushRow;
@@ -648,28 +871,112 @@ async function rankHorizontalPushPreferences(user: PlanBuilderTestUser) {
 async function rankHorizontalPushRotationPreferences(user: PlanBuilderTestUser) {
   await openExercisesSection(user);
 
-  const horizontalPushRow = await getMainCompoundRotationPreferenceRow("Horizontal push");
+  const horizontalPushRow = await getVisibleMainCompoundRotationRow("Horizontal push");
+
+  await addMainCompoundRotationPreference(user, horizontalPushRow, "flat-dumbbell-bench-press");
+  await addMainCompoundRotationPreference(user, horizontalPushRow, "incline-barbell-bench-press");
 
   await user.click(
     within(horizontalPushRow).getByRole("button", { name: /rank rotation preferences/i }),
   );
 
   const picker = await screen.findByRole("dialog", {
-    name: /rank your horizontal push rotation preferences/i,
+    name: /rank horizontal push rotation preferences/i,
   });
 
-  await user.click(within(picker).getByText("Flat Dumbbell Bench Press"));
-  await user.click(within(picker).getByText("Incline Barbell Bench Press"));
-  await user.click(
-    within(picker).getByRole("button", { name: /move incline barbell bench press up/i }),
-  );
   await user.click(
     within(picker).getByRole("button", {
-      name: /close main compound rotation preferences picker/i,
+      name: /drag incline barbell bench press to reorder/i,
     }),
+  );
+  await user.keyboard("{Alt>}{ArrowUp}{/Alt}");
+  await user.click(within(picker).getByRole("button", { name: /save ranking/i }));
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("dialog", { name: /rank horizontal push rotation preferences/i }),
+    ).toBeNull(),
   );
 
   return horizontalPushRow;
+}
+
+async function addMainCompoundPreference(
+  user: PlanBuilderTestUser,
+  row: HTMLElement,
+  exerciseId: string,
+) {
+  await selectExerciseDropdownOption(user, row, /choose horizontal push exercise/i, exerciseId);
+  await user.click(
+    within(row).getByRole("button", {
+      name: /add another horizontal push exercise/i,
+    }),
+  );
+}
+
+async function addMainCompoundRotationPreference(
+  user: PlanBuilderTestUser,
+  row: HTMLElement,
+  exerciseId: string,
+) {
+  await selectExerciseDropdownOption(
+    user,
+    row,
+    /choose horizontal push rotation exercise/i,
+    exerciseId,
+  );
+  await user.click(
+    within(row).getByRole("button", {
+      name: /add another horizontal push rotation exercise/i,
+    }),
+  );
+}
+
+async function selectExerciseDropdownOption(
+  user: PlanBuilderTestUser,
+  row: HTMLElement,
+  comboboxName: RegExp,
+  exerciseId: string,
+) {
+  await user.click(
+    within(row).getByRole("combobox", {
+      name: comboboxName,
+    }),
+  );
+
+  const option = await waitFor(() => {
+    const candidate = document.querySelector<HTMLElement>(
+      `.exercise-dropdown__option[data-exercise-id="${exerciseId}"]`,
+    );
+
+    if (!candidate) {
+      throw new Error(`Expected exercise dropdown option for "${exerciseId}".`);
+    }
+
+    return candidate;
+  });
+
+  await user.click(option);
+}
+
+async function expectAddedExerciseRemovedAndNextSelected(
+  user: PlanBuilderTestUser,
+  row: HTMLElement,
+  comboboxName: RegExp,
+  addedExerciseId: string,
+  nextExerciseName: string,
+) {
+  const combobox = within(row).getByRole("combobox", {
+    name: comboboxName,
+  });
+
+  await waitFor(() => expect(combobox).toHaveTextContent(nextExerciseName));
+
+  await user.click(combobox);
+
+  expect(
+    document.querySelector(`.exercise-dropdown__option[data-exercise-id="${addedExerciseId}"]`),
+  ).toBeNull();
 }
 
 async function rankBicepsIsolationPreferences(user: PlanBuilderTestUser) {

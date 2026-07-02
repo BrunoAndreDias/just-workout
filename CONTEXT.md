@@ -112,6 +112,10 @@ _Avoid_: Set preset, volume mode
 The total number of reps planned for a muscle group across a week. **Weekly Rep Targets** are the source of truth for **Training Volume**; estimated set counts are derived from them for display and planning.
 _Avoid_: Weekly hard sets, set target
 
+**Volume Target Notice**:
+A non-blocking user-facing notice that a generated **Training Plan** is aiming below a selected **Weekly Rep Target** for a muscle group. A **Volume Target Notice** compares selected targets with the top end of generated **Training Prescriptions** for primary target muscles, and explains the gap without automatically changing the prescription or preventing generation.
+_Avoid_: Error, invalid volume, automatic volume correction
+
 **Optional Volume Target**:
 A muscle group with source-backed volume guidance that is not included as a direct **Weekly Rep Target** unless the user adds it. Optional muscle groups can be shown in the **Plan Builder** without being part of the configured **Training Volume** yet.
 _Avoid_: Missing volume, untracked muscle
@@ -203,6 +207,10 @@ _Avoid_: UI superset setting, configurable circuit
 **Workout Exercise Role**:
 The role an exercise fills inside a generated **Workout Block**: main compound, secondary compound, isolation, or abs. Main compounds carry the primary movement for the block; secondary compounds provide the complementary movement; isolation and abs exercises belong in accessory or abs blocks unless the default Upper/Lower superset rule explicitly includes abs.
 _Avoid_: Exercise type, set style
+
+**Training Prescription**:
+The generated per-exercise target inside a **Training Plan**, including set count and rep range. A **Training Prescription** gets its rep range from the selected **Rep Range Style** and the exercise's **Workout Exercise Role**, then is followed during Training Sessions.
+_Avoid_: UI label, hard-coded sets and reps
 
 **Compound-Capable Movement Pattern**:
 A major **Movement Pattern** that can be covered by a **Main Compound Selection**, such as horizontal push, horizontal pull, vertical push, vertical pull, quad dominant, or hip/hamstring dominant. Arm and accessory patterns can contribute useful training work, but they are handled as optional isolation or accessory coverage rather than required **Main Compound Selections**.

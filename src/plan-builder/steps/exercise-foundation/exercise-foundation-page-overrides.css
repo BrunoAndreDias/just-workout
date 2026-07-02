@@ -132,22 +132,6 @@
   line-height: 1.2rem;
 }
 
-.plan-builder-page--exercises .exercise-pool-section__note {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.875rem 0 0;
-  color: var(--jw-step-muted);
-  font-size: 0.75rem;
-  font-weight: 650;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__note svg {
-  flex: 0 0 auto;
-  color: var(--jw-step-muted);
-}
-
 .plan-builder-page--exercises .exercise-foundation-list {
   gap: 0.625rem;
 }
@@ -1389,24 +1373,9 @@
   line-height: 1.12rem;
 }
 
-.plan-builder-page--exercises .exercise-pool-section__note {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0.75rem 0 0;
-  color: #536873;
-  font-size: 0.76rem;
-  font-weight: 620;
-  line-height: 1.1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__note svg {
-  flex: 0 0 auto;
-  color: #31505d;
-}
-
 .exercise-selection-main-grid,
-.exercise-selection-rotation-grid {
+.exercise-selection-rotation-grid,
+.exercise-selection-isolation-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0;
@@ -1419,6 +1388,7 @@
   display: grid;
   min-width: 0;
   align-content: start;
+  grid-template-rows: minmax(2.75rem, auto) 2rem minmax(2.25rem, auto);
   gap: 0.55rem;
   border-left: 1px solid rgba(28, 25, 23, 0.1);
   padding: 0.55rem 0.9rem 0.65rem;
@@ -1446,6 +1416,10 @@
   align-items: start;
 }
 
+:where(.movement-pattern-bucket__heading > div, .isolation-group__heading > div) {
+  min-width: 0;
+}
+
 .movement-pattern-bucket__icon,
 .isolation-group__icon {
   display: inline-flex;
@@ -1458,20 +1432,26 @@
 
 .plan-builder-page--exercises .movement-pattern-bucket h4,
 .plan-builder-page--exercises .isolation-group h4 {
+  overflow: hidden;
   margin: 0;
   color: #12100d;
   font-size: 0.78rem;
   font-weight: 830;
   line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plan-builder-page--exercises .movement-pattern-bucket p,
 .plan-builder-page--exercises .isolation-group p {
+  overflow: hidden;
   margin: 0.1rem 0 0;
   color: #536873;
   font-size: 0.69rem;
   font-weight: 670;
   line-height: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .movement-pattern-bucket__recommendation {
@@ -1490,7 +1470,14 @@
   min-width: 0;
 }
 
-.exercise-dropdown select,
+.exercise-selection-picker-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 2rem;
+  align-items: stretch;
+}
+
+.exercise-dropdown__button,
 .rotation-pool__pattern-filter select {
   width: 100%;
   height: 2rem;
@@ -1506,19 +1493,20 @@
   line-height: 1rem;
 }
 
-.exercise-dropdown--has-selection select {
-  color: transparent;
+.exercise-dropdown__button {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  text-align: left;
 }
 
-.exercise-dropdown select option {
-  color: #151f20;
+.exercise-dropdown--attached .exercise-dropdown__button {
+  border-right: 0;
+  border-radius: 0.28rem 0 0 0.28rem;
 }
 
 .exercise-dropdown__selected-value {
-  position: absolute;
-  top: 50%;
-  right: 1.85rem;
-  left: 0.55rem;
+  display: block;
   min-width: 0;
   overflow: hidden;
   color: #151f20;
@@ -1527,7 +1515,6 @@
   line-height: 1rem;
   pointer-events: none;
   text-overflow: ellipsis;
-  transform: translateY(-50%);
   white-space: nowrap;
 }
 
@@ -1541,18 +1528,54 @@
   transform: translateY(-50%);
 }
 
-.exercise-dropdown select:focus-visible,
+.exercise-dropdown__button:focus-visible,
 .rotation-pool__pattern-filter select:focus-visible,
 .rotation-pool__search input:focus-visible,
 .exercise-selection-secondary-button:focus-visible,
+.exercise-selection-add-button:focus-visible,
 .rotation-pool button:focus-visible,
 .isolation-group button:focus-visible {
   outline: 2px solid rgba(0, 119, 128, 0.72);
   outline-offset: 2px;
 }
 
+.exercise-dropdown__menu {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(0, 119, 128, 0.28);
+  border-radius: 0.42rem;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+  padding: 0.25rem;
+}
+
+.exercise-dropdown__option {
+  display: block;
+  width: 100%;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.28rem;
+  background: transparent;
+  color: #151f20;
+  cursor: pointer;
+  padding: 0.45rem 0.58rem;
+  font-size: 0.82rem;
+  font-weight: 620;
+  line-height: 1.1rem;
+  text-align: left;
+}
+
+.exercise-dropdown__option:hover,
+.exercise-dropdown__option[aria-selected="true"] {
+  background: rgba(0, 119, 128, 0.09);
+  color: #075d63;
+}
+
 .exercise-selection-secondary-button,
-.isolation-group__add-row,
+.exercise-selection-add-button,
 .rotation-pool__chip,
 .rotation-pool__exercise-row,
 .rotation-pool__more {
@@ -1574,8 +1597,43 @@
   line-height: 1;
 }
 
+.exercise-selection-add-button {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-color: rgba(0, 119, 128, 0.42);
+  border-radius: 0 0.28rem 0.28rem 0;
+  background: #f7fbfb;
+  color: #075d63;
+  padding: 0;
+}
+
+.exercise-selection-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.movement-pattern-bucket .exercise-rank-preferences-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.25rem;
+  height: auto;
+  gap: 0.35rem;
+  padding: 0.34rem 0.5rem;
+  font-size: 0.7rem;
+  line-height: 0.9rem;
+  text-align: center;
+  white-space: normal;
+}
+
+.movement-pattern-bucket .exercise-rank-preferences-button svg {
+  flex: 0 0 auto;
+}
+
 .exercise-selection-secondary-button:hover,
-.isolation-group__add-row:hover,
+.exercise-selection-add-button:hover,
 .rotation-pool__chip:hover,
 .rotation-pool__exercise-row:hover,
 .rotation-pool__more:hover {
@@ -1723,8 +1781,7 @@
 }
 
 .plan-builder-page--exercises .rotation-pool__exercise-row svg,
-.plan-builder-page--exercises .rotation-pool__chip svg,
-.plan-builder-page--exercises .isolation-group__add-row svg {
+.plan-builder-page--exercises .rotation-pool__chip svg {
   flex: 0 0 auto;
   color: #31505d;
 }
@@ -1745,15 +1802,6 @@
   line-height: 1rem;
 }
 
-.exercise-selection-isolation-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .isolation-group {
   display: grid;
   min-width: 0;
@@ -1765,33 +1813,6 @@
 
 .isolation-group:first-child {
   border-left: 0;
-}
-
-.isolation-group__add-list {
-  display: grid;
-  gap: 0.34rem;
-}
-
-.isolation-group__add-row {
-  display: flex;
-  min-height: 1.85rem;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border-radius: 0.28rem;
-  padding: 0.28rem 0.55rem;
-  text-align: left;
-}
-
-.plan-builder-page--exercises .isolation-group__add-row span {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 0.72rem;
-  font-weight: 640;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .exercise-selection-actions {
@@ -1872,5 +1893,354 @@
   .plan-builder-page.plan-builder-page.plan-builder-page--exercises
     .exercise-foundation-panel.step-panel {
     padding: 1rem;
+  }
+}
+
+/* Full-row compound selection layout. */
+.plan-builder-page--exercises .exercise-selection-main-grid,
+.plan-builder-page--exercises .exercise-selection-rotation-grid,
+.plan-builder-page--exercises .exercise-selection-isolation-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket {
+  grid-template-columns: minmax(13rem, 0.72fr) minmax(22rem, 1.4fr) minmax(9.5rem, 0.52fr);
+  grid-template-rows: none;
+  align-items: center;
+  gap: 1.25rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.1);
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.75rem 0;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket:first-child {
+  border-top: 0;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket--recommended,
+.plan-builder-page--exercises .movement-pattern-bucket--rotation {
+  background: transparent;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket__heading,
+.plan-builder-page--exercises .isolation-group__heading {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket__icon,
+.plan-builder-page--exercises .isolation-group__icon {
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 0.28rem;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket h4 {
+  overflow: visible;
+  font-size: 0.88rem;
+  line-height: 1.1rem;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket p {
+  overflow: visible;
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  line-height: 1rem;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.plan-builder-page--exercises .exercise-selection-picker-row {
+  grid-template-columns: minmax(0, 1fr) 2.5rem;
+}
+
+.plan-builder-page--exercises .exercise-dropdown__button,
+.plan-builder-page--exercises .exercise-selection-add-button {
+  height: 2.65rem;
+}
+
+.plan-builder-page--exercises .exercise-dropdown__button {
+  padding-right: 2.15rem;
+  padding-left: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.15rem;
+}
+
+.plan-builder-page--exercises .exercise-dropdown__selected-value {
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-builder-page--exercises .exercise-selection-add-button {
+  width: 2.5rem;
+}
+
+.plan-builder-page--exercises .movement-pattern-bucket .exercise-rank-preferences-button {
+  min-height: 2.65rem;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.05rem;
+}
+
+.main-compound-ranking-drawer-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.main-compound-ranking-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(17, 24, 39, 0.58);
+  cursor: default;
+}
+
+.main-compound-ranking-drawer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100vw, 37.5rem);
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid rgba(28, 25, 23, 0.12);
+  background: #ffffff;
+  color: var(--jw-step-ink);
+  box-shadow: -18px 0 36px rgba(15, 23, 42, 0.14);
+}
+
+.main-compound-ranking-drawer__header {
+  padding: 2.1rem 2rem 1.3rem;
+}
+
+.main-compound-ranking-drawer__title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+}
+
+.main-compound-ranking-drawer__title {
+  margin: 0;
+  color: var(--jw-step-ink);
+  font-size: 1.35rem;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.65rem;
+}
+
+.main-compound-ranking-drawer__helper {
+  margin: 0.7rem 0 0;
+  color: var(--jw-step-copy);
+  font-size: 0.96rem;
+  line-height: 1.35rem;
+}
+
+.main-compound-ranking-drawer__close {
+  width: 2.25rem;
+  min-width: 2.25rem;
+  color: var(--jw-step-ink);
+}
+
+.main-compound-ranking-drawer__count {
+  display: inline-flex;
+  min-height: 1.4rem;
+  align-items: center;
+  margin-top: 1.05rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.06);
+  color: var(--jw-step-copy);
+  padding: 0.18rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1rem;
+}
+
+.main-compound-ranking-drawer__body {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  border-top: 1px solid rgba(28, 25, 23, 0.1);
+  padding: 1.45rem 2rem 2rem;
+}
+
+.main-compound-ranking-drawer__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-compound-ranking-drawer__item {
+  display: grid;
+  min-height: 4.55rem;
+  grid-template-columns: 1.75rem auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.45rem;
+  background: #ffffff;
+  padding: 0.9rem 1rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.main-compound-ranking-drawer__item.is-drop-target {
+  border-color: rgba(0, 119, 128, 0.36);
+  box-shadow: 0 0 0 2px rgba(0, 119, 128, 0.08);
+}
+
+.main-compound-ranking-drawer__item.is-dragging {
+  opacity: 0.58;
+}
+
+.main-compound-ranking-drawer__drag-handle,
+.main-compound-ranking-drawer__remove {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: rgba(34, 47, 62, 0.7);
+  padding: 0;
+}
+
+.main-compound-ranking-drawer__drag-handle {
+  width: 1.75rem;
+  cursor: grab;
+}
+
+.main-compound-ranking-drawer__drag-handle:active {
+  cursor: grabbing;
+}
+
+.main-compound-ranking-drawer__drag-handle:hover,
+.main-compound-ranking-drawer__remove:hover {
+  background: rgba(28, 25, 23, 0.06);
+  color: var(--jw-step-ink);
+}
+
+.main-compound-ranking-drawer__drag-handle:focus-visible,
+.main-compound-ranking-drawer__remove:focus-visible {
+  outline: 2px solid var(--jw-step-selected-strong);
+  outline-offset: 2px;
+}
+
+.main-compound-ranking-drawer__rank {
+  display: inline-flex;
+  min-width: 2.15rem;
+  min-height: 1.55rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 119, 128, 0.18);
+  border-radius: 0.42rem;
+  background: rgba(0, 119, 128, 0.07);
+  color: var(--jw-step-selected-ink);
+  font-size: 0.88rem;
+  font-weight: 760;
+  line-height: 1rem;
+}
+
+.main-compound-ranking-drawer__name {
+  min-width: 0;
+  color: var(--jw-step-ink);
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.35rem;
+  overflow-wrap: anywhere;
+}
+
+.main-compound-ranking-drawer__remove {
+  justify-self: end;
+}
+
+.main-compound-ranking-drawer__empty {
+  margin: 0;
+  color: var(--jw-step-copy);
+  font-size: 0.95rem;
+  line-height: 1.35rem;
+}
+
+.main-compound-ranking-drawer__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.12);
+  background: #ffffff;
+  padding: 1rem 2rem;
+}
+
+.main-compound-ranking-drawer__action {
+  min-width: 7.6rem;
+}
+
+@media (max-width: 900px) {
+  .plan-builder-page--exercises .movement-pattern-bucket {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+    border: 1px solid rgba(28, 25, 23, 0.1);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .plan-builder-page--exercises .movement-pattern-bucket:first-child {
+    border-top: 1px solid rgba(28, 25, 23, 0.1);
+  }
+}
+
+@media (max-width: 640px) {
+  .main-compound-ranking-drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+
+  .main-compound-ranking-drawer__header {
+    padding: 1.35rem 1rem 1rem;
+  }
+
+  .main-compound-ranking-drawer__body {
+    padding: 1rem;
+  }
+
+  .main-compound-ranking-drawer__item {
+    min-height: 4.25rem;
+    grid-template-columns: 1.5rem auto minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    padding: 0.8rem 0.75rem;
+  }
+
+  .main-compound-ranking-drawer__footer {
+    padding: 0.85rem 1rem;
+  }
+
+  .main-compound-ranking-drawer__action {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-compound-ranking-drawer__item {
+    transition: none;
   }
 }

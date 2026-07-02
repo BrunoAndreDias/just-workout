@@ -80,15 +80,11 @@ export function OnePageVolumeStep({
 
 export function OnePageExercisesStep({
   blueprint,
-  onBackToVolume,
-  onContinueToGenerate,
   onIsolationExercisePreferencesChange,
   onMainCompoundPreferencesChange,
   onMainCompoundRotationPreferencesChange,
 }: {
   blueprint: PlanBlueprint;
-  onBackToVolume: () => void;
-  onContinueToGenerate: () => Promise<void>;
   onIsolationExercisePreferencesChange: (
     preferences: IsolationExercisePreferencesChange,
   ) => Promise<unknown>;
@@ -100,8 +96,6 @@ export function OnePageExercisesStep({
   return (
     <PlanBuilderMainCompoundPreferencesStep
       blueprint={blueprint}
-      onBackToVolume={onBackToVolume}
-      onContinueToGenerate={onContinueToGenerate}
       onIsolationExercisePreferencesChange={onIsolationExercisePreferencesChange}
       onMainCompoundPreferencesChange={onMainCompoundPreferencesChange}
       onMainCompoundRotationPreferencesChange={onMainCompoundRotationPreferencesChange}

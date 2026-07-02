@@ -25,15 +25,11 @@ export type IsolationExercisePreferencesChange = {
 
 export function PlanBuilderMainCompoundPreferencesStep({
   blueprint,
-  onBackToVolume,
-  onContinueToGenerate,
   onIsolationExercisePreferencesChange,
   onMainCompoundPreferencesChange,
   onMainCompoundRotationPreferencesChange,
 }: {
   blueprint: PlanBlueprint;
-  onBackToVolume: () => void;
-  onContinueToGenerate: () => Promise<void>;
   onIsolationExercisePreferencesChange: (
     preferences: IsolationExercisePreferencesChange,
   ) => Promise<unknown>;
@@ -57,8 +53,6 @@ export function PlanBuilderMainCompoundPreferencesStep({
       isolationReadModel={isolationReadModel}
       mainCompoundReadModel={mainCompoundReadModel}
       mainCompoundRotationReadModel={mainCompoundRotationReadModel}
-      onBackToVolume={onBackToVolume}
-      onContinueToGenerate={onContinueToGenerate}
       onIsolationExercisePreferencesChange={async (preferences) => {
         await onIsolationExercisePreferencesChange(preferences);
       }}

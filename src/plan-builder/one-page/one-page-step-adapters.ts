@@ -1,9 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
 import {
-  useConfirmExerciseSelectionPreferencesMutation,
   useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
   useUpdateMainCompoundRotationPreferencesMutation,
@@ -115,13 +113,7 @@ export function useOnePageVolumeStep() {
   };
 }
 
-export function useOnePageExercisesStep({
-  setActiveStep,
-}: {
-  setActiveStep: (step: PlanBuilderStep) => void;
-}) {
-  const { mutateAsync: confirmSelectedExerciseSelectionPreferences } =
-    useConfirmExerciseSelectionPreferencesMutation();
+export function useOnePageExercisesStep() {
   const { mutateAsync: updateIsolationExercisePreferences } =
     useUpdateIsolationExercisePreferencesMutation();
   const { mutateAsync: updateMainCompoundPreferences } = useUpdateMainCompoundPreferencesMutation();
@@ -129,12 +121,6 @@ export function useOnePageExercisesStep({
     useUpdateMainCompoundRotationPreferencesMutation();
 
   return {
-    onContinueToGenerate: async () => {
-      await confirmSelectedExerciseSelectionPreferences({
-        timestamp: new Date().toISOString(),
-      });
-      setActiveStep("generate");
-    },
     onMainCompoundPreferencesChange: async ({
       exerciseIds,
       movementPattern,
