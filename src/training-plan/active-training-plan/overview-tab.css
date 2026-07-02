@@ -20,6 +20,69 @@
   line-height: 1.375rem;
 }
 
+.training-plan-overview-card--notice {
+  border-top: 0;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.95), rgba(255, 251, 235, 0.96));
+  padding: 1.25rem 1.375rem;
+}
+
+.volume-target-notices__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.volume-target-notices__header svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #b45309;
+  stroke-width: 2;
+}
+
+.volume-target-notices__support {
+  margin: 0.35rem 0 0;
+  color: #7c5a20;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
+.volume-target-notice-list {
+  display: grid;
+  gap: 0.875rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.volume-target-notice {
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.875rem 1rem;
+}
+
+.volume-target-notice__title,
+.volume-target-notice__body {
+  margin: 0;
+}
+
+.volume-target-notice__title {
+  color: #11181b;
+  font-size: 0.9375rem;
+  font-weight: 750;
+  line-height: 1.35rem;
+}
+
+.volume-target-notice__body {
+  margin-top: 0.25rem;
+  color: #5b4630;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
 .training-plan-overview-card__support {
   display: inline-flex;
   align-items: center;

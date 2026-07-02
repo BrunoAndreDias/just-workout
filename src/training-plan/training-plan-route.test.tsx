@@ -310,6 +310,57 @@ describe("TrainingPlanRoute", () => {
     expect(within(workoutPanel).queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("shows non-blocking Volume Target Notices on Overview without surfacing them during Training Sessions", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      weeklyRepTargets: createPresetWeeklyRepTargets("balanced").map((target) => {
+        if (target.muscleGroup === "chest") {
+          return { ...target, source: "custom" as const, target: 60 };
+        }
+
+        if (target.muscleGroup === "calves") {
+          return { ...target, isEnabled: false, source: "custom" as const, target: 120 };
+        }
+
+        return target;
+      }),
+    });
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    const overviewPanel = screen.getByRole("tabpanel", { name: "Overview" });
+    const noticesSection = within(overviewPanel)
+      .getByRole("heading", { name: "Volume target notices" })
+      .closest("section");
+
+    expect(noticesSection).not.toBeNull();
+    expect(
+      within(noticesSection as HTMLElement).getByText(
+        "Chest is 12 reps below your Weekly Rep Target.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(noticesSection as HTMLElement).getByText(
+        "Generated top-end prescribed reps reach 48 of your 60 weekly chest reps.",
+      ),
+    ).toBeVisible();
+    expect(within(noticesSection as HTMLElement).queryByText(/calves/i)).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Start next workout" })[0] as HTMLElement,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Volume target notices" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Chest is 12 reps below your Weekly Rep Target."),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows a calm cycle summary on the active Training Plan", async () => {
     await seedTrainingPlan();
 
@@ -925,7 +976,9 @@ describe("TrainingPlanRoute", () => {
 });
 
 async function seedTrainingPlan(
-  overrides: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> &
+  overrides: Partial<
+    Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek" | "weeklyRepTargets">
+  > &
     Partial<Pick<TrainingPlan, "mainCompoundRotationPools" | "trainingBlock">> = {},
 ) {
   const { mainCompoundRotationPools, trainingBlock, ...blueprintOverrides } = overrides;
@@ -1302,7 +1355,10 @@ function getFirstElement<T>(elements: Array<T>): T {
 function createCompleteBlueprint({
   split = "alternating-full-body-a-b",
   trainingFrequencyDaysPerWeek = 3,
-}: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> = {}): PlanBlueprint {
+  weeklyRepTargets = createPresetWeeklyRepTargets("balanced"),
+}: Partial<
+  Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek" | "weeklyRepTargets">
+> = {}): PlanBlueprint {
   return {
     confirmedBuilderSteps: {
       exercises: true,
@@ -1332,6 +1388,6 @@ function createCompleteBlueprint({
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",
-    weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+    weeklyRepTargets,
   };
 }

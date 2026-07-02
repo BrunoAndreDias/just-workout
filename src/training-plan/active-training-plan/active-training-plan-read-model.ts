@@ -3,6 +3,7 @@ import {
   getTrainingSessionHistoryRouteTarget,
   type TrainingSessionHistoryRouteTarget,
 } from "../training-plan-paths";
+import { createLegacyDefaultTrainingPrescription } from "../training-prescription";
 import {
   getStartNextWorkoutRouteTarget,
   getStartWorkoutRouteTarget,
@@ -24,6 +25,7 @@ import {
 import { getPlanSummaryReadModel, type PlanSummaryReadModel } from "./plan-summary-read-model";
 import { getBlockProgressPercent, getCurrentBlockWeek } from "./training-block-progress";
 import {
+  formatTargetMuscle,
   getWorkoutSplitSummaryReadModel,
   type WorkoutSplitSummaryReadModel,
 } from "./workout-template-summary";
@@ -100,7 +102,15 @@ export type ActiveTrainingPlanPageTabPanelReadModel =
 export type ActiveTrainingPlanPageOverviewReadModel = {
   movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel;
   summary: PlanSummaryReadModel;
+  volumeTargetNotices: ActiveTrainingPlanVolumeTargetNoticeReadModel[];
   workoutSplitSummary: WorkoutSplitSummaryReadModel;
+};
+
+export type ActiveTrainingPlanVolumeTargetNoticeReadModel = {
+  muscleGroup: string;
+  prescribedTopEndReps: number;
+  shortfallReps: number;
+  targetReps: number;
 };
 
 export type ActiveTrainingPlanPageCompareReadModel = CompareReadModel & {
@@ -152,46 +162,16 @@ export function getActiveTrainingPlanPageReadModel({
   const movementCoverage = getMovementCoverageTableReadModel(trainingPlan.workoutTemplates);
 
   return {
-    actions: {
-      startNextWorkout: {
-        label: "Start next workout",
-        routeTarget: getStartNextWorkoutRouteTarget(trainingPlan),
-      },
-      trainingHistory: {
-        label: "View training history",
-        routeTarget: getTrainingSessionHistoryRouteTarget(trainingPlan.id),
-      },
-    },
+    actions: getActionsReadModel(trainingPlan),
     activeTab: getPageTabReadModel({
       activeTabId: resolvedActiveTabId,
       tab: resolvedActiveTab ?? { id: "overview", label: "Overview" },
       trainingPlan,
     }),
-    compare: {
-      ...getCompareReadModel(trainingPlan),
-      movementCoverage: getCompareMovementCoverageTableReadModel(
-        trainingPlan.workoutTemplates,
-        movementCoverage,
-      ),
-    },
-    header: {
-      description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`,
-      title: trainingPlan.split,
-    },
-    overview: {
-      movementCoverage,
-      summary: getPlanSummaryReadModel(trainingPlan),
-      workoutSplitSummary: getWorkoutSplitSummaryReadModel(trainingPlan.workoutTemplates),
-    },
-    progress: {
-      blockProgressPercent: getBlockProgressPercent({
-        blockWeek,
-        trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-      }),
-      blockWeek,
-      cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
-      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-    },
+    compare: getCompareTabReadModel(trainingPlan, movementCoverage),
+    header: getHeaderReadModel(trainingPlan),
+    overview: getOverviewReadModel(trainingPlan, movementCoverage),
+    progress: getProgressReadModel(trainingPlan, blockWeek),
     tabs: tabs.map((tab) =>
       getPageTabReadModel({
         activeTabId: resolvedActiveTabId,
@@ -199,6 +179,66 @@ export function getActiveTrainingPlanPageReadModel({
         trainingPlan,
       }),
     ),
+  };
+}
+
+function getActionsReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageActionsReadModel {
+  return {
+    startNextWorkout: {
+      label: "Start next workout",
+      routeTarget: getStartNextWorkoutRouteTarget(trainingPlan),
+    },
+    trainingHistory: {
+      label: "View training history",
+      routeTarget: getTrainingSessionHistoryRouteTarget(trainingPlan.id),
+    },
+  };
+}
+
+function getCompareTabReadModel(
+  trainingPlan: TrainingPlan,
+  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel,
+): ActiveTrainingPlanPageCompareReadModel {
+  return {
+    ...getCompareReadModel(trainingPlan),
+    movementCoverage: getCompareMovementCoverageTableReadModel(
+      trainingPlan.workoutTemplates,
+      movementCoverage,
+    ),
+  };
+}
+
+function getHeaderReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageHeaderReadModel {
+  return {
+    description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`,
+    title: trainingPlan.split,
+  };
+}
+
+function getOverviewReadModel(
+  trainingPlan: TrainingPlan,
+  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel,
+): ActiveTrainingPlanPageOverviewReadModel {
+  return {
+    movementCoverage,
+    summary: getPlanSummaryReadModel(trainingPlan),
+    volumeTargetNotices: getVolumeTargetNoticesReadModel(trainingPlan),
+    workoutSplitSummary: getWorkoutSplitSummaryReadModel(trainingPlan.workoutTemplates),
+  };
+}
+
+function getProgressReadModel(
+  trainingPlan: TrainingPlan,
+  blockWeek: number,
+): ActiveTrainingPlanPageProgressReadModel {
+  return {
+    blockProgressPercent: getBlockProgressPercent({
+      blockWeek,
+      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+    }),
+    blockWeek,
+    cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
+    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
   };
 }
 
@@ -296,4 +336,111 @@ function getCompareMovementCoverageTableReadModel(
       weeklyCoverage: formatWeeklyCoverageCount(workoutTemplates, row.patterns),
     })),
   };
+}
+
+const volumeTargetMuscleByPrimaryTargetMuscle = {
+  abs: "abs",
+  back: "back",
+  biceps: "biceps",
+  calves: "calves",
+  chest: "chest",
+  hamstrings: "hamstrings",
+  quadriceps: "quads",
+  shoulders: "shoulders",
+  triceps: "triceps",
+} as const satisfies Partial<
+  Record<
+    TrainingPlanSlot["targetMuscles"][number],
+    TrainingPlan["weeklyRepTargets"][number]["muscleGroup"]
+  >
+>;
+
+function getVolumeTargetNoticesReadModel(
+  trainingPlan: TrainingPlan,
+): ActiveTrainingPlanVolumeTargetNoticeReadModel[] {
+  const prescribedTopEndRepsByMuscleGroup = getPrescribedTopEndRepsByMuscleGroup(trainingPlan);
+
+  return trainingPlan.weeklyRepTargets.flatMap((weeklyRepTarget) => {
+    if (!weeklyRepTarget.isEnabled || weeklyRepTarget.target === null) {
+      return [];
+    }
+
+    const prescribedTopEndReps =
+      prescribedTopEndRepsByMuscleGroup.get(weeklyRepTarget.muscleGroup) ?? 0;
+
+    if (prescribedTopEndReps >= weeklyRepTarget.target) {
+      return [];
+    }
+
+    return [
+      {
+        muscleGroup: formatVolumeTargetMuscleGroup(weeklyRepTarget.muscleGroup),
+        prescribedTopEndReps,
+        shortfallReps: weeklyRepTarget.target - prescribedTopEndReps,
+        targetReps: weeklyRepTarget.target,
+      },
+    ];
+  });
+}
+
+function getPrescribedTopEndRepsByMuscleGroup(trainingPlan: TrainingPlan): Map<string, number> {
+  const prescribedTopEndRepsByMuscleGroup = new Map<string, number>();
+
+  for (const slot of getTrainingPlanSlots(trainingPlan.workoutTemplates)) {
+    const topEndPrescribedReps = getTopEndPrescribedReps(slot);
+
+    for (const muscleGroup of getVolumeTargetMuscleGroupsForSlot(slot)) {
+      prescribedTopEndRepsByMuscleGroup.set(
+        muscleGroup,
+        (prescribedTopEndRepsByMuscleGroup.get(muscleGroup) ?? 0) + topEndPrescribedReps,
+      );
+    }
+  }
+
+  return prescribedTopEndRepsByMuscleGroup;
+}
+
+function formatVolumeTargetMuscleGroup(
+  muscleGroup: TrainingPlan["weeklyRepTargets"][number]["muscleGroup"],
+): string {
+  if (muscleGroup === "quads") {
+    return "Quads";
+  }
+
+  return formatTargetMuscle(muscleGroup);
+}
+
+function getVolumeTargetMuscleGroupForPrimaryTargetMuscle(
+  targetMuscle: TrainingPlanSlot["targetMuscles"][number],
+): TrainingPlan["weeklyRepTargets"][number]["muscleGroup"] | null {
+  return targetMuscle in volumeTargetMuscleByPrimaryTargetMuscle
+    ? volumeTargetMuscleByPrimaryTargetMuscle[
+        targetMuscle as keyof typeof volumeTargetMuscleByPrimaryTargetMuscle
+      ]
+    : null;
+}
+
+function getTrainingPlanSlots(
+  workoutTemplates: ReadonlyArray<WorkoutTemplate>,
+): TrainingPlanSlot[] {
+  return workoutTemplates.flatMap((workoutTemplate) =>
+    workoutTemplate.supersetGroups.flatMap((supersetGroup) => supersetGroup.slots),
+  );
+}
+
+function getTopEndPrescribedReps(slot: TrainingPlanSlot): number {
+  const trainingPrescription =
+    slot.trainingPrescription ?? createLegacyDefaultTrainingPrescription();
+
+  return trainingPrescription.setCount * trainingPrescription.repRange.max;
+}
+
+function getVolumeTargetMuscleGroupsForSlot(
+  slot: TrainingPlanSlot,
+): TrainingPlan["weeklyRepTargets"][number]["muscleGroup"][] {
+  return slot.targetMuscles.flatMap((targetMuscle) => {
+    const muscleGroup = getVolumeTargetMuscleGroupForPrimaryTargetMuscle(targetMuscle);
+
+    return muscleGroup ? [muscleGroup] : [];
+  });
 }

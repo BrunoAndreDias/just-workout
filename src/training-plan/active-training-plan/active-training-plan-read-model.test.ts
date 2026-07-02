@@ -84,6 +84,140 @@ describe("getActiveTrainingPlanPageReadModel", () => {
     });
   });
 
+  it("builds Volume Target Notices from top-end prescribed reps for primary target muscles only", () => {
+    const trainingPlan = createTrainingPlan({
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "chest", source: "custom", target: 30 },
+        { isEnabled: true, muscleGroup: "shoulders", source: "custom", target: 45 },
+        { isEnabled: true, muscleGroup: "hamstrings", source: "custom", target: 30 },
+        { isEnabled: true, muscleGroup: "calves", source: "custom", target: 120 },
+      ],
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Full Body A",
+          supersetGroups: [
+            {
+              id: "group-1",
+              slots: [
+                {
+                  exerciseId: "flat-barbell-bench-press",
+                  exerciseName: "Flat Barbell Bench Press",
+                  kind: "exercise",
+                  movementPattern: "horizontal_push",
+                  role: "main_compound",
+                  slotLabel: "Push",
+                  targetMuscles: ["chest"],
+                  trainingPrescription: {
+                    repRange: { max: 8, min: 6 },
+                    setCount: 3,
+                  },
+                },
+                {
+                  exerciseId: "barbell-romanian-deadlifts",
+                  exerciseName: "Barbell Romanian Deadlifts",
+                  kind: "exercise",
+                  movementPattern: "hip_hamstring_dominant",
+                  role: "main_compound",
+                  slotLabel: "Hinge",
+                  targetMuscles: ["hamstrings", "glutes"],
+                  trainingPrescription: {
+                    repRange: { max: 8, min: 6 },
+                    setCount: 3,
+                  },
+                },
+                {
+                  exerciseId: "standing-calf-raises",
+                  exerciseName: "Standing Calf Raises",
+                  kind: "exercise",
+                  movementPattern: "calves_accessories",
+                  role: "isolation",
+                  slotLabel: "Calves",
+                  targetMuscles: ["calves"],
+                  trainingPrescription: {
+                    repRange: { max: 15, min: 10 },
+                    setCount: 3,
+                  },
+                },
+              ],
+              title: "Superset 1",
+              type: "superset",
+            },
+          ],
+        },
+      ],
+    });
+
+    const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
+
+    expect(readModel.overview.volumeTargetNotices).toEqual([
+      {
+        muscleGroup: "Chest",
+        prescribedTopEndReps: 24,
+        shortfallReps: 6,
+        targetReps: 30,
+      },
+      {
+        muscleGroup: "Shoulders",
+        prescribedTopEndReps: 0,
+        shortfallReps: 45,
+        targetReps: 45,
+      },
+      {
+        muscleGroup: "Hamstrings",
+        prescribedTopEndReps: 24,
+        shortfallReps: 6,
+        targetReps: 30,
+      },
+      {
+        muscleGroup: "Calves",
+        prescribedTopEndReps: 45,
+        shortfallReps: 75,
+        targetReps: 120,
+      },
+    ]);
+  });
+
+  it("ignores disabled Optional Volume Targets when building Volume Target Notices", () => {
+    const trainingPlan = createTrainingPlan({
+      weeklyRepTargets: [
+        { isEnabled: false, muscleGroup: "calves", source: "custom", target: 120 },
+      ],
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Full Body A",
+          supersetGroups: [
+            {
+              id: "group-1",
+              slots: [
+                {
+                  exerciseId: "standing-calf-raises",
+                  exerciseName: "Standing Calf Raises",
+                  kind: "exercise",
+                  movementPattern: "calves_accessories",
+                  role: "isolation",
+                  slotLabel: "Calves",
+                  targetMuscles: ["calves"],
+                  trainingPrescription: {
+                    repRange: { max: 15, min: 10 },
+                    setCount: 3,
+                  },
+                },
+              ],
+              title: "Superset 1",
+              type: "superset",
+            },
+          ],
+        },
+      ],
+    });
+
+    const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
+
+    expect(readModel.overview.volumeTargetNotices).toEqual([]);
+  });
+
   it("precomputes compare movement coverage rows", () => {
     const trainingPlan = createTrainingPlan({
       split: "upper-lower-full-body",
@@ -147,9 +281,10 @@ describe("getActiveTrainingPlanPageReadModel", () => {
 
 function createTrainingPlan(
   overrides: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> &
-    Partial<Pick<TrainingPlan, "mainCompoundRotationPools">> = {},
+    Partial<Pick<PlanBlueprint, "weeklyRepTargets">> &
+    Partial<Pick<TrainingPlan, "mainCompoundRotationPools" | "workoutTemplates">> = {},
 ): TrainingPlan {
-  const { mainCompoundRotationPools, ...blueprintOverrides } = overrides;
+  const { mainCompoundRotationPools, workoutTemplates, ...blueprintOverrides } = overrides;
   const trainingPlan = generateTrainingPlanFromBlueprint({
     blueprint: createCompleteBlueprint(blueprintOverrides),
     id: "training-plan-test",
@@ -159,13 +294,17 @@ function createTrainingPlan(
   return {
     ...trainingPlan,
     ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
+    ...(workoutTemplates ? { workoutTemplates } : {}),
   };
 }
 
 function createCompleteBlueprint({
   split = "alternating-full-body-a-b",
   trainingFrequencyDaysPerWeek = 3,
-}: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> = {}): PlanBlueprint {
+  weeklyRepTargets = createPresetWeeklyRepTargets("balanced"),
+}: Partial<
+  Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek" | "weeklyRepTargets">
+> = {}): PlanBlueprint {
   return {
     confirmedBuilderSteps: {
       exercises: true,
@@ -195,6 +334,6 @@ function createCompleteBlueprint({
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",
-    weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+    weeklyRepTargets,
   };
 }
