@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { PlanBlueprint } from "../../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../../training-taxonomy";
-import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "../training-plan";
+import {
+  generateTrainingPlanFromBlueprint,
+  type TrainingPlan,
+  type TrainingPlanSlot,
+  type WorkoutTemplate,
+} from "../training-plan";
 import {
   type ActiveTrainingPlanTabId,
   getActiveTrainingPlanPageReadModel,
@@ -93,58 +98,47 @@ describe("getActiveTrainingPlanPageReadModel", () => {
         { isEnabled: true, muscleGroup: "calves", source: "custom", target: 120 },
       ],
       workoutTemplates: [
-        {
-          id: "template-1",
-          label: "Full Body A",
-          supersetGroups: [
-            {
-              id: "group-1",
-              slots: [
-                {
-                  exerciseId: "flat-barbell-bench-press",
-                  exerciseName: "Flat Barbell Bench Press",
-                  kind: "exercise",
-                  movementPattern: "horizontal_push",
-                  role: "main_compound",
-                  slotLabel: "Push",
-                  targetMuscles: ["chest"],
-                  trainingPrescription: {
-                    repRange: { max: 8, min: 6 },
-                    setCount: 3,
-                  },
-                },
-                {
-                  exerciseId: "barbell-romanian-deadlifts",
-                  exerciseName: "Barbell Romanian Deadlifts",
-                  kind: "exercise",
-                  movementPattern: "hip_hamstring_dominant",
-                  role: "main_compound",
-                  slotLabel: "Hinge",
-                  targetMuscles: ["hamstrings", "glutes"],
-                  trainingPrescription: {
-                    repRange: { max: 8, min: 6 },
-                    setCount: 3,
-                  },
-                },
-                {
-                  exerciseId: "standing-calf-raises",
-                  exerciseName: "Standing Calf Raises",
-                  kind: "exercise",
-                  movementPattern: "calves_accessories",
-                  role: "isolation",
-                  slotLabel: "Calves",
-                  targetMuscles: ["calves"],
-                  trainingPrescription: {
-                    repRange: { max: 15, min: 10 },
-                    setCount: 3,
-                  },
-                },
-              ],
-              title: "Superset 1",
-              type: "superset",
+        createWorkoutTemplate([
+          {
+            exerciseId: "flat-barbell-bench-press",
+            exerciseName: "Flat Barbell Bench Press",
+            kind: "exercise",
+            movementPattern: "horizontal_push",
+            role: "main_compound",
+            slotLabel: "Push",
+            targetMuscles: ["chest"],
+            trainingPrescription: {
+              repRange: { max: 8, min: 6 },
+              setCount: 3,
             },
-          ],
-        },
+          },
+          {
+            exerciseId: "barbell-romanian-deadlifts",
+            exerciseName: "Barbell Romanian Deadlifts",
+            kind: "exercise",
+            movementPattern: "hip_hamstring_dominant",
+            role: "main_compound",
+            slotLabel: "Hinge",
+            targetMuscles: ["hamstrings", "glutes"],
+            trainingPrescription: {
+              repRange: { max: 8, min: 6 },
+              setCount: 3,
+            },
+          },
+          {
+            exerciseId: "standing-calf-raises",
+            exerciseName: "Standing Calf Raises",
+            kind: "exercise",
+            movementPattern: "calves_accessories",
+            role: "isolation",
+            slotLabel: "Calves",
+            targetMuscles: ["calves"],
+            trainingPrescription: {
+              repRange: { max: 15, min: 10 },
+              setCount: 3,
+            },
+          },
+        ]),
       ],
     });
 
@@ -184,38 +178,100 @@ describe("getActiveTrainingPlanPageReadModel", () => {
         { isEnabled: false, muscleGroup: "calves", source: "custom", target: 120 },
       ],
       workoutTemplates: [
-        {
-          id: "template-1",
-          label: "Full Body A",
-          supersetGroups: [
-            {
-              id: "group-1",
-              slots: [
-                {
-                  exerciseId: "standing-calf-raises",
-                  exerciseName: "Standing Calf Raises",
-                  kind: "exercise",
-                  movementPattern: "calves_accessories",
-                  role: "isolation",
-                  slotLabel: "Calves",
-                  targetMuscles: ["calves"],
-                  trainingPrescription: {
-                    repRange: { max: 15, min: 10 },
-                    setCount: 3,
-                  },
-                },
-              ],
-              title: "Superset 1",
-              type: "superset",
+        createWorkoutTemplate([
+          {
+            exerciseId: "standing-calf-raises",
+            exerciseName: "Standing Calf Raises",
+            kind: "exercise",
+            movementPattern: "calves_accessories",
+            role: "isolation",
+            slotLabel: "Calves",
+            targetMuscles: ["calves"],
+            trainingPrescription: {
+              repRange: { max: 15, min: 10 },
+              setCount: 3,
             },
-          ],
-        },
+          },
+        ]),
       ],
     });
 
     const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
 
     expect(readModel.overview.volumeTargetNotices).toEqual([]);
+  });
+
+  it("counts full top-end prescribed reps for each matching primary target muscle", () => {
+    const trainingPlan = createTrainingPlan({
+      weeklyRepTargets: [
+        { isEnabled: true, muscleGroup: "biceps", source: "custom", target: 40 },
+        { isEnabled: true, muscleGroup: "triceps", source: "custom", target: 40 },
+      ],
+      workoutTemplates: [
+        createWorkoutTemplate([
+          {
+            exerciseId: "arm-superset-test-slot",
+            exerciseName: "Arm Superset Test Slot",
+            kind: "exercise",
+            movementPattern: "elbow_flexion",
+            role: "isolation",
+            slotLabel: "Arms",
+            targetMuscles: ["biceps", "triceps"],
+            trainingPrescription: {
+              repRange: { max: 10, min: 8 },
+              setCount: 3,
+            },
+          },
+        ]),
+      ],
+    });
+
+    const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
+
+    expect(readModel.overview.volumeTargetNotices).toEqual([
+      {
+        muscleGroup: "Biceps",
+        prescribedTopEndReps: 30,
+        shortfallReps: 10,
+        targetReps: 40,
+      },
+      {
+        muscleGroup: "Triceps",
+        prescribedTopEndReps: 30,
+        shortfallReps: 10,
+        targetReps: 40,
+      },
+    ]);
+  });
+
+  it("uses legacy default prescriptions when stored Training Plan slots have no generated prescription", () => {
+    const trainingPlan = createTrainingPlan({
+      weeklyRepTargets: [{ isEnabled: true, muscleGroup: "biceps", source: "custom", target: 40 }],
+      workoutTemplates: [
+        createWorkoutTemplate([
+          {
+            exerciseId: "standing-barbell-curls",
+            exerciseName: "Standing Barbell Curls",
+            kind: "exercise",
+            movementPattern: "elbow_flexion",
+            role: "isolation",
+            slotLabel: "Curl",
+            targetMuscles: ["biceps"],
+          },
+        ]),
+      ],
+    });
+
+    const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
+
+    expect(readModel.overview.volumeTargetNotices).toEqual([
+      {
+        muscleGroup: "Biceps",
+        prescribedTopEndReps: 36,
+        shortfallReps: 4,
+        targetReps: 40,
+      },
+    ]);
   });
 
   it("precomputes compare movement coverage rows", () => {
@@ -295,6 +351,21 @@ function createTrainingPlan(
     ...trainingPlan,
     ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
     ...(workoutTemplates ? { workoutTemplates } : {}),
+  };
+}
+
+function createWorkoutTemplate(slots: TrainingPlanSlot[]): WorkoutTemplate {
+  return {
+    id: "template-1",
+    label: "Full Body A",
+    supersetGroups: [
+      {
+        id: "group-1",
+        slots,
+        title: "Superset 1",
+        type: "superset",
+      },
+    ],
   };
 }
 

@@ -3,7 +3,6 @@ import {
   getTrainingSessionHistoryRouteTarget,
   type TrainingSessionHistoryRouteTarget,
 } from "../training-plan-paths";
-import { createLegacyDefaultTrainingPrescription } from "../training-prescription";
 import {
   getStartNextWorkoutRouteTarget,
   getStartWorkoutRouteTarget,
@@ -25,7 +24,10 @@ import {
 import { getPlanSummaryReadModel, type PlanSummaryReadModel } from "./plan-summary-read-model";
 import { getBlockProgressPercent, getCurrentBlockWeek } from "./training-block-progress";
 import {
-  formatTargetMuscle,
+  type ActiveTrainingPlanVolumeTargetNoticeReadModel,
+  getVolumeTargetNoticesReadModel,
+} from "./volume-target-notice-read-model";
+import {
   getWorkoutSplitSummaryReadModel,
   type WorkoutSplitSummaryReadModel,
 } from "./workout-template-summary";
@@ -42,6 +44,7 @@ export {
   type MovementCoverageRow,
   movementCoverageRows,
 } from "./movement-coverage-read-model";
+export type { ActiveTrainingPlanVolumeTargetNoticeReadModel } from "./volume-target-notice-read-model";
 
 export type ActiveTrainingPlanPageReadModel = {
   actions: ActiveTrainingPlanPageActionsReadModel;
@@ -104,13 +107,6 @@ export type ActiveTrainingPlanPageOverviewReadModel = {
   summary: PlanSummaryReadModel;
   volumeTargetNotices: ActiveTrainingPlanVolumeTargetNoticeReadModel[];
   workoutSplitSummary: WorkoutSplitSummaryReadModel;
-};
-
-export type ActiveTrainingPlanVolumeTargetNoticeReadModel = {
-  muscleGroup: string;
-  prescribedTopEndReps: number;
-  shortfallReps: number;
-  targetReps: number;
 };
 
 export type ActiveTrainingPlanPageCompareReadModel = CompareReadModel & {
@@ -336,111 +332,4 @@ function getCompareMovementCoverageTableReadModel(
       weeklyCoverage: formatWeeklyCoverageCount(workoutTemplates, row.patterns),
     })),
   };
-}
-
-const volumeTargetMuscleByPrimaryTargetMuscle = {
-  abs: "abs",
-  back: "back",
-  biceps: "biceps",
-  calves: "calves",
-  chest: "chest",
-  hamstrings: "hamstrings",
-  quadriceps: "quads",
-  shoulders: "shoulders",
-  triceps: "triceps",
-} as const satisfies Partial<
-  Record<
-    TrainingPlanSlot["targetMuscles"][number],
-    TrainingPlan["weeklyRepTargets"][number]["muscleGroup"]
-  >
->;
-
-function getVolumeTargetNoticesReadModel(
-  trainingPlan: TrainingPlan,
-): ActiveTrainingPlanVolumeTargetNoticeReadModel[] {
-  const prescribedTopEndRepsByMuscleGroup = getPrescribedTopEndRepsByMuscleGroup(trainingPlan);
-
-  return trainingPlan.weeklyRepTargets.flatMap((weeklyRepTarget) => {
-    if (!weeklyRepTarget.isEnabled || weeklyRepTarget.target === null) {
-      return [];
-    }
-
-    const prescribedTopEndReps =
-      prescribedTopEndRepsByMuscleGroup.get(weeklyRepTarget.muscleGroup) ?? 0;
-
-    if (prescribedTopEndReps >= weeklyRepTarget.target) {
-      return [];
-    }
-
-    return [
-      {
-        muscleGroup: formatVolumeTargetMuscleGroup(weeklyRepTarget.muscleGroup),
-        prescribedTopEndReps,
-        shortfallReps: weeklyRepTarget.target - prescribedTopEndReps,
-        targetReps: weeklyRepTarget.target,
-      },
-    ];
-  });
-}
-
-function getPrescribedTopEndRepsByMuscleGroup(trainingPlan: TrainingPlan): Map<string, number> {
-  const prescribedTopEndRepsByMuscleGroup = new Map<string, number>();
-
-  for (const slot of getTrainingPlanSlots(trainingPlan.workoutTemplates)) {
-    const topEndPrescribedReps = getTopEndPrescribedReps(slot);
-
-    for (const muscleGroup of getVolumeTargetMuscleGroupsForSlot(slot)) {
-      prescribedTopEndRepsByMuscleGroup.set(
-        muscleGroup,
-        (prescribedTopEndRepsByMuscleGroup.get(muscleGroup) ?? 0) + topEndPrescribedReps,
-      );
-    }
-  }
-
-  return prescribedTopEndRepsByMuscleGroup;
-}
-
-function formatVolumeTargetMuscleGroup(
-  muscleGroup: TrainingPlan["weeklyRepTargets"][number]["muscleGroup"],
-): string {
-  if (muscleGroup === "quads") {
-    return "Quads";
-  }
-
-  return formatTargetMuscle(muscleGroup);
-}
-
-function getVolumeTargetMuscleGroupForPrimaryTargetMuscle(
-  targetMuscle: TrainingPlanSlot["targetMuscles"][number],
-): TrainingPlan["weeklyRepTargets"][number]["muscleGroup"] | null {
-  return targetMuscle in volumeTargetMuscleByPrimaryTargetMuscle
-    ? volumeTargetMuscleByPrimaryTargetMuscle[
-        targetMuscle as keyof typeof volumeTargetMuscleByPrimaryTargetMuscle
-      ]
-    : null;
-}
-
-function getTrainingPlanSlots(
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>,
-): TrainingPlanSlot[] {
-  return workoutTemplates.flatMap((workoutTemplate) =>
-    workoutTemplate.supersetGroups.flatMap((supersetGroup) => supersetGroup.slots),
-  );
-}
-
-function getTopEndPrescribedReps(slot: TrainingPlanSlot): number {
-  const trainingPrescription =
-    slot.trainingPrescription ?? createLegacyDefaultTrainingPrescription();
-
-  return trainingPrescription.setCount * trainingPrescription.repRange.max;
-}
-
-function getVolumeTargetMuscleGroupsForSlot(
-  slot: TrainingPlanSlot,
-): TrainingPlan["weeklyRepTargets"][number]["muscleGroup"][] {
-  return slot.targetMuscles.flatMap((targetMuscle) => {
-    const muscleGroup = getVolumeTargetMuscleGroupForPrimaryTargetMuscle(targetMuscle);
-
-    return muscleGroup ? [muscleGroup] : [];
-  });
 }
