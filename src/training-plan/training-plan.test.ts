@@ -5,6 +5,89 @@ import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { generateTrainingPlanFromBlueprint } from "./training-plan";
 
 describe("generateTrainingPlanFromBlueprint", () => {
+  it("adds role-based Training Prescriptions to generated workout slots and changes only rep ranges when Rep Range Style changes", () => {
+    const strengthPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        repRanges: "strength_leaning",
+      }),
+      id: "training-plan-strength",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+    const balancedPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        repRanges: "balanced_hypertrophy",
+      }),
+      id: "training-plan-balanced",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+    const higherRepPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        repRanges: "controlled_higher_reps",
+      }),
+      id: "training-plan-higher-reps",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    const strengthUpperTemplate = strengthPlan.workoutTemplates.find(
+      (template) => template.label === "Upper A",
+    );
+    const balancedUpperTemplate = balancedPlan.workoutTemplates.find(
+      (template) => template.label === "Upper A",
+    );
+    const higherRepUpperTemplate = higherRepPlan.workoutTemplates.find(
+      (template) => template.label === "Upper A",
+    );
+
+    expect(
+      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName),
+    ).toEqual(balancedUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName));
+    expect(
+      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName),
+    ).toEqual(higherRepUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName));
+
+    expect(
+      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 6, min: 4 }, setCount: 3 },
+      { repRange: { max: 8, min: 6 }, setCount: 3 },
+      { repRange: { max: 12, min: 8 }, setCount: 3 },
+    ]);
+    expect(
+      strengthUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 12, min: 8 }, setCount: 3 },
+      { repRange: { max: 12, min: 8 }, setCount: 3 },
+    ]);
+
+    expect(
+      balancedUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 8, min: 6 }, setCount: 3 },
+      { repRange: { max: 10, min: 8 }, setCount: 3 },
+      { repRange: { max: 15, min: 10 }, setCount: 3 },
+    ]);
+    expect(
+      balancedUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 15, min: 10 }, setCount: 3 },
+      { repRange: { max: 15, min: 10 }, setCount: 3 },
+    ]);
+
+    expect(
+      higherRepUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 10, min: 8 }, setCount: 3 },
+      { repRange: { max: 12, min: 10 }, setCount: 3 },
+      { repRange: { max: 20, min: 12 }, setCount: 3 },
+    ]);
+    expect(
+      higherRepUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
+    ).toEqual([
+      { repRange: { max: 20, min: 12 }, setCount: 3 },
+      { repRange: { max: 20, min: 12 }, setCount: 3 },
+    ]);
+  });
+
   it("builds upper templates as push/pull/abs then pull/push/abs", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint(),
@@ -474,10 +557,12 @@ function getExerciseIds(
 
 function createCompleteBlueprint({
   isolationExercisePreferences = [],
+  repRanges = "balanced_hypertrophy",
   split = "upper-lower-4-day",
   trainingFrequencyDaysPerWeek = 4,
 }: {
   isolationExercisePreferences?: PlanBlueprint["isolationExercisePreferences"];
+  repRanges?: NonNullable<PlanBlueprint["repRanges"]>;
   split?: PlanBlueprint["split"];
   trainingFrequencyDaysPerWeek?: PlanBlueprint["trainingFrequencyDaysPerWeek"];
 } = {}): PlanBlueprint {
@@ -503,7 +588,7 @@ function createCompleteBlueprint({
     mainCompoundRotationPreferences: [],
     mainCompoundRotationPools: [],
     mainCompoundSelections: completeMainCompoundSelections,
-    repRanges: "balanced_hypertrophy",
+    repRanges,
     split,
     trainingFrequencyDaysPerWeek,
     trainingGoal: "build-muscle",

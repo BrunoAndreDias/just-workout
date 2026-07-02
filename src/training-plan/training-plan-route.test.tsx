@@ -280,7 +280,9 @@ describe("TrainingPlanRoute", () => {
 
     expect(within(workoutPanel).getByRole("heading", { name: "Superset 1" })).toBeVisible();
     expect(within(workoutPanel).getByText("Flat Dumbbell Bench Press")).toBeVisible();
-    expect(within(workoutPanel).getAllByText("3 × 8–12").length).toBeGreaterThan(0);
+    expect(within(workoutPanel).getAllByText("3 × 6–8").length).toBeGreaterThan(0);
+    expect(within(workoutPanel).getAllByText("3 × 8–10").length).toBeGreaterThan(0);
+    expect(within(workoutPanel).getAllByText("3 × 10–15").length).toBeGreaterThan(0);
     expect(within(workoutPanel).queryByText("1–2 RIR")).not.toBeInTheDocument();
     expect(within(workoutPanel).getByText("Horizontal push")).toBeVisible();
     expect(within(workoutPanel).getAllByText("Main").length).toBeGreaterThan(0);

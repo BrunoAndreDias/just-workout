@@ -8,15 +8,21 @@ import type {
 } from "../training-taxonomy";
 import type { TrainingBlock } from "./training-block";
 import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-template-generation";
+import {
+  applyTrainingPrescriptionsToWorkoutTemplates,
+  type TrainingPrescription,
+  type TrainingPrescriptionRole,
+} from "./training-prescription";
 
 export type TrainingPlanSlot = {
   exerciseId: string;
   exerciseName: string;
   kind: "exercise";
   movementPattern: MovementPatternId;
-  role: "main_compound" | "secondary_compound" | "isolation" | "abs";
+  role: TrainingPrescriptionRole;
   slotLabel: string;
   targetMuscles: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
+  trainingPrescription?: TrainingPrescription;
 };
 
 export type TrainingPlanStartingLoadSuggestion = {
@@ -93,6 +99,10 @@ export function generateTrainingPlanFromBlueprint({
     rotationPools: blueprint.mainCompoundRotationPools,
     rotationPreferences: blueprint.mainCompoundRotationPreferences,
   });
+  const prescribedWorkoutTemplates = applyTrainingPrescriptionsToWorkoutTemplates({
+    repRangeStyle: repRanges,
+    workoutTemplates,
+  });
 
   return {
     active: true,
@@ -107,6 +117,6 @@ export function generateTrainingPlanFromBlueprint({
     trainingGoal: blueprint.trainingGoal,
     updatedAt: timestamp,
     weeklyRepTargets,
-    workoutTemplates,
+    workoutTemplates: prescribedWorkoutTemplates,
   };
 }

@@ -1,5 +1,9 @@
 import type { SupersetGroup, TrainingPlanSlot, WorkoutTemplate } from "../index";
 import { formatExerciseRole, formatMovementPattern } from "../training-plan-presentation";
+import {
+  createLegacyDefaultTrainingPrescription,
+  formatTrainingPrescriptionForBlueprint,
+} from "../training-prescription";
 import { formatTargetMuscles } from "./workout-template-summary";
 
 export type WorkoutBlueprintExerciseRowReadModel = {
@@ -69,7 +73,9 @@ function getExerciseRowReadModel(
     exerciseName: row.slot.exerciseName,
     key: `${groupId}-${row.exerciseLabel}-${row.slot.exerciseId}`,
     movementPattern: formatMovementPattern(row.slot.movementPattern),
-    prescription: "3 × 8–12",
+    prescription: formatTrainingPrescriptionForBlueprint(
+      row.slot.trainingPrescription ?? createLegacyDefaultTrainingPrescription(),
+    ),
     role: formatExerciseRole(row.slot.role),
     targetMuscles: formatTargetMuscles(row.slot.targetMuscles),
   };
