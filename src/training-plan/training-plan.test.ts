@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
-import { generateTrainingPlanFromBlueprint } from "./training-plan";
+import { generateTrainingPlanFromBlueprint, type WorkoutTemplate } from "./training-plan";
+import type { TrainingPrescription } from "./training-prescription";
 
 describe("generateTrainingPlanFromBlueprint", () => {
   it("adds role-based Training Prescriptions to generated workout slots and changes only rep ranges when Rep Range Style changes", () => {
@@ -28,64 +29,85 @@ describe("generateTrainingPlanFromBlueprint", () => {
       timestamp: "2026-06-07T10:00:00.000Z",
     });
 
-    const strengthUpperTemplate = strengthPlan.workoutTemplates.find(
-      (template) => template.label === "Upper A",
+    expect(stripTrainingPrescriptions(strengthPlan.workoutTemplates)).toEqual(
+      stripTrainingPrescriptions(balancedPlan.workoutTemplates),
     );
-    const balancedUpperTemplate = balancedPlan.workoutTemplates.find(
-      (template) => template.label === "Upper A",
-    );
-    const higherRepUpperTemplate = higherRepPlan.workoutTemplates.find(
-      (template) => template.label === "Upper A",
+    expect(stripTrainingPrescriptions(strengthPlan.workoutTemplates)).toEqual(
+      stripTrainingPrescriptions(higherRepPlan.workoutTemplates),
     );
 
-    expect(
-      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName),
-    ).toEqual(balancedUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName));
-    expect(
-      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName),
-    ).toEqual(higherRepUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.exerciseName));
+    const strengthUpperTemplate = getWorkoutTemplate(strengthPlan, "Upper A");
+    const balancedUpperTemplate = getWorkoutTemplate(balancedPlan, "Upper A");
+    const higherRepUpperTemplate = getWorkoutTemplate(higherRepPlan, "Upper A");
 
-    expect(
-      strengthUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(strengthUpperTemplate, 0)).toEqual([
       { repRange: { max: 6, min: 4 }, setCount: 3 },
       { repRange: { max: 8, min: 6 }, setCount: 3 },
       { repRange: { max: 12, min: 8 }, setCount: 3 },
     ]);
-    expect(
-      strengthUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(strengthUpperTemplate, 2)).toEqual([
       { repRange: { max: 12, min: 8 }, setCount: 3 },
       { repRange: { max: 12, min: 8 }, setCount: 3 },
     ]);
 
-    expect(
-      balancedUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(balancedUpperTemplate, 0)).toEqual([
       { repRange: { max: 8, min: 6 }, setCount: 3 },
       { repRange: { max: 10, min: 8 }, setCount: 3 },
       { repRange: { max: 15, min: 10 }, setCount: 3 },
     ]);
-    expect(
-      balancedUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(balancedUpperTemplate, 2)).toEqual([
       { repRange: { max: 15, min: 10 }, setCount: 3 },
       { repRange: { max: 15, min: 10 }, setCount: 3 },
     ]);
 
-    expect(
-      higherRepUpperTemplate?.supersetGroups[0]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(higherRepUpperTemplate, 0)).toEqual([
       { repRange: { max: 10, min: 8 }, setCount: 3 },
       { repRange: { max: 12, min: 10 }, setCount: 3 },
       { repRange: { max: 20, min: 12 }, setCount: 3 },
     ]);
-    expect(
-      higherRepUpperTemplate?.supersetGroups[2]?.slots.map((slot) => slot.trainingPrescription),
-    ).toEqual([
+    expect(getTrainingPrescriptions(higherRepUpperTemplate, 2)).toEqual([
       { repRange: { max: 20, min: 12 }, setCount: 3 },
       { repRange: { max: 20, min: 12 }, setCount: 3 },
     ]);
+  });
+
+  it("keeps generated Training Prescriptions independent between workout slots and generations", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint(),
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+    const upperTemplate = getWorkoutTemplate(trainingPlan, "Upper A");
+    const mainCompoundSlots = upperTemplate.supersetGroups
+      .flatMap((group) => group.slots)
+      .filter((slot) => slot.role === "main_compound");
+
+    expect(mainCompoundSlots).toHaveLength(2);
+
+    const [firstMainCompoundSlot, secondMainCompoundSlot] = mainCompoundSlots;
+    expect(firstMainCompoundSlot).toBeDefined();
+    expect(secondMainCompoundSlot).toBeDefined();
+
+    const firstTrainingPrescription = getRequiredTrainingPrescription(firstMainCompoundSlot);
+    const secondTrainingPrescription = getRequiredTrainingPrescription(secondMainCompoundSlot);
+    const secondRepRange = { ...secondTrainingPrescription.repRange };
+
+    firstTrainingPrescription.repRange.min = 99;
+
+    expect(secondTrainingPrescription.repRange).toEqual(secondRepRange);
+
+    const nextTrainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint(),
+      id: "training-plan-test-next",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(getTrainingPrescriptions(getWorkoutTemplate(nextTrainingPlan, "Upper A"), 0)[0]).toEqual(
+      {
+        repRange: { max: 8, min: 6 },
+        setCount: 3,
+      },
+    );
   });
 
   it("builds upper templates as push/pull/abs then pull/push/abs", () => {
@@ -553,6 +575,55 @@ function getExerciseIds(
   return (
     template?.supersetGroups.flatMap((group) => group.slots).map((slot) => slot.exerciseId) ?? []
   );
+}
+
+function getWorkoutTemplate(
+  trainingPlan: ReturnType<typeof generateTrainingPlanFromBlueprint>,
+  label: WorkoutTemplate["label"],
+): WorkoutTemplate {
+  const workoutTemplate = trainingPlan.workoutTemplates.find(
+    (template) => template.label === label,
+  );
+
+  expect(workoutTemplate).toBeDefined();
+
+  return workoutTemplate as WorkoutTemplate;
+}
+
+function getTrainingPrescriptions(
+  workoutTemplate: WorkoutTemplate,
+  groupIndex: number,
+): TrainingPrescription[] {
+  const supersetGroup = workoutTemplate.supersetGroups[groupIndex];
+
+  expect(supersetGroup).toBeDefined();
+
+  return (supersetGroup?.slots ?? []).map(getRequiredTrainingPrescription);
+}
+
+function getRequiredTrainingPrescription(
+  slot: WorkoutTemplate["supersetGroups"][number]["slots"][number] | undefined,
+): TrainingPrescription {
+  expect(slot?.trainingPrescription).toBeDefined();
+
+  return slot?.trainingPrescription as TrainingPrescription;
+}
+
+function stripTrainingPrescriptions(
+  workoutTemplates: ReadonlyArray<WorkoutTemplate>,
+): WorkoutTemplate[] {
+  return workoutTemplates.map((workoutTemplate) => ({
+    ...workoutTemplate,
+    supersetGroups: workoutTemplate.supersetGroups.map((supersetGroup) => ({
+      ...supersetGroup,
+      slots: supersetGroup.slots.map((slot) => {
+        const slotWithoutTrainingPrescription = { ...slot };
+        delete slotWithoutTrainingPrescription.trainingPrescription;
+
+        return slotWithoutTrainingPrescription;
+      }),
+    })),
+  }));
 }
 
 function createCompleteBlueprint({

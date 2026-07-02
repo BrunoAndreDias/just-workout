@@ -11,7 +11,7 @@ import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-templat
 import {
   applyTrainingPrescriptionsToWorkoutTemplates,
   type TrainingPrescription,
-  type TrainingPrescriptionRole,
+  type WorkoutExerciseRole,
 } from "./training-prescription";
 
 export type TrainingPlanSlot = {
@@ -19,7 +19,7 @@ export type TrainingPlanSlot = {
   exerciseName: string;
   kind: "exercise";
   movementPattern: MovementPatternId;
-  role: TrainingPrescriptionRole;
+  role: WorkoutExerciseRole;
   slotLabel: string;
   targetMuscles: ReadonlyArray<ExerciseCatalogMuscleGroupId>;
   trainingPrescription?: TrainingPrescription;

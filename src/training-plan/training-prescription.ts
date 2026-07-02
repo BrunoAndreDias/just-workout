@@ -1,14 +1,17 @@
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import type { WorkoutTemplate } from "./training-plan";
 
-export type TrainingPrescriptionRole = "main_compound" | "secondary_compound" | "isolation" | "abs";
+export type WorkoutExerciseRole = "main_compound" | "secondary_compound" | "isolation" | "abs";
 
 export type TrainingPrescription = {
-  repRange: {
-    max: number;
-    min: number;
-  };
+  repRange: TrainingPrescriptionRepRange;
   setCount: number;
+};
+
+type RepRangeStyle = NonNullable<PlanBlueprint["repRanges"]>;
+type TrainingPrescriptionRepRange = {
+  max: number;
+  min: number;
 };
 
 const DEFAULT_SET_COUNT = 3;
@@ -31,16 +34,13 @@ const roleBasedRepRanges = {
     main_compound: { max: 6, min: 4 },
     secondary_compound: { max: 8, min: 6 },
   },
-} satisfies Record<
-  NonNullable<PlanBlueprint["repRanges"]>,
-  Record<TrainingPrescriptionRole, TrainingPrescription["repRange"]>
->;
+} satisfies Record<RepRangeStyle, Record<WorkoutExerciseRole, TrainingPrescriptionRepRange>>;
 
 export function applyTrainingPrescriptionsToWorkoutTemplates({
   repRangeStyle,
   workoutTemplates,
 }: {
-  repRangeStyle: NonNullable<PlanBlueprint["repRanges"]>;
+  repRangeStyle: RepRangeStyle;
   workoutTemplates: ReadonlyArray<WorkoutTemplate>;
 }): WorkoutTemplate[] {
   return workoutTemplates.map((workoutTemplate) => ({
@@ -62,41 +62,39 @@ function buildTrainingPrescription({
   repRangeStyle,
   role,
 }: {
-  repRangeStyle: NonNullable<PlanBlueprint["repRanges"]>;
-  role: TrainingPrescriptionRole;
+  repRangeStyle: RepRangeStyle;
+  role: WorkoutExerciseRole;
 }): TrainingPrescription {
-  return {
-    repRange: getRoleBasedRepRange({ repRangeStyle, role }),
-    setCount: DEFAULT_SET_COUNT,
-  };
+  return createTrainingPrescription(getRoleBasedRepRange({ repRangeStyle, role }));
 }
 
 export function createLegacyDefaultTrainingPrescription(): TrainingPrescription {
-  return {
-    repRange: {
-      max: 12,
-      min: 8,
-    },
-    setCount: DEFAULT_SET_COUNT,
-  };
+  return createTrainingPrescription({ max: 12, min: 8 });
 }
 
 export function formatTrainingPrescriptionForBlueprint(
   trainingPrescription: TrainingPrescription,
 ): string {
-  return `${trainingPrescription.setCount} × ${formatRepRange(trainingPrescription, "–")}`;
+  return `${trainingPrescription.setCount} × ${formatRepRange(trainingPrescription.repRange)}`;
+}
+
+function createTrainingPrescription(repRange: TrainingPrescriptionRepRange): TrainingPrescription {
+  return {
+    repRange: { ...repRange },
+    setCount: DEFAULT_SET_COUNT,
+  };
 }
 
 function getRoleBasedRepRange({
   repRangeStyle,
   role,
 }: {
-  repRangeStyle: NonNullable<PlanBlueprint["repRanges"]>;
-  role: TrainingPrescriptionRole;
-}): TrainingPrescription["repRange"] {
+  repRangeStyle: RepRangeStyle;
+  role: WorkoutExerciseRole;
+}): TrainingPrescriptionRepRange {
   return roleBasedRepRanges[repRangeStyle][role];
 }
 
-function formatRepRange(trainingPrescription: TrainingPrescription, separator: "–" | "-"): string {
-  return `${trainingPrescription.repRange.min}${separator}${trainingPrescription.repRange.max}`;
+function formatRepRange(repRange: TrainingPrescriptionRepRange): string {
+  return `${repRange.min}–${repRange.max}`;
 }
