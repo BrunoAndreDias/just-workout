@@ -24,6 +24,10 @@ import {
 import { getPlanSummaryReadModel, type PlanSummaryReadModel } from "./plan-summary-read-model";
 import { getBlockProgressPercent, getCurrentBlockWeek } from "./training-block-progress";
 import {
+  type ActiveTrainingPlanVolumeTargetNoticeReadModel,
+  getVolumeTargetNoticesReadModel,
+} from "./volume-target-notice-read-model";
+import {
   getWorkoutSplitSummaryReadModel,
   type WorkoutSplitSummaryReadModel,
 } from "./workout-template-summary";
@@ -40,6 +44,7 @@ export {
   type MovementCoverageRow,
   movementCoverageRows,
 } from "./movement-coverage-read-model";
+export type { ActiveTrainingPlanVolumeTargetNoticeReadModel } from "./volume-target-notice-read-model";
 
 export type ActiveTrainingPlanPageReadModel = {
   actions: ActiveTrainingPlanPageActionsReadModel;
@@ -100,6 +105,7 @@ export type ActiveTrainingPlanPageTabPanelReadModel =
 export type ActiveTrainingPlanPageOverviewReadModel = {
   movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel;
   summary: PlanSummaryReadModel;
+  volumeTargetNotices: ActiveTrainingPlanVolumeTargetNoticeReadModel[];
   workoutSplitSummary: WorkoutSplitSummaryReadModel;
 };
 
@@ -152,46 +158,16 @@ export function getActiveTrainingPlanPageReadModel({
   const movementCoverage = getMovementCoverageTableReadModel(trainingPlan.workoutTemplates);
 
   return {
-    actions: {
-      startNextWorkout: {
-        label: "Start next workout",
-        routeTarget: getStartNextWorkoutRouteTarget(trainingPlan),
-      },
-      trainingHistory: {
-        label: "View training history",
-        routeTarget: getTrainingSessionHistoryRouteTarget(trainingPlan.id),
-      },
-    },
+    actions: getActionsReadModel(trainingPlan),
     activeTab: getPageTabReadModel({
       activeTabId: resolvedActiveTabId,
       tab: resolvedActiveTab ?? { id: "overview", label: "Overview" },
       trainingPlan,
     }),
-    compare: {
-      ...getCompareReadModel(trainingPlan),
-      movementCoverage: getCompareMovementCoverageTableReadModel(
-        trainingPlan.workoutTemplates,
-        movementCoverage,
-      ),
-    },
-    header: {
-      description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`,
-      title: trainingPlan.split,
-    },
-    overview: {
-      movementCoverage,
-      summary: getPlanSummaryReadModel(trainingPlan),
-      workoutSplitSummary: getWorkoutSplitSummaryReadModel(trainingPlan.workoutTemplates),
-    },
-    progress: {
-      blockProgressPercent: getBlockProgressPercent({
-        blockWeek,
-        trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-      }),
-      blockWeek,
-      cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
-      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-    },
+    compare: getCompareTabReadModel(trainingPlan, movementCoverage),
+    header: getHeaderReadModel(trainingPlan),
+    overview: getOverviewReadModel(trainingPlan, movementCoverage),
+    progress: getProgressReadModel(trainingPlan, blockWeek),
     tabs: tabs.map((tab) =>
       getPageTabReadModel({
         activeTabId: resolvedActiveTabId,
@@ -199,6 +175,66 @@ export function getActiveTrainingPlanPageReadModel({
         trainingPlan,
       }),
     ),
+  };
+}
+
+function getActionsReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageActionsReadModel {
+  return {
+    startNextWorkout: {
+      label: "Start next workout",
+      routeTarget: getStartNextWorkoutRouteTarget(trainingPlan),
+    },
+    trainingHistory: {
+      label: "View training history",
+      routeTarget: getTrainingSessionHistoryRouteTarget(trainingPlan.id),
+    },
+  };
+}
+
+function getCompareTabReadModel(
+  trainingPlan: TrainingPlan,
+  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel,
+): ActiveTrainingPlanPageCompareReadModel {
+  return {
+    ...getCompareReadModel(trainingPlan),
+    movementCoverage: getCompareMovementCoverageTableReadModel(
+      trainingPlan.workoutTemplates,
+      movementCoverage,
+    ),
+  };
+}
+
+function getHeaderReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageHeaderReadModel {
+  return {
+    description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`,
+    title: trainingPlan.split,
+  };
+}
+
+function getOverviewReadModel(
+  trainingPlan: TrainingPlan,
+  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel,
+): ActiveTrainingPlanPageOverviewReadModel {
+  return {
+    movementCoverage,
+    summary: getPlanSummaryReadModel(trainingPlan),
+    volumeTargetNotices: getVolumeTargetNoticesReadModel(trainingPlan),
+    workoutSplitSummary: getWorkoutSplitSummaryReadModel(trainingPlan.workoutTemplates),
+  };
+}
+
+function getProgressReadModel(
+  trainingPlan: TrainingPlan,
+  blockWeek: number,
+): ActiveTrainingPlanPageProgressReadModel {
+  return {
+    blockProgressPercent: getBlockProgressPercent({
+      blockWeek,
+      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+    }),
+    blockWeek,
+    cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
+    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
   };
 }
 

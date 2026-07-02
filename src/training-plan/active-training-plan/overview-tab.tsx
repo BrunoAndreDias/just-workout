@@ -5,6 +5,7 @@ import {
   Repeat2,
   RotateCw,
   SlidersHorizontal,
+  TriangleAlert,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActiveTrainingPlanPageOverviewReadModel } from "./active-training-plan-read-model";
@@ -17,6 +18,9 @@ export function OverviewTab({ readModel }: { readModel: ActiveTrainingPlanPageOv
   return (
     <div className="training-plan-overview">
       <PlanSummaryCard summary={readModel.summary} />
+      {readModel.volumeTargetNotices.length > 0 ? (
+        <VolumeTargetNotices notices={readModel.volumeTargetNotices} />
+      ) : null}
 
       <div className="training-plan-overview__main-grid">
         <section
@@ -60,6 +64,48 @@ export function OverviewTab({ readModel }: { readModel: ActiveTrainingPlanPageOv
         </section>
       </div>
     </div>
+  );
+}
+
+function VolumeTargetNotices({
+  notices,
+}: {
+  notices: ActiveTrainingPlanPageOverviewReadModel["volumeTargetNotices"];
+}) {
+  return (
+    <section
+      className="training-plan-overview-card training-plan-overview-card--notice"
+      aria-labelledby="training-plan-volume-target-notices"
+    >
+      <div className="volume-target-notices__header">
+        <TriangleAlert aria-hidden="true" />
+        <div>
+          <h2
+            className="training-plan-overview-card__title"
+            id="training-plan-volume-target-notices"
+          >
+            Volume target notices
+          </h2>
+          <p className="volume-target-notices__support">
+            These notices are informational only and do not block this Training Plan.
+          </p>
+        </div>
+      </div>
+
+      <ul className="volume-target-notice-list">
+        {notices.map((notice) => (
+          <li className="volume-target-notice" key={notice.muscleGroup}>
+            <p className="volume-target-notice__title">
+              {notice.muscleGroup} is {notice.shortfallReps} reps below your Weekly Rep Target.
+            </p>
+            <p className="volume-target-notice__body">
+              Generated top-end prescribed reps reach {notice.prescribedTopEndReps} of your{" "}
+              {notice.targetReps} weekly {notice.muscleGroup.toLowerCase()} reps.
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
