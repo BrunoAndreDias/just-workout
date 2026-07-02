@@ -11,7 +11,10 @@ import {
   type PresentedCompletedLoadVolumeMovementRow,
   presentCompletedLoadVolumeMovementRows,
 } from "./training-plan-presentation";
-import { createLegacyDefaultTrainingPrescription } from "./training-prescription";
+import {
+  createLegacyDefaultTrainingPrescription,
+  type TrainingPrescription,
+} from "./training-prescription";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
 
 export type TrainingSessionSetDraft = {
@@ -202,10 +205,7 @@ export function createTrainingSessionExecutionReadModel({
   const sessionExercises = createTrainingSessionExercises(workoutTemplate);
   const entries = createTrainingSessionEntries(sessionExercises, state.drafts);
   const completedSetCount = countCompletedTrainingSessionSets(state.drafts);
-  const plannedSetCount = sessionExercises.reduce(
-    (total, { slot }) => total + getTrainingSessionSetCount(slot),
-    0,
-  );
+  const plannedSetCount = getTrainingSessionPlannedSetCount(sessionExercises);
 
   return {
     completedSetCount,
@@ -536,17 +536,13 @@ function createTrainingSessionExecutionGroup({
     now: createTrainingSessionExecutionNow(group.slots[0]),
     rounds: getTrainingSessionGroupRoundIndexes(group.slots).map((roundIndex) => ({
       roundIndex,
-      rows: group.slots
-        .filter((slot) => roundIndex <= getTrainingSessionSetCount(slot))
-        .map((slot) =>
-          createTrainingSessionExecutionSetRow({
-            drafts,
-            groupId: group.id,
-            previousTrainingSessions,
-            roundIndex,
-            slot,
-          }),
-        ),
+      rows: createTrainingSessionExecutionRoundRows({
+        drafts,
+        groupId: group.id,
+        previousTrainingSessions,
+        roundIndex,
+        slots: group.slots,
+      }),
     })),
     summary: {
       ...summary,
@@ -571,6 +567,32 @@ function createTrainingSessionExecutionNow(
     setLabel: `Set 1 of ${getTrainingSessionSetCount(slot)}`,
     targetRepsLabel: getTrainingSessionTargetRepsLabel(slot),
   };
+}
+
+function createTrainingSessionExecutionRoundRows({
+  drafts,
+  groupId,
+  previousTrainingSessions,
+  roundIndex,
+  slots,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  groupId: string;
+  previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  roundIndex: number;
+  slots: ReadonlyArray<TrainingPlanSlot>;
+}): ReadonlyArray<TrainingSessionExecutionSetRow> {
+  return slots
+    .filter((slot) => roundIndex <= getTrainingSessionSetCount(slot))
+    .map((slot) =>
+      createTrainingSessionExecutionSetRow({
+        drafts,
+        groupId,
+        previousTrainingSessions,
+        roundIndex,
+        slot,
+      }),
+    );
 }
 
 function createTrainingSessionExecutionSetRow({
@@ -693,6 +715,12 @@ function getTrainingSessionTargetRepsLabel(slot: TrainingPlanSlot): string {
   return `Target ${formatTrainingSessionRepRange(getTrainingSessionPrescription(slot).repRange)} reps`;
 }
 
+function getTrainingSessionPlannedSetCount(
+  sessionExercises: ReadonlyArray<TrainingSessionExercise>,
+): number {
+  return sessionExercises.reduce((total, { slot }) => total + getTrainingSessionSetCount(slot), 0);
+}
+
 function getTrainingSessionGroupPlannedSetCount(slots: ReadonlyArray<TrainingPlanSlot>): number {
   return slots.reduce((total, slot) => total + getTrainingSessionSetCount(slot), 0);
 }
@@ -715,7 +743,7 @@ function getTrainingSessionSetCount(slot?: TrainingPlanSlot): number {
   return getTrainingSessionPrescription(slot).setCount;
 }
 
-function getTrainingSessionPrescription(slot?: TrainingPlanSlot) {
+function getTrainingSessionPrescription(slot?: TrainingPlanSlot): TrainingPrescription {
   return slot?.trainingPrescription ?? createLegacyDefaultTrainingPrescription();
 }
 

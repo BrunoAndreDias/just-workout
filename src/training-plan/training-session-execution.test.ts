@@ -253,6 +253,65 @@ describe("Training Session Execution", () => {
     });
   });
 
+  it("keeps Superset Group rounds aligned when generated set counts differ by exercise", () => {
+    const workoutTemplate = createWorkoutTemplateWithMixedTrainingPrescriptionSetCounts();
+    let state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state,
+      workoutTemplate,
+    });
+
+    expect(readModel.plannedSetCount).toBe(6);
+    expect(readModel.groups[0]).toMatchObject({
+      now: {
+        prescriptionLabel: "2 x 6-8",
+        setLabel: "Set 1 of 2",
+      },
+      summary: {
+        plannedSetCount: 6,
+      },
+    });
+    expect(
+      readModel.groups[0]?.rounds.map((round) => ({
+        exerciseNames: round.rows.map((row) => row.exerciseName),
+        roundIndex: round.roundIndex,
+      })),
+    ).toEqual([
+      {
+        exerciseNames: ["Incline Dumbbell Bench Press", "Weighted Pull-Ups"],
+        roundIndex: 1,
+      },
+      {
+        exerciseNames: ["Incline Dumbbell Bench Press", "Weighted Pull-Ups"],
+        roundIndex: 2,
+      },
+      { exerciseNames: ["Weighted Pull-Ups"], roundIndex: 3 },
+      { exerciseNames: ["Weighted Pull-Ups"], roundIndex: 4 },
+    ]);
+
+    const fourthPullUpSet = readModel.groups[0]?.rounds[3]?.rows[0];
+
+    if (!fourthPullUpSet) {
+      throw new Error("Expected the fourth pull-up set row.");
+    }
+
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetDone(fourthPullUpSet, true),
+      state,
+      workoutTemplate,
+    });
+
+    expect(
+      state.drafts[getTrainingSessionExerciseKey("group-1", fourSetPrescribedPullUpsSlot)]?.[3],
+    ).toMatchObject({
+      done: true,
+      setIndex: 4,
+    });
+  });
+
   it("creates the execution read model consumed by the route and Superset Group UI", () => {
     const workoutTemplate = createWorkoutTemplate();
     const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
@@ -502,6 +561,28 @@ const prescribedAbsSlot = createTrainingPlanSlot({
   },
 });
 
+const twoSetPrescribedBenchPressSlot = createTrainingPlanSlot({
+  exerciseId: "incline-bench-press",
+  exerciseName: "Incline Dumbbell Bench Press",
+  movementPattern: "horizontal_push",
+  role: "main_compound",
+  trainingPrescription: {
+    repRange: { max: 8, min: 6 },
+    setCount: 2,
+  },
+});
+
+const fourSetPrescribedPullUpsSlot = createTrainingPlanSlot({
+  exerciseId: "weighted-pull-ups",
+  exerciseName: "Weighted Pull-Ups",
+  movementPattern: "vertical_pull",
+  role: "secondary_compound",
+  trainingPrescription: {
+    repRange: { max: 10, min: 8 },
+    setCount: 4,
+  },
+});
+
 function createWorkoutTemplate(): WorkoutTemplate {
   return {
     id: "template-1",
@@ -538,6 +619,21 @@ function createWorkoutTemplateWithTrainingPrescriptions(): WorkoutTemplate {
         id: "group-2",
         slots: [prescribedAbsSlot],
         title: "Superset 2",
+        type: "superset",
+      },
+    ],
+  };
+}
+
+function createWorkoutTemplateWithMixedTrainingPrescriptionSetCounts(): WorkoutTemplate {
+  return {
+    id: "template-mixed-prescribed-set-counts",
+    label: "Upper",
+    supersetGroups: [
+      {
+        id: "group-1",
+        slots: [twoSetPrescribedBenchPressSlot, fourSetPrescribedPullUpsSlot],
+        title: "Superset 1",
         type: "superset",
       },
     ],
