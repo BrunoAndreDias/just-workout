@@ -7,16 +7,14 @@ export function RootLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const trainingPlansQuery = useQuery(trainingPlansQueryOptions());
   const activeTrainingPlan = trainingPlansQuery.data?.find((trainingPlan) => trainingPlan.active);
-  const nextWorkoutTemplate = activeTrainingPlan?.workoutTemplates[0];
 
   return (
     <AppShell
       currentPathname={pathname}
       trainingSessionTarget={
-        activeTrainingPlan && nextWorkoutTemplate
+        activeTrainingPlan && activeTrainingPlan.workoutTemplates.length > 0
           ? {
               planId: activeTrainingPlan.id,
-              templateId: nextWorkoutTemplate.id,
             }
           : null
       }

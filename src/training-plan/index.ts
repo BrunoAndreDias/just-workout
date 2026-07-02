@@ -18,6 +18,7 @@ export type {
 export {
   getTrainingPlanRouteTarget,
   getTrainingSessionHistoryHref,
+  getTrainingSessionStartChoiceHref,
   getTrainingSessionStartHref,
   isTrainingPlansNavigationPathname,
   type TrainingPlanRouteTarget,
@@ -29,3 +30,4 @@ export { trainingPlanService } from "./training-plan-service";
 export type { TrainingSession } from "./training-session";
 export { TrainingSessionHistoryRoute } from "./training-session-history-route";
 export { TrainingSessionRoute } from "./training-session-route";
+export { TrainingSessionStartRoute } from "./training-session-start-route";

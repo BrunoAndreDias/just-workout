@@ -3,7 +3,7 @@ import { CalendarCheck, ClipboardList, Dumbbell, History, Play } from "lucide-re
 import type { ReactNode } from "react";
 import {
   getTrainingSessionHistoryHref,
-  getTrainingSessionStartHref,
+  getTrainingSessionStartChoiceHref,
   isTrainingPlansNavigationPathname,
   trainingPlanPaths,
 } from "../training-plan";
@@ -18,7 +18,6 @@ type AppShellProps = {
 
 type AppShellTrainingSessionTarget = {
   planId: string;
-  templateId: string;
 };
 
 const planBuilderNavigationHref = "/plan-builder";
@@ -60,8 +59,11 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
     ? getTrainingSessionHistoryHref(trainingSessionTarget.planId)
     : null;
   const startTrainingPath = trainingSessionTarget
-    ? getTrainingSessionStartHref(trainingSessionTarget)
+    ? getTrainingSessionStartChoiceHref(trainingSessionTarget.planId)
     : null;
+  const isStartTrainingActive =
+    startTrainingPath !== null &&
+    (currentPathname === startTrainingPath || currentPathname.startsWith(`${startTrainingPath}/`));
 
   return (
     <div className="app-shell min-h-screen text-[#162325]">
@@ -117,14 +119,13 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                     </Link>
                     <Link
                       aria-label="Start training"
-                      aria-current={currentPathname === startTrainingPath ? "page" : undefined}
+                      aria-current={isStartTrainingActive ? "page" : undefined}
                       activeOptions={{ exact: true }}
                       className={appShellNavigationLinkClassName}
                       params={{
                         planId: trainingSessionTarget.planId,
-                        templateId: trainingSessionTarget.templateId,
                       }}
-                      to={trainingPlanPaths.sessionStart}
+                      to={trainingPlanPaths.sessionStartChoice}
                     >
                       <AppShellNavigationPill
                         icon={
@@ -135,7 +136,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                             strokeWidth={1.8}
                           />
                         }
-                        isActive={currentPathname === startTrainingPath}
+                        isActive={isStartTrainingActive}
                         label="Start training"
                       />
                     </Link>

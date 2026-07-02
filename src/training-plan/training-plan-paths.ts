@@ -2,6 +2,7 @@ export const trainingPlanPaths = {
   list: "/training-plans",
   plan: "/training-plans/$planId",
   sessionHistory: "/training-plans/$planId/sessions",
+  sessionStartChoice: "/training-plans/$planId/sessions/new",
   sessionStart: "/training-plans/$planId/sessions/new/$templateId",
 } as const;
 
@@ -62,11 +63,15 @@ export function getTrainingSessionHistoryHref(planId: string): string {
   return `${getTrainingPlanHref(planId)}/sessions`;
 }
 
+export function getTrainingSessionStartChoiceHref(planId: string): string {
+  return `${getTrainingSessionHistoryHref(planId)}/new`;
+}
+
 export function getTrainingSessionStartHref({
   planId,
   templateId,
 }: TrainingSessionRouteParams): string {
-  return `${getTrainingSessionHistoryHref(planId)}/new/${encodeURIComponent(templateId)}`;
+  return `${getTrainingSessionStartChoiceHref(planId)}/${encodeURIComponent(templateId)}`;
 }
 
 export function parseTrainingPlanPathname(pathname: string): TrainingPlanRouteParams | null {
@@ -80,6 +85,15 @@ export function parseTrainingSessionHistoryPathname(
   pathname: string,
 ): TrainingPlanRouteParams | null {
   const match = /^\/training-plans\/([^/]+)\/sessions$/.exec(pathname);
+  const planId = match?.[1];
+
+  return planId ? { planId: decodeURIComponent(planId) } : null;
+}
+
+export function parseTrainingSessionStartChoicePathname(
+  pathname: string,
+): TrainingPlanRouteParams | null {
+  const match = /^\/training-plans\/([^/]+)\/sessions\/new$/.exec(pathname);
   const planId = match?.[1];
 
   return planId ? { planId: decodeURIComponent(planId) } : null;

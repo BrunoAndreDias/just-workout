@@ -659,11 +659,38 @@ describe("TrainingPlanRoute", () => {
 
     await user.click(screen.getByRole("link", { name: "Start training" }));
 
+    expect(await screen.findByRole("heading", { name: "Start training" })).toBeVisible();
+    await user.click(screen.getByRole("link", { name: "Start Full Body A session" }));
+
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Start training", current: "page" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Training history" })).not.toHaveAttribute(
       "aria-current",
     );
+  });
+
+  it("lets Start training choose a workout template before opening the session", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      split: "upper-lower-full-body",
+      trainingFrequencyDaysPerWeek: 3,
+    });
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Upper / Lower / Full Body" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "Start training" }));
+
+    expect(await screen.findByRole("heading", { name: "Start training" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Start Upper session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Start Lower session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Start Full Body A session" })).toBeVisible();
+
+    await user.click(screen.getByRole("link", { name: "Start Lower session" }));
+
+    expect(await screen.findByRole("heading", { name: "Lower session" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Start training", current: "page" })).toBeVisible();
   });
 
   it("opens Training Session history from the top bar with the start action available", async () => {

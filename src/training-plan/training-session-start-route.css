@@ -1,0 +1,87 @@
+.training-session-start-page {
+  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
+  padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
+}
+
+.training-session-start-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0.875rem;
+  max-width: 58rem;
+}
+
+.training-session-start-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 6.5rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #11181b;
+  background: rgba(255, 255, 255, 0.86);
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.training-session-start-card:hover {
+  border-color: rgba(0, 119, 128, 0.42);
+  background: #ffffff;
+}
+
+.training-session-start-card:active {
+  transform: translateY(1px);
+}
+
+.training-session-start-card:focus-visible {
+  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline-offset: 3px;
+}
+
+.training-session-start-card__icon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  background: #006f77;
+}
+
+.training-session-start-card__icon svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.training-session-start-card__content {
+  display: grid;
+  min-width: 0;
+  gap: 0.375rem;
+}
+
+.training-session-start-card__content strong {
+  color: #11181b;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.training-session-start-card__content span {
+  color: #5d6468;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+@media (max-width: 520px) {
+  .training-session-start-page {
+    min-height: calc(100dvh - 4.3125rem);
+    padding: 1.125rem 1rem calc(6.75rem + env(safe-area-inset-bottom));
+  }
+}

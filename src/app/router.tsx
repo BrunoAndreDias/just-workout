@@ -6,6 +6,7 @@ import {
   TrainingPlansRoute,
   TrainingSessionHistoryRoute,
   TrainingSessionRoute,
+  TrainingSessionStartRoute,
   trainingPlanPaths,
 } from "../training-plan";
 import { RootLayout } from "./root-layout";
@@ -43,6 +44,12 @@ const trainingSessionRoute = createRoute({
   path: trainingPlanPaths.sessionStart,
 });
 
+const trainingSessionStartRoute = createRoute({
+  component: TrainingSessionStartRoute,
+  getParentRoute: () => rootRoute,
+  path: trainingPlanPaths.sessionStartChoice,
+});
+
 const trainingSessionHistoryRoute = createRoute({
   component: TrainingSessionHistoryRoute,
   getParentRoute: () => rootRoute,
@@ -67,6 +74,7 @@ const routeTree = rootRoute.addChildren([
   trainingCycleDevSeedRoute,
   trainingPlansRoute,
   trainingSessionHistoryRoute,
+  trainingSessionStartRoute,
   trainingSessionRoute,
   trainingPlanRoute,
 ]);
