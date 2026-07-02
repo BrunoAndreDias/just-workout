@@ -20,6 +20,8 @@ export function TrainingSessionGroup({
   group: TrainingSessionExecutionGroup;
   onAction: (action: TrainingSessionExecutionAction) => void;
 }) {
+  const finalRoundIndex = group.rounds[group.rounds.length - 1]?.roundIndex ?? 0;
+
   return (
     <section
       aria-labelledby={`training-session-group-${group.groupId}`}
@@ -30,7 +32,11 @@ export function TrainingSessionGroup({
           <h2 aria-label={group.accessibleTitle} id={`training-session-group-${group.groupId}`}>
             {group.title}
           </h2>
-          <TrainingSessionGroupSummary groupSummary={group.summary} isOpen={group.isOpen} />
+          <TrainingSessionGroupSummary
+            groupSummary={group.summary}
+            isOpen={group.isOpen}
+            roundCount={group.rounds.length}
+          />
         </div>
         <button
           aria-expanded={group.isOpen}
@@ -65,6 +71,7 @@ export function TrainingSessionGroup({
               </thead>
               {group.rounds.map((round) => (
                 <RoundSessionRows
+                  finalRoundIndex={finalRoundIndex}
                   key={`${group.groupId}-round-${round.roundIndex}`}
                   onAction={onAction}
                   round={round}
@@ -81,34 +88,40 @@ export function TrainingSessionGroup({
 function TrainingSessionGroupSummary({
   groupSummary,
   isOpen,
+  roundCount,
 }: {
   groupSummary: TrainingSessionExecutionGroupSummary;
   isOpen: boolean;
+  roundCount: number;
 }) {
+  if (groupSummary.isComplete && !isOpen) {
+    return (
+      <p>
+        <strong className="training-session-group__complete-state">
+          <CheckCircle2 aria-hidden="true" />
+          Complete
+        </strong>
+        <span>{groupSummary.plannedSetCount} sets logged</span>
+      </p>
+    );
+  }
+
+  if (isOpen) {
+    return (
+      <p>
+        <span>Superset</span>
+        <span>{roundCount} rounds</span>
+        <strong className="training-session-group__sets-completed">
+          {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
+        </strong>
+      </p>
+    );
+  }
+
   return (
     <p>
-      {groupSummary.isComplete && !isOpen ? (
-        <>
-          <strong className="training-session-group__complete-state">
-            <CheckCircle2 aria-hidden="true" />
-            Complete
-          </strong>
-          <span>{groupSummary.plannedSetCount} sets logged</span>
-        </>
-      ) : isOpen ? (
-        <>
-          <span>Superset</span>
-          <span>3 rounds</span>
-          <strong className="training-session-group__sets-completed">
-            {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
-          </strong>
-        </>
-      ) : (
-        <>
-          <span>{groupSummary.exerciseCount} exercises</span>
-          <span>{groupSummary.plannedSetCount} planned sets</span>
-        </>
-      )}
+      <span>{groupSummary.exerciseCount} exercises</span>
+      <span>{groupSummary.plannedSetCount} planned sets</span>
     </p>
   );
 }
@@ -132,16 +145,24 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
 }
 
 function RoundSessionRows({
+  finalRoundIndex,
   onAction,
   round,
 }: {
+  finalRoundIndex: number;
   onAction: (action: TrainingSessionExecutionAction) => void;
   round: TrainingSessionExecutionGroup["rounds"][number];
 }) {
   return (
     <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
       {round.rows.map((row) => (
-        <tr className={getTrainingSessionRowClassName(row)} key={row.setId}>
+        <tr
+          className={getTrainingSessionRowClassName({
+            done: row.done,
+            isFuture: row.setIndex === finalRoundIndex,
+          })}
+          key={row.setId}
+        >
           <TrainingSessionSetCells onAction={onAction} row={row} />
         </tr>
       ))}
@@ -220,13 +241,11 @@ function TrainingSessionSetCells({
   );
 }
 
-function getTrainingSessionRowClassName(
-  row: Pick<TrainingSessionExecutionSetRow, "done" | "setIndex">,
-): string {
+function getTrainingSessionRowClassName(row: { done: boolean; isFuture: boolean }): string {
   return [
     "training-session-exercise-row",
     row.done ? "training-session-exercise-row--done" : "",
-    row.setIndex === 3 ? "training-session-exercise-row--future" : "",
+    row.isFuture ? "training-session-exercise-row--future" : "",
   ]
     .filter(Boolean)
     .join(" ");
