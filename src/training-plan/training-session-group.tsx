@@ -20,6 +20,8 @@ export function TrainingSessionGroup({
   group: TrainingSessionExecutionGroup;
   onAction: (action: TrainingSessionExecutionAction) => void;
 }) {
+  const finalRoundIndex = group.rounds[group.rounds.length - 1]?.roundIndex ?? 0;
+
   return (
     <section
       aria-labelledby={`training-session-group-${group.groupId}`}
@@ -69,8 +71,8 @@ export function TrainingSessionGroup({
               </thead>
               {group.rounds.map((round) => (
                 <RoundSessionRows
+                  finalRoundIndex={finalRoundIndex}
                   key={`${group.groupId}-round-${round.roundIndex}`}
-                  lastPlannedRoundIndex={group.rounds[group.rounds.length - 1]?.roundIndex ?? 0}
                   onAction={onAction}
                   round={round}
                 />
@@ -92,30 +94,34 @@ function TrainingSessionGroupSummary({
   isOpen: boolean;
   roundCount: number;
 }) {
+  if (groupSummary.isComplete && !isOpen) {
+    return (
+      <p>
+        <strong className="training-session-group__complete-state">
+          <CheckCircle2 aria-hidden="true" />
+          Complete
+        </strong>
+        <span>{groupSummary.plannedSetCount} sets logged</span>
+      </p>
+    );
+  }
+
+  if (isOpen) {
+    return (
+      <p>
+        <span>Superset</span>
+        <span>{roundCount} rounds</span>
+        <strong className="training-session-group__sets-completed">
+          {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
+        </strong>
+      </p>
+    );
+  }
+
   return (
     <p>
-      {groupSummary.isComplete && !isOpen ? (
-        <>
-          <strong className="training-session-group__complete-state">
-            <CheckCircle2 aria-hidden="true" />
-            Complete
-          </strong>
-          <span>{groupSummary.plannedSetCount} sets logged</span>
-        </>
-      ) : isOpen ? (
-        <>
-          <span>Superset</span>
-          <span>{roundCount} rounds</span>
-          <strong className="training-session-group__sets-completed">
-            {groupSummary.completedSetCount}/{groupSummary.plannedSetCount} sets completed
-          </strong>
-        </>
-      ) : (
-        <>
-          <span>{groupSummary.exerciseCount} exercises</span>
-          <span>{groupSummary.plannedSetCount} planned sets</span>
-        </>
-      )}
+      <span>{groupSummary.exerciseCount} exercises</span>
+      <span>{groupSummary.plannedSetCount} planned sets</span>
     </p>
   );
 }
@@ -139,13 +145,13 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
 }
 
 function RoundSessionRows({
+  finalRoundIndex,
   onAction,
   round,
-  lastPlannedRoundIndex,
 }: {
+  finalRoundIndex: number;
   onAction: (action: TrainingSessionExecutionAction) => void;
   round: TrainingSessionExecutionGroup["rounds"][number];
-  lastPlannedRoundIndex: number;
 }) {
   return (
     <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
@@ -153,7 +159,7 @@ function RoundSessionRows({
         <tr
           className={getTrainingSessionRowClassName({
             done: row.done,
-            isFuture: row.setIndex === lastPlannedRoundIndex,
+            isFuture: row.setIndex === finalRoundIndex,
           })}
           key={row.setId}
         >
