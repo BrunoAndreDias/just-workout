@@ -191,9 +191,66 @@ describe("Training Session Execution", () => {
     ).toBe("BW x 8");
   });
 
-  it("defaults abs work to twelve reps and other work to eight reps", () => {
-    expect(getTrainingSessionDefaultReps(absSlot)).toBe(12);
+  it("falls back to the legacy 3 x 8-12 default when a slot has no generated prescription", () => {
+    expect(getTrainingSessionDefaultReps(absSlot)).toBe(8);
     expect(getTrainingSessionDefaultReps(benchPressSlot)).toBe(8);
+  });
+
+  it("uses generated Training Prescriptions for session labels, planned sets, and default reps", () => {
+    const workoutTemplate = createWorkoutTemplateWithTrainingPrescriptions();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises);
+    const benchKey = getTrainingSessionExerciseKey("group-1", prescribedBenchPressSlot);
+    const absKey = getTrainingSessionExerciseKey("group-2", prescribedAbsSlot);
+
+    expect(drafts[benchKey]).toEqual([
+      { done: false, reps: "6", setIndex: 1, weight: "" },
+      { done: false, reps: "6", setIndex: 2, weight: "" },
+      { done: false, reps: "6", setIndex: 3, weight: "" },
+      { done: false, reps: "6", setIndex: 4, weight: "" },
+    ]);
+    expect(drafts[absKey]).toEqual([
+      { done: false, reps: "10", setIndex: 1, weight: "" },
+      { done: false, reps: "10", setIndex: 2, weight: "" },
+      { done: false, reps: "10", setIndex: 3, weight: "" },
+      { done: false, reps: "10", setIndex: 4, weight: "" },
+    ]);
+    expect(getTrainingSessionDefaultReps(prescribedBenchPressSlot)).toBe(6);
+    expect(getTrainingSessionDefaultReps(prescribedAbsSlot)).toBe(10);
+
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      state: createInitialTrainingSessionExecutionState({ workoutTemplate }),
+      workoutTemplate,
+    });
+
+    expect(readModel.plannedSetCount).toBe(12);
+    expect(readModel.groups[0]).toMatchObject({
+      now: {
+        prescriptionLabel: "4 x 6-8",
+        setLabel: "Set 1 of 4",
+        targetRepsLabel: "Target 6-8 reps",
+      },
+      summary: {
+        plannedSetCount: 8,
+      },
+    });
+    expect(readModel.groups[0]?.rounds).toHaveLength(4);
+    expect(readModel.groups[1]).toMatchObject({
+      now: {
+        prescriptionLabel: "4 x 10-15",
+        setLabel: "Set 1 of 4",
+        targetRepsLabel: "Target 10-15 reps",
+      },
+      summary: {
+        plannedSetCount: 4,
+      },
+    });
+    expect(readModel.groups[1]?.rounds[0]?.rows[0]).toMatchObject({
+      prescriptionLabel: "4 x 10-15",
+      reps: "10",
+    });
   });
 
   it("creates the execution read model consumed by the route and Superset Group UI", () => {
@@ -412,6 +469,39 @@ const absSlot = createTrainingPlanSlot({
   role: "abs",
 });
 
+const prescribedBenchPressSlot = createTrainingPlanSlot({
+  exerciseId: "incline-bench-press",
+  exerciseName: "Incline Dumbbell Bench Press",
+  movementPattern: "horizontal_push",
+  role: "main_compound",
+  trainingPrescription: {
+    repRange: { max: 8, min: 6 },
+    setCount: 4,
+  },
+});
+
+const prescribedPullUpsSlot = createTrainingPlanSlot({
+  exerciseId: "weighted-pull-ups",
+  exerciseName: "Weighted Pull-Ups",
+  movementPattern: "vertical_pull",
+  role: "secondary_compound",
+  trainingPrescription: {
+    repRange: { max: 10, min: 8 },
+    setCount: 4,
+  },
+});
+
+const prescribedAbsSlot = createTrainingPlanSlot({
+  exerciseId: "cable-crunch",
+  exerciseName: "Cable Crunches",
+  movementPattern: "core",
+  role: "abs",
+  trainingPrescription: {
+    repRange: { max: 15, min: 10 },
+    setCount: 4,
+  },
+});
+
 function createWorkoutTemplate(): WorkoutTemplate {
   return {
     id: "template-1",
@@ -433,12 +523,35 @@ function createWorkoutTemplate(): WorkoutTemplate {
   };
 }
 
+function createWorkoutTemplateWithTrainingPrescriptions(): WorkoutTemplate {
+  return {
+    id: "template-prescribed",
+    label: "Upper",
+    supersetGroups: [
+      {
+        id: "group-1",
+        slots: [prescribedBenchPressSlot, prescribedPullUpsSlot],
+        title: "Superset 1",
+        type: "superset",
+      },
+      {
+        id: "group-2",
+        slots: [prescribedAbsSlot],
+        title: "Superset 2",
+        type: "superset",
+      },
+    ],
+  };
+}
+
 function createTrainingPlanSlot({
   exerciseId,
   exerciseName,
   movementPattern,
   role,
-}: Pick<TrainingPlanSlot, "exerciseId" | "exerciseName" | "movementPattern" | "role">) {
+  trainingPrescription,
+}: Pick<TrainingPlanSlot, "exerciseId" | "exerciseName" | "movementPattern" | "role"> &
+  Partial<Pick<TrainingPlanSlot, "trainingPrescription">>) {
   return {
     exerciseId,
     exerciseName,
@@ -447,6 +560,7 @@ function createTrainingPlanSlot({
     role,
     slotLabel: "A1",
     targetMuscles: [],
+    trainingPrescription,
   } satisfies TrainingPlanSlot;
 }
 
