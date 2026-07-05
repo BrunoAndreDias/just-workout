@@ -3,6 +3,9 @@ const trainingWeekMonthFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+/**
+ * Formats an inclusive UTC Training Week date range like "Jun 7-13, 2026".
+ */
 export function formatTrainingWeekRangeLabel(start: Date, end: Date): string {
   const startMonth = formatTrainingWeekMonth(start);
   const endMonth = formatTrainingWeekMonth(end);

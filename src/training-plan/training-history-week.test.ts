@@ -96,6 +96,88 @@ describe("buildTrainingHistoryWeekReport", () => {
     );
   });
 
+  it("compares same-template session progression when the template label changed", () => {
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan: createTrainingPlan(),
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2026-06-06T09:00:00.000Z",
+          id: "selected-week-renamed-template",
+          templateId: "template-a",
+          templateLabel: "Upper Strength",
+          volumeByMovementPattern: [{ movementPattern: "horizontal_push", volume: 1200 }],
+        }),
+        createTrainingSession({
+          completedAt: "2026-05-30T09:00:00.000Z",
+          id: "previous-week-original-template",
+          templateId: "template-a",
+          templateLabel: "Full Body A",
+          volumeByMovementPattern: [{ movementPattern: "horizontal_push", volume: 1000 }],
+        }),
+      ],
+    });
+
+    expect(report.selectedSessions).toEqual([
+      expect.objectContaining({
+        templateId: "template-a",
+        templateLabel: "Upper Strength",
+        volumeProgression: {
+          deltaVolume: 200,
+          previousComparableCompletedAt: "2026-05-30T09:00:00.000Z",
+          previousComparableVolume: 1000,
+          verdict: "progressed",
+        },
+      }),
+    ]);
+  });
+
+  it("marks weekly progress unchanged when selected and previous weeks have the same total volume", () => {
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan: createTrainingPlan(),
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2026-06-06T09:00:00.000Z",
+          id: "selected-week",
+          templateLabel: "Full Body A",
+          volumeByMovementPattern: [{ movementPattern: "horizontal_push", volume: 1000 }],
+        }),
+        createTrainingSession({
+          completedAt: "2026-05-30T09:00:00.000Z",
+          id: "previous-week",
+          templateLabel: "Full Body A",
+          volumeByMovementPattern: [{ movementPattern: "horizontal_push", volume: 1000 }],
+        }),
+      ],
+    });
+
+    expect(report.summary.progressVerdict).toBe("unchanged");
+    expect(report.summary.previousWeekVolumeReference).toEqual(
+      expect.objectContaining({
+        totalVolume: 1000,
+      }),
+    );
+  });
+
+  it("marks weekly progress not comparable when there is no prior week reference", () => {
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan: createTrainingPlan(),
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2026-06-06T09:00:00.000Z",
+          id: "selected-week",
+          templateLabel: "Full Body A",
+          volumeByMovementPattern: [{ movementPattern: "horizontal_push", volume: 1000 }],
+        }),
+      ],
+    });
+
+    expect(report.summary.progressVerdict).toBe("not_comparable");
+    expect(report.summary.previousWeekVolumeReference).toBeNull();
+  });
+
   it("builds Movement Pattern comparison rows for increase, regression, same, new, and dropped states", () => {
     const trainingPlan = createTrainingPlan();
     const trainingSessions = createTrainingSessions();

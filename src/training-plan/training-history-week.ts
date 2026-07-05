@@ -58,27 +58,48 @@ export type TrainingHistorySessionReport = {
   volumeProgression: TrainingHistorySessionVolumeProgression;
 };
 
+/**
+ * Total-volume comparison result for a Training Week or comparable Training Session.
+ */
 export type TrainingWeekProgressVerdict =
   | "not_comparable"
   | "progressed"
   | "regressed"
   | "unchanged";
 
+/**
+ * Describes how a selected Training Week's completed session count relates to the plan target.
+ */
 export type TrainingWeekCompletionContext = {
+  /** Completed sessions minus the plan's weekly session target. */
   deltaSessions: number;
+  /** Whether the selected week is below, at, or above the plan's weekly session target. */
   status: "above_target" | "below_target" | "met_target";
 };
 
+/**
+ * Volume comparison against the previous completed session for the same Workout Template.
+ */
 export type TrainingHistorySessionVolumeProgression = {
+  /** Current session volume minus previous comparable session volume, or null when unavailable. */
   deltaVolume: number | null;
+  /** Completion timestamp for the previous comparable session, when one exists. */
   previousComparableCompletedAt: string | null;
+  /** Completed Load Volume for the previous comparable session, when one exists. */
   previousComparableVolume: number | null;
+  /** Progress verdict for this session-level comparison. */
   verdict: TrainingWeekProgressVerdict;
 };
 
+/**
+ * Informational previous-week volume reference used by compact and detailed progress views.
+ */
 export type TrainingWeekVolumeReference = {
+  /** Whether the referenced week contains partial volume from unknown bodyweight loads. */
   hasPartialVolume: boolean;
+  /** Total known Completed Load Volume for the referenced Training Week. */
   totalVolume: number;
+  /** Human-readable UTC date range label for the referenced Training Week. */
   weekLabel: string;
 };
 
@@ -696,7 +717,7 @@ function addTrainingSessionProgression({
 }
 
 function getComparableTrainingSessionKey(sessionReport: TrainingHistorySessionReport): string {
-  return `${sessionReport.templateId}:${sessionReport.templateLabel}`;
+  return sessionReport.templateId;
 }
 
 function createTrainingHistorySessionVolumeProgression({

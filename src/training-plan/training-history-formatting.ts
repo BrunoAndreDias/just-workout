@@ -55,6 +55,9 @@ export function formatWeight(value: number): string {
   return weightFormatter.format(value);
 }
 
+/**
+ * Formats how completed sessions compare with the Training Plan's weekly session target.
+ */
 export function formatTrainingWeekCompletionContext(
   completionContext: TrainingWeekCompletionContext,
 ): string {
@@ -68,6 +71,9 @@ export function formatTrainingWeekCompletionContext(
   }
 }
 
+/**
+ * Formats a Training Week volume verdict as compact display text.
+ */
 export function formatTrainingWeekProgressVerdict(verdict: TrainingWeekProgressVerdict): string {
   switch (verdict) {
     case "progressed":
@@ -81,6 +87,9 @@ export function formatTrainingWeekProgressVerdict(verdict: TrainingWeekProgressV
   }
 }
 
+/**
+ * Formats the previous-week volume reference, including the no-reference fallback.
+ */
 export function formatTrainingWeekVolumeReference(
   reference: TrainingWeekVolumeReference | null,
 ): string {
@@ -91,6 +100,9 @@ export function formatTrainingWeekVolumeReference(
   return `Training Week Volume Reference: ${formatWeight(reference.totalVolume)} kg from ${reference.weekLabel}.`;
 }
 
+/**
+ * Formats same-template Training Session volume progression against the previous comparable session.
+ */
 export function formatTrainingSessionVolumeProgression(
   volumeProgression: TrainingHistorySessionVolumeProgression,
 ): string {

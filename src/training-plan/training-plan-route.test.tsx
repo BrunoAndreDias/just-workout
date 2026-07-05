@@ -384,6 +384,7 @@ describe("TrainingPlanRoute", () => {
   });
 
   it("shows the latest Training Week verdict compactly on the active Training Plan", async () => {
+    const user = userEvent.setup();
     await seedTrainingPlan();
     await seedCompletedTrainingSessions([
       {
@@ -416,6 +417,10 @@ describe("TrainingPlanRoute", () => {
     expect(
       within(blockSummary).getByText("Training Week Volume Reference: 800 kg from Jun 7-13, 2026."),
     ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View training history" }));
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
   });
 
   it("does not show the next cycle action in week 6 until every Training Week is complete", async () => {

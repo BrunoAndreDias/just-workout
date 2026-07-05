@@ -26,16 +26,32 @@ type TrainingWeekRange = {
   start: Date;
 };
 
+/**
+ * Compact Training Week progress summary shown on the Active Training Plan surface.
+ */
 export type ActiveTrainingPlanWeekProgressReadModel = {
+  /** Partial-volume warning for the current or referenced Training Week, if needed. */
   caveat: string | null;
+  /** Compact supporting count or week-range detail for the progress summary. */
   detail: string;
+  /** Whether the compact summary represents an open week or a closed-week verdict. */
   kind: "current_week" | "latest_verdict";
+  /** Previous-week reference text, or the no-reference fallback. */
   support: string;
+  /** Accessible heading text for the compact progress summary. */
   title: string;
+  /** Primary value shown in the compact progress summary. */
   value: string;
+  /** Label describing the primary value. */
   valueLabel: string;
 };
 
+/**
+ * Builds the compact Active Training Plan progress signal for the current block week.
+ *
+ * Open weeks show known Completed Load Volume against the previous Training Week reference.
+ * Closed weeks show the latest Training Week verdict using the same reference.
+ */
 export function getTrainingWeekProgressReadModel({
   now = new Date(),
   trainingPlan,
