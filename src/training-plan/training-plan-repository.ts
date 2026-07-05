@@ -55,6 +55,11 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
   return trainingPlan;
 }
 
+/**
+ * Persists an accepted next Training Block onto the existing Training Plan identity.
+ *
+ * Unlike generated-plan saves, accepting a next block does not deactivate or clone plans.
+ */
 export async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan): Promise<TrainingPlan> {
   await db.trainingPlans.put(trainingPlan);
 

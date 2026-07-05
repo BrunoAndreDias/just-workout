@@ -29,8 +29,11 @@ export type TrainingSession = {
   status: "completed";
   templateId: string;
   templateLabel: string;
+  /** Active Training Block cycle when the session was completed; null for legacy sessions without block metadata. */
   trainingBlockCycleNumber?: number | null;
+  /** Active Training Block id when the session was completed; null for legacy sessions without block metadata. */
   trainingBlockId?: string | null;
+  /** Active Training Block week when the session was completed; null for legacy sessions without block metadata. */
   trainingBlockWeekNumber?: number | null;
   updatedAt: string;
   volumeByMovementPattern: ReadonlyArray<TrainingSessionMovementVolume>;
