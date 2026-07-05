@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isBodyweightLoadExercise } from "../bodyweight-load";
 import type { NextTrainingBlockTransitionWorkflow } from "../index";
 import "./training-block-progress.css";
 
@@ -119,7 +120,7 @@ function TrainingBlockPreviewDetails({
     Object.fromEntries(
       preview.loadSuggestions.map((suggestion) => [
         suggestion.exerciseId,
-        String(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
+        formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
       ]),
     ),
   );
@@ -156,7 +157,7 @@ function TrainingBlockPreviewDetails({
                     <input
                       id={`load-suggestion-${loadSuggestion.exerciseId}`}
                       inputMode="decimal"
-                      min={0}
+                      min={isBodyweightLoadExercise(loadSuggestion) ? -200 : 0}
                       onChange={(event) => {
                         const nextValue = event.currentTarget.value;
 
@@ -166,6 +167,13 @@ function TrainingBlockPreviewDetails({
                         }));
 
                         if (nextValue.trim() === "") {
+                          setLoadSuggestions((current) =>
+                            current.map((suggestion) =>
+                              suggestion.exerciseId === loadSuggestion.exerciseId
+                                ? { ...suggestion, userEditedLoad: null }
+                                : suggestion,
+                            ),
+                          );
                           return;
                         }
 
@@ -187,7 +195,9 @@ function TrainingBlockPreviewDetails({
                       type="number"
                       value={
                         loadInputValues[loadSuggestion.exerciseId] ??
-                        String(loadSuggestion.userEditedLoad ?? loadSuggestion.suggestedLoad)
+                        formatEditableLoad(
+                          loadSuggestion.userEditedLoad ?? loadSuggestion.suggestedLoad,
+                        )
                       }
                     />
                   </span>
@@ -233,6 +243,10 @@ function TrainingBlockPreviewDetails({
 
 function formatLoad(load: number | null): string {
   return load === null ? "No previous load" : `${load} kg`;
+}
+
+function formatEditableLoad(load: number | null): string {
+  return load === null ? "" : String(load);
 }
 
 export function getCurrentBlockWeek({

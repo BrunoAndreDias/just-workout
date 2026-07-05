@@ -9,6 +9,8 @@ export type TrainingSessionSetEntry = {
   /** False when a draft set was not completed; absent for legacy completed set entries. */
   done?: boolean;
   reps: number;
+  /** Captured effort for newly completed sets; absent on legacy history. */
+  rir?: number | null;
   setIndex: number;
   weight: number;
 };

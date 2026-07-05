@@ -78,9 +78,10 @@ export type NextTrainingBlockLoadTarget = {
 };
 
 export type NextTrainingBlockLoadSuggestion = NextTrainingBlockLoadTarget & {
+  kind: "exact_previous_exercise" | "first_time";
   previousLoad: number | null;
   reason: string;
-  suggestedLoad: number;
+  suggestedLoad: number | null;
   userEditedLoad: number | null;
 };
 
@@ -114,7 +115,8 @@ type RotationProposalOption = {
 
 export type TrainingBlockProgressionSet = {
   reps: number;
-  rir: number;
+  rir: number | null;
+  targetRir?: number;
 };
 
 export type TrainingBlockProgressionDecision = {
@@ -131,7 +133,6 @@ export type NextTrainingBlockPreview = {
 };
 
 const DEFAULT_TRAINING_BLOCK_WEEKS = 6;
-const DEFAULT_SAFE_STARTING_LOAD = 20;
 const REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS: ReadonlyArray<MovementPatternId> = [
   "horizontal_push",
   "horizontal_pull",
@@ -383,9 +384,10 @@ export function applyNextTrainingBlockLoadSuggestions({
     ...trainingPlan,
     startingLoadSuggestions: suggestions.map(
       (suggestion): TrainingPlanStartingLoadSuggestion => ({
-        effectiveLoad: suggestion.userEditedLoad ?? suggestion.suggestedLoad,
+        effectiveLoad: suggestion.userEditedLoad ?? suggestion.suggestedLoad ?? null,
         exerciseId: suggestion.exerciseId,
         exerciseName: suggestion.exerciseName,
+        kind: suggestion.kind,
         movementPattern: suggestion.movementPattern,
         previousLoad: suggestion.previousLoad,
         reason: suggestion.reason,
@@ -405,54 +407,39 @@ export function estimateNextTrainingBlockLoadSuggestions({
   sessions: ReadonlyArray<TrainingSession>;
   targets: ReadonlyArray<NextTrainingBlockLoadTarget>;
 }): ReadonlyArray<NextTrainingBlockLoadSuggestion> {
-  return targets.flatMap((target): ReadonlyArray<NextTrainingBlockLoadSuggestion> => {
+  return targets.map((target): NextTrainingBlockLoadSuggestion => {
     if (isBodyweightLoadTarget(target)) {
-      return [
-        estimateBodyweightLoadSuggestion({
-          availableLoadIncrement,
-          sessions,
-          target,
-        }),
-      ];
+      return estimateBodyweightLoadSuggestion({
+        availableLoadIncrement,
+        sessions,
+        target,
+      });
     }
 
     const exactExerciseLoad = getLatestCompletedWorkingLoad({
       exerciseId: target.exerciseId,
       sessions,
     });
-    const previousLoad =
-      exactExerciseLoad ??
-      getLatestCompletedWorkingLoad({
-        movementPattern: target.movementPattern,
-        sessions,
-      });
 
-    if (previousLoad === null) {
-      return [
-        {
-          ...target,
-          previousLoad,
-          reason: "missing workout history, safe default",
-          suggestedLoad: DEFAULT_SAFE_STARTING_LOAD,
-          userEditedLoad: null,
-        },
-      ];
+    if (exactExerciseLoad === null) {
+      return {
+        ...target,
+        kind: "first_time",
+        previousLoad: null,
+        reason: "first-time exercise, start empty",
+        suggestedLoad: null,
+        userEditedLoad: null,
+      };
     }
 
-    const isExactExercise = exactExerciseLoad !== null;
-
-    return [
-      {
-        ...target,
-        previousLoad,
-        reason: isExactExercise ? "same exercise, -5% reset" : "same Movement Pattern, -10% reset",
-        suggestedLoad: roundToNearestIncrement(
-          previousLoad * (isExactExercise ? 0.95 : 0.9),
-          availableLoadIncrement,
-        ),
-        userEditedLoad: null,
-      },
-    ];
+    return {
+      ...target,
+      kind: "exact_previous_exercise",
+      previousLoad: exactExerciseLoad,
+      reason: "previous exact exercise load prefill",
+      suggestedLoad: roundToNearestIncrement(exactExerciseLoad, availableLoadIncrement),
+      userEditedLoad: null,
+    };
   });
 }
 
@@ -469,66 +456,37 @@ function estimateBodyweightLoadSuggestion({
     exerciseId: target.exerciseId,
     sessions,
   });
-  const previousLoad =
-    exactExerciseLoad ??
-    getLatestCompletedBodyweightLoadAdjustment({
-      movementPattern: target.movementPattern,
-      sessions,
-    });
 
-  if (previousLoad === null) {
+  if (exactExerciseLoad === null) {
     return {
       ...target,
-      previousLoad: 0,
-      reason: "bodyweight only, no added load",
-      suggestedLoad: 0,
+      kind: "first_time",
+      previousLoad: null,
+      reason: "first-time exercise, start empty",
+      suggestedLoad: null,
       userEditedLoad: null,
     };
   }
 
-  if (previousLoad === 0) {
+  if (exactExerciseLoad === 0) {
     return {
       ...target,
-      previousLoad,
-      reason: "bodyweight only, no added load",
+      kind: "exact_previous_exercise",
+      previousLoad: exactExerciseLoad,
+      reason: "previous exact exercise load prefill",
       suggestedLoad: 0,
       userEditedLoad: null,
     };
   }
-
-  const isExactExercise = exactExerciseLoad !== null;
 
   return {
     ...target,
-    previousLoad,
-    reason: getBodyweightLoadAdjustmentReason({
-      isExactExercise,
-      previousLoad,
-    }),
-    suggestedLoad: roundToNearestIncrement(
-      previousLoad * (isExactExercise ? 0.95 : 0.9),
-      availableLoadIncrement,
-    ),
+    kind: "exact_previous_exercise",
+    previousLoad: exactExerciseLoad,
+    reason: "previous exact exercise load prefill",
+    suggestedLoad: roundToNearestIncrement(exactExerciseLoad, availableLoadIncrement),
     userEditedLoad: null,
   };
-}
-
-function getBodyweightLoadAdjustmentReason({
-  isExactExercise,
-  previousLoad,
-}: {
-  isExactExercise: boolean;
-  previousLoad: number;
-}): string {
-  if (previousLoad < 0) {
-    return isExactExercise
-      ? "bodyweight assistance, -5% reset"
-      : "compatible bodyweight assistance, -10% reset";
-  }
-
-  return isExactExercise
-    ? "bodyweight added load, -5% reset"
-    : "compatible bodyweight added load, -10% reset";
 }
 
 export function applyNextTrainingBlockLoadSuggestionEdit({
@@ -580,16 +538,22 @@ export function getTrainingBlockExerciseTargetRir({
 
 export function applyTrainingBlockProgressionRule({
   completedSets,
+  plannedSetCount = completedSets.length,
   repRange,
   targetRir,
 }: {
   completedSets: ReadonlyArray<TrainingBlockProgressionSet>;
+  plannedSetCount?: number;
   repRange: { maxReps: number; minReps: number };
   targetRir: number;
 }): TrainingBlockProgressionDecision {
   const completedTopOfRange =
     completedSets.length > 0 &&
-    completedSets.every((set) => set.reps >= repRange.maxReps && set.rir >= targetRir);
+    completedSets.length === plannedSetCount &&
+    completedSets.every(
+      (set) =>
+        set.reps >= repRange.maxReps && set.rir !== null && set.rir >= (set.targetRir ?? targetRir),
+    );
 
   if (completedTopOfRange) {
     return {

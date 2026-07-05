@@ -29,13 +29,14 @@ export type TrainingPlanSlot = {
 };
 
 export type TrainingPlanStartingLoadSuggestion = {
-  effectiveLoad: number;
+  effectiveLoad: number | null;
   exerciseId: string;
   exerciseName: string;
+  kind: "exact_previous_exercise" | "first_time";
   movementPattern: MovementPatternId;
   previousLoad: number | null;
   reason: string;
-  suggestedLoad: number;
+  suggestedLoad: number | null;
   userEditedLoad: number | null;
 };
 

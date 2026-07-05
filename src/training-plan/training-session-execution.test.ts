@@ -31,9 +31,9 @@ describe("Training Session Execution", () => {
     const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
 
     drafts[benchKey] = [
-      { done: true, reps: "10", setIndex: 1, weight: "40" },
-      { done: false, reps: "9", setIndex: 2, weight: "42.5" },
-      { done: false, reps: "", setIndex: 3, weight: "" },
+      { done: true, reps: "10", rir: "", setIndex: 1, weight: "40" },
+      { done: false, reps: "9", rir: "", setIndex: 2, weight: "42.5" },
+      { done: false, reps: "", rir: "", setIndex: 3, weight: "" },
     ];
 
     expect(createTrainingSessionEntries(sessionExercises, drafts)[0]).toEqual({
@@ -41,9 +41,33 @@ describe("Training Session Execution", () => {
       exerciseName: "Flat Dumbbell Bench Press",
       movementPattern: "horizontal_push",
       sets: [
-        { done: true, reps: 10, setIndex: 1, weight: 40 },
-        { done: false, reps: 9, setIndex: 2, weight: 42.5 },
-        { done: false, reps: 0, setIndex: 3, weight: 0 },
+        { done: true, reps: 10, rir: null, setIndex: 1, weight: 40 },
+        { done: false, reps: 9, rir: null, setIndex: 2, weight: 42.5 },
+        { done: false, reps: 0, rir: null, setIndex: 3, weight: 0 },
+      ],
+    });
+  });
+
+  it("captures per-set RIR in completed session entries", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises);
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+
+    drafts[benchKey] = [
+      { done: true, reps: "10", rir: "2", setIndex: 1, weight: "40" },
+      { done: true, reps: "9", rir: "1", setIndex: 2, weight: "42.5" },
+      { done: false, reps: "", rir: "", setIndex: 3, weight: "" },
+    ];
+
+    expect(createTrainingSessionEntries(sessionExercises, drafts)[0]).toEqual({
+      exerciseId: "bench-press",
+      exerciseName: "Flat Dumbbell Bench Press",
+      movementPattern: "horizontal_push",
+      sets: [
+        { done: true, reps: 10, rir: 2, setIndex: 1, weight: 40 },
+        { done: true, reps: 9, rir: 1, setIndex: 2, weight: 42.5 },
+        { done: false, reps: 0, rir: null, setIndex: 3, weight: 0 },
       ],
     });
   });
@@ -56,23 +80,24 @@ describe("Training Session Execution", () => {
         effectiveLoad: 92.5,
         exerciseId: "bench-press",
         exerciseName: "Flat Dumbbell Bench Press",
+        kind: "exact_previous_exercise",
         movementPattern: "horizontal_push",
         previousLoad: 100,
-        reason: "same exercise, -5% reset",
-        suggestedLoad: 95,
+        reason: "previous exact exercise load prefill",
+        suggestedLoad: 92.5,
         userEditedLoad: 92.5,
       },
     ]);
 
     expect(drafts[getTrainingSessionExerciseKey("group-1", benchPressSlot)]).toEqual([
-      { done: false, reps: "8", setIndex: 1, weight: "92.5" },
-      { done: false, reps: "8", setIndex: 2, weight: "92.5" },
-      { done: false, reps: "8", setIndex: 3, weight: "92.5" },
+      { done: false, reps: "8", rir: "", setIndex: 1, weight: "92.5" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "92.5" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "92.5" },
     ]);
     expect(drafts[getTrainingSessionExerciseKey("group-1", pullUpsSlot)]).toEqual([
-      { done: false, reps: "8", setIndex: 1, weight: "" },
-      { done: false, reps: "8", setIndex: 2, weight: "" },
-      { done: false, reps: "8", setIndex: 3, weight: "" },
+      { done: false, reps: "8", rir: "", setIndex: 1, weight: "" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "" },
     ]);
   });
 
@@ -82,14 +107,14 @@ describe("Training Session Execution", () => {
     const drafts = createInitialTrainingSessionDrafts(sessionExercises);
 
     drafts[getTrainingSessionExerciseKey("group-1", benchPressSlot)] = [
-      { done: true, reps: "8", setIndex: 1, weight: "40" },
-      { done: true, reps: "8", setIndex: 2, weight: "40" },
-      { done: false, reps: "8", setIndex: 3, weight: "40" },
+      { done: true, reps: "8", rir: "", setIndex: 1, weight: "40" },
+      { done: true, reps: "8", rir: "", setIndex: 2, weight: "40" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "40" },
     ];
     drafts[getTrainingSessionExerciseKey("group-2", squatSlot)] = [
-      { done: true, reps: "8", setIndex: 1, weight: "80" },
-      { done: false, reps: "8", setIndex: 2, weight: "80" },
-      { done: false, reps: "8", setIndex: 3, weight: "80" },
+      { done: true, reps: "8", rir: "", setIndex: 1, weight: "80" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "80" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "80" },
     ];
 
     expect(countCompletedTrainingSessionSets(drafts)).toBe(3);
@@ -120,9 +145,9 @@ describe("Training Session Execution", () => {
     });
 
     expect(updatedDrafts[benchKey]).toEqual([
-      { done: false, reps: "8", setIndex: 1, weight: "" },
-      { done: false, reps: "8", setIndex: 2, weight: "42.5" },
-      { done: false, reps: "8", setIndex: 3, weight: "" },
+      { done: false, reps: "8", rir: "", setIndex: 1, weight: "" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "42.5" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "" },
     ]);
     expect(updatedDrafts[pullKey]).toBe(unchangedPullDrafts);
   });
@@ -133,9 +158,9 @@ describe("Training Session Execution", () => {
     const drafts = createInitialTrainingSessionDrafts(sessionExercises);
 
     drafts[getTrainingSessionExerciseKey("group-1", benchPressSlot)] = [
-      { done: true, reps: "8", setIndex: 1, weight: "40" },
-      { done: true, reps: "8", setIndex: 2, weight: "40" },
-      { done: true, reps: "8", setIndex: 3, weight: "40" },
+      { done: true, reps: "8", rir: "", setIndex: 1, weight: "40" },
+      { done: true, reps: "8", rir: "", setIndex: 2, weight: "40" },
+      { done: true, reps: "8", rir: "", setIndex: 3, weight: "40" },
     ];
 
     expect(
@@ -158,9 +183,9 @@ describe("Training Session Execution", () => {
 
     for (const slot of [benchPressSlot, pullUpsSlot]) {
       drafts[getTrainingSessionExerciseKey("group-1", slot)] = [
-        { done: true, reps: "8", setIndex: 1, weight: "40" },
-        { done: true, reps: "8", setIndex: 2, weight: "40" },
-        { done: true, reps: "8", setIndex: 3, weight: "40" },
+        { done: true, reps: "8", rir: "", setIndex: 1, weight: "40" },
+        { done: true, reps: "8", rir: "", setIndex: 2, weight: "40" },
+        { done: true, reps: "8", rir: "", setIndex: 3, weight: "40" },
       ];
     }
 
@@ -204,16 +229,16 @@ describe("Training Session Execution", () => {
     const absKey = getTrainingSessionExerciseKey("group-2", prescribedAbsSlot);
 
     expect(drafts[benchKey]).toEqual([
-      { done: false, reps: "6", setIndex: 1, weight: "" },
-      { done: false, reps: "6", setIndex: 2, weight: "" },
-      { done: false, reps: "6", setIndex: 3, weight: "" },
-      { done: false, reps: "6", setIndex: 4, weight: "" },
+      { done: false, reps: "6", rir: "", setIndex: 1, weight: "" },
+      { done: false, reps: "6", rir: "", setIndex: 2, weight: "" },
+      { done: false, reps: "6", rir: "", setIndex: 3, weight: "" },
+      { done: false, reps: "6", rir: "", setIndex: 4, weight: "" },
     ]);
     expect(drafts[absKey]).toEqual([
-      { done: false, reps: "10", setIndex: 1, weight: "" },
-      { done: false, reps: "10", setIndex: 2, weight: "" },
-      { done: false, reps: "10", setIndex: 3, weight: "" },
-      { done: false, reps: "10", setIndex: 4, weight: "" },
+      { done: false, reps: "10", rir: "", setIndex: 1, weight: "" },
+      { done: false, reps: "10", rir: "", setIndex: 2, weight: "" },
+      { done: false, reps: "10", rir: "", setIndex: 3, weight: "" },
+      { done: false, reps: "10", rir: "", setIndex: 4, weight: "" },
     ]);
     expect(getTrainingSessionDefaultReps(prescribedBenchPressSlot)).toBe(6);
     expect(getTrainingSessionDefaultReps(prescribedAbsSlot)).toBe(10);
@@ -318,9 +343,9 @@ describe("Training Session Execution", () => {
     const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
 
     state.drafts[benchKey] = [
-      { done: true, reps: "10", setIndex: 1, weight: "40" },
-      { done: false, reps: "8", setIndex: 2, weight: "40" },
-      { done: false, reps: "8", setIndex: 3, weight: "40" },
+      { done: true, reps: "10", rir: "", setIndex: 1, weight: "40" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "40" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "40" },
     ];
 
     const readModel = createTrainingSessionExecutionReadModel({
@@ -344,9 +369,9 @@ describe("Training Session Execution", () => {
       exerciseName: "Flat Dumbbell Bench Press",
       movementPattern: "horizontal_push",
       sets: [
-        { done: true, reps: 10, setIndex: 1, weight: 40 },
-        { done: false, reps: 8, setIndex: 2, weight: 40 },
-        { done: false, reps: 8, setIndex: 3, weight: 40 },
+        { done: true, reps: 10, rir: null, setIndex: 1, weight: 40 },
+        { done: false, reps: 8, rir: null, setIndex: 2, weight: 40 },
+        { done: false, reps: 8, rir: null, setIndex: 3, weight: 40 },
       ],
     });
     expect(readModel.groups[0]).toMatchObject({
@@ -425,6 +450,7 @@ describe("Training Session Execution", () => {
     expect(updatedReadModel.entries[0]?.sets[1]).toEqual({
       done: false,
       reps: 9,
+      rir: null,
       setIndex: 2,
       weight: 42.5,
     });
@@ -436,9 +462,9 @@ describe("Training Session Execution", () => {
     const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
 
     state.drafts[benchKey] = [
-      { done: true, reps: "10", setIndex: 1, weight: "40" },
-      { done: false, reps: "8", setIndex: 2, weight: "40" },
-      { done: false, reps: "8", setIndex: 3, weight: "40" },
+      { done: true, reps: "10", rir: "", setIndex: 1, weight: "40" },
+      { done: false, reps: "8", rir: "", setIndex: 2, weight: "40" },
+      { done: false, reps: "8", rir: "", setIndex: 3, weight: "40" },
     ];
 
     const readModel = createTrainingSessionExecutionReadModel({
