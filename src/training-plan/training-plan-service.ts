@@ -6,9 +6,13 @@ import {
   getTrainingSessionsForPlan,
   saveAcceptedTrainingPlan as saveAcceptedTrainingPlanRecord,
   saveCompletedTrainingSession,
+  saveHistoricalTrainingSessionBodyweight,
+  saveTrainingPlanBaselineBodyweight,
+  saveTrainingWeekBodyweight as saveTrainingWeekBodyweightRecord,
 } from "./training-plan-repository";
 import {
   createCompletedTrainingSession,
+  type TrainingSessionBodyweightSource,
   type TrainingSessionExerciseEntry,
 } from "./training-session";
 
@@ -19,10 +23,14 @@ async function generateTrainingPlan() {
 async function completeTrainingSession({
   entries,
   planId,
+  sessionBodyweight,
+  sessionBodyweightSource,
   templateId,
 }: {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   planId: string;
+  sessionBodyweight?: number | null;
+  sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
   templateId: string;
 }) {
   const trainingPlan = await getTrainingPlan(planId);
@@ -44,6 +52,8 @@ async function completeTrainingSession({
     entries,
     id: crypto.randomUUID(),
     plan: trainingPlan,
+    sessionBodyweight,
+    sessionBodyweightSource,
     template: workoutTemplate,
     timestamp,
   });
@@ -55,11 +65,59 @@ async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan) {
   return saveAcceptedTrainingPlanRecord(trainingPlan);
 }
 
+async function saveBaselineBodyweight({
+  bodyweight,
+  planId,
+}: {
+  bodyweight: number;
+  planId: string;
+}) {
+  return saveTrainingPlanBaselineBodyweight({
+    bodyweight,
+    planId,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function saveTrainingWeekBodyweight({
+  bodyweight,
+  planId,
+}: {
+  bodyweight: number;
+  planId: string;
+}) {
+  const timestamp = new Date().toISOString();
+
+  return saveTrainingWeekBodyweightRecord({
+    bodyweight,
+    planId,
+    referenceDate: timestamp,
+    timestamp,
+  });
+}
+
+async function saveHistoricalBodyweightCorrection({
+  bodyweight,
+  sessionId,
+}: {
+  bodyweight: number;
+  sessionId: string;
+}) {
+  return saveHistoricalTrainingSessionBodyweight({
+    bodyweight,
+    sessionId,
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export const trainingPlanService = {
   completeTrainingSession,
   generateTrainingPlan,
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
+  saveBaselineBodyweight,
   saveAcceptedTrainingPlan,
+  saveHistoricalBodyweightCorrection,
+  saveTrainingWeekBodyweight,
 };

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -585,6 +585,12 @@ describe("TrainingPlanRoute", () => {
     await user.click(
       within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
     );
+    const sessionBodyweightInput = screen.getByRole("spinbutton", {
+      name: "Session Bodyweight",
+    });
+
+    await user.clear(sessionBodyweightInput);
+    await user.type(sessionBodyweightInput, "80");
 
     expect(
       within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 not done/i),
@@ -603,13 +609,17 @@ describe("TrainingPlanRoute", () => {
       planId: "training-plan-test",
       status: "completed",
       templateId: "template-1",
-      volumeByMovementPattern: [
-        {
+      volumeByMovementPattern: expect.arrayContaining([
+        expect.objectContaining({
           movementPattern: "horizontal_push",
-        },
-      ],
+        }),
+      ]),
     });
-    expect(completedSessions[0]?.volumeByMovementPattern[0]?.volume).toBeGreaterThan(0);
+    expect(
+      completedSessions[0]?.volumeByMovementPattern.find(
+        (row) => row.movementPattern === "horizontal_push",
+      )?.volume,
+    ).toBeGreaterThan(0);
   });
 
   it("opens the next superset after the current superset is completed and closed", async () => {
@@ -767,6 +777,113 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Lower session" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Start training", current: "page" })).toBeVisible();
+  });
+
+  it("lets the Training surface save Baseline Bodyweight, update the current Training Week, and keep a Per-Session Bodyweight Override", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions/new"] });
+
+    expect(await screen.findByRole("heading", { name: "Start training" })).toBeVisible();
+
+    const baselineBodyweightInput = screen.getByRole("spinbutton", {
+      name: "Baseline Bodyweight",
+    });
+    const inheritedBodyweightDefaultInput = screen.getByRole("spinbutton", {
+      name: "Inherited Bodyweight Default",
+    });
+
+    await user.type(baselineBodyweightInput, "81");
+    await user.click(screen.getByRole("button", { name: "Save baseline bodyweight" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("spinbutton", {
+          name: "Inherited Bodyweight Default",
+        }),
+      ).toHaveValue(81);
+    });
+
+    await user.clear(inheritedBodyweightDefaultInput);
+    await user.type(inheritedBodyweightDefaultInput, "82");
+    await user.click(screen.getByRole("button", { name: "Save Training Week bodyweight" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("spinbutton", {
+          name: "Inherited Bodyweight Default",
+        }),
+      ).toHaveValue(82);
+    });
+
+    await user.click(screen.getByRole("link", { name: "Start Full Body A session" }));
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const sessionBodyweightInput = screen.getByRole("spinbutton", {
+      name: "Session Bodyweight",
+    });
+
+    expect(sessionBodyweightInput).toHaveValue(82);
+
+    await user.clear(sessionBodyweightInput);
+    await user.type(sessionBodyweightInput, "80");
+
+    expect(screen.getByText("Stored as a Per-Session Bodyweight Override.")).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
+    await user.click(
+      within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
+    );
+    await user.click(screen.getByRole("button", { name: "Complete session" }));
+
+    expect(await screen.findByRole("heading", { name: "Session completed" })).toBeVisible();
+
+    const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
+
+    expect(completedSessions[0]).toMatchObject({
+      sessionBodyweight: 80,
+      sessionBodyweightSource: "session_override",
+    });
+  });
+
+  it("requires Session Bodyweight before completing a bodyweight Training Session", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
+    await user.click(
+      within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
+    );
+    await user.click(screen.getByRole("button", { name: "Complete session" }));
+
+    expect(
+      screen.getByText("Session Bodyweight is required to complete bodyweight volume."),
+    ).toBeVisible();
+    expect(await getTrainingSessionsForPlan("training-plan-test")).toHaveLength(0);
   });
 
   it("opens Training Session history from the top bar with the start action available", async () => {
@@ -940,6 +1057,8 @@ describe("TrainingPlanRoute", () => {
 
     expect(within(completedSessionsSection).getByText("0 loaded sets")).toBeVisible();
     expect(within(completedSessionsSection).getByText("0 kg")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("Partial volume")).toBeVisible();
+    expect(screen.getByText("Partial volume comparison in this Training Week.")).toBeVisible();
 
     const fullBodySessionToggle = screen.getByRole("button", { name: "View session Full Body A" });
 
@@ -951,12 +1070,70 @@ describe("TrainingPlanRoute", () => {
 
     expect(fullBodySessionToggle).toHaveAttribute("aria-controls", sessionDetails.id);
 
-    expect(screen.getByText("No loaded sets recorded for this session.")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Partial volume comparison: Session Bodyweight missing for one or more bodyweight exercises.",
+      ),
+    ).toBeVisible();
     expect(
       within(sessionDetails).getByRole("row", {
         name: /Pull-Ups Vertical Pull 0 loaded sets 0 kg/i,
       }),
     ).toBeVisible();
+  });
+
+  it("saves a Historical Bodyweight Correction and recalculates the selected session", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+    await seedBodyweightOnlyTrainingSession();
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View session Full Body A" }));
+
+    const sessionDetails = await screen.findByRole("region", {
+      name: "Full Body A session details",
+    });
+    const historicalBodyweightCorrectionInput = within(sessionDetails).getByRole("spinbutton", {
+      name: "Historical Bodyweight Correction",
+    });
+
+    await user.type(historicalBodyweightCorrectionInput, "81");
+    await user.click(
+      within(sessionDetails).getByRole("button", {
+        name: "Save historical bodyweight correction",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(sessionDetails).getByRole("row", {
+          name: /Pull-Ups Vertical Pull 1 loaded set 972 kg/i,
+        }),
+      ).toBeVisible();
+    });
+    expect(
+      screen.queryByText(
+        "Partial volume comparison: Session Bodyweight missing for one or more bodyweight exercises.",
+      ),
+    ).not.toBeInTheDocument();
+
+    const correctedSession = (await getTrainingSessionsForPlan("training-plan-test")).find(
+      (session) => session.id === "session-bodyweight-only",
+    );
+
+    expect(correctedSession).toMatchObject({
+      sessionBodyweight: 81,
+      sessionBodyweightSource: "historical_correction",
+      volumeByMovementPattern: [
+        {
+          movementPattern: "vertical_pull",
+          volume: 972,
+        },
+      ],
+    });
   });
 
   it("uses compact cards for weekly comparison and expanded session details on small screens", async () => {
@@ -1173,11 +1350,13 @@ async function seedCompletedTrainingSessions(
             exerciseId: "pull-ups",
             exerciseName: "Pull-Ups",
             movementPattern: "vertical_pull",
-            sets: [{ reps: 10, setIndex: 1, weight: 60 }],
+            sets: [{ reps: 10, setIndex: 1, weight: 0 }],
           },
         ],
         id: "session-c",
         planId: "training-plan-test",
+        sessionBodyweight: 60,
+        sessionBodyweightSource: "baseline",
         status: "completed",
         templateId: "template-1",
         templateLabel: "Upper",

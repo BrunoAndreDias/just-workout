@@ -86,24 +86,29 @@ function TrainingWeekSelector({
 
 function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSummary }) {
   return (
-    <dl className="training-history-summary-strip">
-      <div>
-        <dt>Completion</dt>
-        <dd>{formatCompletion(summary)}</dd>
-      </div>
-      <div>
-        <dt>Total volume</dt>
-        <dd>{formatWeight(summary.totalVolume)} kg</dd>
-      </div>
-      <div>
-        <dt>Progress</dt>
-        <dd>{formatProgress(summary.progressPercentage)}</dd>
-      </div>
-      <div>
-        <dt>Loaded sets</dt>
-        <dd>{formatLoadedSetCount(summary.loadedSetCount)}</dd>
-      </div>
-    </dl>
+    <>
+      <dl className="training-history-summary-strip">
+        <div>
+          <dt>Completion</dt>
+          <dd>{formatCompletion(summary)}</dd>
+        </div>
+        <div>
+          <dt>Total volume</dt>
+          <dd>{formatWeight(summary.totalVolume)} kg</dd>
+        </div>
+        <div>
+          <dt>Progress</dt>
+          <dd>{formatProgress(summary.progressPercentage)}</dd>
+        </div>
+        <div>
+          <dt>Loaded sets</dt>
+          <dd>{formatLoadedSetCount(summary.loadedSetCount)}</dd>
+        </div>
+      </dl>
+      {summary.hasPartialVolume ? (
+        <p className="training-history-empty">Partial volume comparison in this Training Week.</p>
+      ) : null}
+    </>
   );
 }
 

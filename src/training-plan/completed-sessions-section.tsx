@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   formatCompletedDate,
   formatLoadedSetCount,
@@ -13,11 +14,13 @@ import "./completed-sessions-section.css";
 
 export function CompletedSessionsSection({
   isCompactLayout,
+  onSaveHistoricalBodyweightCorrection,
   onToggleSession,
   selectedSession,
   selectedSessions,
 }: {
   isCompactLayout: boolean;
+  onSaveHistoricalBodyweightCorrection: (sessionId: string, bodyweight: number) => Promise<unknown>;
   onToggleSession: (sessionId: string) => void;
   selectedSession: TrainingHistorySessionReport | null;
   selectedSessions: ReadonlyArray<TrainingHistorySessionReport>;
@@ -43,6 +46,7 @@ export function CompletedSessionsSection({
                 isCompactLayout={isCompactLayout}
                 isExpanded={session.id === selectedSession?.id}
                 key={session.id}
+                onSaveHistoricalBodyweightCorrection={onSaveHistoricalBodyweightCorrection}
                 session={session}
                 onToggleSession={onToggleSession}
               />
@@ -61,11 +65,13 @@ export function CompletedSessionsSection({
 function CompletedSessionRow({
   isCompactLayout,
   isExpanded,
+  onSaveHistoricalBodyweightCorrection,
   onToggleSession,
   session,
 }: {
   isCompactLayout: boolean;
   isExpanded: boolean;
+  onSaveHistoricalBodyweightCorrection: (sessionId: string, bodyweight: number) => Promise<unknown>;
   onToggleSession: (sessionId: string) => void;
   session: TrainingHistorySessionReport;
 }) {
@@ -88,6 +94,9 @@ function CompletedSessionRow({
       >
         <span className="training-history-session-row__identity">
           <strong>{session.templateLabel}</strong>
+          {session.hasPartialVolume ? (
+            <small className="training-history-session-row__date">Partial volume</small>
+          ) : null}
           <small className="training-history-session-row__date">
             {formatCompletedDate(session.completedAt)}
           </small>
@@ -112,6 +121,7 @@ function CompletedSessionRow({
         <CompletedSessionDetails
           detailsId={detailsId}
           isCompactLayout={isCompactLayout}
+          onSaveHistoricalBodyweightCorrection={onSaveHistoricalBodyweightCorrection}
           session={session}
         />
       ) : null}
@@ -122,10 +132,12 @@ function CompletedSessionRow({
 function CompletedSessionDetails({
   detailsId,
   isCompactLayout,
+  onSaveHistoricalBodyweightCorrection,
   session,
 }: {
   detailsId: string;
   isCompactLayout: boolean;
+  onSaveHistoricalBodyweightCorrection: (sessionId: string, bodyweight: number) => Promise<unknown>;
   session: TrainingHistorySessionReport;
 }) {
   return (
@@ -134,8 +146,20 @@ function CompletedSessionDetails({
       className="training-history-session-details"
       id={detailsId}
     >
-      {session.loadedSetCount === 0 ? (
+      {session.hasPartialVolume ? (
+        <p className="training-history-empty">
+          Partial volume comparison: Session Bodyweight missing for one or more bodyweight
+          exercises.
+        </p>
+      ) : null}
+      {session.loadedSetCount === 0 && !session.hasPartialVolume ? (
         <p className="training-history-empty">No loaded sets recorded for this session.</p>
+      ) : null}
+      {session.hasBodyweightExercises ? (
+        <HistoricalBodyweightCorrectionForm
+          onSaveHistoricalBodyweightCorrection={onSaveHistoricalBodyweightCorrection}
+          session={session}
+        />
       ) : null}
       {isCompactLayout ? (
         <CompletedSessionExerciseCards exercises={session.exercises} />
@@ -160,6 +184,53 @@ function CompletedSessionDetails({
         </table>
       )}
     </section>
+  );
+}
+
+function HistoricalBodyweightCorrectionForm({
+  onSaveHistoricalBodyweightCorrection,
+  session,
+}: {
+  onSaveHistoricalBodyweightCorrection: (sessionId: string, bodyweight: number) => Promise<unknown>;
+  session: TrainingHistorySessionReport;
+}) {
+  const [bodyweightInput, setBodyweightInput] = useState(
+    session.sessionBodyweight?.toString() ?? "",
+  );
+
+  useEffect(() => {
+    setBodyweightInput(session.sessionBodyweight?.toString() ?? "");
+  }, [session.sessionBodyweight]);
+
+  return (
+    <form
+      className="training-history-session-bodyweight-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+
+        const bodyweight = parsePositiveBodyweight(bodyweightInput);
+
+        if (bodyweight !== null) {
+          void onSaveHistoricalBodyweightCorrection(session.id, bodyweight);
+        }
+      }}
+    >
+      <label className="training-history-session-bodyweight-form__field">
+        <span>Historical Bodyweight Correction</span>
+        <div className="training-history-session-bodyweight-form__input">
+          <input
+            aria-label="Historical Bodyweight Correction"
+            inputMode="decimal"
+            min="0"
+            onChange={(event) => setBodyweightInput(event.target.value)}
+            type="number"
+            value={bodyweightInput}
+          />
+          <span>kg</span>
+        </div>
+      </label>
+      <button type="submit">Save historical bodyweight correction</button>
+    </form>
   );
 }
 
@@ -222,4 +293,10 @@ function CompletedSessionExerciseRow({
       <td>{formatWeight(exercise.completedLoadVolume)} kg</td>
     </tr>
   );
+}
+
+function parsePositiveBodyweight(value: string): number | null {
+  const parsedValue = Number(value);
+
+  return parsedValue > 0 ? parsedValue : null;
 }

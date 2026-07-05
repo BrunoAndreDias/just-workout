@@ -13,6 +13,7 @@ import {
   type TrainingPrescription,
   type WorkoutExerciseRole,
 } from "./training-prescription";
+import type { TrainingWeekBodyweightUpdate } from "./training-week-bodyweight";
 
 export type TrainingPlanSlot = {
   exerciseId: string;
@@ -51,6 +52,7 @@ export type WorkoutTemplate = {
 
 export type TrainingPlan = {
   active: boolean;
+  baselineBodyweight?: number | null;
   generatedAt: string;
   id: string;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
@@ -63,6 +65,7 @@ export type TrainingPlan = {
   trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"];
   trainingGoal: PlanBlueprint["trainingGoal"];
   updatedAt: string;
+  weeklyBodyweightUpdates?: ReadonlyArray<TrainingWeekBodyweightUpdate>;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;
   workoutTemplates: ReadonlyArray<WorkoutTemplate>;
 };

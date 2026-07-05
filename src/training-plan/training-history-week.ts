@@ -1,3 +1,4 @@
+import { hasBodyweightLoadExercise } from "./bodyweight-load";
 import {
   type CompletedLoadVolumeMovementRow,
   summarizeCompletedLoadVolume,
@@ -10,6 +11,7 @@ import {
   presentCompletedLoadVolumeSummary,
 } from "./training-plan-presentation";
 import type { TrainingSession } from "./training-session";
+import { addUtcDays, toDayKey, toUtcDay } from "./training-week-date";
 
 type TrainingHistoryWeek = {
   end: Date;
@@ -19,6 +21,7 @@ type TrainingHistoryWeek = {
 };
 
 type TrainingHistoryWeekMetrics = {
+  hasPartialVolume: boolean;
   loadedSetCount: number;
   totalVolume: number;
   volumeByMovementPattern: PresentedCompletedLoadVolumeMovementRow[];
@@ -44,14 +47,18 @@ export type TrainingHistorySessionReport = {
   completedAt: string;
   completedLoadVolume: number;
   exercises: ReadonlyArray<TrainingHistorySessionExerciseReport>;
+  hasBodyweightExercises: boolean;
+  hasPartialVolume: boolean;
   id: string;
   loadedSetCount: number;
+  sessionBodyweight: number | null;
   templateLabel: string;
 };
 
 export type TrainingHistoryWeekSummary = {
   completedSessions: number;
   completionTarget: number;
+  hasPartialVolume: boolean;
   loadedSetCount: number;
   progressPercentage: number | null;
   totalVolume: number;
@@ -159,6 +166,7 @@ export function buildTrainingHistoryWeekReport({
 function summarizeTrainingSessionReports(
   sessionReports: ReadonlyArray<TrainingHistorySessionReport>,
 ): TrainingHistoryWeekMetrics {
+  let hasPartialVolume = false;
   let loadedSetCount = 0;
   let totalVolume = 0;
   const volumeByPattern = new Map<
@@ -167,6 +175,8 @@ function summarizeTrainingSessionReports(
   >();
 
   for (const sessionReport of sessionReports) {
+    hasPartialVolume = hasPartialVolume || sessionReport.hasPartialVolume;
+
     for (const exerciseReport of sessionReport.exercises) {
       loadedSetCount += exerciseReport.loadedSetCount;
       totalVolume += exerciseReport.completedLoadVolume;
@@ -175,6 +185,7 @@ function summarizeTrainingSessionReports(
   }
 
   return {
+    hasPartialVolume,
     loadedSetCount,
     totalVolume,
     volumeByMovementPattern: Array.from(volumeByPattern.values()).sort((firstRow, secondRow) =>
@@ -196,6 +207,7 @@ function createEmptyTrainingHistoryWeekReport(
     summary: {
       completedSessions: 0,
       completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
+      hasPartialVolume: false,
       loadedSetCount: 0,
       progressPercentage: null,
       totalVolume: 0,
@@ -249,6 +261,7 @@ function createTrainingHistoryWeekSummary(
   return {
     completedSessions: selectedSessions.length,
     completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
+    hasPartialVolume: selectedMetrics.hasPartialVolume,
     loadedSetCount: selectedMetrics.loadedSetCount,
     progressPercentage: calculateProgressPercentage(
       selectedMetrics.totalVolume,
@@ -477,15 +490,20 @@ function createTrainingHistorySessionReport(
   trainingSession: CompletedTrainingSession,
 ): TrainingHistorySessionReport {
   const completedLoadVolume = presentCompletedLoadVolumeSummary(
-    summarizeCompletedLoadVolume(trainingSession.exercises),
+    summarizeCompletedLoadVolume(trainingSession.exercises, {
+      sessionBodyweight: trainingSession.sessionBodyweight,
+    }),
   );
 
   return {
     completedAt: trainingSession.completedAt,
     completedLoadVolume: completedLoadVolume.totalVolume,
     exercises: completedLoadVolume.exercises,
+    hasBodyweightExercises: hasBodyweightLoadExercise(trainingSession.exercises),
+    hasPartialVolume: completedLoadVolume.hasPartialVolume,
     id: trainingSession.id,
     loadedSetCount: completedLoadVolume.loadedSetCount,
+    sessionBodyweight: trainingSession.sessionBodyweight ?? null,
     templateLabel: trainingSession.templateLabel,
   };
 }
@@ -648,28 +666,10 @@ function parseDayKey(value: string | null): Date | null {
   return isValidDate(parsedDay) ? parsedDay : null;
 }
 
-function toDayKey(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function toUtcDay(value: string): Date {
-  const date = new Date(value);
-
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
-
 function isValidDateString(value: string): boolean {
   return isValidDate(new Date(value));
 }
 
 function isValidDate(value: Date): boolean {
   return !Number.isNaN(value.getTime());
-}
-
-function addUtcDays(value: Date, days: number): Date {
-  const nextDate = new Date(value);
-
-  nextDate.setUTCDate(nextDate.getUTCDate() + days);
-
-  return nextDate;
 }

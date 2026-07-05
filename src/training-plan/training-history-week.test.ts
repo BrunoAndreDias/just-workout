@@ -91,7 +91,7 @@ describe("buildTrainingHistoryWeekReport", () => {
     });
   });
 
-  it("keeps bodyweight-only exercises visible in selected session summaries without counting loaded work", () => {
+  it("marks missing bodyweight history as partial instead of silently counting it as zero", () => {
     const trainingPlan = createTrainingPlan();
     const trainingSessions: ReadonlyArray<TrainingSession> = [
       {
@@ -107,6 +107,8 @@ describe("buildTrainingHistoryWeekReport", () => {
         ],
         id: "bodyweight-session",
         planId: "training-plan-test",
+        sessionBodyweight: null,
+        sessionBodyweightSource: null,
         status: "completed",
         templateId: "template-1",
         templateLabel: "Full Body A",
@@ -123,6 +125,7 @@ describe("buildTrainingHistoryWeekReport", () => {
 
     expect(report.summary.loadedSetCount).toBe(0);
     expect(report.summary.totalVolume).toBe(0);
+    expect(report.summary.hasPartialVolume).toBe(true);
     expect(report.selectedSessions).toEqual([
       {
         completedAt: "2026-06-06T09:00:00.000Z",
@@ -132,13 +135,82 @@ describe("buildTrainingHistoryWeekReport", () => {
             completedLoadVolume: 0,
             exerciseId: "pull-ups",
             exerciseName: "Pull-Ups",
+            hasPartialVolume: true,
             loadedSetCount: 0,
             movementPattern: "vertical_pull",
             movementPatternLabel: "Vertical Pull",
           },
         ],
+        hasBodyweightExercises: true,
+        hasPartialVolume: true,
         id: "bodyweight-session",
         loadedSetCount: 0,
+        sessionBodyweight: null,
+        templateLabel: "Full Body A",
+      },
+    ]);
+  });
+
+  it("counts known Session Bodyweight in Training history summaries for bodyweight exercises", () => {
+    const trainingPlan = createTrainingPlan();
+    const trainingSessions: ReadonlyArray<TrainingSession> = [
+      {
+        completedAt: "2026-06-06T09:00:00.000Z",
+        createdAt: "2026-06-06T09:00:00.000Z",
+        exercises: [
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 8, setIndex: 1, weight: 5 }],
+          },
+        ],
+        id: "bodyweight-session",
+        planId: "training-plan-test",
+        sessionBodyweight: 80,
+        sessionBodyweightSource: "session_override",
+        status: "completed",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        updatedAt: "2026-06-06T09:00:00.000Z",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "vertical_pull",
+            volume: 680,
+          },
+        ],
+      },
+    ];
+
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan,
+      trainingSessions,
+    });
+
+    expect(report.summary.loadedSetCount).toBe(1);
+    expect(report.summary.totalVolume).toBe(680);
+    expect(report.summary.hasPartialVolume).toBe(false);
+    expect(report.selectedSessions).toEqual([
+      {
+        completedAt: "2026-06-06T09:00:00.000Z",
+        completedLoadVolume: 680,
+        exercises: [
+          {
+            completedLoadVolume: 680,
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            hasPartialVolume: false,
+            loadedSetCount: 1,
+            movementPattern: "vertical_pull",
+            movementPatternLabel: "Vertical Pull",
+          },
+        ],
+        hasBodyweightExercises: true,
+        hasPartialVolume: false,
+        id: "bodyweight-session",
+        loadedSetCount: 1,
+        sessionBodyweight: 80,
         templateLabel: "Full Body A",
       },
     ]);

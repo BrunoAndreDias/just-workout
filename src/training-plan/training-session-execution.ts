@@ -1,5 +1,5 @@
 import { isBodyweightLoadExercise } from "./bodyweight-load";
-import { calculateVolumeByMovementPattern } from "./completed-load-volume";
+import { summarizeCompletedLoadVolume } from "./completed-load-volume";
 import type {
   TrainingPlanSlot,
   TrainingPlanStartingLoadSuggestion,
@@ -118,6 +118,7 @@ export type TrainingSessionExecutionReadModel = {
   completedSetCount: number;
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   groups: ReadonlyArray<TrainingSessionExecutionGroup>;
+  hasPartialVolume: boolean;
   plannedSetCount: number;
   volumeByMovementPattern: ReadonlyArray<PresentedCompletedLoadVolumeMovementRow>;
 };
@@ -194,11 +195,13 @@ export function toggleTrainingSessionExecutionGroup(
 export function createTrainingSessionExecutionReadModel({
   completedSession,
   previousTrainingSessions,
+  sessionBodyweight = null,
   state,
   workoutTemplate,
 }: {
   completedSession: TrainingSession | null;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  sessionBodyweight?: number | null;
   state: TrainingSessionExecutionState;
   workoutTemplate: WorkoutTemplate;
 }): TrainingSessionExecutionReadModel {
@@ -206,6 +209,12 @@ export function createTrainingSessionExecutionReadModel({
   const entries = createTrainingSessionEntries(sessionExercises, state.drafts);
   const completedSetCount = countCompletedTrainingSessionSets(state.drafts);
   const plannedSetCount = getTrainingSessionPlannedSetCount(sessionExercises);
+  const completedLoadVolumeSummary = summarizeCompletedLoadVolume(
+    completedSession?.exercises ?? entries,
+    {
+      sessionBodyweight: completedSession?.sessionBodyweight ?? sessionBodyweight,
+    },
+  );
 
   return {
     completedSetCount,
@@ -220,11 +229,11 @@ export function createTrainingSessionExecutionReadModel({
         workoutTemplateLabel: workoutTemplate.label,
       }),
     ),
+    hasPartialVolume: completedLoadVolumeSummary.hasPartialVolume,
     plannedSetCount,
     volumeByMovementPattern: presentCompletedLoadVolumeMovementRows(
-      completedSession
-        ? completedSession.volumeByMovementPattern
-        : calculateVolumeByMovementPattern(entries),
+      completedSession?.volumeByMovementPattern ??
+        completedLoadVolumeSummary.volumeByMovementPattern,
     ),
   };
 }

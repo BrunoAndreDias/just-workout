@@ -13,6 +13,12 @@ export function isBodyweightLoadExercise({
   );
 }
 
+export function hasBodyweightLoadExercise(
+  exercises: ReadonlyArray<BodyweightLoadExercise>,
+): boolean {
+  return exercises.some((exercise) => isBodyweightLoadExercise(exercise));
+}
+
 const BODYWEIGHT_LOAD_EXERCISE_IDS = new Set([
   "assisted-pull-ups",
   "chin-ups",

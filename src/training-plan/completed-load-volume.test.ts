@@ -12,7 +12,7 @@ describe("Completed Load Volume", () => {
     expect(isLoadedSet({ reps: 0, setIndex: 1, weight: 20 })).toBe(false);
   });
 
-  it("keeps bodyweight-only exercises visible without counting Completed Load Volume", () => {
+  it("keeps missing-bodyweight exercises visible while marking them as partial volume", () => {
     expect(
       createCompletedLoadVolumeExerciseReport({
         exerciseId: "pull-ups",
@@ -24,9 +24,56 @@ describe("Completed Load Volume", () => {
       completedLoadVolume: 0,
       exerciseId: "pull-ups",
       exerciseName: "Pull-Ups",
+      hasPartialVolume: true,
       loadedSetCount: 0,
       movementPattern: "vertical_pull",
     });
+  });
+
+  it("counts known Session Bodyweight toward Completed Load Volume for bodyweight exercises", () => {
+    expect(
+      createCompletedLoadVolumeExerciseReport(
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: 5 }],
+        },
+        { sessionBodyweight: 80 },
+      ),
+    ).toEqual({
+      completedLoadVolume: 680,
+      exerciseId: "pull-ups",
+      exerciseName: "Pull-Ups",
+      hasPartialVolume: false,
+      loadedSetCount: 1,
+      movementPattern: "vertical_pull",
+    });
+  });
+
+  it("marks missing Session Bodyweight as partial volume instead of counting it as zero", () => {
+    const summary = summarizeCompletedLoadVolume([
+      {
+        exerciseId: "pull-ups",
+        exerciseName: "Pull-Ups",
+        movementPattern: "vertical_pull",
+        sets: [{ reps: 12, setIndex: 1, weight: 0 }],
+      },
+    ]);
+
+    expect(summary).toMatchObject({
+      hasPartialVolume: true,
+      loadedSetCount: 0,
+      totalVolume: 0,
+    });
+    expect(summary.exercises).toEqual([
+      expect.objectContaining({
+        completedLoadVolume: 0,
+        exerciseId: "pull-ups",
+        hasPartialVolume: true,
+        loadedSetCount: 0,
+      }),
+    ]);
   });
 
   it("summarizes exercise, session, and Movement Pattern volume through one interface", () => {

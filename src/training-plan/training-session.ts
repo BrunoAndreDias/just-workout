@@ -20,12 +20,20 @@ export type TrainingSessionExerciseEntry = {
 
 export type TrainingSessionMovementVolume = CompletedLoadVolumeMovementRow;
 
+export type TrainingSessionBodyweightSource =
+  | "baseline"
+  | "historical_correction"
+  | "inherited_weekly"
+  | "session_override";
+
 export type TrainingSession = {
   completedAt: string | null;
   createdAt: string;
   exercises: ReadonlyArray<TrainingSessionExerciseEntry>;
   id: string;
   planId: string;
+  sessionBodyweight?: number | null;
+  sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
   status: "completed";
   templateId: string;
   templateLabel: string;
@@ -43,6 +51,8 @@ export type CompleteTrainingSessionInput = {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   id: string;
   plan: TrainingPlan;
+  sessionBodyweight?: number | null;
+  sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
   template: WorkoutTemplate;
   timestamp: string;
 };
@@ -51,6 +61,8 @@ export function createCompletedTrainingSession({
   entries,
   id,
   plan,
+  sessionBodyweight = null,
+  sessionBodyweightSource = null,
   template,
   timestamp,
 }: CompleteTrainingSessionInput): TrainingSession {
@@ -60,6 +72,8 @@ export function createCompletedTrainingSession({
     exercises: entries,
     id,
     planId: plan.id,
+    sessionBodyweight,
+    sessionBodyweightSource,
     status: "completed",
     templateId: template.id,
     templateLabel: template.label,
@@ -67,6 +81,6 @@ export function createCompletedTrainingSession({
     trainingBlockId: plan.trainingBlock?.id ?? null,
     trainingBlockWeekNumber: plan.trainingBlock?.weekNumber ?? null,
     updatedAt: timestamp,
-    volumeByMovementPattern: calculateVolumeByMovementPattern(entries),
+    volumeByMovementPattern: calculateVolumeByMovementPattern(entries, { sessionBodyweight }),
   };
 }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../design-system/button";
@@ -10,6 +10,7 @@ import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
 } from "./training-plan-query-options";
+import { trainingPlanService } from "./training-plan-service";
 import { TrainingWeekSection } from "./training-week-section";
 import "./training-plan-loading.css";
 import "./training-history-shared.css";
@@ -19,12 +20,25 @@ const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 
 export function TrainingSessionHistoryRoute() {
   const planId = useTrainingSessionHistoryPlanId();
+  const queryClient = useQueryClient();
   const isCompactLayout = useTrainingHistoryCompactLayout();
   const { trainingPlanQuery, trainingSessionsQuery } = useTrainingHistoryData(planId);
   const trainingPlan = trainingPlanQuery.data;
   const trainingSessions = trainingSessionsQuery.data ?? [];
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedWeekEndKey, setSelectedWeekEndKey] = useState<string | null>(null);
+  const saveHistoricalBodyweightCorrection = useMutation({
+    mutationFn: ({ bodyweight, sessionId }: { bodyweight: number; sessionId: string }) =>
+      trainingPlanService.saveHistoricalBodyweightCorrection({
+        bodyweight,
+        sessionId,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: trainingPlanSessionsQueryOptions(planId).queryKey,
+      });
+    },
+  });
   const trainingWeekReport = useMemo(
     () =>
       trainingPlan
@@ -96,6 +110,12 @@ export function TrainingSessionHistoryRoute() {
         />
         <CompletedSessionsSection
           isCompactLayout={isCompactLayout}
+          onSaveHistoricalBodyweightCorrection={(sessionId, bodyweight) =>
+            saveHistoricalBodyweightCorrection.mutateAsync({
+              bodyweight,
+              sessionId,
+            })
+          }
           selectedSession={selectedSession}
           selectedSessions={selectedSessions}
           onToggleSession={(sessionId) =>

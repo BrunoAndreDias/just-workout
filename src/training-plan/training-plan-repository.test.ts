@@ -8,6 +8,8 @@ import {
   getTrainingPlan,
   getTrainingSessionsForPlan,
   saveAcceptedTrainingPlan,
+  saveHistoricalTrainingSessionBodyweight,
+  saveTrainingWeekBodyweight,
   seedTrainingPlanData,
 } from "./training-plan-repository";
 import { createCompletedTrainingSession, type TrainingSession } from "./training-session";
@@ -139,9 +141,180 @@ describe("trainingPlanRepository", () => {
     expect(await getTrainingSessionsForPlan("training-plan-1")).toEqual([
       expect.objectContaining({
         id: "legacy-session-1",
+        sessionBodyweight: null,
+        sessionBodyweightSource: null,
         trainingBlockCycleNumber: null,
         trainingBlockId: null,
         trainingBlockWeekNumber: null,
+      }),
+    ]);
+  });
+
+  it("updates inherited Training Week bodyweight without overwriting per-session overrides", async () => {
+    const trainingPlan = createTrainingPlan({
+      baselineBodyweight: 80,
+    });
+    const firstWorkoutTemplate = trainingPlan.workoutTemplates[0];
+
+    if (!firstWorkoutTemplate) {
+      throw new Error("Expected the generated Training Plan to include a Workout Template.");
+    }
+
+    const inheritedSession = createCompletedTrainingSession({
+      entries: [
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: 0 }],
+        },
+      ],
+      id: "session-inherited",
+      plan: trainingPlan,
+      sessionBodyweight: 80,
+      sessionBodyweightSource: "baseline",
+      template: firstWorkoutTemplate,
+      timestamp: "2026-06-08T10:00:00.000Z",
+    });
+    const overrideSession = createCompletedTrainingSession({
+      entries: [
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: 5 }],
+        },
+      ],
+      id: "session-override",
+      plan: trainingPlan,
+      sessionBodyweight: 78,
+      sessionBodyweightSource: "session_override",
+      template: firstWorkoutTemplate,
+      timestamp: "2026-06-09T10:00:00.000Z",
+    });
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+      trainingSessions: [inheritedSession, overrideSession],
+    });
+
+    await saveTrainingWeekBodyweight({
+      bodyweight: 82,
+      planId: trainingPlan.id,
+      referenceDate: "2026-06-09T12:00:00.000Z",
+      timestamp: "2026-06-09T12:00:00.000Z",
+    });
+
+    expect(await getTrainingPlan(trainingPlan.id)).toEqual(
+      expect.objectContaining({
+        baselineBodyweight: 80,
+        weeklyBodyweightUpdates: [
+          expect.objectContaining({
+            bodyweight: 82,
+            weekEnd: "2026-06-13",
+            weekStart: "2026-06-07",
+          }),
+        ],
+      }),
+    );
+    expect(await getTrainingSessionsForPlan(trainingPlan.id)).toEqual([
+      expect.objectContaining({
+        id: "session-inherited",
+        sessionBodyweight: 82,
+        sessionBodyweightSource: "inherited_weekly",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "vertical_pull",
+            volume: 656,
+          },
+        ],
+      }),
+      expect.objectContaining({
+        id: "session-override",
+        sessionBodyweight: 78,
+        sessionBodyweightSource: "session_override",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "vertical_pull",
+            volume: 664,
+          },
+        ],
+      }),
+    ]);
+  });
+
+  it("stores a Historical Bodyweight Correction on one completed session without changing others", async () => {
+    const trainingPlan = createTrainingPlan();
+    const firstWorkoutTemplate = trainingPlan.workoutTemplates[0];
+
+    if (!firstWorkoutTemplate) {
+      throw new Error("Expected the generated Training Plan to include a Workout Template.");
+    }
+
+    const missingSession = createCompletedTrainingSession({
+      entries: [
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 10, setIndex: 1, weight: 0 }],
+        },
+      ],
+      id: "session-missing-bodyweight",
+      plan: trainingPlan,
+      template: firstWorkoutTemplate,
+      timestamp: "2026-06-10T10:00:00.000Z",
+    });
+    const unchangedSession = createCompletedTrainingSession({
+      entries: [
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: 5 }],
+        },
+      ],
+      id: "session-unchanged",
+      plan: trainingPlan,
+      sessionBodyweight: 78,
+      sessionBodyweightSource: "session_override",
+      template: firstWorkoutTemplate,
+      timestamp: "2026-06-11T10:00:00.000Z",
+    });
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+      trainingSessions: [missingSession, unchangedSession],
+    });
+
+    await saveHistoricalTrainingSessionBodyweight({
+      bodyweight: 81,
+      sessionId: "session-missing-bodyweight",
+      timestamp: "2026-06-12T10:00:00.000Z",
+    });
+
+    expect(await getTrainingSessionsForPlan(trainingPlan.id)).toEqual([
+      expect.objectContaining({
+        id: "session-missing-bodyweight",
+        sessionBodyweight: 81,
+        sessionBodyweightSource: "historical_correction",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "vertical_pull",
+            volume: 810,
+          },
+        ],
+      }),
+      expect.objectContaining({
+        id: "session-unchanged",
+        sessionBodyweight: 78,
+        sessionBodyweightSource: "session_override",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "vertical_pull",
+            volume: 664,
+          },
+        ],
       }),
     ]);
   });

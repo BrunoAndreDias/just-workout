@@ -1,4 +1,5 @@
 import type { MovementPatternId } from "../training-taxonomy";
+import { isBodyweightLoadExercise } from "./bodyweight-load";
 import type { TrainingSessionExerciseEntry, TrainingSessionSetEntry } from "./training-session";
 
 export type CompletedLoadVolumeMovementRow = {
@@ -10,26 +11,35 @@ export type CompletedLoadVolumeExerciseReport = {
   completedLoadVolume: number;
   exerciseId: string;
   exerciseName: string;
+  hasPartialVolume: boolean;
   loadedSetCount: number;
   movementPattern: MovementPatternId;
 };
 
 export type CompletedLoadVolumeSummary = {
   exercises: ReadonlyArray<CompletedLoadVolumeExerciseReport>;
+  hasPartialVolume: boolean;
   loadedSetCount: number;
   totalVolume: number;
   volumeByMovementPattern: ReadonlyArray<CompletedLoadVolumeMovementRow>;
 };
 
+type CompletedLoadVolumeOptions = {
+  sessionBodyweight?: number | null;
+};
+
 export function summarizeCompletedLoadVolume(
   entries: ReadonlyArray<TrainingSessionExerciseEntry>,
+  options: CompletedLoadVolumeOptions = {},
 ): CompletedLoadVolumeSummary {
-  const exercises = entries.map(createCompletedLoadVolumeExerciseReport);
+  const exercises = entries.map((entry) => createCompletedLoadVolumeExerciseReport(entry, options));
   const volumeByPattern = new Map<MovementPatternId, CompletedLoadVolumeMovementRow>();
+  let hasPartialVolume = false;
   let loadedSetCount = 0;
   let totalVolume = 0;
 
   for (const exercise of exercises) {
+    hasPartialVolume = hasPartialVolume || exercise.hasPartialVolume;
     loadedSetCount += exercise.loadedSetCount;
     totalVolume += exercise.completedLoadVolume;
     addExerciseVolumeToMovementPattern(volumeByPattern, exercise);
@@ -37,6 +47,7 @@ export function summarizeCompletedLoadVolume(
 
   return {
     exercises,
+    hasPartialVolume,
     loadedSetCount,
     totalVolume,
     volumeByMovementPattern: sortMovementVolumeRows(Array.from(volumeByPattern.values())),
@@ -45,22 +56,38 @@ export function summarizeCompletedLoadVolume(
 
 export function calculateVolumeByMovementPattern(
   entries: ReadonlyArray<TrainingSessionExerciseEntry>,
+  options: CompletedLoadVolumeOptions = {},
 ): CompletedLoadVolumeMovementRow[] {
-  return [...summarizeCompletedLoadVolume(entries).volumeByMovementPattern];
+  return [...summarizeCompletedLoadVolume(entries, options).volumeByMovementPattern];
 }
 
 export function createCompletedLoadVolumeExerciseReport(
   exercise: TrainingSessionExerciseEntry,
+  options: CompletedLoadVolumeOptions = {},
 ): CompletedLoadVolumeExerciseReport {
   let completedLoadVolume = 0;
+  let hasPartialVolume = false;
   let loadedSetCount = 0;
 
   for (const set of exercise.sets) {
-    if (!isLoadedSet(set)) {
+    if (
+      isMissingBodyweightVolume({ exercise, sessionBodyweight: options.sessionBodyweight, set })
+    ) {
+      hasPartialVolume = true;
       continue;
     }
 
-    completedLoadVolume += set.weight * set.reps;
+    const effectiveLoad = getCompletedSetEffectiveLoad({
+      exercise,
+      sessionBodyweight: options.sessionBodyweight ?? null,
+      set,
+    });
+
+    if (effectiveLoad <= 0 || set.reps <= 0) {
+      continue;
+    }
+
+    completedLoadVolume += effectiveLoad * set.reps;
     loadedSetCount += 1;
   }
 
@@ -68,6 +95,7 @@ export function createCompletedLoadVolumeExerciseReport(
     completedLoadVolume,
     exerciseId: exercise.exerciseId,
     exerciseName: exercise.exerciseName,
+    hasPartialVolume,
     loadedSetCount,
     movementPattern: exercise.movementPattern,
   };
@@ -75,6 +103,38 @@ export function createCompletedLoadVolumeExerciseReport(
 
 export function isLoadedSet(set: TrainingSessionSetEntry): boolean {
   return set.weight > 0 && set.reps > 0;
+}
+
+function getCompletedSetEffectiveLoad({
+  exercise,
+  sessionBodyweight,
+  set,
+}: {
+  exercise: TrainingSessionExerciseEntry;
+  sessionBodyweight: number | null;
+  set: TrainingSessionSetEntry;
+}): number {
+  if (!isBodyweightLoadExercise(exercise)) {
+    return set.weight;
+  }
+
+  if (sessionBodyweight === null) {
+    return 0;
+  }
+
+  return Math.max(0, sessionBodyweight + set.weight);
+}
+
+function isMissingBodyweightVolume({
+  exercise,
+  sessionBodyweight,
+  set,
+}: {
+  exercise: TrainingSessionExerciseEntry;
+  sessionBodyweight: number | null | undefined;
+  set: TrainingSessionSetEntry;
+}): boolean {
+  return isBodyweightLoadExercise(exercise) && sessionBodyweight == null && set.reps > 0;
 }
 
 function addExerciseVolumeToMovementPattern(

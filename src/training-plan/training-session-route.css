@@ -49,6 +49,65 @@
   min-width: 0;
 }
 
+.training-session-bodyweight {
+  display: grid;
+  gap: 0.875rem;
+  max-width: 42rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(0, 119, 128, 0.18);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: rgba(0, 119, 128, 0.05);
+}
+
+.training-session-bodyweight h2,
+.training-session-bodyweight p {
+  margin: 0;
+}
+
+.training-session-bodyweight h2 {
+  color: #063f44;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.training-session-bodyweight p,
+.training-session-bodyweight small {
+  color: #4f5c62;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.training-session-bodyweight__field {
+  display: grid;
+  gap: 0.5rem;
+  color: #142126;
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.training-session-bodyweight__input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.training-session-bodyweight__input input {
+  width: min(100%, 8rem);
+  border: 1px solid rgba(28, 25, 23, 0.16);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.training-session-bodyweight__error {
+  color: #9f1239;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
 .training-session-footer {
   display: flex;
   align-items: center;

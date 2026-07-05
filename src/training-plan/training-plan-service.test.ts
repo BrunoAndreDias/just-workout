@@ -57,6 +57,42 @@ describe("trainingPlanService", () => {
       }),
     ]);
   });
+
+  it("stores Session Bodyweight and Session Bodyweight Source on completed bodyweight sessions", async () => {
+    const trainingPlan = createTrainingPlan();
+    const firstTemplate = trainingPlan.workoutTemplates[0];
+
+    if (!firstTemplate) {
+      throw new Error("Expected the generated Training Plan to include a Workout Template.");
+    }
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+    });
+
+    await trainingPlanService.completeTrainingSession({
+      entries: [
+        {
+          exerciseId: "pull-ups",
+          exerciseName: "Pull-Ups",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: 5 }],
+        },
+      ],
+      planId: trainingPlan.id,
+      sessionBodyweight: 80,
+      sessionBodyweightSource: "session_override",
+      templateId: firstTemplate.id,
+    });
+
+    expect(await getTrainingSessionsForPlan(trainingPlan.id)).toEqual([
+      expect.objectContaining({
+        planId: "training-plan-1",
+        sessionBodyweight: 80,
+        sessionBodyweightSource: "session_override",
+      }),
+    ]);
+  });
 });
 
 function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan {
