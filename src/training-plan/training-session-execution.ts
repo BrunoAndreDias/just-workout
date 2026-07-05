@@ -185,6 +185,7 @@ export function changeTrainingSessionExecutionSetReps(
   };
 }
 
+/** Creates the action for editing a set's captured RIR value. */
 export function changeTrainingSessionExecutionSetRir(
   row: Pick<TrainingSessionExecutionSetRow, "setId">,
   value: string,
@@ -395,7 +396,7 @@ export function createTrainingSessionEntries(
     ).map((draft) => ({
       done: draft.done,
       reps: Number(draft.reps) || 0,
-      rir: (draft.rir ?? "").trim() === "" ? null : Number(draft.rir),
+      rir: parseNullableNonNegativeNumber(draft.rir),
       setIndex: draft.setIndex,
       weight: Number(draft.weight) || 0,
     })),
@@ -763,6 +764,7 @@ function findTrainingSessionExecutionSetActionTarget({
   return null;
 }
 
+/** Resolves the exercise affected by a session execution action, when the action targets a set. */
 export function getTrainingSessionExecutionActionExerciseId({
   action,
   workoutTemplate,
@@ -798,6 +800,18 @@ function getTrainingSessionExecutionDraftField(
   }
 
   return "weight";
+}
+
+function parseNullableNonNegativeNumber(value: string | null | undefined): number | null {
+  const trimmedValue = (value ?? "").trim();
+
+  if (trimmedValue === "") {
+    return null;
+  }
+
+  const parsedValue = Number(trimmedValue);
+
+  return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : null;
 }
 
 function getTrainingSessionExecutionSetId({

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { isBodyweightLoadExercise } from "../bodyweight-load";
-import type { NextTrainingBlockTransitionWorkflow } from "../index";
+import type {
+  NextTrainingBlockLoadSuggestion,
+  NextTrainingBlockTransitionWorkflow,
+} from "../index";
 import "./training-block-progress.css";
 
 export function TrainingBlockProgress({
@@ -125,6 +128,53 @@ function TrainingBlockPreviewDetails({
     ),
   );
 
+  function renderLoadSuggestionFields(
+    loadSuggestion: NextTrainingBlockLoadSuggestion,
+    exerciseName: string,
+  ) {
+    return (
+      <TrainingBlockLoadSuggestionFields
+        exerciseName={exerciseName}
+        loadInputValue={
+          loadInputValues[loadSuggestion.exerciseId] ??
+          formatEditableLoad(loadSuggestion.userEditedLoad ?? loadSuggestion.suggestedLoad)
+        }
+        loadSuggestion={loadSuggestion}
+        onInputChange={(nextValue) => {
+          setLoadInputValues((current) => ({
+            ...current,
+            [loadSuggestion.exerciseId]: nextValue,
+          }));
+
+          if (nextValue.trim() === "") {
+            setLoadSuggestions((current) =>
+              current.map((suggestion) =>
+                suggestion.exerciseId === loadSuggestion.exerciseId
+                  ? { ...suggestion, userEditedLoad: null }
+                  : suggestion,
+              ),
+            );
+            return;
+          }
+
+          const nextLoad = Number(nextValue);
+
+          if (!Number.isFinite(nextLoad)) {
+            return;
+          }
+
+          setLoadSuggestions((current) =>
+            transition.editLoadSuggestion({
+              exerciseId: loadSuggestion.exerciseId,
+              suggestions: current,
+              userEditedLoad: nextLoad,
+            }),
+          );
+        }}
+      />
+    );
+  }
+
   return (
     <div className="active-training-plan-progress__details">
       <h3>Exercise rotation preview</h3>
@@ -145,79 +195,30 @@ function TrainingBlockPreviewDetails({
                 {rotation.previousExerciseName} → {rotation.nextExerciseName}
               </span>
               <span>{rotation.reason}</span>
-              {loadSuggestion ? (
-                <>
-                  <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
-                  <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
-                  <span>{loadSuggestion.reason}</span>
-                  <span className="active-training-plan-progress__load-edit">
-                    <label htmlFor={`load-suggestion-${loadSuggestion.exerciseId}`}>
-                      Suggested starting load for {rotation.nextExerciseName}
-                    </label>
-                    <input
-                      id={`load-suggestion-${loadSuggestion.exerciseId}`}
-                      inputMode="decimal"
-                      min={isBodyweightLoadExercise(loadSuggestion) ? -200 : 0}
-                      onChange={(event) => {
-                        const nextValue = event.currentTarget.value;
-
-                        setLoadInputValues((current) => ({
-                          ...current,
-                          [loadSuggestion.exerciseId]: nextValue,
-                        }));
-
-                        if (nextValue.trim() === "") {
-                          setLoadSuggestions((current) =>
-                            current.map((suggestion) =>
-                              suggestion.exerciseId === loadSuggestion.exerciseId
-                                ? { ...suggestion, userEditedLoad: null }
-                                : suggestion,
-                            ),
-                          );
-                          return;
-                        }
-
-                        const nextLoad = Number(nextValue);
-
-                        if (!Number.isFinite(nextLoad)) {
-                          return;
-                        }
-
-                        setLoadSuggestions((current) =>
-                          transition.editLoadSuggestion({
-                            exerciseId: loadSuggestion.exerciseId,
-                            suggestions: current,
-                            userEditedLoad: nextLoad,
-                          }),
-                        );
-                      }}
-                      step={2.5}
-                      type="number"
-                      value={
-                        loadInputValues[loadSuggestion.exerciseId] ??
-                        formatEditableLoad(
-                          loadSuggestion.userEditedLoad ?? loadSuggestion.suggestedLoad,
-                        )
-                      }
-                    />
-                  </span>
-                  {loadSuggestion.userEditedLoad === null ? null : (
-                    <span>Edited start: {formatLoad(loadSuggestion.userEditedLoad)}</span>
-                  )}
-                </>
-              ) : null}
+              {loadSuggestion
+                ? renderLoadSuggestionFields(loadSuggestion, rotation.nextExerciseName)
+                : null}
             </li>
           );
         })}
-        {preview.rotation.kept.map((kept) => (
-          <li key={`${kept.templateId}-${kept.groupId}-${kept.slotIndex}-${kept.exerciseId}`}>
-            <span>
-              {kept.templateLabel} · {kept.slotLabel}
-            </span>
-            <span>{kept.exerciseName}</span>
-            <span>{kept.reason}</span>
-          </li>
-        ))}
+        {preview.rotation.kept.map((kept) => {
+          const loadSuggestion = loadSuggestions.find(
+            (suggestion) => suggestion.exerciseId === kept.exerciseId,
+          );
+
+          return (
+            <li key={`${kept.templateId}-${kept.groupId}-${kept.slotIndex}-${kept.exerciseId}`}>
+              <span>
+                {kept.templateLabel} · {kept.slotLabel}
+              </span>
+              <span>{kept.exerciseName}</span>
+              <span>{kept.reason}</span>
+              {loadSuggestion
+                ? renderLoadSuggestionFields(loadSuggestion, kept.exerciseName)
+                : null}
+            </li>
+          );
+        })}
       </ul>
       {transition.accept ? (
         <button
@@ -238,6 +239,43 @@ function TrainingBlockPreviewDetails({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function TrainingBlockLoadSuggestionFields({
+  exerciseName,
+  loadInputValue,
+  loadSuggestion,
+  onInputChange,
+}: {
+  exerciseName: string;
+  loadInputValue: string;
+  loadSuggestion: NextTrainingBlockLoadSuggestion;
+  onInputChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
+      <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
+      <span>{loadSuggestion.reason}</span>
+      <span className="active-training-plan-progress__load-edit">
+        <label htmlFor={`load-suggestion-${loadSuggestion.exerciseId}`}>
+          Suggested starting load for {exerciseName}
+        </label>
+        <input
+          id={`load-suggestion-${loadSuggestion.exerciseId}`}
+          inputMode="decimal"
+          min={isBodyweightLoadExercise(loadSuggestion) ? -200 : 0}
+          onChange={(event) => onInputChange(event.currentTarget.value)}
+          step={2.5}
+          type="number"
+          value={loadInputValue}
+        />
+      </span>
+      {loadSuggestion.userEditedLoad === null ? null : (
+        <span>Edited start: {formatLoad(loadSuggestion.userEditedLoad)}</span>
+      )}
+    </>
   );
 }
 

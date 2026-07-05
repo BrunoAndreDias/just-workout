@@ -15,9 +15,13 @@ import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-s
 const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 
 export type TrainingSessionLoadPrefill = TrainingPlanStartingLoadSuggestion & {
+  /** True while an exact-history prefill should be explained in the first relevant session. */
   showPrefillExplanation: boolean;
 };
 
+/**
+ * Builds one editable starting-load prefill per exercise in the workout template.
+ */
 export function createTrainingSessionLoadPrefills({
   availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
   previousTrainingSessions,
@@ -80,7 +84,7 @@ export function createTrainingSessionLoadPrefills({
           movementPattern: slot.movementPattern,
           previousLoad,
           suggestedLoad: roundToNearestIncrement(previousLoad, availableLoadIncrement),
-          showPrefillExplanation: false,
+          showPrefillExplanation: true,
         });
       }
     }

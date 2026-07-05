@@ -72,6 +72,25 @@ describe("Training Session Execution", () => {
     });
   });
 
+  it("normalizes invalid per-set RIR values to empty completed session entries", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const sessionExercises = createTrainingSessionExercises(workoutTemplate);
+    const drafts = createInitialTrainingSessionDrafts(sessionExercises);
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+
+    drafts[benchKey] = [
+      { done: true, reps: "10", rir: "-1", setIndex: 1, weight: "40" },
+      { done: true, reps: "10", rir: "not-a-number", setIndex: 2, weight: "40" },
+      { done: true, reps: "10", rir: "Infinity", setIndex: 3, weight: "40" },
+    ];
+
+    expect(createTrainingSessionEntries(sessionExercises, drafts)[0]?.sets).toEqual([
+      { done: true, reps: 10, rir: null, setIndex: 1, weight: 40 },
+      { done: true, reps: 10, rir: null, setIndex: 2, weight: 40 },
+      { done: true, reps: 10, rir: null, setIndex: 3, weight: 40 },
+    ]);
+  });
+
   it("prefills editable set drafts from suggested starting loads", () => {
     const workoutTemplate = createWorkoutTemplate();
     const sessionExercises = createTrainingSessionExercises(workoutTemplate);

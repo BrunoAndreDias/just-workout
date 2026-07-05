@@ -47,6 +47,7 @@ export function TrainingSessionRoute() {
   const routeParams = useTrainingSessionRouteParams();
   const {
     previousTrainingSessions,
+    sessionHistoryReady,
     startingLoadPrefills,
     trainingPlan,
     trainingPlanQuery,
@@ -79,12 +80,13 @@ export function TrainingSessionRoute() {
   });
 
   useInitializeTrainingSessionExecutionState({
+    isReady: sessionHistoryReady,
     setExecutionState,
     startingLoadSuggestions: startingLoadPrefills,
     workoutTemplate,
   });
 
-  if (trainingPlanQuery.isLoading) {
+  if (trainingPlanQuery.isLoading || !sessionHistoryReady) {
     return <TrainingSessionShell>Loading Training Session...</TrainingSessionShell>;
   }
 
@@ -268,6 +270,7 @@ function useTrainingSessionData(routeParams: { planId: string; templateId: strin
 
   return buildTrainingSessionData({
     routeParams,
+    sessionHistoryReady: routeParams === null || !trainingSessionsQuery.isPending,
     trainingPlan: trainingPlanQuery.data,
     trainingPlanQuery,
     trainingSessions: trainingSessionsQuery.data ?? [],
@@ -359,16 +362,18 @@ function useCompleteTrainingSession({
 }
 
 function useInitializeTrainingSessionExecutionState({
+  isReady,
   setExecutionState,
   startingLoadSuggestions,
   workoutTemplate,
 }: {
+  isReady: boolean;
   setExecutionState: Dispatch<SetStateAction<TrainingSessionExecutionState>>;
   startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   useEffect(() => {
-    if (!workoutTemplate) {
+    if (!isReady || !workoutTemplate) {
       return;
     }
 
@@ -380,7 +385,7 @@ function useInitializeTrainingSessionExecutionState({
             workoutTemplate,
           }),
     );
-  }, [setExecutionState, startingLoadSuggestions, workoutTemplate]);
+  }, [isReady, setExecutionState, startingLoadSuggestions, workoutTemplate]);
 }
 
 type TrainingSessionBodyweightState = {
@@ -508,11 +513,13 @@ function TrainingSessionBodyweightPanel({
 
 function buildTrainingSessionData({
   routeParams,
+  sessionHistoryReady,
   trainingPlan,
   trainingPlanQuery,
   trainingSessions,
 }: {
   routeParams: { planId: string; templateId: string } | null;
+  sessionHistoryReady: boolean;
   trainingPlan: TrainingPlan | null | undefined;
   trainingPlanQuery: ReturnType<typeof useQuery<TrainingPlan | null>>;
   trainingSessions: ReadonlyArray<TrainingSession>;
@@ -521,6 +528,7 @@ function buildTrainingSessionData({
 
   return {
     previousTrainingSessions: trainingSessions,
+    sessionHistoryReady,
     startingLoadPrefills:
       trainingPlan && workoutTemplate
         ? createTrainingSessionLoadPrefills({

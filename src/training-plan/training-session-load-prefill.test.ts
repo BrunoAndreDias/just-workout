@@ -68,6 +68,37 @@ describe("Training Session load prefills", () => {
     ]);
   });
 
+  it("explains an exact-history prefill that was not persisted from transition suggestions", () => {
+    const trainingPlan = createTrainingPlan({
+      workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
+    });
+
+    expect(
+      createTrainingSessionLoadPrefills({
+        previousTrainingSessions: [
+          createTrainingSession({
+            completedAt: "2026-07-12T10:00:00.000Z",
+            exerciseId: "incline-dumbbell-bench-press",
+            exerciseName: "Incline Dumbbell Bench Press",
+            trainingBlockId: "training-block-1",
+            trainingBlockWeekNumber: 6,
+            weight: 87.5,
+          }),
+        ],
+        trainingPlan,
+        workoutTemplate: trainingPlan.workoutTemplates[0] as WorkoutTemplate,
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        effectiveLoad: 87.5,
+        exerciseId: "incline-dumbbell-bench-press",
+        kind: "exact_previous_exercise",
+        previousLoad: 87.5,
+        showPrefillExplanation: true,
+      }),
+    ]);
+  });
+
   it("progresses the next exact-exercise prefill from completed sets and target RIR", () => {
     const trainingPlan = createTrainingPlan({
       workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),

@@ -1208,6 +1208,40 @@ describe("generateNextTrainingBlock", () => {
       type: "reduce_load",
     });
   });
+
+  it("keeps load when completed sets are in range but not all meet top range and target RIR", () => {
+    const decision = applyTrainingBlockProgressionRule({
+      completedSets: [
+        { reps: 12, rir: 2 },
+        { reps: 10, rir: 2 },
+        { reps: 12, rir: 1 },
+      ],
+      repRange: { maxReps: 12, minReps: 8 },
+      targetRir: 2,
+    });
+
+    expect(decision).toEqual({
+      reason: "progression target not met",
+      type: "keep_load",
+    });
+  });
+
+  it("keeps load when fewer than the planned sets were completed", () => {
+    const decision = applyTrainingBlockProgressionRule({
+      completedSets: [
+        { reps: 12, rir: 2 },
+        { reps: 12, rir: 2 },
+      ],
+      plannedSetCount: 3,
+      repRange: { maxReps: 12, minReps: 8 },
+      targetRir: 2,
+    });
+
+    expect(decision).toEqual({
+      reason: "progression target not met",
+      type: "keep_load",
+    });
+  });
 });
 
 function createTrainingSession({
