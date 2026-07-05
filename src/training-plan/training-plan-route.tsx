@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
@@ -64,13 +64,23 @@ export function TrainingPlansRoute() {
 
 export function TrainingPlanRoute() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const planId = useTrainingPlanIdFromPathname();
   const trainingPlanQuery = useQuery(trainingPlanQueryOptions(planId));
   const trainingSessionsQuery = useQuery(trainingPlanSessionsQueryOptions(planId));
   const trainingPlan = trainingPlanQuery.data;
-  const saveNextTrainingPlan = useMutation({
-    mutationFn: (nextTrainingPlan: TrainingPlan) =>
-      trainingPlanService.saveNextTrainingPlan(nextTrainingPlan),
+  const saveAcceptedTrainingPlan = useMutation({
+    mutationFn: (acceptedTrainingPlan: TrainingPlan) =>
+      trainingPlanService.saveAcceptedTrainingPlan(acceptedTrainingPlan),
+    onSuccess: (savedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(savedTrainingPlan.id).queryKey,
+        savedTrainingPlan,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: trainingPlansQueryOptions().queryKey,
+      });
+    },
   });
 
   if (trainingPlanQuery.isLoading) {
@@ -87,8 +97,8 @@ export function TrainingPlanRoute() {
         createNextTrainingBlockTransitionWorkflow({
           onAcceptedTrainingPlan: (savedTrainingPlan) =>
             navigate(getTrainingPlanRouteTarget(savedTrainingPlan.id)),
-          saveAcceptedTrainingPlan: (nextTrainingPlan) =>
-            saveNextTrainingPlan.mutateAsync(nextTrainingPlan),
+          saveAcceptedTrainingPlan: (acceptedTrainingPlan) =>
+            saveAcceptedTrainingPlan.mutateAsync(acceptedTrainingPlan),
           trainingPlan,
           trainingSessions: trainingSessionsQuery.data ?? [],
         }) ?? undefined

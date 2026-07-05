@@ -18,7 +18,7 @@ export function TrainingBlockProgress({
   const weeksUntilRotation = Math.max(trainingBlockWeeks - blockWeek, 0);
   const summaryId = `training-block-${cycleNumber}-summary`;
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
-  const nextBlockPreview = nextTrainingBlockTransition?.preview;
+  const isNextBlockReady = weeksUntilRotation === 0 && nextTrainingBlockTransition !== undefined;
 
   return (
     <section className="active-training-plan-progress" aria-labelledby={summaryId}>
@@ -27,11 +27,7 @@ export function TrainingBlockProgress({
         Cycle {cycleNumber} · Week {blockWeek} of {trainingBlockWeeks}
       </p>
       <p>Current focus: {getTrainingBlockFocus(blockWeek, trainingBlockWeeks)}</p>
-      <p>
-        {weeksUntilRotation === 0
-          ? "Ready for exercise rotation"
-          : `${weeksUntilRotation} ${weeksUntilRotation === 1 ? "week" : "weeks"} until exercise rotation`}
-      </p>
+      <p>{getRotationStatusLabel({ isNextBlockReady, weeksUntilRotation })}</p>
       <div className="active-training-plan-progress__row">
         <div
           className="active-training-plan-progress__track"
@@ -49,34 +45,65 @@ export function TrainingBlockProgress({
         After week 6, Just Workout can rotate exercises and prefill starting loads based on your
         previous cycle.
       </p>
-      {weeksUntilRotation === 0 ? (
-        <>
-          {nextBlockPreview ? (
-            <div className="active-training-plan-progress__preview">
-              <h3>Next cycle preview</h3>
-              <p>
-                {nextBlockPreview.rotation.rotated.length}{" "}
-                {nextBlockPreview.rotation.rotated.length === 1 ? "exercise" : "exercises"} rotated
-              </p>
-              <p>
-                {nextBlockPreview.rotation.kept.length}{" "}
-                {nextBlockPreview.rotation.kept.length === 1 ? "exercise" : "exercises"} kept
-              </p>
-            </div>
-          ) : null}
-          <button
-            className="active-training-plan-progress__action"
-            onClick={() => setIsPreviewExpanded(true)}
-            type="button"
-          >
-            Generate next cycle
-          </button>
-          {nextTrainingBlockTransition && isPreviewExpanded ? (
-            <TrainingBlockPreviewDetails transition={nextTrainingBlockTransition} />
-          ) : null}
-        </>
-      ) : null}
+      <TrainingBlockProgressActions
+        isPreviewExpanded={isPreviewExpanded}
+        isReady={isNextBlockReady}
+        onExpandPreview={() => setIsPreviewExpanded(true)}
+        transition={nextTrainingBlockTransition}
+      />
     </section>
+  );
+}
+
+function TrainingBlockProgressActions({
+  isPreviewExpanded,
+  isReady,
+  onExpandPreview,
+  transition,
+}: {
+  isPreviewExpanded: boolean;
+  isReady: boolean;
+  onExpandPreview: () => void;
+  transition?: NextTrainingBlockTransitionWorkflow;
+}) {
+  if (!isReady || !transition) {
+    return null;
+  }
+
+  return (
+    <>
+      <TrainingBlockPreviewSummary transition={transition} />
+      <button
+        className="active-training-plan-progress__action"
+        onClick={onExpandPreview}
+        type="button"
+      >
+        Generate next cycle
+      </button>
+      {isPreviewExpanded ? <TrainingBlockPreviewDetails transition={transition} /> : null}
+    </>
+  );
+}
+
+function TrainingBlockPreviewSummary({
+  transition,
+}: {
+  transition: NextTrainingBlockTransitionWorkflow;
+}) {
+  const { preview } = transition;
+
+  return (
+    <div className="active-training-plan-progress__preview">
+      <h3>Next cycle preview</h3>
+      <p>
+        {preview.rotation.rotated.length}{" "}
+        {preview.rotation.rotated.length === 1 ? "exercise" : "exercises"} rotated
+      </p>
+      <p>
+        {preview.rotation.kept.length}{" "}
+        {preview.rotation.kept.length === 1 ? "exercise" : "exercises"} kept
+      </p>
+    </div>
   );
 }
 
@@ -228,4 +255,22 @@ function getTrainingBlockFocus(blockWeek: number, trainingBlockWeeks: number): s
   }
 
   return "final hard week";
+}
+
+function getRotationStatusLabel({
+  isNextBlockReady,
+  weeksUntilRotation,
+}: {
+  isNextBlockReady: boolean;
+  weeksUntilRotation: number;
+}): string {
+  if (weeksUntilRotation > 0) {
+    return `${weeksUntilRotation} ${weeksUntilRotation === 1 ? "week" : "weeks"} until exercise rotation`;
+  }
+
+  if (isNextBlockReady) {
+    return "Ready for exercise rotation";
+  }
+
+  return "Complete each Training Week in this block to unlock exercise rotation";
 }

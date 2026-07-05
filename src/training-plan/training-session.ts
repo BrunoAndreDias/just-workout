@@ -29,6 +29,9 @@ export type TrainingSession = {
   status: "completed";
   templateId: string;
   templateLabel: string;
+  trainingBlockCycleNumber?: number | null;
+  trainingBlockId?: string | null;
+  trainingBlockWeekNumber?: number | null;
   updatedAt: string;
   volumeByMovementPattern: ReadonlyArray<TrainingSessionMovementVolume>;
 };
@@ -57,6 +60,9 @@ export function createCompletedTrainingSession({
     status: "completed",
     templateId: template.id,
     templateLabel: template.label,
+    trainingBlockCycleNumber: plan.trainingBlock?.cycleNumber ?? null,
+    trainingBlockId: plan.trainingBlock?.id ?? null,
+    trainingBlockWeekNumber: plan.trainingBlock?.weekNumber ?? null,
     updatedAt: timestamp,
     volumeByMovementPattern: calculateVolumeByMovementPattern(entries),
   };

@@ -61,14 +61,9 @@ describe("Training Block transition", () => {
           status: "completed",
           weekNumber: 6,
         },
+        trainingFrequencyDaysPerWeek: 2,
       }),
-      trainingSessions: [
-        createTrainingSession({
-          completedAt: "2026-07-12T10:00:00.000Z",
-          exerciseId: "flat-barbell-bench-press",
-          weight: 100,
-        }),
-      ],
+      trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
     if (!preview) {
@@ -89,14 +84,14 @@ describe("Training Block transition", () => {
       cycleNumber: 2,
       endDate: "2026-08-29",
       id: "training-block-1-next",
-      planId: "training-plan-1-next",
+      planId: "training-plan-1",
       previousBlockId: "training-block-1",
       startDate: "2026-07-19",
       weekNumber: 1,
     });
     expect(nextPlan).toMatchObject({
       active: true,
-      id: "training-plan-1-next",
+      id: "training-plan-1",
       trainingBlock: preview.trainingBlock,
     });
     expect(nextPlan.startingLoadSuggestions).toContainEqual(
@@ -125,7 +120,7 @@ describe("Training Block transition", () => {
 
         return {
           ...nextTrainingPlan,
-          id: "persisted-training-plan-next",
+          id: "training-plan-1",
         };
       },
       trainingPlan: createTrainingPlan({
@@ -145,14 +140,9 @@ describe("Training Block transition", () => {
           status: "completed",
           weekNumber: 6,
         },
+        trainingFrequencyDaysPerWeek: 2,
       }),
-      trainingSessions: [
-        createTrainingSession({
-          completedAt: "2026-07-12T10:00:00.000Z",
-          exerciseId: "flat-barbell-bench-press",
-          weight: 100,
-        }),
-      ],
+      trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
     if (!transition?.accept) {
@@ -166,11 +156,46 @@ describe("Training Block transition", () => {
     });
     const savedTrainingPlan = await transition.accept({ suggestions: editedSuggestions });
 
-    expect(savedTrainingPlan.id).toBe("persisted-training-plan-next");
-    expect(events).toEqual([
-      "save:training-plan-1-next:92.5",
-      "after-save:persisted-training-plan-next",
-    ]);
+    expect(savedTrainingPlan.id).toBe("training-plan-1");
+    expect(events).toEqual(["save:training-plan-1:92.5", "after-save:training-plan-1"]);
+  });
+
+  it("keeps the same Active Training Plan identity when accepting the next Training Block", () => {
+    const transition = createNextTrainingBlockTransitionWorkflow({
+      trainingPlan: createTrainingPlan({
+        trainingBlock: {
+          cycleNumber: 1,
+          endDate: "2026-07-18",
+          id: "training-block-1",
+          planId: "training-plan-1",
+          previousBlockId: null,
+          startDate: "2026-06-07",
+          status: "active",
+          weekNumber: 6,
+        },
+        trainingFrequencyDaysPerWeek: 2,
+      }),
+      trainingSessions: createCompletedTrainingBlockSessions(),
+    });
+
+    if (!transition) {
+      throw new Error("Expected a next Training Block transition.");
+    }
+
+    const acceptedPlan = acceptNextTrainingBlockTransition({
+      preview: transition.preview,
+      suggestions: transition.preview.loadSuggestions,
+    });
+
+    expect(transition.preview.nextTrainingPlan.id).toBe("training-plan-1");
+    expect(transition.preview.trainingBlock.planId).toBe("training-plan-1");
+    expect(acceptedPlan.id).toBe("training-plan-1");
+    expect(acceptedPlan.trainingBlock).toMatchObject({
+      cycleNumber: 2,
+      planId: "training-plan-1",
+      previousBlockId: "training-block-1",
+      weekNumber: 1,
+    });
   });
 });
 
@@ -816,12 +841,18 @@ function createTrainingSession({
   exerciseId,
   exerciseName = "Flat Barbell Bench Press",
   movementPattern = "horizontal_push",
+  trainingBlockCycleNumber = null,
+  trainingBlockId = null,
+  trainingBlockWeekNumber = null,
   weight,
 }: {
   completedAt: string;
   exerciseId: string;
   exerciseName?: string;
   movementPattern?: TrainingSession["exercises"][number]["movementPattern"];
+  trainingBlockCycleNumber?: number | null;
+  trainingBlockId?: string | null;
+  trainingBlockWeekNumber?: number | null;
   weight: number;
 }): TrainingSession {
   return {
@@ -843,9 +874,77 @@ function createTrainingSession({
     status: "completed",
     templateId: "template-1",
     templateLabel: "Upper A",
+    trainingBlockCycleNumber,
+    trainingBlockId,
+    trainingBlockWeekNumber,
     updatedAt: completedAt,
     volumeByMovementPattern: [],
   };
+}
+
+function createCompletedTrainingBlockSessions(): ReadonlyArray<TrainingSession> {
+  return [
+    createTrainingSession({
+      completedAt: "2026-06-07T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 80,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-09T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 82.5,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-14T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 85,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-16T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 87.5,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-21T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 90,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-23T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 92.5,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-28T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 95,
+    }),
+    createTrainingSession({
+      completedAt: "2026-06-30T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 95,
+    }),
+    createTrainingSession({
+      completedAt: "2026-07-05T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 97.5,
+    }),
+    createTrainingSession({
+      completedAt: "2026-07-07T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 97.5,
+    }),
+    createTrainingSession({
+      completedAt: "2026-07-12T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 100,
+    }),
+    createTrainingSession({
+      completedAt: "2026-07-14T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      weight: 100,
+    }),
+  ];
 }
 
 function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan {

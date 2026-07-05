@@ -383,6 +383,39 @@ describe("TrainingPlanRoute", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not show the next cycle action in week 6 until every Training Week is complete", async () => {
+    await seedTrainingPlan({
+      split: "full-body-2-day",
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    await seedCompletedTrainingSessions(createIncompleteTrainingBlockSessionOverrides());
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+
+    expect(within(blockSummary).getByText("Cycle 1 · Week 6 of 6")).toBeVisible();
+    expect(
+      within(blockSummary).getByText(
+        "Complete each Training Week in this block to unlock exercise rotation",
+      ),
+    ).toBeVisible();
+    expect(
+      within(blockSummary).queryByRole("button", { name: "Generate next cycle" }),
+    ).not.toBeInTheDocument();
+    expect(within(blockSummary).queryByText("Next cycle preview")).not.toBeInTheDocument();
+  });
+
   it("shows the next cycle action and preview summary at the end of week 6", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan({
@@ -392,6 +425,7 @@ describe("TrainingPlanRoute", () => {
           movementPattern: "horizontal_push",
         },
       ],
+      split: "full-body-2-day",
       trainingBlock: {
         cycleNumber: 1,
         endDate: "2026-07-18",
@@ -399,23 +433,16 @@ describe("TrainingPlanRoute", () => {
         planId: "training-plan-test",
         previousBlockId: null,
         startDate: "2026-06-07",
-        status: "completed",
+        status: "active",
         weekNumber: 6,
       },
+      trainingFrequencyDaysPerWeek: 2,
     });
-    await seedCompletedTrainingSessions([
-      {
-        completedAt: "2026-07-12T10:00:00.000Z",
-        exerciseId: "flat-barbell-bench-press",
-        exerciseName: "Flat Barbell Bench Press",
-        movementPattern: "horizontal_push",
-        weight: 100,
-      },
-    ]);
+    await seedCompletedTrainingSessions(createCompletedTrainingBlockSessionOverrides());
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
-    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "2-Day Full Body" })).toBeVisible();
 
     const blockSummary = getClosestSection(screen.getByRole("heading", { name: "Cycle 1" }));
 
@@ -424,16 +451,16 @@ describe("TrainingPlanRoute", () => {
     expect(within(blockSummary).getByRole("button", { name: "Generate next cycle" })).toBeVisible();
     expect(within(blockSummary).getByText("Next cycle preview")).toBeVisible();
     expect(within(blockSummary).getByText("5 exercises rotated")).toBeVisible();
-    expect(within(blockSummary).getByText("7 exercises kept")).toBeVisible();
+    expect(within(blockSummary).getByText("6 exercises kept")).toBeVisible();
 
     await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
 
     expect(
       within(blockSummary).getByRole("heading", { name: "Exercise rotation preview" }),
     ).toBeVisible();
-    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(12);
+    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(11);
     expect(
-      within(blockSummary).getByText(/Flat Dumbbell Bench Press.*Incline Dumbbell Bench Press/),
+      within(blockSummary).getByText(/Flat Barbell Bench Press.*Incline Dumbbell Bench Press/),
     ).toBeVisible();
     expect(within(blockSummary).getByText("same Movement Pattern rotation pool")).toBeVisible();
     expect(within(blockSummary).getByText("Previous load: 100 kg")).toBeVisible();
@@ -460,6 +487,7 @@ describe("TrainingPlanRoute", () => {
           movementPattern: "horizontal_push",
         },
       ],
+      split: "full-body-2-day",
       trainingBlock: {
         cycleNumber: 1,
         endDate: "2026-07-18",
@@ -467,19 +495,12 @@ describe("TrainingPlanRoute", () => {
         planId: "training-plan-test",
         previousBlockId: null,
         startDate: "2026-06-07",
-        status: "completed",
+        status: "active",
         weekNumber: 6,
       },
+      trainingFrequencyDaysPerWeek: 2,
     });
-    await seedCompletedTrainingSessions([
-      {
-        completedAt: "2026-07-12T10:00:00.000Z",
-        exerciseId: "flat-barbell-bench-press",
-        exerciseName: "Flat Barbell Bench Press",
-        movementPattern: "horizontal_push",
-        weight: 100,
-      },
-    ]);
+    await seedCompletedTrainingSessions(createCompletedTrainingBlockSessionOverrides());
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
@@ -498,11 +519,11 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Cycle 2" })).toBeVisible();
     expect(screen.getByText("Cycle 2 · Week 1 of 6")).toBeVisible();
 
-    const previousPlan = await getTrainingPlan("training-plan-test");
-    const nextPlan = await getTrainingPlan("training-plan-test-next");
+    const acceptedPlan = await getTrainingPlan("training-plan-test");
+    const clonedPlan = await getTrainingPlan("training-plan-test-next");
+    const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
 
-    expect(previousPlan).toMatchObject({ active: false });
-    expect(nextPlan).toMatchObject({
+    expect(acceptedPlan).toMatchObject({
       active: true,
       startingLoadSuggestions: expect.arrayContaining([
         expect.objectContaining({
@@ -520,6 +541,8 @@ describe("TrainingPlanRoute", () => {
         weekNumber: 1,
       },
     });
+    expect(clonedPlan).toBeNull();
+    expect(completedSessions).toHaveLength(12);
   });
 
   it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {
@@ -1284,6 +1307,99 @@ async function seedBodyweightOnlyTrainingSession() {
       },
     ],
   });
+}
+
+function createCompletedTrainingBlockSessionOverrides() {
+  return [
+    {
+      completedAt: "2026-06-07T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 80,
+    },
+    {
+      completedAt: "2026-06-09T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 82.5,
+    },
+    {
+      completedAt: "2026-06-14T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 85,
+    },
+    {
+      completedAt: "2026-06-16T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 87.5,
+    },
+    {
+      completedAt: "2026-06-21T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 90,
+    },
+    {
+      completedAt: "2026-06-23T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 92.5,
+    },
+    {
+      completedAt: "2026-06-28T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 95,
+    },
+    {
+      completedAt: "2026-06-30T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 95,
+    },
+    {
+      completedAt: "2026-07-05T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 97.5,
+    },
+    {
+      completedAt: "2026-07-07T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 97.5,
+    },
+    {
+      completedAt: "2026-07-12T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 100,
+    },
+    {
+      completedAt: "2026-07-14T10:00:00.000Z",
+      exerciseId: "flat-barbell-bench-press",
+      exerciseName: "Flat Barbell Bench Press",
+      movementPattern: "horizontal_push" as const,
+      weight: 100,
+    },
+  ] satisfies Parameters<typeof seedCompletedTrainingSessions>[0];
+}
+
+function createIncompleteTrainingBlockSessionOverrides() {
+  return createCompletedTrainingBlockSessionOverrides().slice(0, 10);
 }
 
 function renderTrainingPlan({ initialEntries }: { initialEntries: Array<string> }) {

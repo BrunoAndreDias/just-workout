@@ -2,6 +2,17 @@ import { db } from "../app/local-database";
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 
+type PersistedTrainingSession = Omit<
+  TrainingSession,
+  "trainingBlockCycleNumber" | "trainingBlockId" | "trainingBlockWeekNumber"
+> &
+  Partial<
+    Pick<
+      TrainingSession,
+      "trainingBlockCycleNumber" | "trainingBlockId" | "trainingBlockWeekNumber"
+    >
+  >;
+
 type SeedTrainingPlanDataOptions = {
   deactivateActivePlansAt?: string;
   trainingPlans?: ReadonlyArray<TrainingPlan>;
@@ -32,7 +43,7 @@ export async function getTrainingSessionsForPlan(
     .equals(trainingPlanId)
     .toArray();
 
-  return sortTrainingSessionsByMostRecentlyUpdated(trainingSessions);
+  return sortTrainingSessionsByMostRecentlyUpdated(trainingSessions.map(normalizeTrainingSession));
 }
 
 export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Promise<TrainingPlan> {
@@ -40,6 +51,12 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
     await deactivateActiveTrainingPlans(trainingPlan.generatedAt);
     await db.trainingPlans.put(trainingPlan);
   });
+
+  return trainingPlan;
+}
+
+export async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan): Promise<TrainingPlan> {
+  await db.trainingPlans.put(trainingPlan);
 
   return trainingPlan;
 }
@@ -67,9 +84,11 @@ export async function seedTrainingPlanData({
 export async function saveCompletedTrainingSession(
   trainingSession: TrainingSession,
 ): Promise<TrainingSession> {
-  await db.trainingSessions.put(trainingSession);
+  const normalizedTrainingSession = normalizeTrainingSession(trainingSession);
 
-  return trainingSession;
+  await db.trainingSessions.put(normalizedTrainingSession);
+
+  return normalizedTrainingSession;
 }
 
 async function deactivateActiveTrainingPlans(updatedAt: string): Promise<void> {
@@ -100,4 +119,13 @@ function sortTrainingSessionsByMostRecentlyUpdated(
   return trainingSessions.sort((firstSession, secondSession) =>
     secondSession.updatedAt.localeCompare(firstSession.updatedAt),
   );
+}
+
+function normalizeTrainingSession(trainingSession: PersistedTrainingSession): TrainingSession {
+  return {
+    ...trainingSession,
+    trainingBlockCycleNumber: trainingSession.trainingBlockCycleNumber ?? null,
+    trainingBlockId: trainingSession.trainingBlockId ?? null,
+    trainingBlockWeekNumber: trainingSession.trainingBlockWeekNumber ?? null,
+  };
 }

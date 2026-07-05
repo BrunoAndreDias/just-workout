@@ -4,8 +4,8 @@ import {
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
+  saveAcceptedTrainingPlan as saveAcceptedTrainingPlanRecord,
   saveCompletedTrainingSession,
-  saveGeneratedTrainingPlan,
 } from "./training-plan-repository";
 import {
   createCompletedTrainingSession,
@@ -51,8 +51,8 @@ async function completeTrainingSession({
   return saveCompletedTrainingSession(trainingSession);
 }
 
-async function saveNextTrainingPlan(trainingPlan: TrainingPlan) {
-  return saveGeneratedTrainingPlan(trainingPlan);
+async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan) {
+  return saveAcceptedTrainingPlanRecord(trainingPlan);
 }
 
 export const trainingPlanService = {
@@ -61,5 +61,5 @@ export const trainingPlanService = {
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
-  saveNextTrainingPlan,
+  saveAcceptedTrainingPlan,
 };
