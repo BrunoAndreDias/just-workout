@@ -250,17 +250,42 @@ export function previewTrainingBlockExerciseRotations({
     }
   }
 
-  const missingPatterns = REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS.filter(
-    (movementPattern) => !proposedMovementPatterns.has(movementPattern),
+  return {
+    kept,
+    requiredMovementCoverage: getRequiredMovementCoverageResult(proposedMovementPatterns),
+    rotated,
+  };
+}
+
+export function createSkippedTrainingBlockExerciseRotationPreview({
+  trainingPlan,
+}: {
+  trainingPlan: TrainingPlan;
+}): TrainingBlockExerciseRotationPreview {
+  const kept = trainingPlan.workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) =>
+      group.slots.map((slot, slotIndex) => ({
+        exerciseId: slot.exerciseId,
+        exerciseName: slot.exerciseName,
+        groupId: group.id,
+        movementPattern: slot.movementPattern,
+        reason: "kept current exercise after skipping the rotation proposal",
+        role: slot.role,
+        slotIndex,
+        slotLabel: slot.slotLabel,
+        templateId: template.id,
+        templateLabel: template.label,
+      })),
+    ),
   );
+  const proposedMovementPatterns = new Set(
+    kept.map((item) => item.movementPattern),
+  ) as ReadonlySet<MovementPatternId>;
 
   return {
     kept,
-    requiredMovementCoverage: {
-      isPreserved: missingPatterns.length === 0,
-      missingPatterns,
-    },
-    rotated,
+    requiredMovementCoverage: getRequiredMovementCoverageResult(proposedMovementPatterns),
+    rotated: [],
   };
 }
 
@@ -328,6 +353,7 @@ export function generateNextTrainingBlockPreview({
   currentBlock,
   nextBlockId,
   nextPlanId,
+  rotationPreview,
   sessions,
   startDate,
   timestamp,
@@ -338,12 +364,14 @@ export function generateNextTrainingBlockPreview({
   currentBlock: TrainingBlock;
   nextBlockId: string;
   nextPlanId: string;
+  rotationPreview?: TrainingBlockExerciseRotationPreview;
   sessions: ReadonlyArray<TrainingSession>;
   startDate: string;
   timestamp: string;
   trainingPlan: TrainingPlan;
 }): NextTrainingBlockPreview {
-  const rotation = previewTrainingBlockExerciseRotations({ sessions, trainingPlan });
+  const rotation =
+    rotationPreview ?? previewTrainingBlockExerciseRotations({ sessions, trainingPlan });
   const nextTrainingPlan = applyConfirmedTrainingBlockExerciseRotations({
     id: nextPlanId,
     preview: rotation,
@@ -672,6 +700,19 @@ function getLatestCompletedExerciseEntry({
 
 function roundToNearestIncrement(value: number, increment: number): number {
   return Math.round(value / increment) * increment;
+}
+
+function getRequiredMovementCoverageResult(
+  proposedMovementPatterns: ReadonlySet<MovementPatternId>,
+): RequiredMovementCoverageResult {
+  const missingPatterns = REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS.filter(
+    (movementPattern) => !proposedMovementPatterns.has(movementPattern),
+  );
+
+  return {
+    isPreserved: missingPatterns.length === 0,
+    missingPatterns,
+  };
 }
 
 function isBodyweightLoadTarget({

@@ -1,6 +1,7 @@
 import type { TrainingPlan } from "./training-plan";
 import { generateActiveTrainingPlanFromCurrentPlanBlueprint } from "./training-plan-generation";
 import {
+  clearUndoableTrainingBlockTransition as clearUndoableTrainingBlockTransitionRecord,
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
@@ -9,6 +10,7 @@ import {
   saveHistoricalTrainingSessionBodyweight,
   saveTrainingPlanBaselineBodyweight,
   saveTrainingWeekBodyweight as saveTrainingWeekBodyweightRecord,
+  undoAcceptedTrainingBlockTransition as undoAcceptedTrainingBlockTransitionRecord,
 } from "./training-plan-repository";
 import {
   createCompletedTrainingSession,
@@ -62,6 +64,20 @@ async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan) {
   return saveAcceptedTrainingPlanRecord(trainingPlan);
 }
 
+async function undoAcceptedTrainingBlockTransition({ planId }: { planId: string }) {
+  return undoAcceptedTrainingBlockTransitionRecord({
+    planId,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+async function clearUndoableTrainingBlockTransition({ planId }: { planId: string }) {
+  return clearUndoableTrainingBlockTransitionRecord({
+    planId,
+    timestamp: new Date().toISOString(),
+  });
+}
+
 async function saveBaselineBodyweight({
   bodyweight,
   planId,
@@ -113,8 +129,10 @@ export const trainingPlanService = {
   getTrainingPlan,
   getTrainingPlans,
   getTrainingSessionsForPlan,
+  clearUndoableTrainingBlockTransition,
   saveBaselineBodyweight,
   saveAcceptedTrainingPlan,
   saveHistoricalBodyweightCorrection,
   saveTrainingWeekBodyweight,
+  undoAcceptedTrainingBlockTransition,
 };

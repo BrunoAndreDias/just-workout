@@ -89,6 +89,71 @@ export async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan): Prom
   return normalizedTrainingPlan;
 }
 
+export async function undoAcceptedTrainingBlockTransition({
+  planId,
+  timestamp,
+}: {
+  planId: string;
+  timestamp: string;
+}): Promise<TrainingPlan> {
+  const trainingPlan = await getTrainingPlan(planId);
+
+  if (!trainingPlan) {
+    throw new Error("Cannot undo an accepted Training Block without a Training Plan.");
+  }
+
+  const transition = trainingPlan.undoableTrainingBlockTransition;
+
+  if (!transition) {
+    throw new Error("Cannot undo a Training Block transition that is no longer available.");
+  }
+
+  const restoredTrainingPlan = normalizeTrainingPlan({
+    ...trainingPlan,
+    generatedAt: transition.previousState.generatedAt,
+    startingLoadSuggestions:
+      transition.previousState.startingLoadSuggestions.length > 0
+        ? transition.previousState.startingLoadSuggestions
+        : undefined,
+    trainingBlock: transition.previousState.trainingBlock,
+    undoableTrainingBlockTransition: null,
+    updatedAt: timestamp,
+    workoutTemplates: transition.previousState.workoutTemplates,
+  });
+
+  await db.trainingPlans.put(restoredTrainingPlan);
+
+  return restoredTrainingPlan;
+}
+
+export async function clearUndoableTrainingBlockTransition({
+  planId,
+  timestamp,
+}: {
+  planId: string;
+  timestamp: string;
+}): Promise<TrainingPlan> {
+  const trainingPlan = await getTrainingPlan(planId);
+
+  if (!trainingPlan) {
+    throw new Error("Cannot clear Training Block transition state without a Training Plan.");
+  }
+
+  if (!trainingPlan.undoableTrainingBlockTransition) {
+    return trainingPlan;
+  }
+
+  const updatedTrainingPlan = normalizeTrainingPlan({
+    ...trainingPlan,
+    undoableTrainingBlockTransition: null,
+    updatedAt: timestamp,
+  });
+
+  await db.trainingPlans.put(updatedTrainingPlan);
+
+  return updatedTrainingPlan;
+}
+
 export async function saveTrainingPlanBaselineBodyweight({
   bodyweight,
   planId,
@@ -276,6 +341,7 @@ function normalizeTrainingPlan(trainingPlan: PersistedTrainingPlan): TrainingPla
   return {
     ...trainingPlan,
     baselineBodyweight: trainingPlan.baselineBodyweight ?? null,
+    undoableTrainingBlockTransition: trainingPlan.undoableTrainingBlockTransition ?? null,
     weeklyBodyweightUpdates: trainingPlan.weeklyBodyweightUpdates ?? [],
   };
 }

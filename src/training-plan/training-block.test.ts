@@ -146,7 +146,7 @@ describe("Training Block transition", () => {
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
-    if (!transition?.accept) {
+    if (!transition || transition.kind !== "review" || !transition.accept) {
       throw new Error("Expected an acceptable next Training Block transition.");
     }
 
@@ -179,7 +179,7 @@ describe("Training Block transition", () => {
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
-    if (!transition) {
+    if (!transition || transition.kind !== "review") {
       throw new Error("Expected a next Training Block transition.");
     }
 
@@ -194,6 +194,69 @@ describe("Training Block transition", () => {
     expect(acceptedPlan.trainingBlock).toMatchObject({
       cycleNumber: 2,
       planId: "training-plan-1",
+      previousBlockId: "training-block-1",
+      weekNumber: 1,
+    });
+  });
+
+  it("creates the next Training Block with current exercises when skipping the rotation proposal", () => {
+    const trainingPlan = createTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    const transition = createNextTrainingBlockTransitionWorkflow({
+      trainingPlan,
+      trainingSessions: createCompletedTrainingBlockSessions(),
+    });
+
+    if (!transition || transition.kind !== "review") {
+      throw new Error("Expected a reviewable next Training Block transition.");
+    }
+
+    const skippedPlan = acceptNextTrainingBlockTransition({
+      currentTrainingPlan: trainingPlan,
+      preview: transition.skipRotationPreview,
+      suggestions: transition.skipRotationPreview.loadSuggestions,
+    });
+    const firstTemplateSlots = skippedPlan.workoutTemplates[0]?.supersetGroups[0]?.slots;
+
+    expect(firstTemplateSlots).toContainEqual(
+      expect.objectContaining({
+        exerciseId: "flat-barbell-bench-press",
+        exerciseName: "Flat Barbell Bench Press",
+      }),
+    );
+    expect(firstTemplateSlots).not.toContainEqual(
+      expect.objectContaining({
+        exerciseId: "incline-dumbbell-bench-press",
+      }),
+    );
+    expect(skippedPlan.startingLoadSuggestions).toContainEqual(
+      expect.objectContaining({
+        effectiveLoad: 100,
+        exerciseId: "flat-barbell-bench-press",
+        kind: "exact_previous_exercise",
+        previousLoad: 100,
+        suggestedLoad: 100,
+      }),
+    );
+    expect(skippedPlan.trainingBlock).toMatchObject({
+      cycleNumber: 2,
       previousBlockId: "training-block-1",
       weekNumber: 1,
     });

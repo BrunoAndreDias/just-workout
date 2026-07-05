@@ -1,9 +1,11 @@
 import {
   applyNextTrainingBlockLoadSuggestionEdit,
   applyNextTrainingBlockLoadSuggestions,
+  createSkippedTrainingBlockExerciseRotationPreview,
   generateNextTrainingBlockPreview,
   type NextTrainingBlockLoadSuggestion,
   type NextTrainingBlockPreview,
+  type TrainingBlockExerciseRotationPreview,
 } from "./training-block";
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
@@ -13,12 +15,14 @@ const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 export type CreateNextTrainingBlockTransitionPreviewInput = {
   availableLoadIncrement?: number;
   idFactory?: (baseId: string) => string;
+  rotationPreview?: TrainingBlockExerciseRotationPreview;
   timestamp?: string;
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 };
 
 export type AcceptNextTrainingBlockTransitionInput = {
+  currentTrainingPlan?: TrainingPlan;
   preview: NextTrainingBlockPreview;
   suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
 };
@@ -28,6 +32,7 @@ export type CreateNextTrainingBlockTransitionWorkflowInput = {
   idFactory?: (baseId: string) => string;
   onAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<void> | void;
   saveAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<TrainingPlan>;
+  undoAcceptedTrainingBlockTransition?: (planId: string) => Promise<TrainingPlan>;
   timestamp?: string;
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
@@ -39,25 +44,47 @@ export type EditNextTrainingBlockTransitionLoadSuggestionInput = {
   userEditedLoad: number;
 };
 
-export type NextTrainingBlockTransitionWorkflow = {
+export type NextTrainingBlockTransitionReviewWorkflow = {
   accept?: (input: {
+    reviewMode?: "accept_proposal" | "skip_rotation";
     suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   }) => Promise<TrainingPlan>;
   editLoadSuggestion: (
     input: EditNextTrainingBlockTransitionLoadSuggestionInput,
   ) => ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+  kind: "review";
   preview: NextTrainingBlockPreview;
+  skipRotationPreview: NextTrainingBlockPreview;
 };
+
+export type AcceptedTrainingBlockTransitionWorkflow = {
+  kind: "accepted";
+  undo?: () => Promise<TrainingPlan>;
+};
+
+export type NextTrainingBlockTransitionWorkflow =
+  | AcceptedTrainingBlockTransitionWorkflow
+  | NextTrainingBlockTransitionReviewWorkflow;
 
 export function createNextTrainingBlockTransitionWorkflow({
   availableLoadIncrement,
   idFactory,
   onAcceptedTrainingPlan,
   saveAcceptedTrainingPlan,
+  undoAcceptedTrainingBlockTransition,
   timestamp,
   trainingPlan,
   trainingSessions,
 }: CreateNextTrainingBlockTransitionWorkflowInput): NextTrainingBlockTransitionWorkflow | null {
+  if (trainingPlan.undoableTrainingBlockTransition) {
+    return {
+      kind: "accepted",
+      undo: undoAcceptedTrainingBlockTransition
+        ? () => undoAcceptedTrainingBlockTransition(trainingPlan.id)
+        : undefined,
+    };
+  }
+
   const preview = createNextTrainingBlockTransitionPreview({
     availableLoadIncrement,
     idFactory,
@@ -65,8 +92,16 @@ export function createNextTrainingBlockTransitionWorkflow({
     trainingPlan,
     trainingSessions,
   });
+  const skipRotationPreview = createNextTrainingBlockTransitionPreview({
+    availableLoadIncrement,
+    idFactory,
+    rotationPreview: createSkippedTrainingBlockExerciseRotationPreview({ trainingPlan }),
+    timestamp,
+    trainingPlan,
+    trainingSessions,
+  });
 
-  if (!preview) {
+  if (!preview || !skipRotationPreview) {
     return null;
   }
 
@@ -84,14 +119,17 @@ export function createNextTrainingBlockTransitionWorkflow({
   if (!saveAcceptedTrainingPlan) {
     return {
       editLoadSuggestion,
+      kind: "review",
       preview,
+      skipRotationPreview,
     };
   }
 
   return {
-    accept: async ({ suggestions }) => {
+    accept: async ({ reviewMode = "accept_proposal", suggestions }) => {
       const nextTrainingPlan = acceptNextTrainingBlockTransition({
-        preview,
+        currentTrainingPlan: trainingPlan,
+        preview: reviewMode === "skip_rotation" ? skipRotationPreview : preview,
         suggestions,
       });
       const savedTrainingPlan = await saveAcceptedTrainingPlan(nextTrainingPlan);
@@ -101,13 +139,16 @@ export function createNextTrainingBlockTransitionWorkflow({
       return savedTrainingPlan;
     },
     editLoadSuggestion,
+    kind: "review",
     preview,
+    skipRotationPreview,
   };
 }
 
 export function createNextTrainingBlockTransitionPreview({
   availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
   idFactory = createNextId,
+  rotationPreview,
   timestamp,
   trainingPlan,
   trainingSessions,
@@ -132,6 +173,7 @@ export function createNextTrainingBlockTransitionPreview({
     currentBlock: trainingPlan.trainingBlock,
     nextBlockId: idFactory(trainingPlan.trainingBlock.id),
     nextPlanId: trainingPlan.id,
+    rotationPreview,
     sessions: trainingSessions,
     startDate: getNextDate(trainingPlan.trainingBlock.endDate),
     timestamp: timestamp ?? trainingPlan.trainingBlock.endDate,
@@ -140,10 +182,11 @@ export function createNextTrainingBlockTransitionPreview({
 }
 
 export function acceptNextTrainingBlockTransition({
+  currentTrainingPlan,
   preview,
   suggestions,
 }: AcceptNextTrainingBlockTransitionInput): TrainingPlan {
-  return applyNextTrainingBlockLoadSuggestions({
+  const acceptedTrainingPlan = applyNextTrainingBlockLoadSuggestions({
     suggestions,
     trainingPlan: {
       ...preview.nextTrainingPlan,
@@ -151,6 +194,23 @@ export function acceptNextTrainingBlockTransition({
       trainingBlock: preview.trainingBlock,
     },
   });
+
+  if (!currentTrainingPlan?.trainingBlock) {
+    return acceptedTrainingPlan;
+  }
+
+  return {
+    ...acceptedTrainingPlan,
+    undoableTrainingBlockTransition: {
+      acceptedAt: acceptedTrainingPlan.updatedAt,
+      previousState: {
+        generatedAt: currentTrainingPlan.generatedAt,
+        startingLoadSuggestions: currentTrainingPlan.startingLoadSuggestions ?? [],
+        trainingBlock: currentTrainingPlan.trainingBlock,
+        workoutTemplates: currentTrainingPlan.workoutTemplates,
+      },
+    },
+  };
 }
 
 function getCompletedTrainingBlockWeeks({

@@ -12,6 +12,7 @@ import type {
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
+  trainingPlansQueryOptions,
 } from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
 import type {
@@ -61,6 +62,11 @@ export function TrainingSessionRoute() {
     ReadonlyArray<string>
   >([]);
   const bodyweightState = useTrainingSessionBodyweight({
+    trainingPlan,
+    workoutTemplate,
+  });
+  useConsumeUndoableTrainingBlockTransition({
+    routeParams,
     trainingPlan,
     workoutTemplate,
   });
@@ -317,6 +323,51 @@ function useTrainingSessionReadModel({
       workoutTemplate,
     ],
   );
+}
+
+function useConsumeUndoableTrainingBlockTransition({
+  routeParams,
+  trainingPlan,
+  workoutTemplate,
+}: {
+  routeParams: { planId: string; templateId: string } | null;
+  trainingPlan: TrainingPlan | null | undefined;
+  workoutTemplate: WorkoutTemplate | null;
+}) {
+  const queryClient = useQueryClient();
+  const clearUndoableTrainingBlockTransition = useMutation({
+    mutationFn: (planId: string) =>
+      trainingPlanService.clearUndoableTrainingBlockTransition({
+        planId,
+      }),
+    onSuccess: (updatedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(updatedTrainingPlan.id).queryKey,
+        updatedTrainingPlan,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: trainingPlansQueryOptions().queryKey,
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (
+      !routeParams ||
+      !trainingPlan?.undoableTrainingBlockTransition ||
+      !workoutTemplate ||
+      clearUndoableTrainingBlockTransition.isPending
+    ) {
+      return;
+    }
+
+    void clearUndoableTrainingBlockTransition.mutateAsync(routeParams.planId);
+  }, [
+    clearUndoableTrainingBlockTransition,
+    routeParams,
+    trainingPlan?.undoableTrainingBlockTransition,
+    workoutTemplate,
+  ]);
 }
 
 function useCompleteTrainingSession({

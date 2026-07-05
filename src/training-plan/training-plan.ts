@@ -54,6 +54,16 @@ export type WorkoutTemplate = {
   supersetGroups: ReadonlyArray<SupersetGroup>;
 };
 
+export type UndoableTrainingBlockTransition = {
+  acceptedAt: string;
+  previousState: {
+    generatedAt: string;
+    startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+    trainingBlock: TrainingBlock;
+    workoutTemplates: ReadonlyArray<WorkoutTemplate>;
+  };
+};
+
 export type TrainingPlan = {
   active: boolean;
   baselineBodyweight?: number | null;
@@ -70,6 +80,7 @@ export type TrainingPlan = {
   trainingBlockWeeks: number;
   trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"];
   trainingGoal: PlanBlueprint["trainingGoal"];
+  undoableTrainingBlockTransition?: UndoableTrainingBlockTransition | null;
   updatedAt: string;
   weeklyBodyweightUpdates?: ReadonlyArray<TrainingWeekBodyweightUpdate>;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget>;

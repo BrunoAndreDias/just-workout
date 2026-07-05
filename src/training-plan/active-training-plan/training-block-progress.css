@@ -118,6 +118,57 @@
   line-height: 1.125rem;
 }
 
+.active-training-plan-progress__details-copy {
+  max-width: 34rem;
+  color: #58656a;
+}
+
+.active-training-plan-progress__review-section {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+  border: 1px solid rgba(0, 119, 128, 0.12);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 0.875rem 1rem;
+}
+
+.active-training-plan-progress__section-title,
+.active-training-plan-progress__section-value,
+.active-training-plan-progress__section-detail,
+.active-training-plan-progress__section-caveat {
+  margin: 0;
+}
+
+.active-training-plan-progress__section-title {
+  color: #0f2e34;
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.active-training-plan-progress__section-value {
+  color: #11181b;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.active-training-plan-progress__section-detail {
+  color: #31505d;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2rem;
+}
+
+.active-training-plan-progress__section-caveat {
+  color: #8a4b2b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.125rem;
+}
+
 .active-training-plan-progress__detail-list {
   display: grid;
   gap: 0.5rem;
@@ -239,12 +290,18 @@
   outline-offset: 3px;
 }
 
+.active-training-plan-progress__button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-top: 0.875rem;
+}
+
 .active-training-plan-progress__accept {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 2.5rem;
-  margin-top: 0.75rem;
   border: 0;
   border-radius: 0.5rem;
   padding: 0 1rem;
@@ -276,4 +333,115 @@
 .active-training-plan-progress__accept:focus-visible {
   outline: 2px solid rgba(0, 119, 128, 0.58);
   outline-offset: 3px;
+}
+
+.active-training-plan-progress__secondary-button,
+.active-training-plan-progress__secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2.5rem;
+  border: 1px solid rgba(0, 119, 128, 0.18);
+  border-radius: 0.5rem;
+  padding: 0 0.95rem;
+  color: #0f2e34;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.active-training-plan-progress__secondary-button:hover,
+.active-training-plan-progress__secondary-link:hover {
+  border-color: rgba(0, 119, 128, 0.4);
+  background: #ffffff;
+}
+
+.active-training-plan-progress__secondary-button:active,
+.active-training-plan-progress__secondary-link:active {
+  transform: translateY(1px);
+}
+
+.active-training-plan-progress__secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.active-training-plan-progress__secondary-button:focus-visible,
+.active-training-plan-progress__secondary-link:focus-visible {
+  outline: 2px solid rgba(0, 119, 128, 0.22);
+  outline-offset: 3px;
+}
+
+.active-training-plan-progress__undo {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 32rem;
+  margin-top: 0.875rem;
+  border: 1px solid rgba(0, 119, 128, 0.16);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(0, 119, 128, 0.08), transparent 72%), rgba(255, 253, 249, 0.92);
+  padding: 0.875rem 1rem;
+}
+
+.active-training-plan-progress__undo h3,
+.active-training-plan-progress__undo p {
+  margin: 0;
+}
+
+.active-training-plan-progress__undo h3 {
+  color: #0f2e34;
+  font-size: 0.875rem;
+  font-weight: 850;
+  line-height: 1.125rem;
+}
+
+.active-training-plan-progress__rir-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.active-training-plan-progress__rir-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  border-radius: 0.65rem;
+  background: rgba(255, 250, 242, 0.82);
+  padding: 0.5rem 0.75rem;
+}
+
+.active-training-plan-progress__rir-list span {
+  color: #31505d;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.125rem;
+}
+
+@media (max-width: 640px) {
+  .active-training-plan-progress__load-edit {
+    flex-wrap: wrap;
+  }
+
+  .active-training-plan-progress__secondary-link,
+  .active-training-plan-progress__secondary-button,
+  .active-training-plan-progress__accept,
+  .active-training-plan-progress__action {
+    width: 100%;
+  }
+
+  .active-training-plan-progress__rir-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

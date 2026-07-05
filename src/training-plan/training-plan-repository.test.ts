@@ -11,6 +11,7 @@ import {
   saveHistoricalTrainingSessionBodyweight,
   saveTrainingWeekBodyweight,
   seedTrainingPlanData,
+  undoAcceptedTrainingBlockTransition,
 } from "./training-plan-repository";
 import { createCompletedTrainingSession, type TrainingSession } from "./training-session";
 
@@ -109,6 +110,111 @@ describe("trainingPlanRepository", () => {
         trainingBlockWeekNumber: 6,
       }),
     ]);
+  });
+
+  it("restores the previous Training Block state when undoing an accepted next block before the first new-block session starts", async () => {
+    const activeTrainingPlan = createTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+    });
+
+    await seedTrainingPlanData({
+      trainingPlans: [activeTrainingPlan],
+    });
+
+    const acceptedTrainingPlan: TrainingPlan = {
+      ...activeTrainingPlan,
+      startingLoadSuggestions: [
+        {
+          effectiveLoad: 42.5,
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+          kind: "first_time",
+          movementPattern: "horizontal_push",
+          previousLoad: null,
+          reason: "first-time exercise, start empty",
+          suggestedLoad: null,
+          userEditedLoad: 42.5,
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 2,
+        endDate: "2026-08-29",
+        id: "training-block-1-next",
+        planId: "training-plan-1",
+        previousBlockId: "training-block-1",
+        startDate: "2026-07-19",
+        status: "active",
+        weekNumber: 1,
+      },
+      undoableTrainingBlockTransition: {
+        acceptedAt: "2026-07-19T09:00:00.000Z",
+        previousState: {
+          generatedAt: activeTrainingPlan.generatedAt,
+          startingLoadSuggestions: [],
+          trainingBlock: activeTrainingPlan.trainingBlock!,
+          workoutTemplates: activeTrainingPlan.workoutTemplates,
+        },
+      },
+      updatedAt: "2026-07-19T09:00:00.000Z",
+      workoutTemplates: activeTrainingPlan.workoutTemplates.map((template) => ({
+        ...template,
+        supersetGroups: template.supersetGroups.map((group) => ({
+          ...group,
+          slots: group.slots.map((slot) =>
+            slot.exerciseId === "flat-dumbbell-bench-press"
+              ? {
+                  ...slot,
+                  exerciseId: "incline-dumbbell-bench-press",
+                  exerciseName: "Incline Dumbbell Bench Press",
+                }
+              : slot,
+          ),
+        })),
+      })),
+    };
+
+    await saveAcceptedTrainingPlan(acceptedTrainingPlan);
+    await undoAcceptedTrainingBlockTransition({
+      planId: "training-plan-1",
+      timestamp: "2026-07-19T09:30:00.000Z",
+    });
+
+    expect(await getTrainingPlan("training-plan-1")).toEqual(
+      expect.objectContaining({
+        id: "training-plan-1",
+        startingLoadSuggestions: undefined,
+        trainingBlock: expect.objectContaining({
+          cycleNumber: 1,
+          id: "training-block-1",
+          previousBlockId: null,
+          weekNumber: 6,
+        }),
+        undoableTrainingBlockTransition: null,
+        workoutTemplates: expect.arrayContaining([
+          expect.objectContaining({
+            supersetGroups: expect.arrayContaining([
+              expect.objectContaining({
+                slots: expect.arrayContaining([
+                  expect.objectContaining({
+                    exerciseId: "flat-dumbbell-bench-press",
+                    exerciseName: "Flat Dumbbell Bench Press",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
   });
 
   it("hydrates legacy completed sessions without inferring Training Block metadata", async () => {

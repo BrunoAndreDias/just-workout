@@ -361,25 +361,27 @@ describe("TrainingPlanRoute", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows a calm cycle summary on the active Training Plan", async () => {
+  it("shows a calm Training Block summary on the active Training Plan", async () => {
     await seedTrainingPlan();
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
     expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
 
-    const blockSummary = getClosestSection(screen.getByRole("heading", { name: "Cycle 1" }));
+    const blockSummary = getClosestSection(
+      screen.getByRole("heading", { name: "Training Block 1" }),
+    );
 
-    expect(within(blockSummary).getByText("Cycle 1 · Week 2 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Training Block 1 · Week 2 of 6")).toBeVisible();
     expect(within(blockSummary).getByText("Current focus: building consistency")).toBeVisible();
     expect(within(blockSummary).getByText("4 weeks until exercise rotation")).toBeVisible();
     expect(
       within(blockSummary).getByText(
-        "After week 6, Just Workout can rotate exercises and prefill starting loads based on your previous cycle.",
+        "After week 6, Just Workout can review the next Training Block, rotate exercises, and prefill starting loads from your previous block.",
       ),
     ).toBeVisible();
     expect(
-      within(blockSummary).queryByRole("button", { name: "Generate next cycle" }),
+      within(blockSummary).queryByRole("button", { name: "Review next Training Block" }),
     ).not.toBeInTheDocument();
   });
 
@@ -409,7 +411,9 @@ describe("TrainingPlanRoute", () => {
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
-    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
 
     expect(within(blockSummary).getByText("Latest Training Week verdict")).toBeVisible();
     expect(within(blockSummary).getByText("Progressed")).toBeVisible();
@@ -423,7 +427,7 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
   });
 
-  it("does not show the next cycle action in week 6 until every Training Week is complete", async () => {
+  it("does not show the next Training Block review in week 6 until every Training Week is complete", async () => {
     await seedTrainingPlan({
       split: "full-body-2-day",
       trainingBlock: {
@@ -442,21 +446,23 @@ describe("TrainingPlanRoute", () => {
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
-    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
 
-    expect(within(blockSummary).getByText("Cycle 1 · Week 6 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
     expect(
       within(blockSummary).getByText(
-        "Complete each Training Week in this block to unlock exercise rotation",
+        "Complete each Training Week in this block to unlock the next Training Block review",
       ),
     ).toBeVisible();
     expect(
-      within(blockSummary).queryByRole("button", { name: "Generate next cycle" }),
+      within(blockSummary).queryByRole("button", { name: "Review next Training Block" }),
     ).not.toBeInTheDocument();
-    expect(within(blockSummary).queryByText("Next cycle preview")).not.toBeInTheDocument();
+    expect(within(blockSummary).queryByText("Next Training Block ready")).not.toBeInTheDocument();
   });
 
-  it("shows the next cycle action and preview summary at the end of week 6", async () => {
+  it("shows the inline next Training Block review at the end of week 6", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan({
       mainCompoundRotationPools: [
@@ -484,28 +490,61 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "2-Day Full Body" })).toBeVisible();
 
-    const blockSummary = getClosestSection(screen.getByRole("heading", { name: "Cycle 1" }));
-
-    expect(within(blockSummary).getByText("Cycle 1 · Week 6 of 6")).toBeVisible();
-    expect(within(blockSummary).getByText("Ready for exercise rotation")).toBeVisible();
-    expect(within(blockSummary).getByRole("button", { name: "Generate next cycle" })).toBeVisible();
-    expect(within(blockSummary).getByText("Next cycle preview")).toBeVisible();
-    expect(within(blockSummary).getByText("20 exercises rotated")).toBeVisible();
-    expect(within(blockSummary).getByText("2 exercises kept")).toBeVisible();
-
-    await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
-
-    expect(
-      within(blockSummary).getByRole("heading", { name: "Exercise rotation preview" }),
-    ).toBeVisible();
-    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(22);
-    expect(
-      within(blockSummary).getAllByText(/Flat Barbell Bench Press.*Incline Dumbbell Bench Press/),
-    ).toHaveLength(2);
-    expect(within(blockSummary).getAllByText("same Movement Pattern rotation pool")).toHaveLength(
-      2,
+    const blockSummary = getClosestSection(
+      screen.getByRole("heading", { name: "Training Block 1" }),
     );
-    expect(within(blockSummary).getAllByText("compatible abs exercise")).toHaveLength(4);
+
+    expect(within(blockSummary).getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Ready for next Training Block review")).toBeVisible();
+    expect(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    ).toBeVisible();
+    expect(within(blockSummary).getByText("Next Training Block ready")).toBeVisible();
+    expect(within(blockSummary).getByText("20 proposed rotations")).toBeVisible();
+    expect(within(blockSummary).getByText("2 kept exercises")).toBeVisible();
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
+
+    expect(
+      within(blockSummary).getByRole("heading", { name: "Next Training Block review" }),
+    ).toBeVisible();
+    expect(
+      within(blockSummary).getByRole("button", { name: "View Training History" }),
+    ).toBeVisible();
+    expect(
+      within(blockSummary).getByRole("region", {
+        name: "Training Block Exercise Rotation Proposal",
+      }),
+    ).toBeVisible();
+    expect(
+      within(blockSummary).getByRole("region", {
+        name: "Previous Exercise Load Prefill",
+      }),
+    ).toBeVisible();
+    const rirRamp = within(blockSummary).getByRole("region", { name: "Six-week RIR ramp" });
+
+    expect(within(rirRamp).getByText("Week 1")).toBeVisible();
+    expect(within(rirRamp).getByText("3 RIR")).toBeVisible();
+    expect(within(rirRamp).getByText("Week 6")).toBeVisible();
+    expect(within(rirRamp).getByText("1-0 RIR")).toBeVisible();
+
+    const rotationProposal = within(blockSummary).getByRole("region", {
+      name: "Training Block Exercise Rotation Proposal",
+    });
+
+    expect(within(rotationProposal).getAllByRole("listitem")).toHaveLength(22);
+    expect(
+      within(rotationProposal).getAllByText(
+        /Flat Barbell Bench Press.*Incline Dumbbell Bench Press/,
+      ),
+    ).toHaveLength(2);
+    expect(
+      within(rotationProposal).getAllByText("same Movement Pattern rotation pool"),
+    ).toHaveLength(2);
+    expect(within(rotationProposal).getAllByText("compatible abs exercise")).toHaveLength(4);
+
     const suggestedLoadInput = within(blockSummary).getByLabelText(
       "Suggested starting load for Incline Dumbbell Bench Press",
     ) as HTMLInputElement;
@@ -530,7 +569,7 @@ describe("TrainingPlanRoute", () => {
     expect(within(blockSummary).getAllByText("Edited start: 92.5 kg")).toHaveLength(2);
   });
 
-  it("accepts the next cycle preview and stores the edited suggested load", async () => {
+  it("accepts the next Training Block review and stores the edited suggested load", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan({
       mainCompoundRotationPools: [
@@ -556,9 +595,13 @@ describe("TrainingPlanRoute", () => {
 
     renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
 
-    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
 
-    await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
 
     const suggestedLoadInput = within(blockSummary).getByLabelText(
       "Suggested starting load for Incline Dumbbell Bench Press",
@@ -566,10 +609,13 @@ describe("TrainingPlanRoute", () => {
 
     await user.clear(suggestedLoadInput);
     await user.type(suggestedLoadInput, "92.5");
-    await user.click(within(blockSummary).getByRole("button", { name: "Accept next cycle" }));
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Accept next Training Block" }),
+    );
 
-    expect(await screen.findByRole("heading", { name: "Cycle 2" })).toBeVisible();
-    expect(screen.getByText("Cycle 2 · Week 1 of 6")).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
+    expect(screen.getByText("Training Block 2 · Week 1 of 6")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Undo accepted Training Block" })).toBeVisible();
 
     const acceptedPlan = await getTrainingPlan("training-plan-test");
     const clonedPlan = await getTrainingPlan("training-plan-test-next");
@@ -594,9 +640,222 @@ describe("TrainingPlanRoute", () => {
         previousBlockId: "training-block-1",
         weekNumber: 1,
       },
+      undoableTrainingBlockTransition: expect.objectContaining({
+        previousState: expect.objectContaining({
+          trainingBlock: expect.objectContaining({
+            cycleNumber: 1,
+            id: "training-block-1",
+          }),
+        }),
+      }),
     });
     expect(clonedPlan).toBeNull();
     expect(completedSessions).toHaveLength(12);
+  });
+
+  it("skips the rotation proposal and still creates the next Training Block on the same Active Training Plan", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      split: "full-body-2-day",
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    await seedCompletedTrainingSessions(createCompletedTrainingBlockSessionOverrides());
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
+    await user.click(within(blockSummary).getByRole("button", { name: "Skip rotation proposal" }));
+
+    expect(
+      within(blockSummary).getByText(
+        "Skipping the rotation proposal keeps your current exercises for the next Training Block.",
+      ),
+    ).toBeVisible();
+
+    const keptExerciseInput = within(blockSummary).getByLabelText(
+      "Suggested starting load for Flat Barbell Bench Press",
+    );
+
+    expect(keptExerciseInput).toHaveValue(100);
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Create next Training Block" }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
+
+    const acceptedPlan = await getTrainingPlan("training-plan-test");
+
+    expect(acceptedPlan).toEqual(
+      expect.objectContaining({
+        id: "training-plan-test",
+        startingLoadSuggestions: expect.arrayContaining([
+          expect.objectContaining({
+            effectiveLoad: 100,
+            exerciseId: "flat-barbell-bench-press",
+            kind: "exact_previous_exercise",
+            previousLoad: 100,
+            suggestedLoad: 100,
+          }),
+        ]),
+        trainingBlock: expect.objectContaining({
+          cycleNumber: 2,
+          id: "training-block-1-next",
+        }),
+        workoutTemplates: expect.arrayContaining([
+          expect.objectContaining({
+            supersetGroups: expect.arrayContaining([
+              expect.objectContaining({
+                slots: expect.arrayContaining([
+                  expect.objectContaining({
+                    exerciseId: "flat-barbell-bench-press",
+                    exerciseName: "Flat Barbell Bench Press",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("undoes an accepted next Training Block before the first new-block session starts", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      split: "full-body-2-day",
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    await seedCompletedTrainingSessions(createCompletedTrainingBlockSessionOverrides());
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Accept next Training Block" }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Undo accepted Training Block" }));
+
+    expect(await screen.findByRole("heading", { name: "Training Block 1" })).toBeVisible();
+    expect(screen.getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Review next Training Block" })).toBeVisible();
+
+    expect(await getTrainingPlan("training-plan-test")).toEqual(
+      expect.objectContaining({
+        trainingBlock: expect.objectContaining({
+          cycleNumber: 1,
+          id: "training-block-1",
+          weekNumber: 6,
+        }),
+        undoableTrainingBlockTransition: null,
+      }),
+    );
+  });
+
+  it("removes undo after the first new-block Training Session starts", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      split: "full-body-2-day",
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    await seedCompletedTrainingSessions(createCompletedTrainingBlockSessionOverrides());
+
+    const view = renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Accept next Training Block" }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Undo accepted Training Block" })).toBeVisible();
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Start next workout" })[0] as HTMLElement,
+    );
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    view.unmount();
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Undo accepted Training Block" }),
+    ).not.toBeInTheDocument();
+    expect(await getTrainingPlan("training-plan-test")).toEqual(
+      expect.objectContaining({
+        undoableTrainingBlockTransition: null,
+      }),
+    );
   });
 
   it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {

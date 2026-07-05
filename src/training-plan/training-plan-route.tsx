@@ -82,6 +82,21 @@ export function TrainingPlanRoute() {
       });
     },
   });
+  const undoAcceptedTrainingBlockTransition = useMutation({
+    mutationFn: (acceptedPlanId: string) =>
+      trainingPlanService.undoAcceptedTrainingBlockTransition({
+        planId: acceptedPlanId,
+      }),
+    onSuccess: (savedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(savedTrainingPlan.id).queryKey,
+        savedTrainingPlan,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: trainingPlansQueryOptions().queryKey,
+      });
+    },
+  });
 
   if (trainingPlanQuery.isLoading) {
     return <ActiveTrainingPlanLoading>Loading Training Plan...</ActiveTrainingPlanLoading>;
@@ -99,6 +114,8 @@ export function TrainingPlanRoute() {
             navigate(getTrainingPlanRouteTarget(savedTrainingPlan.id)),
           saveAcceptedTrainingPlan: (acceptedTrainingPlan) =>
             saveAcceptedTrainingPlan.mutateAsync(acceptedTrainingPlan),
+          undoAcceptedTrainingBlockTransition: (acceptedPlanId) =>
+            undoAcceptedTrainingBlockTransition.mutateAsync(acceptedPlanId),
           trainingPlan,
           trainingSessions: trainingSessionsQuery.data ?? [],
         }) ?? undefined

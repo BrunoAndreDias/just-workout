@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 import type { NextTrainingBlockTransitionWorkflow } from "../index";
 import { TrainingBlockProgress } from "./training-block-progress";
 
+type ReviewTrainingBlockTransitionWorkflow = Extract<
+  NextTrainingBlockTransitionWorkflow,
+  { kind: "review" }
+>;
+
 describe("TrainingBlockProgress", () => {
   it("shows editable load prefill details for kept exercises in the transition preview", async () => {
     const user = userEvent.setup();
@@ -13,6 +18,7 @@ describe("TrainingBlockProgress", () => {
         blockProgressPercent={100}
         blockWeek={6}
         nextTrainingBlockTransition={createTransitionWithKeptExercise()}
+        onOpenTrainingHistory={() => {}}
         trainingWeekProgress={{
           caveat: null,
           detail: "1 of 1 workouts completed",
@@ -26,9 +32,12 @@ describe("TrainingBlockProgress", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Generate next cycle" }));
+    await user.click(screen.getByRole("button", { name: "Review next Training Block" }));
 
-    const keptExercise = screen
+    const prefillSection = screen.getByRole("region", {
+      name: "Previous Exercise Load Prefill",
+    });
+    const keptExercise = within(prefillSection)
       .getByText("Flat Dumbbell Bench Press")
       .closest("li") as HTMLElement | null;
 
@@ -46,9 +55,10 @@ describe("TrainingBlockProgress", () => {
   });
 });
 
-function createTransitionWithKeptExercise(): NextTrainingBlockTransitionWorkflow {
+function createTransitionWithKeptExercise(): ReviewTrainingBlockTransitionWorkflow {
   return {
     editLoadSuggestion: ({ suggestions }) => suggestions,
+    kind: "review",
     preview: {
       loadSuggestions: [
         {
@@ -62,7 +72,7 @@ function createTransitionWithKeptExercise(): NextTrainingBlockTransitionWorkflow
           userEditedLoad: null,
         },
       ],
-      nextTrainingPlan: {} as NextTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"],
+      nextTrainingPlan: {} as ReviewTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"],
       rotation: {
         kept: [
           {
@@ -71,6 +81,53 @@ function createTransitionWithKeptExercise(): NextTrainingBlockTransitionWorkflow
             groupId: "group-1",
             movementPattern: "horizontal_push",
             reason: "kept exercise",
+            role: "main_compound",
+            slotIndex: 0,
+            slotLabel: "Horizontal push",
+            templateId: "template-1",
+            templateLabel: "Full Body A",
+          },
+        ],
+        requiredMovementCoverage: {
+          isPreserved: true,
+          missingPatterns: [],
+        },
+        rotated: [],
+      },
+      trainingBlock: {
+        cycleNumber: 2,
+        endDate: "2026-08-29",
+        id: "training-block-2",
+        planId: "training-plan-1",
+        previousBlockId: "training-block-1",
+        startDate: "2026-07-19",
+        status: "upcoming",
+        weekNumber: 1,
+      },
+      weeklyIntensityTargets: [],
+    },
+    skipRotationPreview: {
+      loadSuggestions: [
+        {
+          exerciseId: "flat-dumbbell-bench-press",
+          exerciseName: "Flat Dumbbell Bench Press",
+          kind: "exact_previous_exercise",
+          movementPattern: "horizontal_push",
+          previousLoad: 40,
+          reason: "previous exact exercise load prefill",
+          suggestedLoad: 40,
+          userEditedLoad: null,
+        },
+      ],
+      nextTrainingPlan: {} as ReviewTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"],
+      rotation: {
+        kept: [
+          {
+            exerciseId: "flat-dumbbell-bench-press",
+            exerciseName: "Flat Dumbbell Bench Press",
+            groupId: "group-1",
+            movementPattern: "horizontal_push",
+            reason: "kept current exercise after skipping the rotation proposal",
             role: "main_compound",
             slotIndex: 0,
             slotLabel: "Horizontal push",

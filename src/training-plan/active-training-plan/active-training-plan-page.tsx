@@ -100,6 +100,9 @@ function ActiveTrainingPlanActions({
         blockWeek={readModel.progress.blockWeek}
         cycleNumber={readModel.progress.cycleNumber}
         nextTrainingBlockTransition={nextTrainingBlockTransition}
+        onOpenTrainingHistory={() => {
+          void navigate(readModel.actions.trainingHistory.routeTarget);
+        }}
         trainingWeekProgress={readModel.progress.trainingWeekProgress}
         trainingBlockWeeks={readModel.progress.trainingBlockWeeks}
       />

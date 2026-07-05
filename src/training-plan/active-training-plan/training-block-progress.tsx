@@ -7,11 +7,22 @@ import type {
 import type { ActiveTrainingPlanWeekProgressReadModel } from "./training-week-progress-read-model";
 import "./training-block-progress.css";
 
+type ReviewTrainingBlockTransitionWorkflow = Extract<
+  NextTrainingBlockTransitionWorkflow,
+  { kind: "review" }
+>;
+type AcceptedTrainingBlockTransitionWorkflow = Extract<
+  NextTrainingBlockTransitionWorkflow,
+  { kind: "accepted" }
+>;
+type TrainingBlockReviewMode = "accept_proposal" | "skip_rotation";
+
 export function TrainingBlockProgress({
   blockProgressPercent,
   blockWeek,
   cycleNumber = 1,
   nextTrainingBlockTransition,
+  onOpenTrainingHistory,
   trainingWeekProgress,
   trainingBlockWeeks,
 }: {
@@ -19,19 +30,21 @@ export function TrainingBlockProgress({
   blockWeek: number;
   cycleNumber?: number;
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
+  onOpenTrainingHistory: () => void;
   trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   trainingBlockWeeks: number;
 }) {
   const weeksUntilRotation = Math.max(trainingBlockWeeks - blockWeek, 0);
   const summaryId = `training-block-${cycleNumber}-summary`;
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
-  const isNextBlockReady = weeksUntilRotation === 0 && nextTrainingBlockTransition !== undefined;
+  const isNextBlockReady =
+    weeksUntilRotation === 0 && nextTrainingBlockTransition?.kind === "review";
 
   return (
     <section className="active-training-plan-progress" aria-labelledby={summaryId}>
-      <h2 id={summaryId}>Cycle {cycleNumber}</h2>
+      <h2 id={summaryId}>Training Block {cycleNumber}</h2>
       <p>
-        Cycle {cycleNumber} · Week {blockWeek} of {trainingBlockWeeks}
+        Training Block {cycleNumber} · Week {blockWeek} of {trainingBlockWeeks}
       </p>
       <p>Current focus: {getTrainingBlockFocus(blockWeek, trainingBlockWeeks)}</p>
       <p>{getRotationStatusLabel({ isNextBlockReady, weeksUntilRotation })}</p>
@@ -49,14 +62,16 @@ export function TrainingBlockProgress({
         <span>{blockProgressPercent}%</span>
       </div>
       <p className="active-training-plan-progress__helper">
-        After week 6, Just Workout can rotate exercises and prefill starting loads based on your
-        previous cycle.
+        After week 6, Just Workout can review the next Training Block, rotate exercises, and prefill
+        starting loads from your previous block.
       </p>
       <TrainingWeekProgressSummary trainingWeekProgress={trainingWeekProgress} />
       <TrainingBlockProgressActions
         isPreviewExpanded={isPreviewExpanded}
         isReady={isNextBlockReady}
+        onOpenTrainingHistory={onOpenTrainingHistory}
         onExpandPreview={() => setIsPreviewExpanded(true)}
+        trainingWeekProgress={trainingWeekProgress}
         transition={nextTrainingBlockTransition}
       />
     </section>
@@ -87,15 +102,23 @@ function TrainingWeekProgressSummary({
 function TrainingBlockProgressActions({
   isPreviewExpanded,
   isReady,
+  onOpenTrainingHistory,
   onExpandPreview,
+  trainingWeekProgress,
   transition,
 }: {
   isPreviewExpanded: boolean;
   isReady: boolean;
+  onOpenTrainingHistory: () => void;
   onExpandPreview: () => void;
+  trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   transition?: NextTrainingBlockTransitionWorkflow;
 }) {
-  if (!isReady || !transition) {
+  if (transition?.kind === "accepted") {
+    return <UndoAcceptedTrainingBlockCallout transition={transition} />;
+  }
+
+  if (!isReady || !transition || transition.kind !== "review") {
     return null;
   }
 
@@ -107,9 +130,15 @@ function TrainingBlockProgressActions({
         onClick={onExpandPreview}
         type="button"
       >
-        Generate next cycle
+        Review next Training Block
       </button>
-      {isPreviewExpanded ? <TrainingBlockPreviewDetails transition={transition} /> : null}
+      {isPreviewExpanded ? (
+        <TrainingBlockPreviewDetails
+          onOpenTrainingHistory={onOpenTrainingHistory}
+          trainingWeekProgress={trainingWeekProgress}
+          transition={transition}
+        />
+      ) : null}
     </>
   );
 }
@@ -117,41 +146,52 @@ function TrainingBlockProgressActions({
 function TrainingBlockPreviewSummary({
   transition,
 }: {
-  transition: NextTrainingBlockTransitionWorkflow;
+  transition: ReviewTrainingBlockTransitionWorkflow;
 }) {
   const { preview } = transition;
 
   return (
     <div className="active-training-plan-progress__preview">
-      <h3>Next cycle preview</h3>
+      <h3>Next Training Block ready</h3>
       <p>
         {preview.rotation.rotated.length}{" "}
-        {preview.rotation.rotated.length === 1 ? "exercise" : "exercises"} rotated
+        {preview.rotation.rotated.length === 1 ? "proposed rotation" : "proposed rotations"}
       </p>
       <p>
         {preview.rotation.kept.length}{" "}
-        {preview.rotation.kept.length === 1 ? "exercise" : "exercises"} kept
+        {preview.rotation.kept.length === 1 ? "kept exercise" : "kept exercises"}
       </p>
     </div>
   );
 }
 
 function TrainingBlockPreviewDetails({
+  onOpenTrainingHistory,
+  trainingWeekProgress,
   transition,
 }: {
-  transition: NextTrainingBlockTransitionWorkflow;
+  onOpenTrainingHistory: () => void;
+  trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
+  transition: ReviewTrainingBlockTransitionWorkflow;
 }) {
-  const { preview } = transition;
-  const [loadSuggestions, setLoadSuggestions] = useState(preview.loadSuggestions);
+  const [reviewMode, setReviewMode] = useState<TrainingBlockReviewMode>("accept_proposal");
+  const [loadSuggestionsByMode, setLoadSuggestionsByMode] = useState<
+    Record<TrainingBlockReviewMode, ReadonlyArray<NextTrainingBlockLoadSuggestion>>
+  >({
+    accept_proposal: transition.preview.loadSuggestions,
+    skip_rotation: transition.skipRotationPreview.loadSuggestions,
+  });
   const [isAccepting, setIsAccepting] = useState(false);
-  const [loadInputValues, setLoadInputValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      preview.loadSuggestions.map((suggestion) => [
-        suggestion.exerciseId,
-        formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
-      ]),
-    ),
-  );
+  const [loadInputValuesByMode, setLoadInputValuesByMode] = useState<
+    Record<TrainingBlockReviewMode, Record<string, string>>
+  >({
+    accept_proposal: createEditableLoadValues(transition.preview.loadSuggestions),
+    skip_rotation: createEditableLoadValues(transition.skipRotationPreview.loadSuggestions),
+  });
+  const activePreview =
+    reviewMode === "skip_rotation" ? transition.skipRotationPreview : transition.preview;
+  const activeLoadSuggestions = loadSuggestionsByMode[reviewMode];
+  const activeLoadInputValues = loadInputValuesByMode[reviewMode];
 
   function renderLoadSuggestionFields(
     loadSuggestion: NextTrainingBlockLoadSuggestion,
@@ -161,24 +201,28 @@ function TrainingBlockPreviewDetails({
       <TrainingBlockLoadSuggestionFields
         exerciseName={exerciseName}
         loadInputValue={
-          loadInputValues[loadSuggestion.exerciseId] ??
+          activeLoadInputValues[loadSuggestion.exerciseId] ??
           formatEditableLoad(loadSuggestion.userEditedLoad ?? loadSuggestion.suggestedLoad)
         }
         loadSuggestion={loadSuggestion}
         onInputChange={(nextValue) => {
-          setLoadInputValues((current) => ({
+          setLoadInputValuesByMode((current) => ({
             ...current,
-            [loadSuggestion.exerciseId]: nextValue,
+            [reviewMode]: {
+              ...current[reviewMode],
+              [loadSuggestion.exerciseId]: nextValue,
+            },
           }));
 
           if (nextValue.trim() === "") {
-            setLoadSuggestions((current) =>
-              current.map((suggestion) =>
+            setLoadSuggestionsByMode((current) => ({
+              ...current,
+              [reviewMode]: current[reviewMode].map((suggestion) =>
                 suggestion.exerciseId === loadSuggestion.exerciseId
                   ? { ...suggestion, userEditedLoad: null }
                   : suggestion,
               ),
-            );
+            }));
             return;
           }
 
@@ -188,13 +232,14 @@ function TrainingBlockPreviewDetails({
             return;
           }
 
-          setLoadSuggestions((current) =>
-            transition.editLoadSuggestion({
+          setLoadSuggestionsByMode((current) => ({
+            ...current,
+            [reviewMode]: transition.editLoadSuggestion({
               exerciseId: loadSuggestion.exerciseId,
-              suggestions: current,
+              suggestions: current[reviewMode],
               userEditedLoad: nextLoad,
             }),
-          );
+          }));
         }}
       />
     );
@@ -202,14 +247,51 @@ function TrainingBlockPreviewDetails({
 
   return (
     <div className="active-training-plan-progress__details">
-      <h3>Exercise rotation preview</h3>
-      <ul className="active-training-plan-progress__detail-list">
-        {preview.rotation.rotated.map((rotation) => {
-          const loadSuggestion = loadSuggestions.find(
-            (suggestion) => suggestion.exerciseId === rotation.nextExerciseId,
-          );
+      <h3>Next Training Block review</h3>
+      <p className="active-training-plan-progress__details-copy">
+        Inspect recent progress, the proposed Training Block rotation, previous load prefills, and
+        the six-week RIR ramp before creating the next block.
+      </p>
 
-          return (
+      <section
+        className="active-training-plan-progress__review-section"
+        aria-label="Progress summary"
+      >
+        <div>
+          <p className="active-training-plan-progress__section-title">Progress summary</p>
+          <p className="active-training-plan-progress__section-value">
+            {trainingWeekProgress.value}
+          </p>
+          <p className="active-training-plan-progress__section-detail">
+            {trainingWeekProgress.detail}
+          </p>
+          <p className="active-training-plan-progress__section-detail">
+            {trainingWeekProgress.support}
+          </p>
+          {trainingWeekProgress.caveat ? (
+            <p className="active-training-plan-progress__section-caveat">
+              {trainingWeekProgress.caveat}
+            </p>
+          ) : null}
+        </div>
+        <button
+          className="active-training-plan-progress__secondary-link"
+          onClick={onOpenTrainingHistory}
+          type="button"
+        >
+          View Training History
+        </button>
+      </section>
+
+      <section
+        className="active-training-plan-progress__review-section"
+        aria-label="Training Block Exercise Rotation Proposal"
+      >
+        <p className="active-training-plan-progress__section-title">
+          Training Block Exercise Rotation Proposal
+        </p>
+        <ul className="active-training-plan-progress__detail-list">
+          {transition.preview.rotation.rotated.map((rotation) => (
             <li
               key={`${rotation.templateId}-${rotation.groupId}-${rotation.slotIndex}-${rotation.nextExerciseId}`}
             >
@@ -220,49 +302,166 @@ function TrainingBlockPreviewDetails({
                 {rotation.previousExerciseName} → {rotation.nextExerciseName}
               </span>
               <span>{rotation.reason}</span>
-              {loadSuggestion
-                ? renderLoadSuggestionFields(loadSuggestion, rotation.nextExerciseName)
-                : null}
             </li>
-          );
-        })}
-        {preview.rotation.kept.map((kept) => {
-          const loadSuggestion = loadSuggestions.find(
-            (suggestion) => suggestion.exerciseId === kept.exerciseId,
-          );
-
-          return (
+          ))}
+          {transition.preview.rotation.kept.map((kept) => (
             <li key={`${kept.templateId}-${kept.groupId}-${kept.slotIndex}-${kept.exerciseId}`}>
               <span>
                 {kept.templateLabel} · {kept.slotLabel}
               </span>
               <span>{kept.exerciseName}</span>
               <span>{kept.reason}</span>
-              {loadSuggestion
-                ? renderLoadSuggestionFields(loadSuggestion, kept.exerciseName)
-                : null}
             </li>
-          );
-        })}
-      </ul>
-      {transition.accept ? (
-        <button
-          className="active-training-plan-progress__accept"
-          disabled={isAccepting}
-          onClick={async () => {
-            setIsAccepting(true);
+          ))}
+        </ul>
+      </section>
 
-            try {
-              await transition.accept?.({ suggestions: loadSuggestions });
-            } finally {
-              setIsAccepting(false);
+      <section
+        className="active-training-plan-progress__review-section"
+        aria-label="Previous Exercise Load Prefill"
+      >
+        <p className="active-training-plan-progress__section-title">
+          Previous Exercise Load Prefill
+        </p>
+        <p className="active-training-plan-progress__details-copy">
+          {reviewMode === "skip_rotation"
+            ? "Skipping the rotation proposal keeps your current exercises for the next Training Block."
+            : "These prefills apply to the proposed next Training Block exercises."}
+        </p>
+        <ul className="active-training-plan-progress__detail-list">
+          {activePreview.rotation.rotated.map((rotation) => {
+            const loadSuggestion = activeLoadSuggestions.find(
+              (suggestion) => suggestion.exerciseId === rotation.nextExerciseId,
+            );
+
+            return (
+              <li
+                key={`${rotation.templateId}-${rotation.groupId}-${rotation.slotIndex}-${rotation.nextExerciseId}`}
+              >
+                <span>
+                  {rotation.templateLabel} · {rotation.slotLabel}
+                </span>
+                <span>
+                  {rotation.previousExerciseName} → {rotation.nextExerciseName}
+                </span>
+                <span>{rotation.reason}</span>
+                {loadSuggestion
+                  ? renderLoadSuggestionFields(loadSuggestion, rotation.nextExerciseName)
+                  : null}
+              </li>
+            );
+          })}
+          {activePreview.rotation.kept.map((kept) => {
+            const loadSuggestion = activeLoadSuggestions.find(
+              (suggestion) => suggestion.exerciseId === kept.exerciseId,
+            );
+
+            return (
+              <li key={`${kept.templateId}-${kept.groupId}-${kept.slotIndex}-${kept.exerciseId}`}>
+                <span>
+                  {kept.templateLabel} · {kept.slotLabel}
+                </span>
+                <span>{kept.exerciseName}</span>
+                <span>{kept.reason}</span>
+                {loadSuggestion
+                  ? renderLoadSuggestionFields(loadSuggestion, kept.exerciseName)
+                  : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+      <section
+        className="active-training-plan-progress__review-section"
+        aria-label="Six-week RIR ramp"
+      >
+        <p className="active-training-plan-progress__section-title">Six-week RIR ramp</p>
+        <ul className="active-training-plan-progress__rir-list">
+          {activePreview.weeklyIntensityTargets.map((target) => (
+            <li key={target.weekNumber}>
+              <span>Week {target.weekNumber}</span>
+              <span>{formatWeeklyTargetRir(target.minTargetRir, target.maxTargetRir)}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="active-training-plan-progress__details-copy">
+          Main and secondary compounds keep at least 1 RIR even when the ramp reaches 0 RIR for
+          isolation finishers.
+        </p>
+      </section>
+      {transition.accept ? (
+        <div className="active-training-plan-progress__button-row">
+          <button
+            className="active-training-plan-progress__secondary-button"
+            onClick={() =>
+              setReviewMode((currentMode) =>
+                currentMode === "accept_proposal" ? "skip_rotation" : "accept_proposal",
+              )
             }
-          }}
-          type="button"
-        >
-          {isAccepting ? "Saving next cycle..." : "Accept next cycle"}
-        </button>
+            type="button"
+          >
+            {reviewMode === "skip_rotation" ? "Review rotation proposal" : "Skip rotation proposal"}
+          </button>
+          <button
+            className="active-training-plan-progress__accept"
+            disabled={isAccepting}
+            onClick={async () => {
+              setIsAccepting(true);
+
+              try {
+                await transition.accept?.({
+                  reviewMode,
+                  suggestions: activeLoadSuggestions,
+                });
+              } finally {
+                setIsAccepting(false);
+              }
+            }}
+            type="button"
+          >
+            {isAccepting
+              ? "Saving next Training Block..."
+              : reviewMode === "skip_rotation"
+                ? "Create next Training Block"
+                : "Accept next Training Block"}
+          </button>
+        </div>
       ) : null}
+    </div>
+  );
+}
+
+function UndoAcceptedTrainingBlockCallout({
+  transition,
+}: {
+  transition: AcceptedTrainingBlockTransitionWorkflow;
+}) {
+  const [isUndoing, setIsUndoing] = useState(false);
+
+  if (!transition.undo) {
+    return null;
+  }
+
+  return (
+    <div className="active-training-plan-progress__undo">
+      <h3>Next Training Block accepted</h3>
+      <p>Undo stays available until you start the first Training Session in this block.</p>
+      <button
+        className="active-training-plan-progress__secondary-button"
+        disabled={isUndoing}
+        onClick={async () => {
+          setIsUndoing(true);
+
+          try {
+            await transition.undo?.();
+          } finally {
+            setIsUndoing(false);
+          }
+        }}
+        type="button"
+      >
+        {isUndoing ? "Undoing Training Block..." : "Undo accepted Training Block"}
+      </button>
     </div>
   );
 }
@@ -312,6 +511,23 @@ function formatEditableLoad(load: number | null): string {
   return load === null ? "" : String(load);
 }
 
+function createEditableLoadValues(
+  suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>,
+): Record<string, string> {
+  return Object.fromEntries(
+    suggestions.map((suggestion) => [
+      suggestion.exerciseId,
+      formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
+    ]),
+  );
+}
+
+function formatWeeklyTargetRir(minTargetRir: number, maxTargetRir: number): string {
+  return minTargetRir === maxTargetRir
+    ? `${minTargetRir} RIR`
+    : `${maxTargetRir}-${minTargetRir} RIR`;
+}
+
 export function getCurrentBlockWeek({
   trainingBlock,
 }: {
@@ -354,8 +570,8 @@ function getRotationStatusLabel({
   }
 
   if (isNextBlockReady) {
-    return "Ready for exercise rotation";
+    return "Ready for next Training Block review";
   }
 
-  return "Complete each Training Week in this block to unlock exercise rotation";
+  return "Complete each Training Week in this block to unlock the next Training Block review";
 }
