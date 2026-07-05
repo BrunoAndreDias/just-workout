@@ -32,7 +32,7 @@ export type GenerateNextTrainingBlockInput = {
   startDate: string;
 };
 
-export type MainCompoundRotationPreviewItem = {
+export type TrainingBlockExerciseRotationPreviewItem = {
   groupId: string;
   movementPattern: MovementPatternId;
   nextExerciseId: string;
@@ -47,7 +47,7 @@ export type MainCompoundRotationPreviewItem = {
   templateLabel: string;
 };
 
-export type MainCompoundKeptPreviewItem = {
+export type TrainingBlockKeptExercisePreviewItem = {
   exerciseId: string;
   exerciseName: string;
   groupId: string;
@@ -60,10 +60,10 @@ export type MainCompoundKeptPreviewItem = {
   templateLabel: string;
 };
 
-export type MainCompoundRotationPreview = {
-  kept: ReadonlyArray<MainCompoundKeptPreviewItem>;
+export type TrainingBlockExerciseRotationPreview = {
+  kept: ReadonlyArray<TrainingBlockKeptExercisePreviewItem>;
   requiredMovementCoverage: RequiredMovementCoverageResult;
-  rotated: ReadonlyArray<MainCompoundRotationPreviewItem>;
+  rotated: ReadonlyArray<TrainingBlockExerciseRotationPreviewItem>;
 };
 
 export type RequiredMovementCoverageResult = {
@@ -125,7 +125,7 @@ export type TrainingBlockProgressionDecision = {
 export type NextTrainingBlockPreview = {
   loadSuggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   nextTrainingPlan: TrainingPlan;
-  rotation: MainCompoundRotationPreview;
+  rotation: TrainingBlockExerciseRotationPreview;
   trainingBlock: TrainingBlock;
   weeklyIntensityTargets: ReadonlyArray<WeeklyIntensityTarget>;
 };
@@ -177,13 +177,13 @@ function hasCompletedTrainingBlock(completedWeeks: ReadonlyArray<number>): boole
   );
 }
 
-export function previewMainCompoundRotations({
+export function previewTrainingBlockExerciseRotations({
   sessions = [],
   trainingPlan,
 }: {
   sessions?: ReadonlyArray<TrainingSession>;
   trainingPlan: TrainingPlan;
-}): MainCompoundRotationPreview {
+}): TrainingBlockExerciseRotationPreview {
   const poolsByMovementPattern = new Map(
     trainingPlan.mainCompoundRotationPools.map((pool) => [pool.movementPattern, pool]),
   );
@@ -199,8 +199,8 @@ export function previewMainCompoundRotations({
     sessions,
     trainingPlan,
   });
-  const kept: MainCompoundKeptPreviewItem[] = [];
-  const rotated: MainCompoundRotationPreviewItem[] = [];
+  const kept: TrainingBlockKeptExercisePreviewItem[] = [];
+  const rotated: TrainingBlockExerciseRotationPreviewItem[] = [];
   const proposedMovementPatterns = new Set<MovementPatternId>();
 
   for (const workoutTemplate of trainingPlan.workoutTemplates) {
@@ -263,14 +263,14 @@ export function previewMainCompoundRotations({
   };
 }
 
-export function applyConfirmedMainCompoundRotations({
+export function applyConfirmedTrainingBlockExerciseRotations({
   id,
   preview,
   timestamp,
   trainingPlan,
 }: {
   id: string;
-  preview: MainCompoundRotationPreview;
+  preview: TrainingBlockExerciseRotationPreview;
   timestamp: string;
   trainingPlan: TrainingPlan;
 }): TrainingPlan {
@@ -342,8 +342,8 @@ export function generateNextTrainingBlockPreview({
   timestamp: string;
   trainingPlan: TrainingPlan;
 }): NextTrainingBlockPreview {
-  const rotation = previewMainCompoundRotations({ sessions, trainingPlan });
-  const nextTrainingPlan = applyConfirmedMainCompoundRotations({
+  const rotation = previewTrainingBlockExerciseRotations({ sessions, trainingPlan });
+  const nextTrainingPlan = applyConfirmedTrainingBlockExerciseRotations({
     id: nextPlanId,
     preview: rotation,
     timestamp,
@@ -798,52 +798,46 @@ function getCatalogRoleForTrainingPlanRole(role: TrainingPlanSlot["role"]) {
 
 function chooseTemplateRotationOptions({
   slotProposals,
-  chosenOptions = new Map<number, RotationProposalOption>(),
-  proposalIndex = 0,
-  usedExerciseIds = new Set<string>(),
 }: {
-  chosenOptions?: Map<number, RotationProposalOption>;
-  proposalIndex?: number;
   slotProposals: ReadonlyArray<{
     options: ReadonlyArray<RotationProposalOption>;
     originalIndex: number;
   }>;
-  usedExerciseIds?: Set<string>;
 }): Map<number, RotationProposalOption> | null {
-  if (proposalIndex >= slotProposals.length) {
-    return new Map(chosenOptions);
-  }
+  const chosenOptions = new Map<number, RotationProposalOption>();
+  const usedExerciseIds = new Set<string>();
 
-  const slotProposal = slotProposals[proposalIndex];
-
-  if (!slotProposal) {
-    return new Map(chosenOptions);
-  }
-
-  for (const option of slotProposal.options) {
-    if (usedExerciseIds.has(option.nextExerciseId)) {
-      continue;
+  function chooseOption(proposalIndex: number): boolean {
+    if (proposalIndex >= slotProposals.length) {
+      return true;
     }
 
-    usedExerciseIds.add(option.nextExerciseId);
-    chosenOptions.set(slotProposal.originalIndex, option);
+    const slotProposal = slotProposals[proposalIndex];
 
-    const resolvedOptions = chooseTemplateRotationOptions({
-      chosenOptions,
-      proposalIndex: proposalIndex + 1,
-      slotProposals,
-      usedExerciseIds,
-    });
-
-    if (resolvedOptions) {
-      return resolvedOptions;
+    if (!slotProposal) {
+      return true;
     }
 
-    chosenOptions.delete(slotProposal.originalIndex);
-    usedExerciseIds.delete(option.nextExerciseId);
+    for (const option of slotProposal.options) {
+      if (usedExerciseIds.has(option.nextExerciseId)) {
+        continue;
+      }
+
+      usedExerciseIds.add(option.nextExerciseId);
+      chosenOptions.set(slotProposal.originalIndex, option);
+
+      if (chooseOption(proposalIndex + 1)) {
+        return true;
+      }
+
+      chosenOptions.delete(slotProposal.originalIndex);
+      usedExerciseIds.delete(option.nextExerciseId);
+    }
+
+    return false;
   }
 
-  return null;
+  return chooseOption(0) ? new Map(chosenOptions) : null;
 }
 
 function buildSlotRotationOptions({

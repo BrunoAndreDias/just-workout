@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import {
-  applyConfirmedMainCompoundRotations,
+  applyConfirmedTrainingBlockExerciseRotations,
   applyNextTrainingBlockLoadSuggestionEdit,
   applyTrainingBlockProgressionRule,
   estimateNextTrainingBlockLoadSuggestions,
@@ -10,7 +10,7 @@ import {
   generateNextTrainingBlockPreview,
   generateWeeklyIntensityTargets,
   getTrainingBlockExerciseTargetRir,
-  previewMainCompoundRotations,
+  previewTrainingBlockExerciseRotations,
 } from "./training-block";
 import {
   acceptNextTrainingBlockTransition,
@@ -231,7 +231,7 @@ describe("generateNextTrainingBlock", () => {
   });
 
   it("previews main compound rotations from the same Movement Pattern pool", () => {
-    const preview = previewMainCompoundRotations({
+    const preview = previewTrainingBlockExerciseRotations({
       trainingPlan: createTrainingPlan({
         mainCompoundRotationPools: [
           {
@@ -265,7 +265,7 @@ describe("generateNextTrainingBlock", () => {
   });
 
   it("prefers stored Isolation Exercise Preferences and excludes avoided exercises for accessory proposals", () => {
-    const preview = previewMainCompoundRotations({
+    const preview = previewTrainingBlockExerciseRotations({
       trainingPlan: createTrainingPlan({
         exerciseSelectionPreferences: {
           avoidedExercises: [{ id: "avoided-1", rawText: "Incline Dumbbell Curls" }],
@@ -322,7 +322,7 @@ describe("generateNextTrainingBlock", () => {
   });
 
   it("prefers compatible exercises that were never performed in the Active Training Plan", () => {
-    const preview = previewMainCompoundRotations({
+    const preview = previewTrainingBlockExerciseRotations({
       sessions: [
         createTrainingSession({
           completedAt: "2026-05-18T10:00:00.000Z",
@@ -380,7 +380,7 @@ describe("generateNextTrainingBlock", () => {
   });
 
   it("prefers compatible exercises not used in the immediately previous Training Block when every option has history", () => {
-    const preview = previewMainCompoundRotations({
+    const preview = previewTrainingBlockExerciseRotations({
       sessions: [
         createTrainingSession({
           completedAt: "2026-05-18T10:00:00.000Z",
@@ -471,7 +471,7 @@ describe("generateNextTrainingBlock", () => {
   });
 
   it("reports missing required Movement Patterns when a rotation preview would not preserve coverage", () => {
-    const preview = previewMainCompoundRotations({
+    const preview = previewTrainingBlockExerciseRotations({
       trainingPlan: createTrainingPlan({
         workoutTemplates: [
           {
@@ -511,7 +511,7 @@ describe("generateNextTrainingBlock", () => {
     });
   });
 
-  it("applies confirmed main compound rotations to a new Training Plan without mutating the previous plan", () => {
+  it("applies confirmed exercise rotations to a new Training Plan without mutating the previous plan", () => {
     const previousPlan = createTrainingPlan({
       mainCompoundRotationPools: [
         {
@@ -520,9 +520,9 @@ describe("generateNextTrainingBlock", () => {
         },
       ],
     });
-    const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
+    const preview = previewTrainingBlockExerciseRotations({ trainingPlan: previousPlan });
 
-    const nextPlan = applyConfirmedMainCompoundRotations({
+    const nextPlan = applyConfirmedTrainingBlockExerciseRotations({
       id: "training-plan-2",
       preview,
       timestamp: "2026-07-19T09:00:00.000Z",
@@ -566,6 +566,15 @@ describe("generateNextTrainingBlock", () => {
               slots: [
                 ...createRequiredMainCompoundSlots(),
                 {
+                  exerciseId: "seated-cable-rows",
+                  exerciseName: "Seated Cable Rows",
+                  kind: "exercise",
+                  movementPattern: "horizontal_pull",
+                  role: "secondary_compound",
+                  slotLabel: "secondary pull",
+                  targetMuscles: ["back"],
+                },
+                {
                   exerciseId: "standing-barbell-curls",
                   exerciseName: "Standing Barbell Curls",
                   kind: "exercise",
@@ -591,10 +600,18 @@ describe("generateNextTrainingBlock", () => {
         },
       ],
     });
-    const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
+    const preview = previewTrainingBlockExerciseRotations({ trainingPlan: previousPlan });
 
     expect(preview.rotated).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "horizontal_pull",
+          nextExerciseId: "bent-over-barbell-rows",
+          nextExerciseName: "Bent Over Barbell Rows",
+          previousExerciseId: "seated-cable-rows",
+          previousExerciseName: "Seated Cable Rows",
+          reason: "compatible secondary compound",
+        }),
         expect.objectContaining({
           movementPattern: "elbow_flexion",
           nextExerciseId: "standing-dumbbell-curls",
@@ -614,7 +631,7 @@ describe("generateNextTrainingBlock", () => {
       ]),
     );
 
-    const nextPlan = applyConfirmedMainCompoundRotations({
+    const nextPlan = applyConfirmedTrainingBlockExerciseRotations({
       id: "training-plan-2",
       preview,
       timestamp: "2026-07-19T09:00:00.000Z",
@@ -624,6 +641,15 @@ describe("generateNextTrainingBlock", () => {
       template.supersetGroups.flatMap((group) => group.slots),
     );
 
+    expect(nextSlots).toContainEqual(
+      expect.objectContaining({
+        exerciseId: "bent-over-barbell-rows",
+        exerciseName: "Bent Over Barbell Rows",
+        movementPattern: "horizontal_pull",
+        role: "secondary_compound",
+        targetMuscles: ["back"],
+      }),
+    );
     expect(nextSlots).toContainEqual(
       expect.objectContaining({
         exerciseId: "standing-dumbbell-curls",
@@ -699,7 +725,7 @@ describe("generateNextTrainingBlock", () => {
         },
       ],
     });
-    const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
+    const preview = previewTrainingBlockExerciseRotations({ trainingPlan: previousPlan });
 
     expect(preview.rotated).toEqual(
       expect.arrayContaining([
@@ -720,7 +746,7 @@ describe("generateNextTrainingBlock", () => {
       ]),
     );
 
-    const nextPlan = applyConfirmedMainCompoundRotations({
+    const nextPlan = applyConfirmedTrainingBlockExerciseRotations({
       id: "training-plan-2",
       preview,
       timestamp: "2026-07-19T09:00:00.000Z",
@@ -762,10 +788,10 @@ describe("generateNextTrainingBlock", () => {
         },
       ],
     });
-    const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
+    const preview = previewTrainingBlockExerciseRotations({ trainingPlan: previousPlan });
 
     expect(() =>
-      applyConfirmedMainCompoundRotations({
+      applyConfirmedTrainingBlockExerciseRotations({
         id: "training-plan-2",
         preview,
         timestamp: "2026-07-19T09:00:00.000Z",
