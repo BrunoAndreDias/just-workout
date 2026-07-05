@@ -1,3 +1,5 @@
+import type { ExerciseSelectionPreferences } from "../plan-builder/exercise-selection-preferences";
+import type { IsolationExercisePreferenceBucket } from "../plan-builder/isolation-exercise-preferences";
 import { deriveMainCompoundRotationPools } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import type {
@@ -51,8 +53,10 @@ export type WorkoutTemplate = {
 
 export type TrainingPlan = {
   active: boolean;
+  exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   generatedAt: string;
   id: string;
+  isolationExercisePreferences?: ReadonlyArray<IsolationExercisePreferenceBucket>;
   mainCompoundRotationPools: ReadonlyArray<MainCompoundRotationPool>;
   repRangeStyle: NonNullable<PlanBlueprint["repRanges"]>;
   sourceBlueprintId: string;
@@ -106,8 +110,10 @@ export function generateTrainingPlanFromBlueprint({
 
   return {
     active: true,
+    exerciseSelectionPreferences: blueprint.exerciseSelectionPreferences,
     generatedAt: timestamp,
     id,
+    isolationExercisePreferences: blueprint.isolationExercisePreferences,
     mainCompoundRotationPools,
     repRangeStyle: repRanges,
     sourceBlueprintId: blueprint.id,

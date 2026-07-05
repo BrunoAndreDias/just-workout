@@ -134,7 +134,12 @@ function TrainingBlockPreviewDetails({
           );
 
           return (
-            <li key={`${rotation.previousExerciseId}-${rotation.nextExerciseId}`}>
+            <li
+              key={`${rotation.templateId}-${rotation.groupId}-${rotation.slotIndex}-${rotation.nextExerciseId}`}
+            >
+              <span>
+                {rotation.templateLabel} · {rotation.slotLabel}
+              </span>
               <span>
                 {rotation.previousExerciseName} → {rotation.nextExerciseName}
               </span>
@@ -195,7 +200,10 @@ function TrainingBlockPreviewDetails({
           );
         })}
         {preview.rotation.kept.map((kept) => (
-          <li key={kept.exerciseId}>
+          <li key={`${kept.templateId}-${kept.groupId}-${kept.slotIndex}-${kept.exerciseId}`}>
+            <span>
+              {kept.templateLabel} · {kept.slotLabel}
+            </span>
             <span>{kept.exerciseName}</span>
             <span>{kept.reason}</span>
           </li>

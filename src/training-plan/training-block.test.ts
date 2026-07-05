@@ -242,30 +242,232 @@ describe("generateNextTrainingBlock", () => {
       }),
     });
 
-    expect(preview.rotated).toEqual([
-      {
-        movementPattern: "horizontal_push",
-        nextExerciseId: "incline-dumbbell-bench-press",
-        nextExerciseName: "Incline Dumbbell Bench Press",
-        previousExerciseId: "flat-barbell-bench-press",
-        previousExerciseName: "Flat Barbell Bench Press",
-        reason: "same Movement Pattern rotation pool",
-      },
-    ]);
-    expect(preview.kept).toEqual(
+    expect(preview.rotated).toEqual(
       expect.arrayContaining([
-        {
-          exerciseId: "bent-over-barbell-rows",
-          exerciseName: "Bent Over Barbell Rows",
+        expect.objectContaining({
+          movementPattern: "horizontal_push",
+          nextExerciseId: "incline-dumbbell-bench-press",
+          nextExerciseName: "Incline Dumbbell Bench Press",
+          previousExerciseId: "flat-barbell-bench-press",
+          previousExerciseName: "Flat Barbell Bench Press",
+          reason: "same Movement Pattern rotation pool",
+        }),
+        expect.objectContaining({
           movementPattern: "horizontal_pull",
-          reason: "no valid rotation pool replacement",
-        },
+          reason: "compatible main compound fallback",
+        }),
       ]),
     );
     expect(preview.requiredMovementCoverage).toEqual({
       isPreserved: true,
       missingPatterns: [],
     });
+  });
+
+  it("prefers stored Isolation Exercise Preferences and excludes avoided exercises for accessory proposals", () => {
+    const preview = previewMainCompoundRotations({
+      trainingPlan: createTrainingPlan({
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoided-1", rawText: "Incline Dumbbell Curls" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+        isolationExercisePreferences: [
+          {
+            exerciseIds: ["incline-dumbbell-curls", "seated-dumbbell-curls"],
+            primaryMuscleGroup: "biceps",
+          },
+        ],
+        workoutTemplates: [
+          {
+            id: "template-1",
+            label: "Upper A",
+            supersetGroups: [
+              {
+                id: "group-1",
+                slots: [
+                  ...createRequiredMainCompoundSlots(),
+                  {
+                    exerciseId: "standing-barbell-curls",
+                    exerciseName: "Standing Barbell Curls",
+                    kind: "exercise",
+                    movementPattern: "elbow_flexion",
+                    role: "isolation",
+                    slotLabel: "Biceps",
+                    targetMuscles: ["biceps"],
+                  },
+                ],
+                title: "Upper superset",
+                type: "superset",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(preview.rotated).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "elbow_flexion",
+          nextExerciseId: "seated-dumbbell-curls",
+          nextExerciseName: "Seated Dumbbell Curls",
+          previousExerciseId: "standing-barbell-curls",
+          previousExerciseName: "Standing Barbell Curls",
+          reason: "preferred isolation exercise",
+        }),
+      ]),
+    );
+  });
+
+  it("prefers compatible exercises that were never performed in the Active Training Plan", () => {
+    const preview = previewMainCompoundRotations({
+      sessions: [
+        createTrainingSession({
+          completedAt: "2026-05-18T10:00:00.000Z",
+          exerciseId: "chin-ups",
+          exerciseName: "Chin-Ups",
+          movementPattern: "vertical_pull",
+          weight: 10,
+        }),
+        createTrainingSession({
+          completedAt: "2026-05-25T10:00:00.000Z",
+          exerciseId: "lat-pull-downs",
+          exerciseName: "Lat Pull-Downs",
+          movementPattern: "vertical_pull",
+          weight: 55,
+        }),
+      ],
+      trainingPlan: createTrainingPlan({
+        workoutTemplates: [
+          {
+            id: "template-1",
+            label: "Upper A",
+            supersetGroups: [
+              {
+                id: "group-1",
+                slots: [
+                  {
+                    exerciseId: "pull-ups",
+                    exerciseName: "Pull-Ups",
+                    kind: "exercise",
+                    movementPattern: "vertical_pull",
+                    role: "main_compound",
+                    slotLabel: "Vertical pull",
+                    targetMuscles: ["back"],
+                  },
+                ],
+                title: "Upper superset",
+                type: "superset",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(preview.rotated).toContainEqual(
+      expect.objectContaining({
+        movementPattern: "vertical_pull",
+        nextExerciseId: "neutral-grip-pulldown",
+        nextExerciseName: "Neutral-Grip Pulldown",
+        previousExerciseId: "pull-ups",
+        previousExerciseName: "Pull-Ups",
+        reason: "compatible main compound fallback",
+      }),
+    );
+  });
+
+  it("prefers compatible exercises not used in the immediately previous Training Block when every option has history", () => {
+    const preview = previewMainCompoundRotations({
+      sessions: [
+        createTrainingSession({
+          completedAt: "2026-05-18T10:00:00.000Z",
+          exerciseId: "lat-pull-downs",
+          exerciseName: "Lat Pull-Downs",
+          movementPattern: "vertical_pull",
+          weight: 55,
+        }),
+        createTrainingSession({
+          completedAt: "2026-05-25T10:00:00.000Z",
+          exerciseId: "neutral-grip-pulldown",
+          exerciseName: "Neutral-Grip Pulldown",
+          movementPattern: "vertical_pull",
+          weight: 55,
+        }),
+        createTrainingSession({
+          completedAt: "2026-06-28T10:00:00.000Z",
+          exerciseId: "chin-ups",
+          exerciseName: "Chin-Ups",
+          movementPattern: "vertical_pull",
+          trainingBlockId: "training-block-1",
+          weight: 10,
+        }),
+      ],
+      trainingPlan: createTrainingPlan({
+        exerciseSelectionPreferences: {
+          avoidedExercises: [
+            { id: "avoid-1", rawText: "Assisted Pull-Up" },
+            { id: "avoid-2", rawText: "Wide-Grip Lat Pulldown" },
+            { id: "avoid-3", rawText: "Close-Grip Lat Pulldown" },
+            { id: "avoid-4", rawText: "Reverse-Grip Lat Pulldown" },
+            { id: "avoid-5", rawText: "Close Neutral-Grip Pulldown" },
+            { id: "avoid-6", rawText: "Medium-Grip Lat Pulldown" },
+          ],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+        trainingBlock: {
+          cycleNumber: 1,
+          endDate: "2026-07-18",
+          id: "training-block-1",
+          planId: "training-plan-1",
+          previousBlockId: null,
+          startDate: "2026-06-07",
+          status: "completed",
+          weekNumber: 6,
+        },
+        workoutTemplates: [
+          {
+            id: "template-1",
+            label: "Upper A",
+            supersetGroups: [
+              {
+                id: "group-1",
+                slots: [
+                  {
+                    exerciseId: "pull-ups",
+                    exerciseName: "Pull-Ups",
+                    kind: "exercise",
+                    movementPattern: "vertical_pull",
+                    role: "main_compound",
+                    slotLabel: "Vertical pull",
+                    targetMuscles: ["back"],
+                  },
+                ],
+                title: "Upper superset",
+                type: "superset",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(preview.rotated).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "vertical_pull",
+          nextExerciseId: "lat-pull-downs",
+          nextExerciseName: "Lat Pull-Downs",
+          previousExerciseId: "pull-ups",
+          previousExerciseName: "Pull-Ups",
+          reason: "compatible main compound fallback",
+        }),
+      ]),
+    );
   });
 
   it("reports missing required Movement Patterns when a rotation preview would not preserve coverage", () => {
@@ -391,20 +593,26 @@ describe("generateNextTrainingBlock", () => {
     });
     const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
 
-    expect(preview.rotated).toContainEqual({
-      movementPattern: "elbow_flexion",
-      nextExerciseId: "standing-dumbbell-curls",
-      nextExerciseName: "Standing Dumbbell Curls",
-      previousExerciseId: "standing-barbell-curls",
-      previousExerciseName: "Standing Barbell Curls",
-      reason: "same role, Movement Pattern, and target muscle",
-    });
-    expect(preview.kept).toContainEqual({
-      exerciseId: "hanging-leg-raises",
-      exerciseName: "Hanging Leg Raises",
-      movementPattern: "core",
-      reason: "no compatible role and target muscle replacement",
-    });
+    expect(preview.rotated).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "elbow_flexion",
+          nextExerciseId: "standing-dumbbell-curls",
+          nextExerciseName: "Standing Dumbbell Curls",
+          previousExerciseId: "standing-barbell-curls",
+          previousExerciseName: "Standing Barbell Curls",
+          reason: "compatible isolation exercise",
+        }),
+        expect.objectContaining({
+          movementPattern: "core",
+          nextExerciseId: "cable-crunches",
+          nextExerciseName: "Cable Crunches",
+          previousExerciseId: "hanging-leg-raises",
+          previousExerciseName: "Hanging Leg Raises",
+          reason: "compatible abs exercise",
+        }),
+      ]),
+    );
 
     const nextPlan = applyConfirmedMainCompoundRotations({
       id: "training-plan-2",
@@ -427,11 +635,104 @@ describe("generateNextTrainingBlock", () => {
     );
     expect(nextSlots).toContainEqual(
       expect.objectContaining({
-        exerciseId: "hanging-leg-raises",
-        exerciseName: "Hanging Leg Raises",
+        exerciseId: "cable-crunches",
+        exerciseName: "Cable Crunches",
         role: "abs",
       }),
     );
+  });
+
+  it("keeps one slot when rotating both would duplicate an exercise inside the same Workout Template", () => {
+    const previousPlan = createTrainingPlan({
+      exerciseSelectionPreferences: {
+        avoidedExercises: [
+          { id: "avoid-1", rawText: "Cable Crunches" },
+          { id: "avoid-2", rawText: "Hanging Leg Raises" },
+          { id: "avoid-3", rawText: "Ab Wheel Rollouts" },
+          { id: "avoid-4", rawText: "Dead Bugs" },
+          { id: "avoid-5", rawText: "Reverse Crunches" },
+          { id: "avoid-6", rawText: "Side Planks" },
+          { id: "avoid-7", rawText: "Hollow Holds" },
+        ],
+        equipmentPreset: "full_gym",
+        preferredExercises: [],
+        strategy: "balanced",
+      },
+      isolationExercisePreferences: [
+        {
+          exerciseIds: ["planks"],
+          primaryMuscleGroup: "abs",
+        },
+      ],
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          supersetGroups: [
+            {
+              id: "group-1",
+              slots: [
+                ...createRequiredMainCompoundSlots(),
+                {
+                  exerciseId: "cable-crunches",
+                  exerciseName: "Cable Crunches",
+                  kind: "exercise",
+                  movementPattern: "core",
+                  role: "abs",
+                  slotLabel: "Abs",
+                  targetMuscles: ["abs"],
+                },
+                {
+                  exerciseId: "hanging-leg-raises",
+                  exerciseName: "Hanging Leg Raises",
+                  kind: "exercise",
+                  movementPattern: "core",
+                  role: "abs",
+                  slotLabel: "Abs",
+                  targetMuscles: ["abs"],
+                },
+              ],
+              title: "Upper superset",
+              type: "superset",
+            },
+          ],
+        },
+      ],
+    });
+    const preview = previewMainCompoundRotations({ trainingPlan: previousPlan });
+
+    expect(preview.rotated).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "core",
+          nextExerciseId: "planks",
+          nextExerciseName: "Planks",
+          reason: "preferred abs exercise",
+        }),
+      ]),
+    );
+    expect(preview.kept).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          movementPattern: "core",
+          reason: "kept to avoid a duplicate in this Workout Template",
+        }),
+      ]),
+    );
+
+    const nextPlan = applyConfirmedMainCompoundRotations({
+      id: "training-plan-2",
+      preview,
+      timestamp: "2026-07-19T09:00:00.000Z",
+      trainingPlan: previousPlan,
+    });
+    const absExerciseIds = nextPlan.workoutTemplates
+      .flatMap((template) => template.supersetGroups)
+      .flatMap((group) => group.slots)
+      .filter((slot) => slot.role === "abs")
+      .map((slot) => slot.exerciseId);
+
+    expect(new Set(absExerciseIds).size).toBe(absExerciseIds.length);
   });
 
   it("rejects confirmed rotations when required Movement Pattern coverage is not preserved", () => {
@@ -975,7 +1276,7 @@ function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan
               movementPattern: selection.movementPattern,
               role: "main_compound",
               slotLabel: selection.movementPattern,
-              targetMuscles: selection.movementPattern === "horizontal_push" ? ["chest"] : ["back"],
+              targetMuscles: getTargetMuscles(selection.movementPattern),
             })),
             title: "Upper superset",
             type: "superset",
@@ -1048,4 +1349,22 @@ function getExerciseName(exerciseId: string): string {
   };
 
   return exerciseNames[exerciseId] ?? exerciseId;
+}
+
+function getTargetMuscles(
+  movementPattern: (typeof completeMainCompoundSelections)[number]["movementPattern"],
+) {
+  switch (movementPattern) {
+    case "horizontal_push":
+      return ["chest"] as const;
+    case "horizontal_pull":
+    case "vertical_pull":
+      return ["back"] as const;
+    case "vertical_push":
+      return ["shoulders"] as const;
+    case "quad_dominant":
+      return ["quadriceps"] as const;
+    case "hip_hamstring_dominant":
+      return ["hamstrings"] as const;
+  }
 }
