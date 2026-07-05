@@ -12,6 +12,7 @@ import {
 } from "./training-plan-presentation";
 import type { TrainingSession } from "./training-session";
 import { addUtcDays, toDayKey, toUtcDay } from "./training-week-date";
+import { formatTrainingWeekRangeLabel } from "./training-week-range-label";
 
 type TrainingHistoryWeek = {
   end: Date;
@@ -52,15 +53,44 @@ export type TrainingHistorySessionReport = {
   id: string;
   loadedSetCount: number;
   sessionBodyweight: number | null;
+  templateId: string;
   templateLabel: string;
+  volumeProgression: TrainingHistorySessionVolumeProgression;
+};
+
+export type TrainingWeekProgressVerdict =
+  | "not_comparable"
+  | "progressed"
+  | "regressed"
+  | "unchanged";
+
+export type TrainingWeekCompletionContext = {
+  deltaSessions: number;
+  status: "above_target" | "below_target" | "met_target";
+};
+
+export type TrainingHistorySessionVolumeProgression = {
+  deltaVolume: number | null;
+  previousComparableCompletedAt: string | null;
+  previousComparableVolume: number | null;
+  verdict: TrainingWeekProgressVerdict;
+};
+
+export type TrainingWeekVolumeReference = {
+  hasPartialVolume: boolean;
+  totalVolume: number;
+  weekLabel: string;
 };
 
 export type TrainingHistoryWeekSummary = {
   completedSessions: number;
+  completionContext: TrainingWeekCompletionContext;
   completionTarget: number;
   hasPartialVolume: boolean;
   loadedSetCount: number;
   progressPercentage: number | null;
+  progressVerdict: TrainingWeekProgressVerdict;
+  previousWeekVolumeReference: TrainingWeekVolumeReference | null;
   totalVolume: number;
 };
 
@@ -138,7 +168,10 @@ export function buildTrainingHistoryWeekReport({
   const previousSessions = completedSessions.filter((session) =>
     isSessionInWeek(session, previousWeek),
   );
-  const selectedSessionReports = selectedTrainingSessions.map(createTrainingHistorySessionReport);
+  const selectedSessionReports = addTrainingSessionProgression({
+    completedSessions,
+    selectedSessionReports: selectedTrainingSessions.map(createTrainingHistorySessionReport),
+  });
   const previousSessionReports = previousSessions.map(createTrainingHistorySessionReport);
   const selectedMetrics = summarizeTrainingSessionReports(selectedSessionReports);
   const previousMetrics = summarizeTrainingSessionReports(previousSessionReports);
@@ -156,6 +189,8 @@ export function buildTrainingHistoryWeekReport({
     selectedWeek,
     summary: createTrainingHistoryWeekSummary(
       trainingPlan,
+      previousSessions.length,
+      previousWeek,
       selectedSessionReports,
       selectedMetrics,
       previousMetrics,
@@ -206,10 +241,16 @@ function createEmptyTrainingHistoryWeekReport(
     selectedWeek: null,
     summary: {
       completedSessions: 0,
+      completionContext: createTrainingWeekCompletionContext({
+        completedSessions: 0,
+        completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
+      }),
       completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
       hasPartialVolume: false,
       loadedSetCount: 0,
       progressPercentage: null,
+      progressVerdict: "not_comparable",
+      previousWeekVolumeReference: null,
       totalVolume: 0,
     },
   };
@@ -254,12 +295,18 @@ function getPreviousWeekEndKey(
 
 function createTrainingHistoryWeekSummary(
   trainingPlan: TrainingPlan,
+  previousWeekSessions: number,
+  previousWeek: TrainingHistoryWeek,
   selectedSessions: ReadonlyArray<TrainingHistorySessionReport>,
   selectedMetrics: TrainingHistoryWeekMetrics,
   previousMetrics: TrainingHistoryWeekMetrics,
 ): TrainingHistoryWeekSummary {
   return {
     completedSessions: selectedSessions.length,
+    completionContext: createTrainingWeekCompletionContext({
+      completedSessions: selectedSessions.length,
+      completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
+    }),
     completionTarget: trainingPlan.trainingFrequencyDaysPerWeek,
     hasPartialVolume: selectedMetrics.hasPartialVolume,
     loadedSetCount: selectedMetrics.loadedSetCount,
@@ -267,7 +314,86 @@ function createTrainingHistoryWeekSummary(
       selectedMetrics.totalVolume,
       previousMetrics.totalVolume,
     ),
+    progressVerdict: calculateProgressVerdict({
+      previousMetrics,
+      selectedMetrics,
+    }),
+    previousWeekVolumeReference: createTrainingWeekVolumeReference({
+      previousMetrics,
+      previousWeek:
+        previousWeekSessions > 0 || previousMetrics.hasPartialVolume ? previousWeek : null,
+      previousWeekSessions,
+    }),
     totalVolume: selectedMetrics.totalVolume,
+  };
+}
+
+function createTrainingWeekCompletionContext({
+  completedSessions,
+  completionTarget,
+}: {
+  completedSessions: number;
+  completionTarget: number;
+}): TrainingWeekCompletionContext {
+  const deltaSessions = completedSessions - completionTarget;
+
+  if (deltaSessions === 0) {
+    return {
+      deltaSessions,
+      status: "met_target",
+    };
+  }
+
+  return {
+    deltaSessions,
+    status: deltaSessions > 0 ? "above_target" : "below_target",
+  };
+}
+
+function calculateProgressVerdict({
+  previousMetrics,
+  selectedMetrics,
+}: {
+  previousMetrics: TrainingHistoryWeekMetrics;
+  selectedMetrics: TrainingHistoryWeekMetrics;
+}): TrainingWeekProgressVerdict {
+  if (
+    previousMetrics.totalVolume <= 0 ||
+    previousMetrics.hasPartialVolume ||
+    selectedMetrics.hasPartialVolume
+  ) {
+    return "not_comparable";
+  }
+
+  if (selectedMetrics.totalVolume === previousMetrics.totalVolume) {
+    return "unchanged";
+  }
+
+  return selectedMetrics.totalVolume > previousMetrics.totalVolume ? "progressed" : "regressed";
+}
+
+function createTrainingWeekVolumeReference({
+  previousMetrics,
+  previousWeek,
+  previousWeekSessions,
+}: {
+  previousMetrics: TrainingHistoryWeekMetrics;
+  previousWeek: TrainingHistoryWeek | null;
+  previousWeekSessions: number;
+}): TrainingWeekVolumeReference | null {
+  if (
+    !previousWeek ||
+    (previousWeekSessions === 0 &&
+      previousMetrics.totalVolume <= 0 &&
+      previousMetrics.hasPartialVolume === false)
+  ) {
+    return null;
+  }
+
+  return {
+    hasPartialVolume: previousMetrics.hasPartialVolume,
+    totalVolume: previousMetrics.totalVolume,
+    weekLabel: previousWeek.label,
   };
 }
 
@@ -504,8 +630,128 @@ function createTrainingHistorySessionReport(
     id: trainingSession.id,
     loadedSetCount: completedLoadVolume.loadedSetCount,
     sessionBodyweight: trainingSession.sessionBodyweight ?? null,
+    templateId: trainingSession.templateId,
     templateLabel: trainingSession.templateLabel,
+    volumeProgression: {
+      deltaVolume: null,
+      previousComparableCompletedAt: null,
+      previousComparableVolume: null,
+      verdict: "not_comparable",
+    },
   };
+}
+
+function addTrainingSessionProgression({
+  completedSessions,
+  selectedSessionReports,
+}: {
+  completedSessions: ReadonlyArray<CompletedTrainingSession>;
+  selectedSessionReports: ReadonlyArray<TrainingHistorySessionReport>;
+}): ReadonlyArray<TrainingHistorySessionReport> {
+  const sessionReportsById = new Map(
+    completedSessions
+      .slice()
+      .sort((firstSession, secondSession) =>
+        firstSession.completedAt.localeCompare(secondSession.completedAt),
+      )
+      .map((session) => {
+        const report = createTrainingHistorySessionReport(session);
+
+        return [session.id, report] as const;
+      }),
+  );
+  const previousComparableSessionByTemplateId = new Map<string, TrainingHistorySessionReport>();
+  const volumeProgressionBySessionId = new Map<string, TrainingHistorySessionVolumeProgression>();
+
+  for (const trainingSession of completedSessions
+    .slice()
+    .sort((firstSession, secondSession) =>
+      firstSession.completedAt.localeCompare(secondSession.completedAt),
+    )) {
+    const sessionReport = sessionReportsById.get(trainingSession.id);
+
+    if (!sessionReport) {
+      continue;
+    }
+
+    const comparableSessionKey = getComparableTrainingSessionKey(sessionReport);
+    const previousComparableSession =
+      previousComparableSessionByTemplateId.get(comparableSessionKey);
+
+    volumeProgressionBySessionId.set(
+      sessionReport.id,
+      createTrainingHistorySessionVolumeProgression({
+        previousComparableSession,
+        sessionReport,
+      }),
+    );
+    previousComparableSessionByTemplateId.set(comparableSessionKey, sessionReport);
+  }
+
+  return selectedSessionReports.map((sessionReport) => ({
+    ...sessionReport,
+    volumeProgression:
+      volumeProgressionBySessionId.get(sessionReport.id) ?? sessionReport.volumeProgression,
+  }));
+}
+
+function getComparableTrainingSessionKey(sessionReport: TrainingHistorySessionReport): string {
+  return `${sessionReport.templateId}:${sessionReport.templateLabel}`;
+}
+
+function createTrainingHistorySessionVolumeProgression({
+  previousComparableSession,
+  sessionReport,
+}: {
+  previousComparableSession: TrainingHistorySessionReport | undefined;
+  sessionReport: TrainingHistorySessionReport;
+}): TrainingHistorySessionVolumeProgression {
+  if (!canCompareTrainingHistorySessionVolume(previousComparableSession, sessionReport)) {
+    return createNotComparableTrainingHistorySessionVolumeProgression(previousComparableSession);
+  }
+
+  const deltaVolume =
+    sessionReport.completedLoadVolume - previousComparableSession.completedLoadVolume;
+
+  return {
+    deltaVolume,
+    previousComparableCompletedAt: previousComparableSession.completedAt,
+    previousComparableVolume: previousComparableSession.completedLoadVolume,
+    verdict: getTrainingHistorySessionProgressVerdict(deltaVolume),
+  };
+}
+
+function canCompareTrainingHistorySessionVolume(
+  previousComparableSession: TrainingHistorySessionReport | undefined,
+  sessionReport: TrainingHistorySessionReport,
+): previousComparableSession is TrainingHistorySessionReport {
+  return Boolean(
+    previousComparableSession &&
+      previousComparableSession.completedLoadVolume > 0 &&
+      previousComparableSession.hasPartialVolume === false &&
+      sessionReport.hasPartialVolume === false,
+  );
+}
+
+function createNotComparableTrainingHistorySessionVolumeProgression(
+  previousComparableSession: TrainingHistorySessionReport | undefined,
+): TrainingHistorySessionVolumeProgression {
+  return {
+    deltaVolume: null,
+    previousComparableCompletedAt: previousComparableSession?.completedAt ?? null,
+    previousComparableVolume: previousComparableSession?.completedLoadVolume ?? null,
+    verdict: "not_comparable",
+  };
+}
+
+function getTrainingHistorySessionProgressVerdict(
+  deltaVolume: number,
+): Exclude<TrainingWeekProgressVerdict, "not_comparable"> {
+  if (deltaVolume === 0) {
+    return "unchanged";
+  }
+
+  return deltaVolume > 0 ? "progressed" : "regressed";
 }
 
 function updateMovementPatternVolume(
@@ -562,7 +808,7 @@ function createTrainingHistoryWeek(end: Date): TrainingHistoryWeek {
   return {
     end,
     endKey: toDayKey(end),
-    label: formatTrainingWeekRange(start, end),
+    label: formatTrainingWeekRangeLabel(start, end),
     start,
   };
 }
@@ -628,32 +874,6 @@ function getCompletedSessionDateRange(
   }
 
   return { latestSessionDay, oldestSessionDay };
-}
-
-function formatTrainingWeekRange(start: Date, end: Date): string {
-  const startMonth = formatMonth(start);
-  const endMonth = formatMonth(end);
-  const startDay = start.getUTCDate();
-  const endDay = end.getUTCDate();
-  const startYear = start.getUTCFullYear();
-  const endYear = end.getUTCFullYear();
-
-  if (startYear === endYear && startMonth === endMonth) {
-    return `${startMonth} ${startDay}-${endDay}, ${endYear}`;
-  }
-
-  if (startYear === endYear) {
-    return `${startMonth} ${startDay}-${endMonth} ${endDay}, ${endYear}`;
-  }
-
-  return `${startMonth} ${startDay}, ${startYear}-${endMonth} ${endDay}, ${endYear}`;
-}
-
-function formatMonth(value: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    timeZone: "UTC",
-  }).format(value);
 }
 
 function parseDayKey(value: string | null): Date | null {

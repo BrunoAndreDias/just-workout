@@ -104,6 +104,7 @@ export function TrainingPlanRoute() {
         }) ?? undefined
       }
       trainingPlan={trainingPlan}
+      trainingSessions={trainingSessionsQuery.data ?? []}
     />
   );
 }

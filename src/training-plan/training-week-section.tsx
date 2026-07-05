@@ -4,6 +4,9 @@ import {
   formatLoadedSetCount,
   formatMovementPatternComparison,
   formatProgress,
+  formatTrainingWeekCompletionContext,
+  formatTrainingWeekProgressVerdict,
+  formatTrainingWeekVolumeReference,
   formatWeight,
   getMovementPatternChangeTone,
   type TrainingHistoryTone,
@@ -39,12 +42,33 @@ export function TrainingWeekSection({
           onSelectWeek={onSelectWeek}
         />
       </div>
+      <TrainingWeekVerdictSection summary={trainingWeekReport.summary} />
       <TrainingWeekSummaryStrip summary={trainingWeekReport.summary} />
       <WeeklyMovementVolumeReport
         emptyMessage="Complete a Training Session to build a weekly report."
         isCompactLayout={isCompactLayout}
         rows={trainingWeekReport.movementPatternComparisons}
       />
+    </section>
+  );
+}
+
+function TrainingWeekVerdictSection({ summary }: { summary: TrainingHistoryWeekSummary }) {
+  return (
+    <section className="training-history-verdict" aria-labelledby="training-history-verdict-title">
+      <div className="training-history-section-heading">
+        <div>
+          <h2 id="training-history-verdict-title">Training Week verdict</h2>
+          <p>Weekly Completed Load Volume compared with the previous Training Week.</p>
+        </div>
+      </div>
+      <p className="training-history-verdict__label">
+        {formatTrainingWeekProgressVerdict(summary.progressVerdict)}
+      </p>
+      <div className="training-history-verdict__support">
+        <p>{formatTrainingWeekVolumeReference(summary.previousWeekVolumeReference)}</p>
+        <p>{formatTrainingWeekCompletionContext(summary.completionContext)}</p>
+      </div>
     </section>
   );
 }
@@ -107,6 +131,11 @@ function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSum
       </dl>
       {summary.hasPartialVolume ? (
         <p className="training-history-empty">Partial volume comparison in this Training Week.</p>
+      ) : null}
+      {summary.previousWeekVolumeReference?.hasPartialVolume ? (
+        <p className="training-history-empty">
+          Partial volume comparison in the previous Training Week reference.
+        </p>
       ) : null}
     </>
   );

@@ -4,6 +4,7 @@ import { parsePositiveBodyweight } from "./bodyweight-input";
 import {
   formatCompletedDate,
   formatLoadedSetCount,
+  formatTrainingSessionVolumeProgression,
   formatWeight,
   getTrainingHistoryExerciseKey,
 } from "./training-history-formatting";
@@ -31,7 +32,7 @@ export function CompletedSessionsSection({
       <div className="training-history-section-heading">
         <div>
           <h2 id="training-history-list-title">Completed sessions</h2>
-          <p>Open a completed Training Session only when you need session-level detail.</p>
+          <p>Compare each session with the previous time you ran the same Workout Template.</p>
         </div>
       </div>
       {selectedSessions.length > 0 ? (
@@ -98,6 +99,9 @@ function CompletedSessionRow({
           {session.hasPartialVolume ? (
             <small className="training-history-session-row__date">Partial volume</small>
           ) : null}
+          <small className="training-history-session-row__progression">
+            {formatTrainingSessionVolumeProgression(session.volumeProgression)}
+          </small>
           <small className="training-history-session-row__date">
             {formatCompletedDate(session.completedAt)}
           </small>

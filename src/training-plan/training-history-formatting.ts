@@ -1,7 +1,11 @@
 import type {
   TrainingHistoryMovementPatternComparison,
   TrainingHistorySessionExerciseReport,
+  TrainingHistorySessionVolumeProgression,
   TrainingHistoryWeekSummary,
+  TrainingWeekCompletionContext,
+  TrainingWeekProgressVerdict,
+  TrainingWeekVolumeReference,
 } from "./training-history-week";
 
 const completedDateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -49,6 +53,60 @@ export function formatProgress(value: number | null): string {
 
 export function formatWeight(value: number): string {
   return weightFormatter.format(value);
+}
+
+export function formatTrainingWeekCompletionContext(
+  completionContext: TrainingWeekCompletionContext,
+): string {
+  switch (completionContext.status) {
+    case "below_target":
+      return `${Math.abs(completionContext.deltaSessions)} session${Math.abs(completionContext.deltaSessions) === 1 ? "" : "s"} below target.`;
+    case "met_target":
+      return "Weekly session target met.";
+    case "above_target":
+      return `${completionContext.deltaSessions} extra session${completionContext.deltaSessions === 1 ? "" : "s"} above target.`;
+  }
+}
+
+export function formatTrainingWeekProgressVerdict(verdict: TrainingWeekProgressVerdict): string {
+  switch (verdict) {
+    case "progressed":
+      return "Progressed";
+    case "unchanged":
+      return "Unchanged";
+    case "regressed":
+      return "Regressed";
+    case "not_comparable":
+      return "Not comparable";
+  }
+}
+
+export function formatTrainingWeekVolumeReference(
+  reference: TrainingWeekVolumeReference | null,
+): string {
+  if (!reference) {
+    return "No prior Training Week Volume Reference.";
+  }
+
+  return `Training Week Volume Reference: ${formatWeight(reference.totalVolume)} kg from ${reference.weekLabel}.`;
+}
+
+export function formatTrainingSessionVolumeProgression(
+  volumeProgression: TrainingHistorySessionVolumeProgression,
+): string {
+  if (!volumeProgression.previousComparableCompletedAt) {
+    return "No prior comparable session.";
+  }
+
+  if (volumeProgression.verdict === "not_comparable") {
+    return `Not comparable vs ${formatCompletedDate(volumeProgression.previousComparableCompletedAt)}.`;
+  }
+
+  if (volumeProgression.verdict === "unchanged") {
+    return `Unchanged vs ${formatCompletedDate(volumeProgression.previousComparableCompletedAt)}.`;
+  }
+
+  return `${formatTrainingWeekProgressVerdict(volumeProgression.verdict)} by ${formatWeightDelta(volumeProgression.deltaVolume ?? 0)} vs ${formatCompletedDate(volumeProgression.previousComparableCompletedAt)}.`;
 }
 
 export function formatMovementPatternComparison(

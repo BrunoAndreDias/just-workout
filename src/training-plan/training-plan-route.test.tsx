@@ -383,6 +383,41 @@ describe("TrainingPlanRoute", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the latest Training Week verdict compactly on the active Training Plan", async () => {
+    await seedTrainingPlan();
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-06-10T09:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 100,
+      },
+      {
+        completedAt: "2026-06-17T09:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 110,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(await screen.findByRole("heading", { name: "Cycle 1" }));
+
+    expect(within(blockSummary).getByText("Latest Training Week verdict")).toBeVisible();
+    expect(within(blockSummary).getByText("Progressed")).toBeVisible();
+    expect(within(blockSummary).getByText("Jun 14-20, 2026 · 1 / 3 sessions")).toBeVisible();
+    expect(
+      within(blockSummary).getByText("Training Week Volume Reference: 800 kg from Jun 7-13, 2026."),
+    ).toBeVisible();
+  });
+
   it("does not show the next cycle action in week 6 until every Training Week is complete", async () => {
     await seedTrainingPlan({
       split: "full-body-2-day",
@@ -1102,6 +1137,72 @@ describe("TrainingPlanRoute", () => {
     ).toBeVisible();
   });
 
+  it("shows the weekly verdict, previous-week reference, completion context, and session progression", async () => {
+    await seedTrainingPlan();
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-06-06T09:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 110,
+      },
+      {
+        completedAt: "2026-06-05T09:00:00.000Z",
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        weight: 100,
+      },
+      {
+        completedAt: "2026-05-30T09:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 100,
+      },
+      {
+        completedAt: "2026-05-29T09:00:00.000Z",
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        weight: 120,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+
+    const selectedTrainingWeek = screen.getByRole("region", { name: "Selected Training Week" });
+    const completedSessionsSection = screen.getByRole("region", { name: "Completed sessions" });
+
+    expect(
+      within(selectedTrainingWeek).getByRole("heading", { name: "Training Week verdict" }),
+    ).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("Regressed")).toBeVisible();
+    expect(
+      within(selectedTrainingWeek).getByText(
+        "Training Week Volume Reference: 1,760 kg from May 24-30, 2026.",
+      ),
+    ).toBeVisible();
+    expect(within(selectedTrainingWeek).getByText("1 session below target.")).toBeVisible();
+    expect(
+      within(completedSessionsSection).getByText("Progressed by +80 kg vs May 30, 2026."),
+    ).toBeVisible();
+    expect(
+      within(completedSessionsSection).getByText("Regressed by -160 kg vs May 29, 2026."),
+    ).toBeVisible();
+  });
+
   it("saves a Historical Bodyweight Correction and recalculates the selected session", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
@@ -1280,6 +1381,8 @@ async function seedCompletedTrainingSessions(
     exerciseId: string;
     exerciseName: string;
     movementPattern: TrainingSession["exercises"][number]["movementPattern"];
+    templateId?: string;
+    templateLabel?: string;
     weight: number;
   }> = [],
 ) {
@@ -1299,8 +1402,8 @@ async function seedCompletedTrainingSessions(
         id: `session-override-${index}`,
         planId: "training-plan-test",
         status: "completed" as const,
-        templateId: "template-1",
-        templateLabel: "Upper A",
+        templateId: entry.templateId ?? "template-1",
+        templateLabel: entry.templateLabel ?? "Upper A",
         updatedAt: entry.completedAt,
         volumeByMovementPattern: [],
       })),

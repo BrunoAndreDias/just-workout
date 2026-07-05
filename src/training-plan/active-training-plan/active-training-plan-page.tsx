@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PageHeader, PageMain } from "../../design-system/typography";
 import type { NextTrainingBlockTransitionWorkflow } from "../training-block-transition";
 import type { TrainingPlan } from "../training-plan";
+import type { TrainingSession } from "../training-session";
 import {
   type ActiveTrainingPlanPageActionsReadModel,
   type ActiveTrainingPlanPageReadModel,
@@ -21,12 +22,18 @@ import "./active-training-plan-page.css";
 export function ActiveTrainingPlanPage({
   nextTrainingBlockTransition,
   trainingPlan,
+  trainingSessions = [],
 }: {
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
   trainingPlan: TrainingPlan;
+  trainingSessions?: ReadonlyArray<TrainingSession>;
 }) {
   const [activeTabId, setActiveTabId] = useState<ActiveTrainingPlanTabId>("overview");
-  const readModel = getActiveTrainingPlanPageReadModel({ activeTabId, trainingPlan });
+  const readModel = getActiveTrainingPlanPageReadModel({
+    activeTabId,
+    trainingPlan,
+    trainingSessions,
+  });
 
   return (
     <section className="active-training-plan-page-shell" aria-label="Active Training Plan">
@@ -93,6 +100,7 @@ function ActiveTrainingPlanActions({
         blockWeek={readModel.progress.blockWeek}
         cycleNumber={readModel.progress.cycleNumber}
         nextTrainingBlockTransition={nextTrainingBlockTransition}
+        trainingWeekProgress={readModel.progress.trainingWeekProgress}
         trainingBlockWeeks={readModel.progress.trainingBlockWeeks}
       />
     </div>

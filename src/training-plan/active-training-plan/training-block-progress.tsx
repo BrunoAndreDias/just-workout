@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { NextTrainingBlockTransitionWorkflow } from "../index";
+import type { ActiveTrainingPlanWeekProgressReadModel } from "./training-week-progress-read-model";
 import "./training-block-progress.css";
 
 export function TrainingBlockProgress({
@@ -7,12 +8,14 @@ export function TrainingBlockProgress({
   blockWeek,
   cycleNumber = 1,
   nextTrainingBlockTransition,
+  trainingWeekProgress,
   trainingBlockWeeks,
 }: {
   blockProgressPercent: number;
   blockWeek: number;
   cycleNumber?: number;
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
+  trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   trainingBlockWeeks: number;
 }) {
   const weeksUntilRotation = Math.max(trainingBlockWeeks - blockWeek, 0);
@@ -45,12 +48,34 @@ export function TrainingBlockProgress({
         After week 6, Just Workout can rotate exercises and prefill starting loads based on your
         previous cycle.
       </p>
+      <TrainingWeekProgressSummary trainingWeekProgress={trainingWeekProgress} />
       <TrainingBlockProgressActions
         isPreviewExpanded={isPreviewExpanded}
         isReady={isNextBlockReady}
         onExpandPreview={() => setIsPreviewExpanded(true)}
         transition={nextTrainingBlockTransition}
       />
+    </section>
+  );
+}
+
+function TrainingWeekProgressSummary({
+  trainingWeekProgress,
+}: {
+  trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
+}) {
+  return (
+    <section
+      className="active-training-plan-progress__week"
+      aria-label={trainingWeekProgress.title}
+    >
+      <p className="active-training-plan-progress__week-title">{trainingWeekProgress.title}</p>
+      <p className="active-training-plan-progress__week-value">{trainingWeekProgress.value}</p>
+      <p className="active-training-plan-progress__week-detail">{trainingWeekProgress.detail}</p>
+      <p className="active-training-plan-progress__week-support">{trainingWeekProgress.support}</p>
+      {trainingWeekProgress.caveat ? (
+        <p className="active-training-plan-progress__week-caveat">{trainingWeekProgress.caveat}</p>
+      ) : null}
     </section>
   );
 }

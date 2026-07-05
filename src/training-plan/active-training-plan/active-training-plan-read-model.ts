@@ -3,6 +3,7 @@ import {
   getTrainingSessionHistoryRouteTarget,
   type TrainingSessionHistoryRouteTarget,
 } from "../training-plan-paths";
+import type { TrainingSession } from "../training-session";
 import {
   getStartNextWorkoutRouteTarget,
   getStartWorkoutRouteTarget,
@@ -23,6 +24,10 @@ import {
 } from "./movement-coverage-read-model";
 import { getPlanSummaryReadModel, type PlanSummaryReadModel } from "./plan-summary-read-model";
 import { getBlockProgressPercent, getCurrentBlockWeek } from "./training-block-progress";
+import {
+  type ActiveTrainingPlanWeekProgressReadModel,
+  getTrainingWeekProgressReadModel,
+} from "./training-week-progress-read-model";
 import {
   type ActiveTrainingPlanVolumeTargetNoticeReadModel,
   getVolumeTargetNoticesReadModel,
@@ -75,6 +80,7 @@ export type ActiveTrainingPlanPageProgressReadModel = {
   blockProgressPercent: number;
   blockWeek: number;
   cycleNumber: number | undefined;
+  trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   trainingBlockWeeks: number;
 };
 
@@ -146,10 +152,14 @@ export type ActiveTrainingPlanMovementCoverageCellReadModel = {
 
 export function getActiveTrainingPlanPageReadModel({
   activeTabId = "overview",
+  now = new Date(),
   trainingPlan,
+  trainingSessions = [],
 }: {
   activeTabId?: ActiveTrainingPlanTabId;
+  now?: Date;
   trainingPlan: TrainingPlan;
+  trainingSessions?: ReadonlyArray<TrainingSession>;
 }): ActiveTrainingPlanPageReadModel {
   const tabs = getActiveTrainingPlanTabs(trainingPlan);
   const resolvedActiveTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
@@ -167,7 +177,12 @@ export function getActiveTrainingPlanPageReadModel({
     compare: getCompareTabReadModel(trainingPlan, movementCoverage),
     header: getHeaderReadModel(trainingPlan),
     overview: getOverviewReadModel(trainingPlan, movementCoverage),
-    progress: getProgressReadModel(trainingPlan, blockWeek),
+    progress: getProgressReadModel({
+      blockWeek,
+      now,
+      trainingPlan,
+      trainingSessions,
+    }),
     tabs: tabs.map((tab) =>
       getPageTabReadModel({
         activeTabId: resolvedActiveTabId,
@@ -223,10 +238,17 @@ function getOverviewReadModel(
   };
 }
 
-function getProgressReadModel(
-  trainingPlan: TrainingPlan,
-  blockWeek: number,
-): ActiveTrainingPlanPageProgressReadModel {
+function getProgressReadModel({
+  blockWeek,
+  now,
+  trainingPlan,
+  trainingSessions,
+}: {
+  blockWeek: number;
+  now: Date;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}): ActiveTrainingPlanPageProgressReadModel {
   return {
     blockProgressPercent: getBlockProgressPercent({
       blockWeek,
@@ -234,6 +256,11 @@ function getProgressReadModel(
     }),
     blockWeek,
     cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
+    trainingWeekProgress: getTrainingWeekProgressReadModel({
+      now,
+      trainingPlan,
+      trainingSessions,
+    }),
     trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
   };
 }

@@ -4,6 +4,98 @@ import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 
 describe("buildTrainingHistoryWeekReport", () => {
+  it("builds a weekly verdict, previous-week volume reference, and same-template session progression", () => {
+    const trainingPlan = createTrainingPlan();
+    const trainingSessions: ReadonlyArray<TrainingSession> = [
+      createTrainingSession({
+        completedAt: "2026-06-06T09:00:00.000Z",
+        id: "selected-week-a",
+        templateId: "template-a",
+        templateLabel: "Full Body A",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            volume: 1200,
+          },
+        ],
+      }),
+      createTrainingSession({
+        completedAt: "2026-06-05T09:00:00.000Z",
+        id: "selected-week-b",
+        templateId: "template-b",
+        templateLabel: "Full Body B",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "quad_dominant",
+            volume: 800,
+          },
+        ],
+      }),
+      createTrainingSession({
+        completedAt: "2026-05-30T09:00:00.000Z",
+        id: "previous-week-a",
+        templateId: "template-a",
+        templateLabel: "Full Body A",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "horizontal_push",
+            volume: 1000,
+          },
+        ],
+      }),
+      createTrainingSession({
+        completedAt: "2026-05-29T09:00:00.000Z",
+        id: "previous-week-b",
+        templateId: "template-b",
+        templateLabel: "Full Body B",
+        volumeByMovementPattern: [
+          {
+            movementPattern: "quad_dominant",
+            volume: 900,
+          },
+        ],
+      }),
+    ];
+
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan,
+      trainingSessions,
+    });
+
+    expect(report.summary).toEqual(
+      expect.objectContaining({
+        completedSessions: 2,
+        progressVerdict: "progressed",
+        previousWeekVolumeReference: expect.objectContaining({
+          totalVolume: 1900,
+        }),
+      }),
+    );
+    expect(report.selectedSessions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          templateId: "template-a",
+          volumeProgression: expect.objectContaining({
+            deltaVolume: 200,
+            previousComparableCompletedAt: "2026-05-30T09:00:00.000Z",
+            previousComparableVolume: 1000,
+            verdict: "progressed",
+          }),
+        }),
+        expect.objectContaining({
+          templateId: "template-b",
+          volumeProgression: expect.objectContaining({
+            deltaVolume: -100,
+            previousComparableCompletedAt: "2026-05-29T09:00:00.000Z",
+            previousComparableVolume: 900,
+            verdict: "regressed",
+          }),
+        }),
+      ]),
+    );
+  });
+
   it("builds Movement Pattern comparison rows for increase, regression, same, new, and dropped states", () => {
     const trainingPlan = createTrainingPlan();
     const trainingSessions = createTrainingSessions();
@@ -127,7 +219,7 @@ describe("buildTrainingHistoryWeekReport", () => {
     expect(report.summary.totalVolume).toBe(0);
     expect(report.summary.hasPartialVolume).toBe(true);
     expect(report.selectedSessions).toEqual([
-      {
+      expect.objectContaining({
         completedAt: "2026-06-06T09:00:00.000Z",
         completedLoadVolume: 0,
         exercises: [
@@ -146,8 +238,15 @@ describe("buildTrainingHistoryWeekReport", () => {
         id: "bodyweight-session",
         loadedSetCount: 0,
         sessionBodyweight: null,
+        templateId: "template-1",
         templateLabel: "Full Body A",
-      },
+        volumeProgression: {
+          deltaVolume: null,
+          previousComparableCompletedAt: null,
+          previousComparableVolume: null,
+          verdict: "not_comparable",
+        },
+      }),
     ]);
   });
 
@@ -192,7 +291,7 @@ describe("buildTrainingHistoryWeekReport", () => {
     expect(report.summary.totalVolume).toBe(680);
     expect(report.summary.hasPartialVolume).toBe(false);
     expect(report.selectedSessions).toEqual([
-      {
+      expect.objectContaining({
         completedAt: "2026-06-06T09:00:00.000Z",
         completedLoadVolume: 680,
         exercises: [
@@ -211,8 +310,15 @@ describe("buildTrainingHistoryWeekReport", () => {
         id: "bodyweight-session",
         loadedSetCount: 1,
         sessionBodyweight: 80,
+        templateId: "template-1",
         templateLabel: "Full Body A",
-      },
+        volumeProgression: {
+          deltaVolume: null,
+          previousComparableCompletedAt: null,
+          previousComparableVolume: null,
+          verdict: "not_comparable",
+        },
+      }),
     ]);
   });
 
@@ -338,11 +444,13 @@ function createTrainingSessions(): ReadonlyArray<TrainingSession> {
 function createTrainingSession({
   completedAt,
   id,
+  templateId = `${id}-template`,
   templateLabel,
   volumeByMovementPattern,
 }: {
   completedAt: string;
   id: string;
+  templateId?: string;
   templateLabel: string;
   volumeByMovementPattern: TrainingSession["volumeByMovementPattern"];
 }): TrainingSession {
@@ -358,7 +466,7 @@ function createTrainingSession({
     id,
     planId: "training-plan-test",
     status: "completed",
-    templateId: `${id}-template`,
+    templateId,
     templateLabel,
     updatedAt: completedAt,
     volumeByMovementPattern,

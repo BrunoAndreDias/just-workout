@@ -8,6 +8,7 @@ import {
   type TrainingPlanSlot,
   type WorkoutTemplate,
 } from "../training-plan";
+import type { TrainingSession } from "../training-session";
 import {
   type ActiveTrainingPlanTabId,
   getActiveTrainingPlanPageReadModel,
@@ -305,6 +306,52 @@ describe("getActiveTrainingPlanPageReadModel", () => {
     });
   });
 
+  it("shows current-week known volume against the Training Week Volume Reference while the week is open", () => {
+    const trainingPlan = createTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2100-02-11",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2100-01-01",
+        status: "active",
+        weekNumber: 2,
+      },
+    });
+
+    const readModel = getActiveTrainingPlanPageReadModel({
+      now: new Date("2100-01-10T12:00:00.000Z"),
+      trainingPlan,
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2100-01-03T09:00:00.000Z",
+          id: "session-week-1",
+          templateId: "template-1",
+          templateLabel: "Full Body A",
+          weight: 100,
+        }),
+        createTrainingSession({
+          completedAt: "2100-01-10T09:00:00.000Z",
+          id: "session-week-2",
+          templateId: "template-1",
+          templateLabel: "Full Body A",
+          weight: 90,
+        }),
+      ],
+    });
+
+    expect(readModel.progress.trainingWeekProgress).toEqual({
+      caveat: null,
+      detail: "1 / 3 sessions",
+      kind: "current_week",
+      support: "Training Week Volume Reference: 800 kg from Jan 1-7, 2100.",
+      title: "Current week progress",
+      value: "720 kg / 800 kg reference",
+      valueLabel: "Known volume",
+    });
+  });
+
   it("exposes fallback next-workout and history route targets", () => {
     const trainingPlan = {
       ...createTrainingPlan(),
@@ -338,9 +385,12 @@ describe("getActiveTrainingPlanPageReadModel", () => {
 function createTrainingPlan(
   overrides: Partial<Pick<PlanBlueprint, "split" | "trainingFrequencyDaysPerWeek">> &
     Partial<Pick<PlanBlueprint, "weeklyRepTargets">> &
-    Partial<Pick<TrainingPlan, "mainCompoundRotationPools" | "workoutTemplates">> = {},
+    Partial<
+      Pick<TrainingPlan, "mainCompoundRotationPools" | "trainingBlock" | "workoutTemplates">
+    > = {},
 ): TrainingPlan {
-  const { mainCompoundRotationPools, workoutTemplates, ...blueprintOverrides } = overrides;
+  const { mainCompoundRotationPools, trainingBlock, workoutTemplates, ...blueprintOverrides } =
+    overrides;
   const trainingPlan = generateTrainingPlanFromBlueprint({
     blueprint: createCompleteBlueprint(blueprintOverrides),
     id: "training-plan-test",
@@ -350,6 +400,7 @@ function createTrainingPlan(
   return {
     ...trainingPlan,
     ...(mainCompoundRotationPools ? { mainCompoundRotationPools } : {}),
+    ...(trainingBlock ? { trainingBlock } : {}),
     ...(workoutTemplates ? { workoutTemplates } : {}),
   };
 }
@@ -366,6 +417,40 @@ function createWorkoutTemplate(slots: TrainingPlanSlot[]): WorkoutTemplate {
         type: "superset",
       },
     ],
+  };
+}
+
+function createTrainingSession({
+  completedAt,
+  id,
+  templateId,
+  templateLabel,
+  weight,
+}: {
+  completedAt: string;
+  id: string;
+  templateId: string;
+  templateLabel: string;
+  weight: number;
+}): TrainingSession {
+  return {
+    completedAt,
+    createdAt: completedAt,
+    exercises: [
+      {
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        sets: [{ reps: 8, setIndex: 1, weight }],
+      },
+    ],
+    id,
+    planId: "training-plan-test",
+    status: "completed",
+    templateId,
+    templateLabel,
+    updatedAt: completedAt,
+    volumeByMovementPattern: [],
   };
 }
 

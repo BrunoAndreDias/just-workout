@@ -143,6 +143,40 @@
   line-height: 1.25;
 }
 
+.training-history-verdict {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--training-history-border-strong);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, var(--training-history-accent-tint-soft), transparent 60%),
+    var(--training-history-surface);
+}
+
+.training-history-verdict__label {
+  margin: 0;
+  color: var(--training-history-ink);
+  font-family: var(--jw-font-heading);
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.1;
+}
+
+.training-history-verdict__support {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.training-history-verdict__support p {
+  margin: 0;
+  color: var(--training-history-ink-soft);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .training-history-comparison {
   display: grid;
   gap: 1rem;
