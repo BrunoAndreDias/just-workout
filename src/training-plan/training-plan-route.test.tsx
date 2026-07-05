@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -506,13 +506,22 @@ describe("TrainingPlanRoute", () => {
       2,
     );
     expect(within(blockSummary).getAllByText("compatible abs exercise")).toHaveLength(4);
-    expect(within(blockSummary).getAllByText("Previous load: 100 kg")).toHaveLength(2);
-    expect(within(blockSummary).getAllByText("Suggested start: 90 kg")).toHaveLength(2);
-    expect(within(blockSummary).getAllByText("same Movement Pattern, -10% reset")).toHaveLength(2);
-
     const suggestedLoadInput = within(blockSummary).getByLabelText(
       "Suggested starting load for Incline Dumbbell Bench Press",
-    );
+    ) as HTMLInputElement;
+    const benchSuggestion = suggestedLoadInput.closest("li");
+
+    expect(benchSuggestion).not.toBeNull();
+    expect(
+      within(benchSuggestion as HTMLElement).getByText("Previous load: No previous load"),
+    ).toBeVisible();
+    expect(
+      within(benchSuggestion as HTMLElement).getByText("Suggested start: No previous load"),
+    ).toBeVisible();
+    expect(
+      within(benchSuggestion as HTMLElement).getByText("first-time exercise, start empty"),
+    ).toBeVisible();
+    expect(suggestedLoadInput.value).toBe("");
 
     await user.clear(suggestedLoadInput);
     await user.type(suggestedLoadInput, "92.5");
@@ -572,8 +581,10 @@ describe("TrainingPlanRoute", () => {
         expect.objectContaining({
           effectiveLoad: 92.5,
           exerciseId: "incline-dumbbell-bench-press",
-          previousLoad: 100,
-          suggestedLoad: 90,
+          kind: "first_time",
+          previousLoad: null,
+          suggestedLoad: null,
+          reason: "first-time exercise, start empty",
           userEditedLoad: 92.5,
         }),
       ]),
@@ -763,6 +774,140 @@ describe("TrainingPlanRoute", () => {
 
       expect(within(inclineBenchRow).getByLabelText(`Set ${setIndex} weight`)).toHaveValue(92.5);
     }
+  });
+
+  it("waits for Training Session history before initializing exact-history prefills", async () => {
+    await seedTrainingPlan();
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-07-12T10:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        weight: 40,
+      },
+    ]);
+    const seededSessions = await getTrainingSessionsForPlan("training-plan-test");
+    let resolveTrainingSessions: (sessions: ReadonlyArray<TrainingSession>) => void = () => {};
+    const pendingTrainingSessions = new Promise<ReadonlyArray<TrainingSession>>((resolve) => {
+      resolveTrainingSessions = resolve;
+    });
+
+    vi.spyOn(trainingPlanService, "getTrainingSessionsForPlan").mockImplementation(
+      async () => pendingTrainingSessions,
+    );
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByText("Loading Training Session...")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Full Body A session" })).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveTrainingSessions(seededSessions);
+      await pendingTrainingSessions;
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    expect(within(benchPressRow).getByLabelText("Set 1 weight")).toHaveValue(40);
+  });
+
+  it("dismisses the exact-history prefill note after the user edits the exercise", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "42.5");
+
+    expect(
+      screen.queryByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("dismisses the exact-history prefill note after the user edits reps", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
+    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "7");
+
+    expect(
+      screen.queryByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("dismisses the exact-history prefill note after the user completes a set", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
+
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const benchPressRow = within(firstRound).getByRole("row", {
+      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    await user.click(
+      within(benchPressRow).getByLabelText("Mark Flat Dumbbell Bench Press set 1 done"),
+    );
+
+    expect(
+      screen.queryByText(
+        "Flat Dumbbell Bench Press was prefilled from your last exact exercise load.",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("opens Training Session history from the active Training Plan", async () => {
@@ -1342,10 +1487,11 @@ async function seedGeneratedTrainingPlanWithStartingLoadSuggestion() {
             effectiveLoad: 92.5,
             exerciseId: "incline-dumbbell-bench-press",
             exerciseName: "Incline Dumbbell Bench Press",
+            kind: "exact_previous_exercise",
             movementPattern: "horizontal_push",
-            previousLoad: 100,
-            reason: "same Movement Pattern, -10% reset",
-            suggestedLoad: 90,
+            previousLoad: 92.5,
+            reason: "previous exact exercise load prefill",
+            suggestedLoad: 92.5,
             userEditedLoad: 92.5,
           },
         ],
@@ -1375,6 +1521,45 @@ async function seedGeneratedTrainingPlanWithStartingLoadSuggestion() {
             ),
           })),
         })),
+      },
+    ],
+  });
+}
+
+async function seedTrainingPlanWithExactHistoryStartingLoadSuggestion() {
+  const trainingPlan = generateTrainingPlanFromBlueprint({
+    blueprint: createCompleteBlueprint(),
+    id: "training-plan-test",
+    timestamp: "2026-07-19T09:00:00.000Z",
+  });
+
+  await seedTrainingPlanData({
+    trainingPlans: [
+      {
+        ...trainingPlan,
+        startingLoadSuggestions: [
+          {
+            effectiveLoad: 40,
+            exerciseId: "flat-dumbbell-bench-press",
+            exerciseName: "Flat Dumbbell Bench Press",
+            kind: "exact_previous_exercise",
+            movementPattern: "horizontal_push",
+            previousLoad: 40,
+            reason: "previous exact exercise load prefill",
+            suggestedLoad: 40,
+            userEditedLoad: null,
+          },
+        ],
+        trainingBlock: {
+          cycleNumber: 2,
+          endDate: "2026-08-29",
+          id: "training-block-2",
+          planId: "training-plan-test",
+          previousBlockId: "training-block-1",
+          startDate: "2026-07-19",
+          status: "active",
+          weekNumber: 1,
+        },
       },
     ],
   });

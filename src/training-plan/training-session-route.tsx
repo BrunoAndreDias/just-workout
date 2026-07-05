@@ -25,11 +25,16 @@ import {
   createEmptyTrainingSessionExecutionState,
   createInitialTrainingSessionExecutionState,
   createTrainingSessionExecutionReadModel,
+  getTrainingSessionExecutionActionExerciseId,
   hasTrainingSessionExecutionDrafts,
   type TrainingSessionExecutionAction,
   type TrainingSessionExecutionState,
 } from "./training-session-execution";
 import { TrainingSessionGroup } from "./training-session-group";
+import {
+  createTrainingSessionLoadPrefills,
+  type TrainingSessionLoadPrefill,
+} from "./training-session-load-prefill";
 import {
   getWorkoutTemplateForTrainingSessionRoute,
   parseTrainingSessionRoutePathname,
@@ -42,7 +47,8 @@ export function TrainingSessionRoute() {
   const routeParams = useTrainingSessionRouteParams();
   const {
     previousTrainingSessions,
-    startingLoadSuggestions,
+    sessionHistoryReady,
+    startingLoadPrefills,
     trainingPlan,
     trainingPlanQuery,
     workoutTemplate,
@@ -51,6 +57,9 @@ export function TrainingSessionRoute() {
     createEmptyTrainingSessionExecutionState(),
   );
   const [completedSession, setCompletedSession] = useState<TrainingSession | null>(null);
+  const [dismissedPrefillExerciseIds, setDismissedPrefillExerciseIds] = useState<
+    ReadonlyArray<string>
+  >([]);
   const bodyweightState = useTrainingSessionBodyweight({
     trainingPlan,
     workoutTemplate,
@@ -60,6 +69,8 @@ export function TrainingSessionRoute() {
     previousTrainingSessions,
     sessionBodyweight: bodyweightState.sessionBodyweight,
     state: executionState,
+    trainingBlockWeekNumber: trainingPlan?.trainingBlock?.weekNumber ?? null,
+    trainingBlockWeeks: trainingPlan?.trainingBlockWeeks ?? 6,
     workoutTemplate,
   });
   const completeSession = useCompleteTrainingSession({
@@ -69,12 +80,13 @@ export function TrainingSessionRoute() {
   });
 
   useInitializeTrainingSessionExecutionState({
+    isReady: sessionHistoryReady,
     setExecutionState,
-    startingLoadSuggestions,
+    startingLoadSuggestions: startingLoadPrefills,
     workoutTemplate,
   });
 
-  if (trainingPlanQuery.isLoading) {
+  if (trainingPlanQuery.isLoading || !sessionHistoryReady) {
     return <TrainingSessionShell>Loading Training Session...</TrainingSessionShell>;
   }
 
@@ -83,6 +95,11 @@ export function TrainingSessionRoute() {
   }
 
   const activeExecutionReadModel = executionReadModel;
+  const activeLoadPrefills = completedSession
+    ? []
+    : startingLoadPrefills.filter(
+        (prefill) => !dismissedPrefillExerciseIds.includes(prefill.exerciseId),
+      );
   const activeWorkoutTemplate = workoutTemplate;
 
   async function handleCompleteSession() {
@@ -99,6 +116,19 @@ export function TrainingSessionRoute() {
   }
 
   function handleExecutionAction(action: TrainingSessionExecutionAction) {
+    const exerciseId = getTrainingSessionExecutionActionExerciseId({
+      action,
+      workoutTemplate: activeWorkoutTemplate,
+    });
+
+    if (exerciseId) {
+      setDismissedPrefillExerciseIds((currentExerciseIds) =>
+        currentExerciseIds.includes(exerciseId)
+          ? currentExerciseIds
+          : [...currentExerciseIds, exerciseId],
+      );
+    }
+
     setExecutionState((currentState) =>
       applyTrainingSessionExecutionAction({
         action,
@@ -113,6 +143,7 @@ export function TrainingSessionRoute() {
       completedSession={completedSession}
       executionReadModel={activeExecutionReadModel}
       isCompleteSessionPending={completeSession.isPending}
+      loadPrefills={activeLoadPrefills}
       onCompleteSession={handleCompleteSession}
       onExecutionAction={handleExecutionAction}
       bodyweightState={bodyweightState}
@@ -126,6 +157,7 @@ function TrainingSessionPageContent({
   completedSession,
   executionReadModel,
   isCompleteSessionPending,
+  loadPrefills,
   onCompleteSession,
   onExecutionAction,
   workoutTemplate,
@@ -134,6 +166,7 @@ function TrainingSessionPageContent({
   completedSession: TrainingSession | null;
   executionReadModel: NonNullable<ReturnType<typeof useTrainingSessionReadModel>>;
   isCompleteSessionPending: boolean;
+  loadPrefills: ReadonlyArray<TrainingSessionLoadPrefill>;
   onCompleteSession: () => Promise<void>;
   onExecutionAction: (action: TrainingSessionExecutionAction) => void;
   workoutTemplate: WorkoutTemplate;
@@ -151,6 +184,7 @@ function TrainingSessionPageContent({
         </section>
       ) : null}
       <TrainingSessionBodyweightPanel bodyweightState={bodyweightState} />
+      <TrainingSessionPrefillNotes loadPrefills={loadPrefills} />
 
       <div className="training-session-work">
         {executionReadModel.groups.map((group) => (
@@ -192,6 +226,28 @@ function TrainingSessionPageContent({
   );
 }
 
+function TrainingSessionPrefillNotes({
+  loadPrefills,
+}: {
+  loadPrefills: ReadonlyArray<TrainingSessionLoadPrefill>;
+}) {
+  const exactExercisePrefills = loadPrefills.filter((prefill) => prefill.showPrefillExplanation);
+
+  if (exactExercisePrefills.length === 0) {
+    return null;
+  }
+
+  return (
+    <section aria-label="Load prefill notes" className="training-session-prefill-notes">
+      {exactExercisePrefills.map((prefill) => (
+        <p key={prefill.exerciseId}>
+          {prefill.exerciseName} was prefilled from your last exact exercise load.
+        </p>
+      ))}
+    </section>
+  );
+}
+
 function TrainingSessionShell({ children }: { children: string }) {
   return (
     <section className="training-session-page" aria-label="Training Session">
@@ -214,6 +270,7 @@ function useTrainingSessionData(routeParams: { planId: string; templateId: strin
 
   return buildTrainingSessionData({
     routeParams,
+    sessionHistoryReady: routeParams === null || !trainingSessionsQuery.isPending,
     trainingPlan: trainingPlanQuery.data,
     trainingPlanQuery,
     trainingSessions: trainingSessionsQuery.data ?? [],
@@ -225,12 +282,16 @@ function useTrainingSessionReadModel({
   previousTrainingSessions,
   sessionBodyweight,
   state,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
   workoutTemplate,
 }: {
   completedSession: TrainingSession | null;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   sessionBodyweight: number | null;
   state: TrainingSessionExecutionState;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   return useMemo(
@@ -241,10 +302,20 @@ function useTrainingSessionReadModel({
             previousTrainingSessions,
             sessionBodyweight,
             state,
+            trainingBlockWeekNumber,
+            trainingBlockWeeks,
             workoutTemplate,
           })
         : null,
-    [completedSession, previousTrainingSessions, sessionBodyweight, state, workoutTemplate],
+    [
+      completedSession,
+      previousTrainingSessions,
+      sessionBodyweight,
+      state,
+      trainingBlockWeekNumber,
+      trainingBlockWeeks,
+      workoutTemplate,
+    ],
   );
 }
 
@@ -291,16 +362,18 @@ function useCompleteTrainingSession({
 }
 
 function useInitializeTrainingSessionExecutionState({
+  isReady,
   setExecutionState,
   startingLoadSuggestions,
   workoutTemplate,
 }: {
+  isReady: boolean;
   setExecutionState: Dispatch<SetStateAction<TrainingSessionExecutionState>>;
   startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   useEffect(() => {
-    if (!workoutTemplate) {
+    if (!isReady || !workoutTemplate) {
       return;
     }
 
@@ -312,7 +385,7 @@ function useInitializeTrainingSessionExecutionState({
             workoutTemplate,
           }),
     );
-  }, [setExecutionState, startingLoadSuggestions, workoutTemplate]);
+  }, [isReady, setExecutionState, startingLoadSuggestions, workoutTemplate]);
 }
 
 type TrainingSessionBodyweightState = {
@@ -440,21 +513,33 @@ function TrainingSessionBodyweightPanel({
 
 function buildTrainingSessionData({
   routeParams,
+  sessionHistoryReady,
   trainingPlan,
   trainingPlanQuery,
   trainingSessions,
 }: {
   routeParams: { planId: string; templateId: string } | null;
+  sessionHistoryReady: boolean;
   trainingPlan: TrainingPlan | null | undefined;
   trainingPlanQuery: ReturnType<typeof useQuery<TrainingPlan | null>>;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }) {
+  const workoutTemplate = getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan });
+
   return {
     previousTrainingSessions: trainingSessions,
-    startingLoadSuggestions: trainingPlan?.startingLoadSuggestions ?? [],
+    sessionHistoryReady,
+    startingLoadPrefills:
+      trainingPlan && workoutTemplate
+        ? createTrainingSessionLoadPrefills({
+            previousTrainingSessions: trainingSessions,
+            trainingPlan,
+            workoutTemplate,
+          })
+        : [],
     trainingPlan,
     trainingPlanQuery,
-    workoutTemplate: getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan }),
+    workoutTemplate,
   };
 }
 

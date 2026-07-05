@@ -8,6 +8,7 @@ import type {
 import {
   changeTrainingSessionExecutionSetDone,
   changeTrainingSessionExecutionSetReps,
+  changeTrainingSessionExecutionSetRir,
   changeTrainingSessionExecutionSetWeight,
   toggleTrainingSessionExecutionGroup,
 } from "./training-session-execution";
@@ -66,6 +67,8 @@ export function TrainingSessionGroup({
                   <th scope="col">Previous</th>
                   <th scope="col">Weight</th>
                   <th scope="col">Reps</th>
+                  <th scope="col">Target RIR</th>
+                  <th scope="col">RIR</th>
                   <th scope="col">Done</th>
                 </tr>
               </thead>
@@ -137,7 +140,7 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
       <strong className="training-session-now__exercise" data-exercise={group.now.exerciseName} />
       <small>
         {group.now.movementPatternLabel} · {group.now.roleLabel} · {group.now.setLabel} ·{" "}
-        {group.now.targetRepsLabel}
+        {group.now.targetRepsLabel} · {group.now.targetRirLabel}
         <span className="training-session-prescription">{group.now.prescriptionLabel}</span>
       </small>
     </p>
@@ -220,6 +223,24 @@ function TrainingSessionSetCells({
           }
           type="number"
           value={row.reps}
+        />
+      </td>
+      <td>{row.targetRir}</td>
+      <td>
+        <label className="training-session-sr" htmlFor={`${row.inputId}-rir`}>
+          Set {row.setIndex} RIR
+        </label>
+        <input
+          aria-label={`Set ${row.setIndex} RIR`}
+          className="training-session-reps-input"
+          id={`${row.inputId}-rir`}
+          inputMode="numeric"
+          min="0"
+          onChange={(event) =>
+            onAction(changeTrainingSessionExecutionSetRir(row, event.target.value))
+          }
+          type="number"
+          value={row.rir}
         />
       </td>
       <td>

@@ -29,13 +29,15 @@ export type TrainingPlanSlot = {
 };
 
 export type TrainingPlanStartingLoadSuggestion = {
-  effectiveLoad: number;
+  effectiveLoad: number | null;
   exerciseId: string;
   exerciseName: string;
+  /** Identifies whether the starting load came from exact exercise history or needs manual entry. */
+  kind: "exact_previous_exercise" | "first_time";
   movementPattern: MovementPatternId;
   previousLoad: number | null;
   reason: string;
-  suggestedLoad: number;
+  suggestedLoad: number | null;
   userEditedLoad: number | null;
 };
 

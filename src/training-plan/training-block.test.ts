@@ -98,8 +98,9 @@ describe("Training Block transition", () => {
       expect.objectContaining({
         effectiveLoad: 92.5,
         exerciseId: "incline-dumbbell-bench-press",
-        previousLoad: 100,
-        suggestedLoad: 90,
+        kind: "first_time",
+        previousLoad: null,
+        suggestedLoad: null,
         userEditedLoad: 92.5,
       }),
     );
@@ -858,15 +859,16 @@ describe("generateNextTrainingBlock", () => {
     expect(preview.loadSuggestions).toContainEqual(
       expect.objectContaining({
         exerciseId: "incline-dumbbell-bench-press",
-        previousLoad: 100,
-        reason: "same Movement Pattern, -10% reset",
-        suggestedLoad: 90,
+        kind: "first_time",
+        previousLoad: null,
+        reason: "first-time exercise, start empty",
+        suggestedLoad: null,
       }),
     );
     expect(preview.weeklyIntensityTargets).toHaveLength(6);
   });
 
-  it("suggests the latest same-exercise working load with a five percent reset", () => {
+  it("prefills the latest exact same-exercise working load without a reset", () => {
     const suggestions = estimateNextTrainingBlockLoadSuggestions({
       availableLoadIncrement: 2.5,
       sessions: [
@@ -894,16 +896,17 @@ describe("generateNextTrainingBlock", () => {
       {
         exerciseId: "flat-barbell-bench-press",
         exerciseName: "Flat Barbell Bench Press",
+        kind: "exact_previous_exercise",
         movementPattern: "horizontal_push",
         previousLoad: 100,
-        reason: "same exercise, -5% reset",
-        suggestedLoad: 95,
+        reason: "previous exact exercise load prefill",
+        suggestedLoad: 100,
         userEditedLoad: null,
       },
     ]);
   });
 
-  it("suggests a compatible Movement Pattern load with a ten percent reset for a rotated exercise", () => {
+  it("leaves a rotated exercise empty when no exact history exists for that exercise", () => {
     const suggestions = estimateNextTrainingBlockLoadSuggestions({
       availableLoadIncrement: 2.5,
       sessions: [
@@ -926,10 +929,50 @@ describe("generateNextTrainingBlock", () => {
       {
         exerciseId: "incline-dumbbell-bench-press",
         exerciseName: "Incline Dumbbell Bench Press",
+        kind: "first_time",
         movementPattern: "horizontal_push",
-        previousLoad: 100,
-        reason: "same Movement Pattern, -10% reset",
-        suggestedLoad: 90,
+        previousLoad: null,
+        reason: "first-time exercise, start empty",
+        suggestedLoad: null,
+        userEditedLoad: null,
+      },
+    ]);
+  });
+
+  it("uses exact history for a rotated exercise when that exact exercise was completed before", () => {
+    const suggestions = estimateNextTrainingBlockLoadSuggestions({
+      availableLoadIncrement: 2.5,
+      sessions: [
+        createTrainingSession({
+          completedAt: "2026-07-10T10:00:00.000Z",
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+          weight: 87.5,
+        }),
+        createTrainingSession({
+          completedAt: "2026-07-12T10:00:00.000Z",
+          exerciseId: "flat-barbell-bench-press",
+          weight: 100,
+        }),
+      ],
+      targets: [
+        {
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+          movementPattern: "horizontal_push",
+        },
+      ],
+    });
+
+    expect(suggestions).toEqual([
+      {
+        exerciseId: "incline-dumbbell-bench-press",
+        exerciseName: "Incline Dumbbell Bench Press",
+        kind: "exact_previous_exercise",
+        movementPattern: "horizontal_push",
+        previousLoad: 87.5,
+        reason: "previous exact exercise load prefill",
+        suggestedLoad: 87.5,
         userEditedLoad: null,
       },
     ]);
@@ -984,27 +1027,30 @@ describe("generateNextTrainingBlock", () => {
       {
         exerciseId: "pull-ups",
         exerciseName: "Pull-Ups",
+        kind: "exact_previous_exercise",
         movementPattern: "vertical_pull",
         previousLoad: 0,
-        reason: "bodyweight only, no added load",
+        reason: "previous exact exercise load prefill",
         suggestedLoad: 0,
         userEditedLoad: null,
       },
       {
         exerciseId: "chin-ups",
         exerciseName: "Chin-Ups",
+        kind: "exact_previous_exercise",
         movementPattern: "vertical_pull",
         previousLoad: 10,
-        reason: "bodyweight added load, -5% reset",
+        reason: "previous exact exercise load prefill",
         suggestedLoad: 10,
         userEditedLoad: null,
       },
       {
         exerciseId: "assisted-pull-ups",
         exerciseName: "Assisted Pull-Ups",
+        kind: "exact_previous_exercise",
         movementPattern: "vertical_pull",
         previousLoad: -12.5,
-        reason: "bodyweight assistance, -5% reset",
+        reason: "previous exact exercise load prefill",
         suggestedLoad: -12.5,
         userEditedLoad: null,
       },
@@ -1096,13 +1142,13 @@ describe("generateNextTrainingBlock", () => {
     expect(editedSuggestions).toEqual([
       {
         ...suggestion,
-        suggestedLoad: 95,
+        suggestedLoad: 100,
         userEditedLoad: 97.5,
       },
     ]);
   });
 
-  it("falls back to safe editable defaults when workout history is missing", () => {
+  it("leaves first-time exercises empty when workout history is missing", () => {
     const suggestions = estimateNextTrainingBlockLoadSuggestions({
       availableLoadIncrement: 2.5,
       sessions: [],
@@ -1119,10 +1165,11 @@ describe("generateNextTrainingBlock", () => {
       {
         exerciseId: "flat-barbell-bench-press",
         exerciseName: "Flat Barbell Bench Press",
+        kind: "first_time",
         movementPattern: "horizontal_push",
         previousLoad: null,
-        reason: "missing workout history, safe default",
-        suggestedLoad: 20,
+        reason: "first-time exercise, start empty",
+        suggestedLoad: null,
         userEditedLoad: null,
       },
     ]);
@@ -1159,6 +1206,40 @@ describe("generateNextTrainingBlock", () => {
     expect(decision).toEqual({
       reason: "missed the lower end of the rep range",
       type: "reduce_load",
+    });
+  });
+
+  it("keeps load when completed sets are in range but not all meet top range and target RIR", () => {
+    const decision = applyTrainingBlockProgressionRule({
+      completedSets: [
+        { reps: 12, rir: 2 },
+        { reps: 10, rir: 2 },
+        { reps: 12, rir: 1 },
+      ],
+      repRange: { maxReps: 12, minReps: 8 },
+      targetRir: 2,
+    });
+
+    expect(decision).toEqual({
+      reason: "progression target not met",
+      type: "keep_load",
+    });
+  });
+
+  it("keeps load when fewer than the planned sets were completed", () => {
+    const decision = applyTrainingBlockProgressionRule({
+      completedSets: [
+        { reps: 12, rir: 2 },
+        { reps: 12, rir: 2 },
+      ],
+      plannedSetCount: 3,
+      repRange: { maxReps: 12, minReps: 8 },
+      targetRir: 2,
+    });
+
+    expect(decision).toEqual({
+      reason: "progression target not met",
+      type: "keep_load",
     });
   });
 });

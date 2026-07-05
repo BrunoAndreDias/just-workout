@@ -1,5 +1,9 @@
 import { isBodyweightLoadExercise } from "./bodyweight-load";
 import { summarizeCompletedLoadVolume } from "./completed-load-volume";
+import {
+  generateWeeklyIntensityTargets,
+  getTrainingBlockExerciseTargetRir,
+} from "./training-block";
 import type {
   TrainingPlanSlot,
   TrainingPlanStartingLoadSuggestion,
@@ -20,6 +24,7 @@ import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-s
 export type TrainingSessionSetDraft = {
   done: boolean;
   reps: string;
+  rir: string;
   setIndex: number;
   weight: string;
 };
@@ -63,6 +68,11 @@ export type TrainingSessionExecutionAction =
     }
   | {
       setId: string;
+      type: "change-set-rir";
+      value: string;
+    }
+  | {
+      setId: string;
       type: "change-set-weight";
       value: string;
     }
@@ -80,8 +90,10 @@ export type TrainingSessionExecutionSetRow = {
   prescriptionLabel: string;
   previousSetLabel: string;
   reps: string;
+  rir: string;
   setId: string;
   setIndex: number;
+  targetRir: string;
   weight: string;
   weightInputMin: string;
 };
@@ -101,6 +113,7 @@ export type TrainingSessionExecutionNow = {
   prescriptionLabel: string;
   roleLabel: string;
   setLabel: string;
+  targetRirLabel: string;
   targetRepsLabel: string;
 };
 
@@ -172,6 +185,18 @@ export function changeTrainingSessionExecutionSetReps(
   };
 }
 
+/** Creates the action for editing a set's captured RIR value. */
+export function changeTrainingSessionExecutionSetRir(
+  row: Pick<TrainingSessionExecutionSetRow, "setId">,
+  value: string,
+): TrainingSessionExecutionAction {
+  return {
+    setId: row.setId,
+    type: "change-set-rir",
+    value,
+  };
+}
+
 export function changeTrainingSessionExecutionSetWeight(
   row: Pick<TrainingSessionExecutionSetRow, "setId">,
   value: string,
@@ -197,12 +222,16 @@ export function createTrainingSessionExecutionReadModel({
   previousTrainingSessions,
   sessionBodyweight = null,
   state,
+  trainingBlockWeekNumber = null,
+  trainingBlockWeeks = 6,
   workoutTemplate,
 }: {
   completedSession: TrainingSession | null;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   sessionBodyweight?: number | null;
   state: TrainingSessionExecutionState;
+  trainingBlockWeekNumber?: number | null;
+  trainingBlockWeeks?: number;
   workoutTemplate: WorkoutTemplate;
 }): TrainingSessionExecutionReadModel {
   const sessionExercises = createTrainingSessionExercises(workoutTemplate);
@@ -226,6 +255,8 @@ export function createTrainingSessionExecutionReadModel({
         group,
         groupIndex,
         previousTrainingSessions,
+        trainingBlockWeekNumber,
+        trainingBlockWeeks,
         workoutTemplateLabel: workoutTemplate.label,
       }),
     ),
@@ -310,7 +341,7 @@ export function createInitialTrainingSessionDrafts(
   const startingLoadByExerciseId = new Map(
     startingLoadSuggestions.map((suggestion) => [
       suggestion.exerciseId,
-      String(suggestion.effectiveLoad),
+      suggestion.effectiveLoad === null ? "" : String(suggestion.effectiveLoad),
     ]),
   );
 
@@ -331,6 +362,7 @@ export function createDefaultTrainingSessionSetDrafts(
   return getTrainingSessionSetIndexes(slot).map((setIndex) => ({
     done: false,
     reps,
+    rir: "",
     setIndex,
     weight: startingLoad ?? "",
   }));
@@ -343,6 +375,7 @@ export function getDefaultTrainingSessionSetDraft(
     createDefaultTrainingSessionSetDrafts(slot)[0] ?? {
       done: false,
       reps: "8",
+      rir: "",
       setIndex: 1,
       weight: "",
     }
@@ -363,6 +396,7 @@ export function createTrainingSessionEntries(
     ).map((draft) => ({
       done: draft.done,
       reps: Number(draft.reps) || 0,
+      rir: parseNullableNonNegativeNumber(draft.rir),
       setIndex: draft.setIndex,
       weight: Number(draft.weight) || 0,
     })),
@@ -523,6 +557,8 @@ function createTrainingSessionExecutionGroup({
   group,
   groupIndex,
   previousTrainingSessions,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
   workoutTemplateLabel,
 }: {
   drafts: TrainingSessionExerciseDrafts;
@@ -530,6 +566,8 @@ function createTrainingSessionExecutionGroup({
   group: WorkoutTemplate["supersetGroups"][number];
   groupIndex: number;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
   workoutTemplateLabel: string;
 }): TrainingSessionExecutionGroup {
   const isOpen = expandedGroupIds.includes(group.id);
@@ -543,7 +581,11 @@ function createTrainingSessionExecutionGroup({
     accessibleTitle: formatAccessibleGroupTitle(group.title),
     groupId: group.id,
     isOpen,
-    now: createTrainingSessionExecutionNow(group.slots[0]),
+    now: createTrainingSessionExecutionNow({
+      slot: group.slots[0],
+      trainingBlockWeekNumber,
+      trainingBlockWeeks,
+    }),
     rounds: getTrainingSessionGroupRoundIndexes(group.slots).map((roundIndex) => ({
       roundIndex,
       rows: createTrainingSessionExecutionRoundRows({
@@ -552,6 +594,8 @@ function createTrainingSessionExecutionGroup({
         previousTrainingSessions,
         roundIndex,
         slots: group.slots,
+        trainingBlockWeekNumber,
+        trainingBlockWeeks,
       }),
     })),
     summary: {
@@ -562,9 +606,15 @@ function createTrainingSessionExecutionGroup({
   };
 }
 
-function createTrainingSessionExecutionNow(
-  slot: TrainingPlanSlot | undefined,
-): TrainingSessionExecutionNow | null {
+function createTrainingSessionExecutionNow({
+  slot,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
+}: {
+  slot: TrainingPlanSlot | undefined;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
+}): TrainingSessionExecutionNow | null {
   if (!slot) {
     return null;
   }
@@ -575,6 +625,12 @@ function createTrainingSessionExecutionNow(
     prescriptionLabel: getTrainingSessionPrescriptionLabel(slot),
     roleLabel: formatExerciseRole(slot.role),
     setLabel: `Set 1 of ${getTrainingSessionSetCount(slot)}`,
+    targetRirLabel: getTrainingSessionTargetRirLabel({
+      setIndex: 1,
+      slot,
+      trainingBlockWeekNumber,
+      trainingBlockWeeks,
+    }),
     targetRepsLabel: getTrainingSessionTargetRepsLabel(slot),
   };
 }
@@ -585,12 +641,16 @@ function createTrainingSessionExecutionRoundRows({
   previousTrainingSessions,
   roundIndex,
   slots,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
 }: {
   drafts: TrainingSessionExerciseDrafts;
   groupId: string;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   roundIndex: number;
   slots: ReadonlyArray<TrainingPlanSlot>;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
 }): ReadonlyArray<TrainingSessionExecutionSetRow> {
   return slots
     .filter((slot) => roundIndex <= getTrainingSessionSetCount(slot))
@@ -601,6 +661,8 @@ function createTrainingSessionExecutionRoundRows({
         previousTrainingSessions,
         roundIndex,
         slot,
+        trainingBlockWeekNumber,
+        trainingBlockWeeks,
       }),
     );
 }
@@ -611,12 +673,16 @@ function createTrainingSessionExecutionSetRow({
   previousTrainingSessions,
   roundIndex,
   slot,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
 }: {
   drafts: TrainingSessionExerciseDrafts;
   groupId: string;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   roundIndex: number;
   slot: TrainingPlanSlot;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
 }): TrainingSessionExecutionSetRow {
   const exerciseKey = getTrainingSessionExerciseKey(groupId, slot);
   const setId = getTrainingSessionExecutionSetId({
@@ -644,8 +710,17 @@ function createTrainingSessionExecutionSetRow({
       slot,
     }),
     reps: draft.reps || String(getTrainingSessionDefaultReps(slot)),
+    rir: draft.rir ?? "",
     setId,
     setIndex: draft.setIndex,
+    targetRir: String(
+      getTrainingSessionTargetRir({
+        setIndex: draft.setIndex,
+        slot,
+        trainingBlockWeekNumber,
+        trainingBlockWeeks,
+      }),
+    ),
     weight: draft.weight,
     weightInputMin: isBodyweightLoadExercise(slot) ? "-200" : "0",
   };
@@ -689,6 +764,26 @@ function findTrainingSessionExecutionSetActionTarget({
   return null;
 }
 
+/** Resolves the exercise affected by a session execution action, when the action targets a set. */
+export function getTrainingSessionExecutionActionExerciseId({
+  action,
+  workoutTemplate,
+}: {
+  action: TrainingSessionExecutionAction;
+  workoutTemplate: WorkoutTemplate;
+}): string | null {
+  if (action.type === "toggle-group") {
+    return null;
+  }
+
+  return (
+    findTrainingSessionExecutionSetActionTarget({
+      setId: action.setId,
+      workoutTemplate,
+    })?.slot.exerciseId ?? null
+  );
+}
+
 function getTrainingSessionExecutionDraftField(
   action: Exclude<TrainingSessionExecutionAction, { type: "toggle-group" }>,
 ): keyof TrainingSessionSetDraft {
@@ -700,7 +795,23 @@ function getTrainingSessionExecutionDraftField(
     return "reps";
   }
 
+  if (action.type === "change-set-rir") {
+    return "rir";
+  }
+
   return "weight";
+}
+
+function parseNullableNonNegativeNumber(value: string | null | undefined): number | null {
+  const trimmedValue = (value ?? "").trim();
+
+  if (trimmedValue === "") {
+    return null;
+  }
+
+  const parsedValue = Number(trimmedValue);
+
+  return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : null;
 }
 
 function getTrainingSessionExecutionSetId({
@@ -723,6 +834,46 @@ function getTrainingSessionPrescriptionLabel(slot: TrainingPlanSlot): string {
 
 function getTrainingSessionTargetRepsLabel(slot: TrainingPlanSlot): string {
   return `Target ${formatTrainingSessionRepRange(getTrainingSessionPrescription(slot).repRange)} reps`;
+}
+
+function getTrainingSessionTargetRir({
+  setIndex,
+  slot,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
+}: {
+  setIndex: number;
+  slot: TrainingPlanSlot;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
+}): number {
+  return getTrainingBlockExerciseTargetRir({
+    role: slot.role,
+    setIndex,
+    weekNumber: trainingBlockWeekNumber ?? 1,
+    weeklyIntensityTargets: generateWeeklyIntensityTargets({
+      trainingBlockWeeks,
+    }),
+  });
+}
+
+function getTrainingSessionTargetRirLabel({
+  setIndex,
+  slot,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
+}: {
+  setIndex: number;
+  slot: TrainingPlanSlot;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
+}): string {
+  return `Target ${getTrainingSessionTargetRir({
+    setIndex,
+    slot,
+    trainingBlockWeekNumber,
+    trainingBlockWeeks,
+  })} RIR`;
 }
 
 function getTrainingSessionPlannedSetCount(

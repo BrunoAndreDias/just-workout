@@ -29,6 +29,7 @@ function createTrainingSessionGroup(): TrainingSessionExecutionGroup {
       prescriptionLabel: "4 x 6-8",
       roleLabel: "Main",
       setLabel: "Set 1 of 4",
+      targetRirLabel: "Target 3 RIR",
       targetRepsLabel: "Target 6-8 reps",
     },
     rounds: [
@@ -62,8 +63,10 @@ function createTrainingSessionRound(
         prescriptionLabel: "4 x 6-8",
         previousSetLabel: "-",
         reps: "6",
+        rir: "",
         setId: `group-1-bench-set-${roundIndex}`,
         setIndex: roundIndex,
+        targetRir: "3",
         weight: "",
         weightInputMin: "0",
       },
