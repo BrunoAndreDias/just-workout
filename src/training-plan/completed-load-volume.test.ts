@@ -8,6 +8,7 @@ import {
 describe("Completed Load Volume", () => {
   it("counts only Loaded Sets with positive external weight and positive reps", () => {
     expect(isLoadedSet({ reps: 10, setIndex: 1, weight: 20 })).toBe(true);
+    expect(isLoadedSet({ done: false, reps: 10, setIndex: 1, weight: 20 })).toBe(false);
     expect(isLoadedSet({ reps: 10, setIndex: 1, weight: 0 })).toBe(false);
     expect(isLoadedSet({ reps: 0, setIndex: 1, weight: 20 })).toBe(false);
   });
@@ -47,6 +48,48 @@ describe("Completed Load Volume", () => {
       exerciseName: "Pull-Ups",
       hasPartialVolume: false,
       loadedSetCount: 1,
+      movementPattern: "vertical_pull",
+    });
+  });
+
+  it("counts assisted bodyweight load from Session Bodyweight minus assistance", () => {
+    expect(
+      createCompletedLoadVolumeExerciseReport(
+        {
+          exerciseId: "assisted-pull-up",
+          exerciseName: "Assisted Pull-Up",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: -30 }],
+        },
+        { sessionBodyweight: 80 },
+      ),
+    ).toEqual({
+      completedLoadVolume: 400,
+      exerciseId: "assisted-pull-up",
+      exerciseName: "Assisted Pull-Up",
+      hasPartialVolume: false,
+      loadedSetCount: 1,
+      movementPattern: "vertical_pull",
+    });
+  });
+
+  it("does not count assisted bodyweight load below zero", () => {
+    expect(
+      createCompletedLoadVolumeExerciseReport(
+        {
+          exerciseId: "assisted-pull-up",
+          exerciseName: "Assisted Pull-Up",
+          movementPattern: "vertical_pull",
+          sets: [{ reps: 8, setIndex: 1, weight: -90 }],
+        },
+        { sessionBodyweight: 80 },
+      ),
+    ).toEqual({
+      completedLoadVolume: 0,
+      exerciseId: "assisted-pull-up",
+      exerciseName: "Assisted Pull-Up",
+      hasPartialVolume: false,
+      loadedSetCount: 0,
       movementPattern: "vertical_pull",
     });
   });

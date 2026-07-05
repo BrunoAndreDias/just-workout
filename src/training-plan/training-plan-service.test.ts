@@ -80,8 +80,10 @@ describe("trainingPlanService", () => {
         },
       ],
       planId: trainingPlan.id,
-      sessionBodyweight: 80,
-      sessionBodyweightSource: "session_override",
+      sessionBodyweight: {
+        bodyweight: 80,
+        source: "session_override",
+      },
       templateId: firstTemplate.id,
     });
 
@@ -92,6 +94,53 @@ describe("trainingPlanService", () => {
         sessionBodyweightSource: "session_override",
       }),
     ]);
+  });
+
+  it("rejects completed sessions with malformed Session Bodyweight metadata", async () => {
+    const trainingPlan = createTrainingPlan();
+    const firstTemplate = trainingPlan.workoutTemplates[0];
+
+    if (!firstTemplate) {
+      throw new Error("Expected the generated Training Plan to include a Workout Template.");
+    }
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+    });
+
+    await expect(
+      trainingPlanService.completeTrainingSession({
+        entries: [
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 8, setIndex: 1, weight: 0 }],
+          },
+        ],
+        planId: trainingPlan.id,
+        sessionBodyweight: 80 as never,
+        templateId: firstTemplate.id,
+      }),
+    ).rejects.toThrow("Session Bodyweight must include a positive bodyweight and source.");
+
+    await expect(
+      trainingPlanService.completeTrainingSession({
+        entries: [
+          {
+            exerciseId: "pull-ups",
+            exerciseName: "Pull-Ups",
+            movementPattern: "vertical_pull",
+            sets: [{ reps: 8, setIndex: 1, weight: 0 }],
+          },
+        ],
+        planId: trainingPlan.id,
+        sessionBodyweight: { bodyweight: 80 } as never,
+        templateId: firstTemplate.id,
+      }),
+    ).rejects.toThrow("Session Bodyweight must include a positive bodyweight and source.");
+
+    await expect(getTrainingSessionsForPlan(trainingPlan.id)).resolves.toEqual([]);
   });
 });
 

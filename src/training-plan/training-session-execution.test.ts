@@ -41,9 +41,9 @@ describe("Training Session Execution", () => {
       exerciseName: "Flat Dumbbell Bench Press",
       movementPattern: "horizontal_push",
       sets: [
-        { reps: 10, setIndex: 1, weight: 40 },
-        { reps: 9, setIndex: 2, weight: 42.5 },
-        { reps: 0, setIndex: 3, weight: 0 },
+        { done: true, reps: 10, setIndex: 1, weight: 40 },
+        { done: false, reps: 9, setIndex: 2, weight: 42.5 },
+        { done: false, reps: 0, setIndex: 3, weight: 0 },
       ],
     });
   });
@@ -336,7 +336,7 @@ describe("Training Session Execution", () => {
       {
         movementPattern: "horizontal_push",
         movementPatternLabel: "Horizontal Push",
-        volume: 1040,
+        volume: 400,
       },
     ]);
     expect(readModel.entries[0]).toEqual({
@@ -344,9 +344,9 @@ describe("Training Session Execution", () => {
       exerciseName: "Flat Dumbbell Bench Press",
       movementPattern: "horizontal_push",
       sets: [
-        { reps: 10, setIndex: 1, weight: 40 },
-        { reps: 8, setIndex: 2, weight: 40 },
-        { reps: 8, setIndex: 3, weight: 40 },
+        { done: true, reps: 10, setIndex: 1, weight: 40 },
+        { done: false, reps: 8, setIndex: 2, weight: 40 },
+        { done: false, reps: 8, setIndex: 3, weight: 40 },
       ],
     });
     expect(readModel.groups[0]).toMatchObject({
@@ -423,10 +423,39 @@ describe("Training Session Execution", () => {
       weight: "42.5",
     });
     expect(updatedReadModel.entries[0]?.sets[1]).toEqual({
+      done: false,
       reps: 9,
       setIndex: 2,
       weight: 42.5,
     });
+  });
+
+  it("does not count unchecked bodyweight sets in the live Completed Load Volume preview", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+
+    state.drafts[benchKey] = [
+      { done: true, reps: "10", setIndex: 1, weight: "40" },
+      { done: false, reps: "8", setIndex: 2, weight: "40" },
+      { done: false, reps: "8", setIndex: 3, weight: "40" },
+    ];
+
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      previousTrainingSessions: [],
+      sessionBodyweight: 80,
+      state,
+      workoutTemplate,
+    });
+
+    expect(readModel.volumeByMovementPattern).toEqual([
+      {
+        movementPattern: "horizontal_push",
+        movementPatternLabel: "Horizontal Push",
+        volume: 400,
+      },
+    ]);
   });
 
   it("applies completion actions and advances to the next incomplete Superset Group", () => {

@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
+import { parsePositiveBodyweight } from "./bodyweight-input";
 import { hasBodyweightLoadExercise } from "./bodyweight-load";
 import type { WorkoutTemplate } from "./training-plan";
 import { parseTrainingSessionStartChoicePathname, trainingPlanPaths } from "./training-plan-paths";
@@ -96,16 +97,16 @@ export function TrainingSessionStartRoute() {
             onBaselineBodyweightInputChange={setBaselineBodyweightInput}
             onCurrentWeekInputChange={setTrainingWeekBodyweightInput}
             onSaveBaselineBodyweight={() => {
-              const bodyweight = Number(baselineBodyweightInput);
+              const bodyweight = parsePositiveBodyweight(baselineBodyweightInput);
 
-              if (bodyweight > 0) {
+              if (bodyweight !== null) {
                 void saveBaselineBodyweight.mutateAsync(bodyweight);
               }
             }}
             onSaveCurrentWeekBodyweight={() => {
-              const bodyweight = Number(trainingWeekBodyweightInput);
+              const bodyweight = parsePositiveBodyweight(trainingWeekBodyweightInput);
 
-              if (bodyweight > 0) {
+              if (bodyweight !== null) {
                 void saveTrainingWeekBodyweight.mutateAsync(bodyweight);
               }
             }}
@@ -241,11 +242,7 @@ function TrainingSurfaceBodyweightCard({
           </div>
           <small>
             {weekLabel ? `Current Training Week ${weekLabel}. ` : ""}
-            {inheritedBodyweightSource === "baseline"
-              ? "Inherited from Baseline Bodyweight."
-              : inheritedBodyweightSource === "inherited_weekly"
-                ? "Inherited from the last saved Training Week bodyweight."
-                : "Set a Baseline Bodyweight first."}
+            {getInheritedBodyweightSourceLabel(inheritedBodyweightSource)}
           </small>
           <button onClick={onSaveCurrentWeekBodyweight} type="button">
             Save Training Week bodyweight
@@ -254,6 +251,17 @@ function TrainingSurfaceBodyweightCard({
       </div>
     </section>
   );
+}
+
+function getInheritedBodyweightSourceLabel(source: "baseline" | "inherited_weekly" | null): string {
+  switch (source) {
+    case "baseline":
+      return "Inherited from Baseline Bodyweight.";
+    case "inherited_weekly":
+      return "Inherited from the last saved Training Week bodyweight.";
+    default:
+      return "Set a Baseline Bodyweight first.";
+  }
 }
 
 function hasTrainingPlanBodyweightExercises(

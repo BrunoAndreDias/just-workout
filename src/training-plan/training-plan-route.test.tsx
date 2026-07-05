@@ -779,7 +779,7 @@ describe("TrainingPlanRoute", () => {
     expect(screen.getByRole("link", { name: "Start training", current: "page" })).toBeVisible();
   });
 
-  it("lets the Training surface save Baseline Bodyweight, update the current Training Week, and keep a Per-Session Bodyweight Override", async () => {
+  it("lets the Training surface save Baseline Bodyweight and update the current Training Week default", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
 
@@ -816,6 +816,23 @@ describe("TrainingPlanRoute", () => {
         }),
       ).toHaveValue(82);
     });
+  });
+
+  it("uses inherited Training Week bodyweight as the Session default and keeps a Per-Session override", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan();
+    await trainingPlanService.saveBaselineBodyweight({
+      bodyweight: 81,
+      planId: "training-plan-test",
+    });
+    await trainingPlanService.saveTrainingWeekBodyweight({
+      bodyweight: 82,
+      planId: "training-plan-test",
+    });
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions/new"] });
+
+    expect(await screen.findByRole("heading", { name: "Start training" })).toBeVisible();
 
     await user.click(screen.getByRole("link", { name: "Start Full Body A session" }));
 

@@ -361,6 +361,7 @@ export function createTrainingSessionEntries(
       drafts[getTrainingSessionExerciseKey(groupId, slot)] ??
       createDefaultTrainingSessionSetDrafts(slot)
     ).map((draft) => ({
+      done: draft.done,
       reps: Number(draft.reps) || 0,
       setIndex: draft.setIndex,
       weight: Number(draft.weight) || 0,

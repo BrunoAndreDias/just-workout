@@ -171,8 +171,10 @@ describe("trainingPlanRepository", () => {
       ],
       id: "session-inherited",
       plan: trainingPlan,
-      sessionBodyweight: 80,
-      sessionBodyweightSource: "baseline",
+      sessionBodyweight: {
+        bodyweight: 80,
+        source: "baseline",
+      },
       template: firstWorkoutTemplate,
       timestamp: "2026-06-08T10:00:00.000Z",
     });
@@ -187,8 +189,10 @@ describe("trainingPlanRepository", () => {
       ],
       id: "session-override",
       plan: trainingPlan,
-      sessionBodyweight: 78,
-      sessionBodyweightSource: "session_override",
+      sessionBodyweight: {
+        bodyweight: 78,
+        source: "session_override",
+      },
       template: firstWorkoutTemplate,
       timestamp: "2026-06-09T10:00:00.000Z",
     });
@@ -276,8 +280,10 @@ describe("trainingPlanRepository", () => {
       ],
       id: "session-unchanged",
       plan: trainingPlan,
-      sessionBodyweight: 78,
-      sessionBodyweightSource: "session_override",
+      sessionBodyweight: {
+        bodyweight: 78,
+        source: "session_override",
+      },
       template: firstWorkoutTemplate,
       timestamp: "2026-06-11T10:00:00.000Z",
     });

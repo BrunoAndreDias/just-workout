@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { parsePositiveBodyweight } from "./bodyweight-input";
 import {
   formatCompletedDate,
   formatLoadedSetCount,
@@ -293,10 +294,4 @@ function CompletedSessionExerciseRow({
       <td>{formatWeight(exercise.completedLoadVolume)} kg</td>
     </tr>
   );
-}
-
-function parsePositiveBodyweight(value: string): number | null {
-  const parsedValue = Number(value);
-
-  return parsedValue > 0 ? parsedValue : null;
 }

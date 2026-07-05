@@ -12,7 +12,7 @@ import {
 } from "./training-plan-repository";
 import {
   createCompletedTrainingSession,
-  type TrainingSessionBodyweightSource,
+  type TrainingSessionBodyweight,
   type TrainingSessionExerciseEntry,
 } from "./training-session";
 
@@ -24,13 +24,11 @@ async function completeTrainingSession({
   entries,
   planId,
   sessionBodyweight,
-  sessionBodyweightSource,
   templateId,
 }: {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   planId: string;
-  sessionBodyweight?: number | null;
-  sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
+  sessionBodyweight?: TrainingSessionBodyweight | null;
   templateId: string;
 }) {
   const trainingPlan = await getTrainingPlan(planId);
@@ -53,7 +51,6 @@ async function completeTrainingSession({
     id: crypto.randomUUID(),
     plan: trainingPlan,
     sessionBodyweight,
-    sessionBodyweightSource,
     template: workoutTemplate,
     timestamp,
   });

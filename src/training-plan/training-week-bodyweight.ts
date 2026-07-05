@@ -3,6 +3,7 @@ import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession, TrainingSessionBodyweightSource } from "./training-session";
 import { addUtcDays, toDayKey, toUtcDay } from "./training-week-date";
 
+/** Bodyweight saved for a specific Training Week inheritance window. */
 export type TrainingWeekBodyweightUpdate = {
   bodyweight: number;
   updatedAt: string;
@@ -10,8 +11,10 @@ export type TrainingWeekBodyweightUpdate = {
   weekStart: string;
 };
 
+/** Inclusive UTC day-key range for a Training Week. */
 export type TrainingWeekRange = Pick<TrainingWeekBodyweightUpdate, "weekEnd" | "weekStart">;
 
+/** Bodyweight value resolved for a Training Week, including its inheritance source. */
 export type ResolvedTrainingWeekBodyweight = TrainingWeekRange & {
   bodyweight: number | null;
   source: Exclude<
@@ -23,6 +26,7 @@ export type ResolvedTrainingWeekBodyweight = TrainingWeekRange & {
 const DAYS_PER_WEEK = 7;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** Returns the inclusive Training Week range containing the reference date. */
 export function getTrainingWeekRangeForReferenceDate({
   referenceDate,
   trainingPlan,
@@ -45,6 +49,7 @@ export function getTrainingWeekRangeForReferenceDate({
   };
 }
 
+/** Resolves the bodyweight inherited by sessions in the current Training Week. */
 export function resolveTrainingWeekBodyweight({
   referenceDate,
   trainingPlan,
@@ -88,6 +93,7 @@ export function resolveTrainingWeekBodyweight({
   };
 }
 
+/** Adds or replaces the bodyweight update for one Training Week, sorted by week start. */
 export function upsertTrainingWeekBodyweightUpdate({
   bodyweight,
   timestamp,
@@ -115,6 +121,7 @@ export function upsertTrainingWeekBodyweightUpdate({
   );
 }
 
+/** Checks whether a completed Training Session falls inside a Training Week range. */
 export function isTrainingSessionInWeekRange({
   trainingSession,
   weekRange,
@@ -131,6 +138,7 @@ export function isTrainingSessionInWeekRange({
   return completedDay >= weekRange.weekStart && completedDay <= weekRange.weekEnd;
 }
 
+/** Applies a bodyweight correction to a Training Session and recalculates its movement volume. */
 export function updateTrainingSessionBodyweight({
   bodyweight,
   source,

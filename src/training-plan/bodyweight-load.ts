@@ -20,6 +20,7 @@ export function hasBodyweightLoadExercise(
 }
 
 const BODYWEIGHT_LOAD_EXERCISE_IDS = new Set([
+  "assisted-pull-up",
   "assisted-pull-ups",
   "chin-ups",
   "dips-parallel-bars-slight-forward-lean",
@@ -31,4 +32,4 @@ const BODYWEIGHT_LOAD_EXERCISE_IDS = new Set([
   "push-ups",
 ]);
 const BODYWEIGHT_LOAD_EXERCISE_NAME_PATTERN =
-  /\b(assisted pull-ups|chin-ups|dips|glute-ham raises|hanging leg raises|inverted rows|pull-ups|push-ups)\b/i;
+  /\b(assisted pull-ups?|chin-ups|dips|glute-ham raises|hanging leg raises|inverted rows|pull-ups|push-ups)\b/i;

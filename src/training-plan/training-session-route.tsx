@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { CheckCircle2, Save } from "lucide-react";
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from "react";
+import { parsePositiveBodyweight } from "./bodyweight-input";
 import { hasBodyweightLoadExercise } from "./bodyweight-load";
 import type {
   TrainingPlan,
@@ -15,6 +16,7 @@ import {
 import { trainingPlanService } from "./training-plan-service";
 import type {
   TrainingSession,
+  TrainingSessionBodyweight,
   TrainingSessionBodyweightSource,
   TrainingSessionExerciseEntry,
 } from "./training-session";
@@ -261,11 +263,9 @@ function useCompleteTrainingSession({
     mutationFn: ({
       entries,
       sessionBodyweight,
-      sessionBodyweightSource,
     }: {
       entries: ReadonlyArray<TrainingSessionExerciseEntry>;
-      sessionBodyweight?: number | null;
-      sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
+      sessionBodyweight?: TrainingSessionBodyweight | null;
     }) => {
       if (!routeParams || !workoutTemplate) {
         throw new Error("Cannot complete this Training Session yet.");
@@ -275,7 +275,6 @@ function useCompleteTrainingSession({
         entries,
         planId: routeParams.planId,
         sessionBodyweight,
-        sessionBodyweightSource,
         templateId: workoutTemplate.id,
       });
     },
@@ -319,8 +318,7 @@ function useInitializeTrainingSessionExecutionState({
 type TrainingSessionBodyweightState = {
   error: string | null;
   getCompletionInput: () => {
-    sessionBodyweight: number | null;
-    sessionBodyweightSource: TrainingSessionBodyweightSource | null;
+    sessionBodyweight: TrainingSessionBodyweight | null;
   } | null;
   input: string;
   onInputChange: (value: string) => void;
@@ -380,10 +378,13 @@ function useTrainingSessionBodyweight({
       setSessionBodyweightError(null);
 
       return {
-        sessionBodyweight: requiresSessionBodyweight ? sessionBodyweight : null,
-        sessionBodyweightSource: requiresSessionBodyweight
-          ? (sessionBodyweightSource ?? "session_override")
-          : null,
+        sessionBodyweight:
+          requiresSessionBodyweight && sessionBodyweight !== null
+            ? {
+                bodyweight: sessionBodyweight,
+                source: sessionBodyweightSource ?? "session_override",
+              }
+            : null,
       };
     },
     input: sessionBodyweightInput,
@@ -466,12 +467,6 @@ function hasWorkoutTemplateBodyweightExercises(workoutTemplate: WorkoutTemplate)
       })),
     ),
   );
-}
-
-function parsePositiveBodyweight(value: string): number | null {
-  const parsedValue = Number(value);
-
-  return parsedValue > 0 ? parsedValue : null;
 }
 
 function getTrainingSessionWorkoutTemplate({

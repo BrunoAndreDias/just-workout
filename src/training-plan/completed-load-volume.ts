@@ -70,6 +70,10 @@ export function createCompletedLoadVolumeExerciseReport(
   let loadedSetCount = 0;
 
   for (const set of exercise.sets) {
+    if (!isCompletedSet(set)) {
+      continue;
+    }
+
     if (
       isMissingBodyweightVolume({ exercise, sessionBodyweight: options.sessionBodyweight, set })
     ) {
@@ -102,7 +106,7 @@ export function createCompletedLoadVolumeExerciseReport(
 }
 
 export function isLoadedSet(set: TrainingSessionSetEntry): boolean {
-  return set.weight > 0 && set.reps > 0;
+  return isCompletedSet(set) && set.weight > 0 && set.reps > 0;
 }
 
 function getCompletedSetEffectiveLoad({
@@ -134,7 +138,16 @@ function isMissingBodyweightVolume({
   sessionBodyweight: number | null | undefined;
   set: TrainingSessionSetEntry;
 }): boolean {
-  return isBodyweightLoadExercise(exercise) && sessionBodyweight == null && set.reps > 0;
+  return (
+    isBodyweightLoadExercise(exercise) &&
+    sessionBodyweight == null &&
+    isCompletedSet(set) &&
+    set.reps > 0
+  );
+}
+
+function isCompletedSet(set: TrainingSessionSetEntry): boolean {
+  return set.done !== false;
 }
 
 function addExerciseVolumeToMovementPattern(
