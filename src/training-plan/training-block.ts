@@ -257,6 +257,9 @@ export function previewTrainingBlockExerciseRotations({
   };
 }
 
+/**
+ * Creates a rotation preview that keeps every current exercise for users who skip the proposal.
+ */
 export function createSkippedTrainingBlockExerciseRotationPreview({
   trainingPlan,
 }: {

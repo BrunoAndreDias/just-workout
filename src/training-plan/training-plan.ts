@@ -54,8 +54,11 @@ export type WorkoutTemplate = {
   supersetGroups: ReadonlyArray<SupersetGroup>;
 };
 
+/** Snapshot of the previous block state kept until undo is consumed or expires. */
 export type UndoableTrainingBlockTransition = {
+  /** Timestamp when the next Training Block was accepted. */
   acceptedAt: string;
+  /** Plan fields restored if the user undoes the accepted Training Block. */
   previousState: {
     generatedAt: string;
     startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;

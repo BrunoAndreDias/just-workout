@@ -42,27 +42,28 @@ describe("Training Block transition", () => {
   });
 
   it("creates and accepts a complete next Training Block transition behind one interface", () => {
+    const trainingPlan = createTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
     const preview = createNextTrainingBlockTransitionPreview({
       availableLoadIncrement: 2.5,
-      trainingPlan: createTrainingPlan({
-        mainCompoundRotationPools: [
-          {
-            exerciseIds: ["incline-dumbbell-bench-press"],
-            movementPattern: "horizontal_push",
-          },
-        ],
-        trainingBlock: {
-          cycleNumber: 1,
-          endDate: "2026-07-18",
-          id: "training-block-1",
-          planId: "training-plan-1",
-          previousBlockId: null,
-          startDate: "2026-06-07",
-          status: "completed",
-          weekNumber: 6,
-        },
-        trainingFrequencyDaysPerWeek: 2,
-      }),
+      trainingPlan,
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
@@ -76,6 +77,7 @@ describe("Training Block transition", () => {
       userEditedLoad: 92.5,
     });
     const nextPlan = acceptNextTrainingBlockTransition({
+      currentTrainingPlan: trainingPlan,
       preview,
       suggestions: editedSuggestions,
     });
@@ -146,7 +148,7 @@ describe("Training Block transition", () => {
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
-    if (!transition || transition.kind !== "review" || !transition.accept) {
+    if (transition?.kind !== "review" || !transition.accept) {
       throw new Error("Expected an acceptable next Training Block transition.");
     }
 
@@ -155,35 +157,40 @@ describe("Training Block transition", () => {
       suggestions: transition.preview.loadSuggestions,
       userEditedLoad: 92.5,
     });
-    const savedTrainingPlan = await transition.accept({ suggestions: editedSuggestions });
+    const savedTrainingPlan = await transition.accept({
+      reviewMode: "accept_proposal",
+      suggestions: editedSuggestions,
+    });
 
     expect(savedTrainingPlan.id).toBe("training-plan-1");
     expect(events).toEqual(["save:training-plan-1:92.5", "after-save:training-plan-1"]);
   });
 
   it("keeps the same Active Training Plan identity when accepting the next Training Block", () => {
+    const trainingPlan = createTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
     const transition = createNextTrainingBlockTransitionWorkflow({
-      trainingPlan: createTrainingPlan({
-        trainingBlock: {
-          cycleNumber: 1,
-          endDate: "2026-07-18",
-          id: "training-block-1",
-          planId: "training-plan-1",
-          previousBlockId: null,
-          startDate: "2026-06-07",
-          status: "active",
-          weekNumber: 6,
-        },
-        trainingFrequencyDaysPerWeek: 2,
-      }),
+      trainingPlan,
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
-    if (!transition || transition.kind !== "review") {
+    if (transition?.kind !== "review") {
       throw new Error("Expected a next Training Block transition.");
     }
 
     const acceptedPlan = acceptNextTrainingBlockTransition({
+      currentTrainingPlan: trainingPlan,
       preview: transition.preview,
       suggestions: transition.preview.loadSuggestions,
     });
@@ -224,7 +231,7 @@ describe("Training Block transition", () => {
       trainingSessions: createCompletedTrainingBlockSessions(),
     });
 
-    if (!transition || transition.kind !== "review") {
+    if (transition?.kind !== "review") {
       throw new Error("Expected a reviewable next Training Block transition.");
     }
 
@@ -258,6 +265,11 @@ describe("Training Block transition", () => {
     expect(skippedPlan.trainingBlock).toMatchObject({
       cycleNumber: 2,
       previousBlockId: "training-block-1",
+      weekNumber: 1,
+    });
+    expect(transition.skipRotationPreview.weeklyIntensityTargets[0]).toEqual({
+      maxTargetRir: 3,
+      minTargetRir: 3,
       weekNumber: 1,
     });
   });

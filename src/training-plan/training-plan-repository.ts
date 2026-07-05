@@ -89,6 +89,7 @@ export async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan): Prom
   return normalizedTrainingPlan;
 }
 
+/** Restores the saved pre-acceptance Training Block state while undo is still available. */
 export async function undoAcceptedTrainingBlockTransition({
   planId,
   timestamp,
@@ -126,6 +127,7 @@ export async function undoAcceptedTrainingBlockTransition({
   return restoredTrainingPlan;
 }
 
+/** Removes the undo marker once the first Training Session in the accepted block has started. */
 export async function clearUndoableTrainingBlockTransition({
   planId,
   timestamp,

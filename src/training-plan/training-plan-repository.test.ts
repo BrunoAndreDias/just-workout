@@ -130,6 +130,12 @@ describe("trainingPlanRepository", () => {
       trainingPlans: [activeTrainingPlan],
     });
 
+    const activeTrainingBlock = activeTrainingPlan.trainingBlock;
+
+    if (!activeTrainingBlock) {
+      throw new Error("Expected the fixture to include an active Training Block.");
+    }
+
     const acceptedTrainingPlan: TrainingPlan = {
       ...activeTrainingPlan,
       startingLoadSuggestions: [
@@ -160,7 +166,7 @@ describe("trainingPlanRepository", () => {
         previousState: {
           generatedAt: activeTrainingPlan.generatedAt,
           startingLoadSuggestions: [],
-          trainingBlock: activeTrainingPlan.trainingBlock!,
+          trainingBlock: activeTrainingBlock,
           workoutTemplates: activeTrainingPlan.workoutTemplates,
         },
       },

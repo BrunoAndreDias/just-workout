@@ -12,26 +12,32 @@ import type { TrainingSession } from "./training-session";
 
 const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 
+/** Inputs required to review a candidate next Training Block before it is accepted. */
 export type CreateNextTrainingBlockTransitionPreviewInput = {
   availableLoadIncrement?: number;
   idFactory?: (baseId: string) => string;
+  /** Uses a caller-provided exercise rotation result instead of generating a new proposal. */
   rotationPreview?: TrainingBlockExerciseRotationPreview;
   timestamp?: string;
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 };
 
+/** Inputs for applying a reviewed next Training Block to the existing Training Plan. */
 export type AcceptNextTrainingBlockTransitionInput = {
-  currentTrainingPlan?: TrainingPlan;
+  /** The current plan state to keep available for undo after the block is accepted. */
+  currentTrainingPlan: TrainingPlan;
   preview: NextTrainingBlockPreview;
   suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
 };
 
+/** Dependencies for building the Active Training Plan next-block review workflow. */
 export type CreateNextTrainingBlockTransitionWorkflowInput = {
   availableLoadIncrement?: number;
   idFactory?: (baseId: string) => string;
   onAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<void> | void;
   saveAcceptedTrainingPlan?: (trainingPlan: TrainingPlan) => Promise<TrainingPlan>;
+  /** Restores the previous block state while undo remains available. */
   undoAcceptedTrainingBlockTransition?: (planId: string) => Promise<TrainingPlan>;
   timestamp?: string;
   trainingPlan: TrainingPlan;
@@ -44,9 +50,13 @@ export type EditNextTrainingBlockTransitionLoadSuggestionInput = {
   userEditedLoad: number;
 };
 
+/** Choice the user makes when creating the next Training Block from the review. */
+export type NextTrainingBlockTransitionReviewMode = "accept_proposal" | "skip_rotation";
+
+/** Review-state workflow shown when the current block can create its successor. */
 export type NextTrainingBlockTransitionReviewWorkflow = {
   accept?: (input: {
-    reviewMode?: "accept_proposal" | "skip_rotation";
+    reviewMode: NextTrainingBlockTransitionReviewMode;
     suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   }) => Promise<TrainingPlan>;
   editLoadSuggestion: (
@@ -57,15 +67,24 @@ export type NextTrainingBlockTransitionReviewWorkflow = {
   skipRotationPreview: NextTrainingBlockPreview;
 };
 
+/** Accepted-state workflow shown while the user can still undo the next-block transition. */
 export type AcceptedTrainingBlockTransitionWorkflow = {
   kind: "accepted";
-  undo?: () => Promise<TrainingPlan>;
+  undo: () => Promise<TrainingPlan>;
 };
 
+/** Accepted-state marker used when the transition exists but undo cannot run in this context. */
+export type AcceptedTrainingBlockTransitionWithoutUndoWorkflow = {
+  kind: "accepted_without_undo";
+};
+
+/** Union of next-block transition states available to the Active Training Plan UI. */
 export type NextTrainingBlockTransitionWorkflow =
   | AcceptedTrainingBlockTransitionWorkflow
+  | AcceptedTrainingBlockTransitionWithoutUndoWorkflow
   | NextTrainingBlockTransitionReviewWorkflow;
 
+/** Creates the next-block review, accepted undo, or no workflow for the current plan state. */
 export function createNextTrainingBlockTransitionWorkflow({
   availableLoadIncrement,
   idFactory,
@@ -77,12 +96,12 @@ export function createNextTrainingBlockTransitionWorkflow({
   trainingSessions,
 }: CreateNextTrainingBlockTransitionWorkflowInput): NextTrainingBlockTransitionWorkflow | null {
   if (trainingPlan.undoableTrainingBlockTransition) {
-    return {
-      kind: "accepted",
-      undo: undoAcceptedTrainingBlockTransition
-        ? () => undoAcceptedTrainingBlockTransition(trainingPlan.id)
-        : undefined,
-    };
+    return undoAcceptedTrainingBlockTransition
+      ? {
+          kind: "accepted",
+          undo: () => undoAcceptedTrainingBlockTransition(trainingPlan.id),
+        }
+      : { kind: "accepted_without_undo" };
   }
 
   const preview = createNextTrainingBlockTransitionPreview({
@@ -126,7 +145,7 @@ export function createNextTrainingBlockTransitionWorkflow({
   }
 
   return {
-    accept: async ({ reviewMode = "accept_proposal", suggestions }) => {
+    accept: async ({ reviewMode, suggestions }) => {
       const nextTrainingPlan = acceptNextTrainingBlockTransition({
         currentTrainingPlan: trainingPlan,
         preview: reviewMode === "skip_rotation" ? skipRotationPreview : preview,
@@ -145,6 +164,7 @@ export function createNextTrainingBlockTransitionWorkflow({
   };
 }
 
+/** Builds the preview data for a next Training Block once the current block is complete. */
 export function createNextTrainingBlockTransitionPreview({
   availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
   idFactory = createNextId,
@@ -181,6 +201,7 @@ export function createNextTrainingBlockTransitionPreview({
   });
 }
 
+/** Applies reviewed load suggestions and records undo state for the accepted next block. */
 export function acceptNextTrainingBlockTransition({
   currentTrainingPlan,
   preview,
@@ -195,7 +216,7 @@ export function acceptNextTrainingBlockTransition({
     },
   });
 
-  if (!currentTrainingPlan?.trainingBlock) {
+  if (!currentTrainingPlan.trainingBlock) {
     return acceptedTrainingPlan;
   }
 

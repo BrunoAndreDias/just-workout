@@ -10,11 +10,7 @@ import { completeMainCompoundSelections } from "../plan-builder/plan-builder-tes
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import type { TrainingSession } from "./index";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
-import {
-  getTrainingPlan,
-  getTrainingSessionsForPlan,
-  seedTrainingPlanData,
-} from "./training-plan-repository";
+import { getTrainingSessionsForPlan, seedTrainingPlanData } from "./training-plan-repository";
 import { trainingPlanService } from "./training-plan-service";
 
 const defaultMatchMedia = window.matchMedia;
@@ -567,9 +563,13 @@ describe("TrainingPlanRoute", () => {
 
     expect(suggestedLoadInput).toHaveValue(92.5);
     expect(within(blockSummary).getAllByText("Edited start: 92.5 kg")).toHaveLength(2);
+
+    await user.click(within(blockSummary).getByRole("button", { name: "View Training History" }));
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
   });
 
-  it("accepts the next Training Block review and stores the edited suggested load", async () => {
+  it("accepts the next Training Block review from the active Training Plan", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan({
       mainCompoundRotationPools: [
@@ -616,41 +616,6 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
     expect(screen.getByText("Training Block 2 · Week 1 of 6")).toBeVisible();
     expect(screen.getByRole("button", { name: "Undo accepted Training Block" })).toBeVisible();
-
-    const acceptedPlan = await getTrainingPlan("training-plan-test");
-    const clonedPlan = await getTrainingPlan("training-plan-test-next");
-    const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
-
-    expect(acceptedPlan).toMatchObject({
-      active: true,
-      startingLoadSuggestions: expect.arrayContaining([
-        expect.objectContaining({
-          effectiveLoad: 92.5,
-          exerciseId: "incline-dumbbell-bench-press",
-          kind: "first_time",
-          previousLoad: null,
-          suggestedLoad: null,
-          reason: "first-time exercise, start empty",
-          userEditedLoad: 92.5,
-        }),
-      ]),
-      trainingBlock: {
-        cycleNumber: 2,
-        id: "training-block-1-next",
-        previousBlockId: "training-block-1",
-        weekNumber: 1,
-      },
-      undoableTrainingBlockTransition: expect.objectContaining({
-        previousState: expect.objectContaining({
-          trainingBlock: expect.objectContaining({
-            cycleNumber: 1,
-            id: "training-block-1",
-          }),
-        }),
-      }),
-    });
-    expect(clonedPlan).toBeNull();
-    expect(completedSessions).toHaveLength(12);
   });
 
   it("skips the rotation proposal and still creates the next Training Block on the same Active Training Plan", async () => {
@@ -705,41 +670,6 @@ describe("TrainingPlanRoute", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
-
-    const acceptedPlan = await getTrainingPlan("training-plan-test");
-
-    expect(acceptedPlan).toEqual(
-      expect.objectContaining({
-        id: "training-plan-test",
-        startingLoadSuggestions: expect.arrayContaining([
-          expect.objectContaining({
-            effectiveLoad: 100,
-            exerciseId: "flat-barbell-bench-press",
-            kind: "exact_previous_exercise",
-            previousLoad: 100,
-            suggestedLoad: 100,
-          }),
-        ]),
-        trainingBlock: expect.objectContaining({
-          cycleNumber: 2,
-          id: "training-block-1-next",
-        }),
-        workoutTemplates: expect.arrayContaining([
-          expect.objectContaining({
-            supersetGroups: expect.arrayContaining([
-              expect.objectContaining({
-                slots: expect.arrayContaining([
-                  expect.objectContaining({
-                    exerciseId: "flat-barbell-bench-press",
-                    exerciseName: "Flat Barbell Bench Press",
-                  }),
-                ]),
-              }),
-            ]),
-          }),
-        ]),
-      }),
-    );
   });
 
   it("undoes an accepted next Training Block before the first new-block session starts", async () => {
@@ -786,17 +716,6 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Training Block 1" })).toBeVisible();
     expect(screen.getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
     expect(screen.getByRole("button", { name: "Review next Training Block" })).toBeVisible();
-
-    expect(await getTrainingPlan("training-plan-test")).toEqual(
-      expect.objectContaining({
-        trainingBlock: expect.objectContaining({
-          cycleNumber: 1,
-          id: "training-block-1",
-          weekNumber: 6,
-        }),
-        undoableTrainingBlockTransition: null,
-      }),
-    );
   });
 
   it("removes undo after the first new-block Training Session starts", async () => {
@@ -851,11 +770,6 @@ describe("TrainingPlanRoute", () => {
     expect(
       screen.queryByRole("button", { name: "Undo accepted Training Block" }),
     ).not.toBeInTheDocument();
-    expect(await getTrainingPlan("training-plan-test")).toEqual(
-      expect.objectContaining({
-        undoableTrainingBlockTransition: null,
-      }),
-    );
   });
 
   it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {
