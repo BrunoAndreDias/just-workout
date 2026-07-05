@@ -1,3 +1,8 @@
+import { getAvoidedExerciseIds } from "../plan-builder/exercise-selection-preferences";
+import {
+  getIsolationExercisePreferenceExerciseIds,
+  normalizeIsolationExercisePreferences,
+} from "../plan-builder/isolation-exercise-preferences";
 import {
   getExerciseCatalogExercise,
   getExerciseCatalogExercisesByMovementPattern,
@@ -27,26 +32,38 @@ export type GenerateNextTrainingBlockInput = {
   startDate: string;
 };
 
-export type MainCompoundRotationPreviewItem = {
+export type TrainingBlockExerciseRotationPreviewItem = {
+  groupId: string;
   movementPattern: MovementPatternId;
   nextExerciseId: string;
   nextExerciseName: string;
   previousExerciseId: string;
   previousExerciseName: string;
   reason: string;
+  role: TrainingBlockExerciseRole;
+  slotIndex: number;
+  slotLabel: string;
+  templateId: string;
+  templateLabel: string;
 };
 
-export type MainCompoundKeptPreviewItem = {
+export type TrainingBlockKeptExercisePreviewItem = {
   exerciseId: string;
   exerciseName: string;
+  groupId: string;
   movementPattern: MovementPatternId;
   reason: string;
+  role: TrainingBlockExerciseRole;
+  slotIndex: number;
+  slotLabel: string;
+  templateId: string;
+  templateLabel: string;
 };
 
-export type MainCompoundRotationPreview = {
-  kept: ReadonlyArray<MainCompoundKeptPreviewItem>;
+export type TrainingBlockExerciseRotationPreview = {
+  kept: ReadonlyArray<TrainingBlockKeptExercisePreviewItem>;
   requiredMovementCoverage: RequiredMovementCoverageResult;
-  rotated: ReadonlyArray<MainCompoundRotationPreviewItem>;
+  rotated: ReadonlyArray<TrainingBlockExerciseRotationPreviewItem>;
 };
 
 export type RequiredMovementCoverageResult = {
@@ -76,6 +93,25 @@ export type WeeklyIntensityTarget = {
 export type TrainingBlockExerciseRole =
   TrainingPlan["workoutTemplates"][number]["supersetGroups"][number]["slots"][number]["role"];
 
+type TrainingPlanSlot =
+  TrainingPlan["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
+
+type TemplateSlotContext = {
+  groupId: string;
+  slot: TrainingPlanSlot;
+  slotIndex: number;
+  slotLabel: string;
+  templateId: string;
+  templateLabel: string;
+};
+
+type RotationProposalOption = {
+  nextExerciseId: string;
+  nextExerciseName: string;
+  reason: string;
+  type: "keep" | "rotate";
+};
+
 export type TrainingBlockProgressionSet = {
   reps: number;
   rir: number;
@@ -89,7 +125,7 @@ export type TrainingBlockProgressionDecision = {
 export type NextTrainingBlockPreview = {
   loadSuggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   nextTrainingPlan: TrainingPlan;
-  rotation: MainCompoundRotationPreview;
+  rotation: TrainingBlockExerciseRotationPreview;
   trainingBlock: TrainingBlock;
   weeklyIntensityTargets: ReadonlyArray<WeeklyIntensityTarget>;
 };
@@ -141,96 +177,76 @@ function hasCompletedTrainingBlock(completedWeeks: ReadonlyArray<number>): boole
   );
 }
 
-export function previewMainCompoundRotations({
+export function previewTrainingBlockExerciseRotations({
+  sessions = [],
   trainingPlan,
 }: {
+  sessions?: ReadonlyArray<TrainingSession>;
   trainingPlan: TrainingPlan;
-}): MainCompoundRotationPreview {
+}): TrainingBlockExerciseRotationPreview {
   const poolsByMovementPattern = new Map(
     trainingPlan.mainCompoundRotationPools.map((pool) => [pool.movementPattern, pool]),
   );
-  const kept: MainCompoundKeptPreviewItem[] = [];
-  const rotated: MainCompoundRotationPreviewItem[] = [];
-  const seenExerciseIds = new Set<string>();
+  const avoidedExerciseIds = getAvoidedExerciseIds(trainingPlan.exerciseSelectionPreferences);
+  const isolationExercisePreferences = normalizeIsolationExercisePreferences(
+    trainingPlan.isolationExercisePreferences,
+  );
+  const performedExerciseIds = getPerformedExerciseIds({
+    sessions,
+    trainingPlan,
+  });
+  const previousBlockExerciseIds = getPreviousBlockExerciseIds({
+    sessions,
+    trainingPlan,
+  });
+  const kept: TrainingBlockKeptExercisePreviewItem[] = [];
+  const rotated: TrainingBlockExerciseRotationPreviewItem[] = [];
   const proposedMovementPatterns = new Set<MovementPatternId>();
-  const usedNextExerciseIds = new Set<string>();
 
-  for (const slot of trainingPlan.workoutTemplates
-    .flatMap((template) => template.supersetGroups)
-    .flatMap((group) => group.slots)) {
-    proposedMovementPatterns.add(slot.movementPattern);
+  for (const workoutTemplate of trainingPlan.workoutTemplates) {
+    const templateAssignments = assignTemplateRotationOptions({
+      avoidedExerciseIds,
+      isolationExercisePreferences,
+      performedExerciseIds,
+      poolsByMovementPattern,
+      previousBlockExerciseIds,
+      workoutTemplate,
+    });
 
-    if (seenExerciseIds.has(slot.exerciseId)) {
-      continue;
-    }
+    for (const assignment of templateAssignments) {
+      proposedMovementPatterns.add(assignment.slot.movementPattern);
 
-    seenExerciseIds.add(slot.exerciseId);
-
-    if (slot.role !== "main_compound") {
-      const nextExercise = getCompatibleRotationExercise({
-        excludedExerciseIds: usedNextExerciseIds,
-        slot,
-      });
-
-      if (!nextExercise) {
+      if (assignment.option.type === "keep") {
         kept.push({
-          exerciseId: slot.exerciseId,
-          exerciseName: slot.exerciseName,
-          movementPattern: slot.movementPattern,
-          reason: "no compatible role and target muscle replacement",
+          exerciseId: assignment.slot.exerciseId,
+          exerciseName: assignment.slot.exerciseName,
+          groupId: assignment.groupId,
+          movementPattern: assignment.slot.movementPattern,
+          reason: assignment.option.reason,
+          role: assignment.slot.role,
+          slotIndex: assignment.slotIndex,
+          slotLabel: assignment.slotLabel,
+          templateId: assignment.templateId,
+          templateLabel: assignment.templateLabel,
         });
         continue;
       }
 
-      usedNextExerciseIds.add(nextExercise.id);
       rotated.push({
-        movementPattern: slot.movementPattern,
-        nextExerciseId: nextExercise.id,
-        nextExerciseName: nextExercise.name,
-        previousExerciseId: slot.exerciseId,
-        previousExerciseName: slot.exerciseName,
-        reason: "same role, Movement Pattern, and target muscle",
+        groupId: assignment.groupId,
+        movementPattern: assignment.slot.movementPattern,
+        nextExerciseId: assignment.option.nextExerciseId,
+        nextExerciseName: assignment.option.nextExerciseName,
+        previousExerciseId: assignment.slot.exerciseId,
+        previousExerciseName: assignment.slot.exerciseName,
+        reason: assignment.option.reason,
+        role: assignment.slot.role,
+        slotIndex: assignment.slotIndex,
+        slotLabel: assignment.slotLabel,
+        templateId: assignment.templateId,
+        templateLabel: assignment.templateLabel,
       });
-      continue;
     }
-
-    if (!isCompoundCapableMovementPattern(slot.movementPattern)) {
-      kept.push({
-        exerciseId: slot.exerciseId,
-        exerciseName: slot.exerciseName,
-        movementPattern: slot.movementPattern,
-        reason: "no valid rotation pool replacement",
-      });
-      continue;
-    }
-
-    const rotationPool = poolsByMovementPattern.get(slot.movementPattern);
-    const nextExerciseId = rotationPool?.exerciseIds[0];
-    const nextExercise = nextExerciseId ? getExerciseCatalogExercise(nextExerciseId) : undefined;
-
-    if (
-      !nextExercise ||
-      nextExercise.movementPattern !== slot.movementPattern ||
-      usedNextExerciseIds.has(nextExercise.id)
-    ) {
-      kept.push({
-        exerciseId: slot.exerciseId,
-        exerciseName: slot.exerciseName,
-        movementPattern: slot.movementPattern,
-        reason: "no valid rotation pool replacement",
-      });
-      continue;
-    }
-
-    usedNextExerciseIds.add(nextExercise.id);
-    rotated.push({
-      movementPattern: slot.movementPattern,
-      nextExerciseId: nextExercise.id,
-      nextExerciseName: nextExercise.name,
-      previousExerciseId: slot.exerciseId,
-      previousExerciseName: slot.exerciseName,
-      reason: "same Movement Pattern rotation pool",
-    });
   }
 
   const missingPatterns = REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS.filter(
@@ -247,14 +263,14 @@ export function previewMainCompoundRotations({
   };
 }
 
-export function applyConfirmedMainCompoundRotations({
+export function applyConfirmedTrainingBlockExerciseRotations({
   id,
   preview,
   timestamp,
   trainingPlan,
 }: {
   id: string;
-  preview: MainCompoundRotationPreview;
+  preview: TrainingBlockExerciseRotationPreview;
   timestamp: string;
   trainingPlan: TrainingPlan;
 }): TrainingPlan {
@@ -264,8 +280,8 @@ export function applyConfirmedMainCompoundRotations({
     );
   }
 
-  const rotationByPreviousExerciseId = new Map(
-    preview.rotated.map((rotation) => [rotation.previousExerciseId, rotation]),
+  const rotationBySlotKey = new Map(
+    preview.rotated.map((rotation) => [getTemplateSlotKey(rotation), rotation]),
   );
 
   return {
@@ -277,17 +293,27 @@ export function applyConfirmedMainCompoundRotations({
       ...template,
       supersetGroups: template.supersetGroups.map((group) => ({
         ...group,
-        slots: group.slots.map((slot) => {
-          const rotation = rotationByPreviousExerciseId.get(slot.exerciseId);
+        slots: group.slots.map((slot, slotIndex) => {
+          const rotation = rotationBySlotKey.get(
+            getTemplateSlotKey({
+              groupId: group.id,
+              slotIndex,
+              templateId: template.id,
+            }),
+          );
 
           if (!rotation) {
             return slot;
           }
 
+          const nextExercise = getExerciseCatalogExercise(rotation.nextExerciseId);
+
           return {
             ...slot,
             exerciseId: rotation.nextExerciseId,
             exerciseName: rotation.nextExerciseName,
+            movementPattern: nextExercise?.movementPattern ?? slot.movementPattern,
+            targetMuscles: nextExercise?.primaryMuscleGroups ?? slot.targetMuscles,
           };
         }),
       })),
@@ -316,8 +342,8 @@ export function generateNextTrainingBlockPreview({
   timestamp: string;
   trainingPlan: TrainingPlan;
 }): NextTrainingBlockPreview {
-  const rotation = previewMainCompoundRotations({ trainingPlan });
-  const nextTrainingPlan = applyConfirmedMainCompoundRotations({
+  const rotation = previewTrainingBlockExerciseRotations({ sessions, trainingPlan });
+  const nextTrainingPlan = applyConfirmedTrainingBlockExerciseRotations({
     id: nextPlanId,
     preview: rotation,
     timestamp,
@@ -691,42 +717,514 @@ function isBodyweightLoadTarget({
   return isBodyweightLoadExercise({ exerciseId, exerciseName });
 }
 
-function getCompatibleRotationExercise({
-  excludedExerciseIds,
-  slot,
+function assignTemplateRotationOptions({
+  avoidedExerciseIds,
+  isolationExercisePreferences,
+  performedExerciseIds,
+  poolsByMovementPattern,
+  previousBlockExerciseIds,
+  workoutTemplate,
 }: {
-  excludedExerciseIds: ReadonlySet<string>;
-  slot: TrainingPlan["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
-}) {
-  const catalogRole = getCatalogRoleForTrainingPlanRole(slot.role);
+  avoidedExerciseIds: ReadonlySet<string>;
+  isolationExercisePreferences: ReturnType<typeof normalizeIsolationExercisePreferences>;
+  performedExerciseIds: ReadonlySet<string>;
+  poolsByMovementPattern: ReadonlyMap<
+    MovementPatternId,
+    TrainingPlan["mainCompoundRotationPools"][number]
+  >;
+  previousBlockExerciseIds: ReadonlySet<string>;
+  workoutTemplate: TrainingPlan["workoutTemplates"][number];
+}): ReadonlyArray<TemplateSlotContext & { option: RotationProposalOption }> {
+  const slotContexts = workoutTemplate.supersetGroups.flatMap((group) =>
+    group.slots.map(
+      (slot, slotIndex): TemplateSlotContext => ({
+        groupId: group.id,
+        slot,
+        slotIndex,
+        slotLabel: slot.slotLabel,
+        templateId: workoutTemplate.id,
+        templateLabel: workoutTemplate.label,
+      }),
+    ),
+  );
+  const slotProposals = slotContexts.map((slotContext, originalIndex) => ({
+    options: buildSlotRotationOptions({
+      avoidedExerciseIds,
+      isolationExercisePreferences,
+      performedExerciseIds,
+      poolsByMovementPattern,
+      previousBlockExerciseIds,
+      slot: slotContext.slot,
+    }),
+    originalIndex,
+  }));
+  const resolvedOptions = chooseTemplateRotationOptions({
+    slotProposals: [...slotProposals].sort(
+      (firstProposal, secondProposal) =>
+        firstProposal.options.length - secondProposal.options.length ||
+        firstProposal.originalIndex - secondProposal.originalIndex,
+    ),
+  });
 
-  if (!catalogRole) {
-    return null;
+  if (!resolvedOptions) {
+    throw new Error("Cannot resolve a unique Training Block rotation proposal for this template.");
   }
 
-  return (
-    getExerciseCatalogExercisesByMovementPattern(slot.movementPattern).find(
-      (exercise) =>
-        exercise.id !== slot.exerciseId &&
-        exercise.role === catalogRole &&
-        !excludedExerciseIds.has(exercise.id) &&
-        slot.targetMuscles.every((targetMuscle) =>
-          exercise.primaryMuscleGroups.includes(targetMuscle),
-        ),
-    ) ?? null
-  );
+  return slotContexts.map((slotContext, originalIndex) => {
+    const option = resolvedOptions.get(originalIndex);
+
+    if (!option) {
+      throw new Error("Expected a rotation proposal option for every template slot.");
+    }
+
+    return {
+      ...slotContext,
+      option,
+    };
+  });
 }
 
-function getCatalogRoleForTrainingPlanRole(
-  role: TrainingPlan["workoutTemplates"][number]["supersetGroups"][number]["slots"][number]["role"],
-) {
-  if (role === "secondary_compound") {
+function getCatalogRoleForTrainingPlanRole(role: TrainingPlanSlot["role"]) {
+  if (role === "main_compound" || role === "secondary_compound") {
     return "compound";
   }
 
-  if (role === "isolation") {
+  if (role === "isolation" || role === "abs") {
     return "isolation";
   }
 
   return null;
+}
+
+function chooseTemplateRotationOptions({
+  slotProposals,
+}: {
+  slotProposals: ReadonlyArray<{
+    options: ReadonlyArray<RotationProposalOption>;
+    originalIndex: number;
+  }>;
+}): Map<number, RotationProposalOption> | null {
+  const chosenOptions = new Map<number, RotationProposalOption>();
+  const usedExerciseIds = new Set<string>();
+
+  function chooseOption(proposalIndex: number): boolean {
+    if (proposalIndex >= slotProposals.length) {
+      return true;
+    }
+
+    const slotProposal = slotProposals[proposalIndex];
+
+    if (!slotProposal) {
+      return true;
+    }
+
+    for (const option of slotProposal.options) {
+      if (usedExerciseIds.has(option.nextExerciseId)) {
+        continue;
+      }
+
+      usedExerciseIds.add(option.nextExerciseId);
+      chosenOptions.set(slotProposal.originalIndex, option);
+
+      if (chooseOption(proposalIndex + 1)) {
+        return true;
+      }
+
+      chosenOptions.delete(slotProposal.originalIndex);
+      usedExerciseIds.delete(option.nextExerciseId);
+    }
+
+    return false;
+  }
+
+  return chooseOption(0) ? new Map(chosenOptions) : null;
+}
+
+function buildSlotRotationOptions({
+  avoidedExerciseIds,
+  isolationExercisePreferences,
+  performedExerciseIds,
+  poolsByMovementPattern,
+  previousBlockExerciseIds,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  isolationExercisePreferences: ReturnType<typeof normalizeIsolationExercisePreferences>;
+  performedExerciseIds: ReadonlySet<string>;
+  poolsByMovementPattern: ReadonlyMap<
+    MovementPatternId,
+    TrainingPlan["mainCompoundRotationPools"][number]
+  >;
+  previousBlockExerciseIds: ReadonlySet<string>;
+  slot: TrainingPlanSlot;
+}): ReadonlyArray<RotationProposalOption> {
+  const replacementOptions = getRotationExerciseChoices({
+    avoidedExerciseIds,
+    isolationExercisePreferences,
+    performedExerciseIds,
+    poolsByMovementPattern,
+    previousBlockExerciseIds,
+    slot,
+  }).map(
+    (choice): RotationProposalOption => ({
+      nextExerciseId: choice.id,
+      nextExerciseName: choice.name,
+      reason: choice.reason,
+      type: "rotate",
+    }),
+  );
+
+  if (replacementOptions.length === 0) {
+    return [
+      {
+        nextExerciseId: slot.exerciseId,
+        nextExerciseName: slot.exerciseName,
+        reason: "no compatible role and target muscle replacement",
+        type: "keep",
+      },
+    ];
+  }
+
+  return [
+    ...replacementOptions,
+    {
+      nextExerciseId: slot.exerciseId,
+      nextExerciseName: slot.exerciseName,
+      reason: "kept to avoid a duplicate in this Workout Template",
+      type: "keep",
+    },
+  ];
+}
+
+function getRotationExerciseChoices({
+  avoidedExerciseIds,
+  isolationExercisePreferences,
+  performedExerciseIds,
+  poolsByMovementPattern,
+  previousBlockExerciseIds,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  isolationExercisePreferences: ReturnType<typeof normalizeIsolationExercisePreferences>;
+  performedExerciseIds: ReadonlySet<string>;
+  poolsByMovementPattern: ReadonlyMap<
+    MovementPatternId,
+    TrainingPlan["mainCompoundRotationPools"][number]
+  >;
+  previousBlockExerciseIds: ReadonlySet<string>;
+  slot: TrainingPlanSlot;
+}): ReadonlyArray<{ id: string; name: string; reason: string }> {
+  const choices: Array<{ id: string; name: string; reason: string }> = [];
+  const seenExerciseIds = new Set<string>();
+
+  if (slot.role === "main_compound") {
+    appendRotationExerciseChoices({
+      candidateExerciseIds: getCompatibleRotationPoolExerciseIds({
+        avoidedExerciseIds,
+        poolsByMovementPattern,
+        slot,
+      }),
+      choices,
+      performedExerciseIds,
+      previousBlockExerciseIds,
+      reason: "same Movement Pattern rotation pool",
+      seenExerciseIds,
+    });
+  }
+
+  if (slot.role === "isolation" || slot.role === "abs") {
+    appendRotationExerciseChoices({
+      candidateExerciseIds: getCompatibleIsolationPreferenceExerciseIds({
+        avoidedExerciseIds,
+        isolationExercisePreferences,
+        slot,
+      }),
+      choices,
+      performedExerciseIds,
+      previousBlockExerciseIds,
+      reason: slot.role === "abs" ? "preferred abs exercise" : "preferred isolation exercise",
+      seenExerciseIds,
+    });
+  }
+
+  appendRotationExerciseChoices({
+    candidateExerciseIds: getCompatibleCatalogExerciseIds({
+      avoidedExerciseIds,
+      slot,
+    }),
+    choices,
+    performedExerciseIds,
+    previousBlockExerciseIds,
+    reason: getCompatibleCatalogReason(slot.role),
+    seenExerciseIds,
+  });
+
+  return choices;
+}
+
+function appendRotationExerciseChoices({
+  candidateExerciseIds,
+  choices,
+  performedExerciseIds,
+  previousBlockExerciseIds,
+  reason,
+  seenExerciseIds,
+}: {
+  candidateExerciseIds: ReadonlyArray<string>;
+  choices: Array<{ id: string; name: string; reason: string }>;
+  performedExerciseIds: ReadonlySet<string>;
+  previousBlockExerciseIds: ReadonlySet<string>;
+  reason: string;
+  seenExerciseIds: Set<string>;
+}) {
+  for (const exerciseId of sortExerciseIdsByNovelty({
+    candidateExerciseIds,
+    performedExerciseIds,
+    previousBlockExerciseIds,
+  })) {
+    if (seenExerciseIds.has(exerciseId)) {
+      continue;
+    }
+
+    const exercise = getExerciseCatalogExercise(exerciseId);
+
+    if (!exercise) {
+      continue;
+    }
+
+    seenExerciseIds.add(exercise.id);
+    choices.push({
+      id: exercise.id,
+      name: exercise.name,
+      reason,
+    });
+  }
+}
+
+function sortExerciseIdsByNovelty({
+  candidateExerciseIds,
+  performedExerciseIds,
+  previousBlockExerciseIds,
+}: {
+  candidateExerciseIds: ReadonlyArray<string>;
+  performedExerciseIds: ReadonlySet<string>;
+  previousBlockExerciseIds: ReadonlySet<string>;
+}): Array<string> {
+  return [...candidateExerciseIds].sort(
+    (firstExerciseId, secondExerciseId) =>
+      getExerciseNoveltyRank({
+        exerciseId: firstExerciseId,
+        performedExerciseIds,
+        previousBlockExerciseIds,
+      }) -
+      getExerciseNoveltyRank({
+        exerciseId: secondExerciseId,
+        performedExerciseIds,
+        previousBlockExerciseIds,
+      }),
+  );
+}
+
+function getExerciseNoveltyRank({
+  exerciseId,
+  performedExerciseIds,
+  previousBlockExerciseIds,
+}: {
+  exerciseId: string;
+  performedExerciseIds: ReadonlySet<string>;
+  previousBlockExerciseIds: ReadonlySet<string>;
+}): number {
+  if (!performedExerciseIds.has(exerciseId)) {
+    return 0;
+  }
+
+  if (!previousBlockExerciseIds.has(exerciseId)) {
+    return 1;
+  }
+
+  return 2;
+}
+
+function getPerformedExerciseIds({
+  sessions,
+  trainingPlan,
+}: {
+  sessions: ReadonlyArray<TrainingSession>;
+  trainingPlan: TrainingPlan;
+}): ReadonlySet<string> {
+  const performedExerciseIds = new Set<string>();
+
+  for (const session of sessions) {
+    if (session.planId !== trainingPlan.id || session.completedAt === null) {
+      continue;
+    }
+
+    for (const exercise of session.exercises) {
+      performedExerciseIds.add(exercise.exerciseId);
+    }
+  }
+
+  return performedExerciseIds;
+}
+
+function getPreviousBlockExerciseIds({
+  sessions,
+  trainingPlan,
+}: {
+  sessions: ReadonlyArray<TrainingSession>;
+  trainingPlan: TrainingPlan;
+}): ReadonlySet<string> {
+  const currentTrainingBlock = trainingPlan.trainingBlock;
+
+  if (!currentTrainingBlock) {
+    return new Set<string>();
+  }
+
+  const previousBlockExerciseIds = new Set<string>();
+
+  for (const session of sessions) {
+    if (!isSessionFromCurrentTrainingBlock({ session, trainingBlock: currentTrainingBlock })) {
+      continue;
+    }
+
+    for (const exercise of session.exercises) {
+      previousBlockExerciseIds.add(exercise.exerciseId);
+    }
+  }
+
+  return previousBlockExerciseIds;
+}
+
+function isSessionFromCurrentTrainingBlock({
+  session,
+  trainingBlock,
+}: {
+  session: TrainingSession;
+  trainingBlock: TrainingBlock;
+}): boolean {
+  if (
+    session.planId !== trainingBlock.planId ||
+    session.completedAt === null ||
+    session.completedAt.length < 10
+  ) {
+    return false;
+  }
+
+  if (session.trainingBlockId) {
+    return session.trainingBlockId === trainingBlock.id;
+  }
+
+  const completedDate = session.completedAt.slice(0, 10);
+
+  return completedDate >= trainingBlock.startDate && completedDate <= trainingBlock.endDate;
+}
+
+function getCompatibleRotationPoolExerciseIds({
+  avoidedExerciseIds,
+  poolsByMovementPattern,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  poolsByMovementPattern: ReadonlyMap<
+    MovementPatternId,
+    TrainingPlan["mainCompoundRotationPools"][number]
+  >;
+  slot: TrainingPlanSlot;
+}): ReadonlyArray<string> {
+  if (slot.role !== "main_compound" || !isCompoundCapableMovementPattern(slot.movementPattern)) {
+    return [];
+  }
+
+  return (poolsByMovementPattern.get(slot.movementPattern)?.exerciseIds ?? []).filter(
+    (exerciseId) => isCompatibleRotationExercise({ avoidedExerciseIds, exerciseId, slot }),
+  );
+}
+
+function getCompatibleIsolationPreferenceExerciseIds({
+  avoidedExerciseIds,
+  isolationExercisePreferences,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  isolationExercisePreferences: ReturnType<typeof normalizeIsolationExercisePreferences>;
+  slot: TrainingPlanSlot;
+}): ReadonlyArray<string> {
+  if (slot.role !== "isolation" && slot.role !== "abs") {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      slot.targetMuscles.flatMap((targetMuscle) =>
+        getIsolationExercisePreferenceExerciseIds({
+          preferences: isolationExercisePreferences,
+          primaryMuscleGroup: targetMuscle,
+        }),
+      ),
+    ),
+  ).filter((exerciseId) => isCompatibleRotationExercise({ avoidedExerciseIds, exerciseId, slot }));
+}
+
+function getCompatibleCatalogExerciseIds({
+  avoidedExerciseIds,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  slot: TrainingPlanSlot;
+}): ReadonlyArray<string> {
+  return getExerciseCatalogExercisesByMovementPattern(slot.movementPattern)
+    .map((exercise) => exercise.id)
+    .filter((exerciseId) => isCompatibleRotationExercise({ avoidedExerciseIds, exerciseId, slot }));
+}
+
+function isCompatibleRotationExercise({
+  avoidedExerciseIds,
+  exerciseId,
+  slot,
+}: {
+  avoidedExerciseIds: ReadonlySet<string>;
+  exerciseId: string;
+  slot: TrainingPlanSlot;
+}): boolean {
+  const exercise = getExerciseCatalogExercise(exerciseId);
+  const catalogRole = getCatalogRoleForTrainingPlanRole(slot.role);
+
+  if (
+    !exercise ||
+    !catalogRole ||
+    exercise.id === slot.exerciseId ||
+    avoidedExerciseIds.has(exercise.id)
+  ) {
+    return false;
+  }
+
+  return (
+    exercise.movementPattern === slot.movementPattern &&
+    exercise.role === catalogRole &&
+    slot.targetMuscles.every((targetMuscle) => exercise.primaryMuscleGroups.includes(targetMuscle))
+  );
+}
+
+function getCompatibleCatalogReason(role: TrainingPlanSlot["role"]): string {
+  if (role === "main_compound") {
+    return "compatible main compound fallback";
+  }
+
+  if (role === "secondary_compound") {
+    return "compatible secondary compound";
+  }
+
+  return role === "abs" ? "compatible abs exercise" : "compatible isolation exercise";
+}
+
+function getTemplateSlotKey({
+  groupId,
+  slotIndex,
+  templateId,
+}: {
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+}): string {
+  return `${templateId}:${groupId}:${slotIndex}`;
 }

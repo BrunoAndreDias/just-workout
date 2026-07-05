@@ -450,22 +450,25 @@ describe("TrainingPlanRoute", () => {
     expect(within(blockSummary).getByText("Ready for exercise rotation")).toBeVisible();
     expect(within(blockSummary).getByRole("button", { name: "Generate next cycle" })).toBeVisible();
     expect(within(blockSummary).getByText("Next cycle preview")).toBeVisible();
-    expect(within(blockSummary).getByText("5 exercises rotated")).toBeVisible();
-    expect(within(blockSummary).getByText("6 exercises kept")).toBeVisible();
+    expect(within(blockSummary).getByText("20 exercises rotated")).toBeVisible();
+    expect(within(blockSummary).getByText("2 exercises kept")).toBeVisible();
 
     await user.click(within(blockSummary).getByRole("button", { name: "Generate next cycle" }));
 
     expect(
       within(blockSummary).getByRole("heading", { name: "Exercise rotation preview" }),
     ).toBeVisible();
-    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(11);
+    expect(within(blockSummary).getAllByRole("listitem")).toHaveLength(22);
     expect(
-      within(blockSummary).getByText(/Flat Barbell Bench Press.*Incline Dumbbell Bench Press/),
-    ).toBeVisible();
-    expect(within(blockSummary).getByText("same Movement Pattern rotation pool")).toBeVisible();
-    expect(within(blockSummary).getByText("Previous load: 100 kg")).toBeVisible();
-    expect(within(blockSummary).getByText("Suggested start: 90 kg")).toBeVisible();
-    expect(within(blockSummary).getByText("same Movement Pattern, -10% reset")).toBeVisible();
+      within(blockSummary).getAllByText(/Flat Barbell Bench Press.*Incline Dumbbell Bench Press/),
+    ).toHaveLength(2);
+    expect(within(blockSummary).getAllByText("same Movement Pattern rotation pool")).toHaveLength(
+      2,
+    );
+    expect(within(blockSummary).getAllByText("compatible abs exercise")).toHaveLength(4);
+    expect(within(blockSummary).getAllByText("Previous load: 100 kg")).toHaveLength(2);
+    expect(within(blockSummary).getAllByText("Suggested start: 90 kg")).toHaveLength(2);
+    expect(within(blockSummary).getAllByText("same Movement Pattern, -10% reset")).toHaveLength(2);
 
     const suggestedLoadInput = within(blockSummary).getByLabelText(
       "Suggested starting load for Incline Dumbbell Bench Press",
@@ -475,7 +478,7 @@ describe("TrainingPlanRoute", () => {
     await user.type(suggestedLoadInput, "92.5");
 
     expect(suggestedLoadInput).toHaveValue(92.5);
-    expect(within(blockSummary).getByText("Edited start: 92.5 kg")).toBeVisible();
+    expect(within(blockSummary).getAllByText("Edited start: 92.5 kg")).toHaveLength(2);
   });
 
   it("accepts the next cycle preview and stores the edited suggested load", async () => {

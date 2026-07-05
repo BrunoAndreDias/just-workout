@@ -292,6 +292,42 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expect(getExerciseIds(fullBodyTemplate)).not.toContain("incline-dumbbell-curls");
   });
 
+  it("persists exercise selection policy needed for future Training Block rotation proposals", () => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: {
+        ...createCompleteBlueprint({
+          isolationExercisePreferences: [
+            {
+              exerciseIds: ["incline-dumbbell-curls", "standing-barbell-curls"],
+              primaryMuscleGroup: "biceps",
+            },
+          ],
+        }),
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoided-1", rawText: "Incline Dumbbell Curls" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+      },
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(trainingPlan.exerciseSelectionPreferences).toEqual({
+      avoidedExercises: [{ id: "avoided-1", rawText: "Incline Dumbbell Curls" }],
+      equipmentPreset: "full_gym",
+      preferredExercises: [],
+      strategy: "balanced",
+    });
+    expect(trainingPlan.isolationExercisePreferences).toEqual([
+      {
+        exerciseIds: ["incline-dumbbell-curls", "standing-barbell-curls"],
+        primaryMuscleGroup: "biceps",
+      },
+    ]);
+  });
+
   it("builds alternating Full Body A/B templates with concrete blueprint exercise variation", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint({
