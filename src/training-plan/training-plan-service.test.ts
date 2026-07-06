@@ -308,6 +308,31 @@ describe("trainingPlanService", () => {
       trainingPlanDraft: null,
     });
   });
+
+  it("does not accept Stale Builder Output before Reset Draft regenerates it", async () => {
+    const blueprint = createCompleteBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "Alternating Full Body A/B",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+          workoutTemplates: createTrainingPlan().workoutTemplates,
+        },
+        isStale: true,
+      },
+    });
+
+    await expect(trainingPlanService.acceptTrainingPlanDraft()).rejects.toThrow(
+      "Cannot accept Stale Builder Output. Reset Draft from current Plan Builder choices first.",
+    );
+  });
 });
 
 function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan {

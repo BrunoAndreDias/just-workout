@@ -168,10 +168,18 @@ function renderOnePageActiveStep({
     case "generate":
       return (
         <GenerateTrainingPlanStep
+          blueprint={blueprint}
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
           isGenerating={generateStep.isGenerating}
           onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
+          onOptionalVolumeTargetToggle={volumeStep.onOptionalVolumeTargetToggle}
+          onRepRangeStyleChange={repRangeStep.onRepRangeStyleChange}
+          onResetDraft={generateStep.onResetDraft}
+          onTrainingFrequencyChange={frequencyStep.onTrainingFrequencyChange}
+          onTrainingSplitChange={frequencyStep.onTrainingSplitChange}
+          onVolumePresetChange={volumeStep.onVolumePresetChange}
+          repRangeStyle={selectedRepRangeStyle}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {
@@ -181,8 +189,10 @@ function renderOnePageActiveStep({
                 }
               : null
           }
+          savedRepRangeStyleId={workflow.savedRepRangeStyleId}
           summary={summary}
           trainingPlanDraft={blueprint.trainingPlanDraft}
+          visibleTrainingSplitId={visibleTrainingSplitId}
         />
       );
   }

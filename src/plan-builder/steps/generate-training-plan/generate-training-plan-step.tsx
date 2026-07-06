@@ -5,14 +5,25 @@ import type { TrainingPlanDraft } from "../../../training-plan";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
+  OnePageRepRangeStep,
+  OnePageTrainingScheduleStep,
+  OnePageVolumeStep,
+} from "../../one-page/one-page-step-panels";
+import {
   getRepRangeStyle,
+  type PlanBlueprint,
   type PlanBlueprintDefaultResolution,
   type PlanBlueprintRecommendedDefault,
   type PlanBlueprintSummary,
+  type RepRangeStyle,
 } from "../../plan-blueprint";
 import { PlanBuilderStepStatusCard } from "../../shared-ui/step-status-card/step-status-card";
-import { getTrainingSplitLabel } from "../../training-split";
-import { getVolumePreset } from "../../training-volume";
+import { getTrainingSplitLabel, type TrainingSplitId } from "../../training-split";
+import {
+  getVolumePreset,
+  type OptionalVolumeMuscleGroupId,
+  type VolumePresetId,
+} from "../../training-volume";
 import { formatMovementPatternLabel } from "../../weekly-movement-coverage";
 import {
   shouldShowTrainingPlanDraftReviewPrototype,
@@ -26,13 +37,53 @@ type RecommendedDefaultsConfirmationProps = {
 };
 
 type GenerateTrainingPlanStepProps = {
+  blueprint?: PlanBlueprint | null;
   blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
   isGenerating: boolean;
   onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
+  onOptionalVolumeTargetToggle?: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
+  onRepRangeStyleChange?: (repRangeStyle: PlanBlueprint["repRanges"] & string) => void;
+  onResetDraft?: () => Promise<void>;
+  onTrainingFrequencyChange?: (
+    trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
+  ) => void;
+  onTrainingSplitChange?: (split: TrainingSplitId) => void;
+  onVolumePresetChange?: (volumePreset: VolumePresetId) => void;
+  repRangeStyle?: RepRangeStyle | null;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
+  savedRepRangeStyleId?: PlanBlueprint["repRanges"];
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
+  visibleTrainingSplitId?: TrainingSplitId | null;
+};
+
+type DraftGenerationInputProps = {
+  blueprint: PlanBlueprint | null;
+  onOptionalVolumeTargetToggle?: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
+  onRepRangeStyleChange?: (repRangeStyle: PlanBlueprint["repRanges"] & string) => void;
+  onTrainingFrequencyChange?: (
+    trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
+  ) => void;
+  onTrainingSplitChange?: (split: TrainingSplitId) => void;
+  onVolumePresetChange?: (volumePreset: VolumePresetId) => void;
+  repRangeStyle: RepRangeStyle | null;
+  savedRepRangeStyleId: PlanBlueprint["repRanges"] | null;
+  visibleTrainingSplitId: TrainingSplitId | null;
+};
+
+type TrainingPlanDraftReviewProps = DraftGenerationInputProps & {
+  isAccepting: boolean;
+  onAcceptDraft: () => Promise<void>;
+  onResetDraft?: () => Promise<void>;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
 };
 
 const generateStepPreferenceMappingCopy =
@@ -44,12 +95,22 @@ const defaultGenerationPreferenceMappingCopy =
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
+    blueprint,
     isGenerating,
     onAcceptDraft,
     onGenerateTrainingPlan,
+    onOptionalVolumeTargetToggle,
+    onRepRangeStyleChange,
+    onResetDraft,
+    onTrainingFrequencyChange,
+    onTrainingSplitChange,
+    onVolumePresetChange,
+    repRangeStyle,
     recommendedDefaultsConfirmation,
+    savedRepRangeStyleId,
     summary,
     trainingPlanDraft,
+    visibleTrainingSplitId,
   } = props;
 
   if (shouldShowTrainingPlanDraftReviewPrototype()) {
@@ -59,10 +120,20 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   if (trainingPlanDraft) {
     return (
       <TrainingPlanDraftReview
+        blueprint={blueprint ?? null}
         isAccepting={isGenerating}
         onAcceptDraft={onAcceptDraft}
+        onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+        onRepRangeStyleChange={onRepRangeStyleChange}
+        onResetDraft={onResetDraft}
+        onTrainingFrequencyChange={onTrainingFrequencyChange}
+        onTrainingSplitChange={onTrainingSplitChange}
+        onVolumePresetChange={onVolumePresetChange}
+        repRangeStyle={repRangeStyle ?? null}
+        savedRepRangeStyleId={savedRepRangeStyleId ?? null}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
+        visibleTrainingSplitId={visibleTrainingSplitId ?? null}
       />
     );
   }
@@ -151,52 +222,25 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 function TrainingPlanDraftReview({
   isAccepting,
   onAcceptDraft,
+  onResetDraft,
   summary,
   trainingPlanDraft,
-}: {
-  isAccepting: boolean;
-  onAcceptDraft: () => Promise<void>;
-  summary: PlanBlueprintSummary | null;
-  trainingPlanDraft: TrainingPlanDraft;
-}) {
+  ...draftGenerationInputs
+}: TrainingPlanDraftReviewProps) {
+  const isStale = trainingPlanDraft.isStale === true;
+
   return (
     <div className="grid gap-4">
-      <StepPanel>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
-            <p className="mt-3 max-w-3xl text-sm text-stone-600">
-              Review the generated Workout Templates, Superset Groups, exercise slots, and Training
-              Prescriptions before creating the Active Training Plan.
-            </p>
-          </div>
-          <StepActions>
-            <Button
-              disabled={isAccepting}
-              onClick={() => {
-                void onAcceptDraft();
-              }}
-              type="button"
-              variant="builderPrimary"
-            >
-              {isAccepting ? "Accepting..." : "Accept Draft"}
-            </Button>
-          </StepActions>
-        </div>
+      <TrainingPlanDraftReviewHeader
+        isAccepting={isAccepting}
+        isStale={isStale}
+        onAcceptDraft={onAcceptDraft}
+        onResetDraft={onResetDraft}
+        summary={summary}
+        trainingPlanDraft={trainingPlanDraft}
+      />
 
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-          <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
-          <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
-          <GenerateSummaryField
-            label="Rep ranges"
-            value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
-          />
-          <GenerateSummaryField
-            label="Templates"
-            value={String(trainingPlanDraft.content.workoutTemplates.length)}
-          />
-        </dl>
-      </StepPanel>
+      <DraftGenerationInputs {...draftGenerationInputs} />
 
       <div className="grid gap-4">
         {trainingPlanDraft.content.workoutTemplates.map((template) => (
@@ -253,6 +297,135 @@ function TrainingPlanDraftReview({
           </StepPanel>
         ))}
       </div>
+    </div>
+  );
+}
+
+function TrainingPlanDraftReviewHeader({
+  isAccepting,
+  isStale,
+  onAcceptDraft,
+  onResetDraft,
+  summary,
+  trainingPlanDraft,
+}: {
+  isAccepting: boolean;
+  isStale: boolean;
+  onAcceptDraft: () => Promise<void>;
+  onResetDraft?: () => Promise<void>;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <StepPanel>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
+          <p className="mt-3 max-w-3xl text-sm text-stone-600">
+            Review the generated Workout Templates, Superset Groups, exercise slots, and Training
+            Prescriptions before creating the Active Training Plan.
+          </p>
+          {isStale ? (
+            <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+              Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices
+              before accepting it.
+            </p>
+          ) : null}
+        </div>
+        <StepActions>
+          {onResetDraft ? (
+            <Button
+              disabled={isAccepting}
+              onClick={() => {
+                void onResetDraft();
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Reset Draft
+            </Button>
+          ) : null}
+          <Button
+            disabled={isAccepting || isStale}
+            onClick={() => {
+              void onAcceptDraft();
+            }}
+            type="button"
+            variant="builderPrimary"
+          >
+            {isAccepting ? "Accepting..." : "Accept Draft"}
+          </Button>
+        </StepActions>
+      </div>
+
+      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+        <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
+        <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
+        <GenerateSummaryField
+          label="Rep ranges"
+          value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
+        />
+        <GenerateSummaryField
+          label="Templates"
+          value={String(trainingPlanDraft.content.workoutTemplates.length)}
+        />
+      </dl>
+    </StepPanel>
+  );
+}
+
+function DraftGenerationInputs({
+  blueprint,
+  onOptionalVolumeTargetToggle,
+  onRepRangeStyleChange,
+  onTrainingFrequencyChange,
+  onTrainingSplitChange,
+  onVolumePresetChange,
+  repRangeStyle,
+  savedRepRangeStyleId,
+  visibleTrainingSplitId,
+}: DraftGenerationInputProps) {
+  if (
+    !blueprint ||
+    !onTrainingFrequencyChange ||
+    !onTrainingSplitChange ||
+    !onRepRangeStyleChange ||
+    !onVolumePresetChange ||
+    !onOptionalVolumeTargetToggle ||
+    !repRangeStyle ||
+    !visibleTrainingSplitId
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-4">
+      <StepPanel>
+        <h4 className="text-lg font-black text-stone-950">Generation inputs</h4>
+        <p className="mt-2 text-sm text-stone-600">
+          Edit the upstream Plan Builder choices here. These changes update the Plan Builder and can
+          make the current draft stale until you reset it.
+        </p>
+        <div className="mt-5 grid gap-6">
+          <OnePageTrainingScheduleStep
+            blueprint={blueprint}
+            onTrainingFrequencyChange={onTrainingFrequencyChange}
+            onTrainingSplitChange={onTrainingSplitChange}
+            selectedTrainingSplitId={visibleTrainingSplitId}
+          />
+          <OnePageRepRangeStep
+            onRepRangeStyleChange={onRepRangeStyleChange}
+            savedRepRangeStyleId={savedRepRangeStyleId}
+            selectedRepRangeStyle={repRangeStyle}
+          />
+          <OnePageVolumeStep
+            blueprint={blueprint}
+            onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+            onVolumePresetChange={onVolumePresetChange}
+            repRangeStyle={repRangeStyle}
+          />
+        </div>
+      </StepPanel>
     </div>
   );
 }

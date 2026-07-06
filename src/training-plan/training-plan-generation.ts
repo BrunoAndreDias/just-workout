@@ -53,9 +53,35 @@ const defaultTrainingPlanGenerationDependencies = {
 export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
   dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {
+  return saveTrainingPlanDraftFromCurrentPlanBlueprint({
+    dependencies,
+    shouldReuseFreshDraft: true,
+  });
+}
+
+export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+): Promise<TrainingPlanDraft> {
+  return saveTrainingPlanDraftFromCurrentPlanBlueprint({
+    dependencies,
+    shouldReuseFreshDraft: false,
+  });
+}
+
+async function saveTrainingPlanDraftFromCurrentPlanBlueprint({
+  dependencies,
+  shouldReuseFreshDraft,
+}: {
+  dependencies: TrainingPlanDraftGenerationDependencies;
+  shouldReuseFreshDraft: boolean;
+}): Promise<TrainingPlanDraft> {
   const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
 
-  if (normalizedBlueprint.trainingPlanDraft) {
+  if (
+    shouldReuseFreshDraft &&
+    normalizedBlueprint.trainingPlanDraft &&
+    normalizedBlueprint.trainingPlanDraft.isStale !== true
+  ) {
     return normalizedBlueprint.trainingPlanDraft;
   }
 
@@ -63,6 +89,7 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
     content: generateTrainingPlanContentFromBlueprint({
       blueprint: resolution.resolvedBlueprint,
     }),
+    isStale: false,
   };
 
   await dependencies.savePlanBlueprint({
@@ -98,6 +125,12 @@ export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
 
   if (!trainingPlanDraft) {
     throw new Error("Cannot accept a Training Plan Draft before one exists.");
+  }
+
+  if (trainingPlanDraft.isStale) {
+    throw new Error(
+      "Cannot accept Stale Builder Output. Reset Draft from current Plan Builder choices first.",
+    );
   }
 
   const timestamp = dependencies.getTimestamp();

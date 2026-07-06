@@ -268,6 +268,54 @@ describe("plan blueprint invalidation and redirects", () => {
     ).toBeNull();
   });
 
+  it("marks an existing Training Plan Draft as stale instead of clearing it when generation-affecting builder choices change", () => {
+    const blueprint = createConfirmedPlanBlueprint({
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "4-Day Upper / Lower",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 4,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createRecommendedTrainingVolumeConfiguration().weeklyRepTargets,
+          workoutTemplates: [],
+        },
+      },
+    });
+
+    expect(
+      selectTrainingFrequency({
+        blueprint,
+        timestamp: firstUpdateTimestamp,
+        trainingFrequencyDaysPerWeek: 5,
+      }).trainingPlanDraft,
+    ).toMatchObject({
+      isStale: true,
+    });
+
+    expect(
+      selectRepRangeStyle({
+        blueprint,
+        repRangeStyle: "strength_leaning",
+        timestamp: firstUpdateTimestamp,
+      }).trainingPlanDraft,
+    ).toMatchObject({
+      isStale: true,
+    });
+
+    expect(
+      setOptionalVolumeTargetEnabled({
+        blueprint,
+        isEnabled: true,
+        muscleGroup: "calves",
+        timestamp: firstUpdateTimestamp,
+      }).trainingPlanDraft,
+    ).toMatchObject({
+      isStale: true,
+    });
+  });
+
   it("preserves Exercise Selection Preferences and invalidates Exercises when Split changes", () => {
     const exerciseSelectionPreferences = {
       avoidedExercises: [{ id: "avoided-1", rawText: "Behind the neck press" }],
@@ -417,7 +465,7 @@ describe("plan blueprint invalidation and redirects", () => {
     });
   });
 
-  it("clears a saved Training Plan Draft when upstream Plan Builder choices change", () => {
+  it("marks a saved Training Plan Draft as stale when upstream Plan Builder choices change", () => {
     const blueprint = createConfirmedPlanBlueprint({
       confirmedBuilderSteps: {
         exercises: true,
@@ -443,7 +491,9 @@ describe("plan blueprint invalidation and redirects", () => {
         repRangeStyle: "strength_leaning",
         timestamp: firstUpdateTimestamp,
       }).trainingPlanDraft,
-    ).toBeNull();
+    ).toMatchObject({
+      isStale: true,
+    });
   });
 
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {

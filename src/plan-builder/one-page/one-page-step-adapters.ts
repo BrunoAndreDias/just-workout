@@ -28,6 +28,7 @@ import type {
   MainCompoundPreferencesChange,
   MainCompoundRotationPreferencesChange,
 } from "../plan-builder-main-compound-preferences";
+import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
 import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 
@@ -175,6 +176,9 @@ export function useOnePageGenerateStep({
   const { mutateAsync: acceptDraft, isPending: isAcceptingDraft } = useMutation({
     mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
+  const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
+    mutationFn: trainingPlanService.resetTrainingPlanDraft,
+  });
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -190,11 +194,19 @@ export function useOnePageGenerateStep({
     }
 
     onPendingDefaultResolutionChange(null);
+    queryClient.setQueryData(
+      planBuilderBlueprintQueryKey,
+      await planBuilderService.getOrCreatePlanBlueprint(),
+    );
     await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
   }
 
   return {
-    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults || isAcceptingDraft,
+    isGenerating:
+      isStartingGenerateStep ||
+      isAcceptingRecommendedDefaults ||
+      isAcceptingDraft ||
+      isResettingDraft,
     onAcceptDraft: async () => {
       const acceptedTrainingPlan = await acceptDraft();
 
@@ -224,6 +236,15 @@ export function useOnePageGenerateStep({
       const result = await startGenerateStep({ defaultResolution: resolution });
 
       await applyWorkflowResult(result);
+    },
+    onResetDraft: async () => {
+      await resetDraft();
+      onPendingDefaultResolutionChange(null);
+      queryClient.setQueryData(
+        planBuilderBlueprintQueryKey,
+        await planBuilderService.getOrCreatePlanBlueprint(),
+      );
+      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
     },
   };
 }

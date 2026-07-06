@@ -136,6 +136,12 @@ export function createDefaultPlanBlueprint({
   };
 }
 
+function markTrainingPlanDraftStale(
+  trainingPlanDraft: PlanBlueprint["trainingPlanDraft"],
+): PlanBlueprint["trainingPlanDraft"] {
+  return trainingPlanDraft ? { ...trainingPlanDraft, isStale: true } : null;
+}
+
 export function applyPlanBlueprintTransition({
   blueprint,
   transition,
@@ -315,7 +321,10 @@ export function selectTrainingFrequency({
     ...blueprint,
     confirmedBuilderSteps,
     split,
-    trainingPlanDraft: null,
+    trainingPlanDraft:
+      hasTrainingFrequencyChanged || hasSplitChanged
+        ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+        : blueprint.trainingPlanDraft,
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
@@ -346,7 +355,9 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
       split: isSameTrainingSplit ? confirmedBuilderSteps.split : false,
     },
     split: selectedTrainingSplitId,
-    trainingPlanDraft: null,
+    trainingPlanDraft: isSameTrainingSplit
+      ? options.blueprint.trainingPlanDraft
+      : markTrainingPlanDraftStale(options.blueprint.trainingPlanDraft),
     updatedAt: options.timestamp,
   };
 }
@@ -372,7 +383,9 @@ export function selectRepRangeStyle({
       volume: isSameRepRangeStyle ? confirmedBuilderSteps.volume : false,
     },
     repRanges: repRangeStyle,
-    trainingPlanDraft: null,
+    trainingPlanDraft: isSameRepRangeStyle
+      ? blueprint.trainingPlanDraft
+      : markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -393,7 +406,7 @@ function initializeTrainingVolume({
       exercises: false,
       volume: false,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -427,7 +440,9 @@ export function selectTrainingVolumePreset({
       exercises: hasVolumePresetChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasVolumePresetChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -460,7 +475,9 @@ export function setOptionalVolumeTargetEnabled({
       exercises: hasEnabledStateChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasEnabledStateChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -487,7 +504,9 @@ export function updateExerciseSelectionPreferences({
     },
     equipmentPresetSource: userSelectedEquipmentPresetSource,
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasExerciseSelectionPreferencesChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -537,7 +556,9 @@ function selectMainCompound({
     },
     mainCompoundSelections: nextMainCompoundSelections,
     mainCompoundRotationPools: nextMainCompoundRotationPools,
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasMainCompoundChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -567,7 +588,9 @@ export function updateMainCompoundPreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundPreferences: nextMainCompoundPreferences,
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasPreferencesChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -597,7 +620,9 @@ function updateMainCompoundRotationPreferences({
       exercises: hasRotationPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundRotationPreferences: nextMainCompoundRotationPreferences,
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasRotationPreferencesChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -627,7 +652,9 @@ function updateIsolationExercisePreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     isolationExercisePreferences: nextIsolationExercisePreferences,
-    trainingPlanDraft: null,
+    trainingPlanDraft: hasPreferencesChanged
+      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
+      : blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -656,7 +683,7 @@ export function updateMainCompoundRotationPool({
       exercises: false,
     },
     mainCompoundRotationPools: nextMainCompoundRotationPools,
-    trainingPlanDraft: null,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -678,7 +705,7 @@ export function confirmTrainingFrequency({
       ...updatedBlueprint.confirmedBuilderSteps,
       frequency: true,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: updatedBlueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -700,7 +727,7 @@ export function confirmTrainingSplit({
       ...updatedBlueprint.confirmedBuilderSteps,
       split: true,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: updatedBlueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -722,7 +749,7 @@ export function confirmRepRangeStyle({
       ...updatedBlueprint.confirmedBuilderSteps,
       repRanges: true,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: updatedBlueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -741,7 +768,7 @@ export function confirmTrainingVolume({
       ...blueprint.confirmedBuilderSteps,
       volume: true,
     },
-    trainingPlanDraft: null,
+    trainingPlanDraft: blueprint.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -768,7 +795,7 @@ export function confirmExerciseSelectionPreferences({
       exercises: true,
     },
     equipmentPresetSource: userSelectedEquipmentPresetSource,
-    trainingPlanDraft: null,
+    trainingPlanDraft: blueprintToConfirm.trainingPlanDraft,
     updatedAt: timestamp,
   };
 }
@@ -794,7 +821,12 @@ function normalizeTrainingPlanDraft(
 
   const content = normalizeTrainingPlanDraftContent(trainingPlanDraft.content);
 
-  return content ? { content } : null;
+  return content
+    ? {
+        content,
+        isStale: trainingPlanDraft.isStale === true,
+      }
+    : null;
 }
 
 function normalizeTrainingPlanDraftContent(
