@@ -48,12 +48,25 @@ export type SupersetGroup = {
   type: "superset" | "isolation" | "abs";
 };
 
+export type WorkoutTemplatePurpose = "custom-focus" | "strength";
+
 export type WorkoutTemplate = {
   id: string;
   label: string;
   /** Classifies how this Workout Template should be used inside a Training Plan. */
-  purpose: "strength";
+  purpose: WorkoutTemplatePurpose;
   supersetGroups: ReadonlyArray<SupersetGroup>;
+};
+
+export type TrainingPlanDraftWarning = {
+  kind: "custom_focus_reduces_strength_coverage";
+  message: string;
+  templateIds: ReadonlyArray<string>;
+};
+
+export type TrainingPlanDraftValidation = {
+  blockers: ReadonlyArray<string>;
+  warnings: ReadonlyArray<TrainingPlanDraftWarning>;
 };
 
 /** Snapshot of the previous block state kept until undo is consumed or expires. */
@@ -111,6 +124,7 @@ export type TrainingPlanContent = Pick<
 /** Pending Training Plan content held by Plan Builder until the user accepts it as an Active Plan. */
 export type TrainingPlanDraft = {
   content: TrainingPlanContent;
+  validation: TrainingPlanDraftValidation;
 };
 
 type GenerateTrainingPlanOptions = {
@@ -203,5 +217,30 @@ export function generateTrainingPlanContentFromBlueprint({
     trainingGoal: blueprint.trainingGoal,
     weeklyRepTargets,
     workoutTemplates: prescribedWorkoutTemplates,
+  };
+}
+
+export function validateTrainingPlanDraftContent({
+  content,
+}: {
+  content: TrainingPlanContent;
+}): TrainingPlanDraftValidation {
+  const customFocusTemplateIds = content.workoutTemplates
+    .filter((template) => template.purpose === "custom-focus")
+    .map((template) => template.id);
+
+  return {
+    blockers: [],
+    warnings:
+      customFocusTemplateIds.length > 0
+        ? [
+            {
+              kind: "custom_focus_reduces_strength_coverage",
+              message:
+                "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
+              templateIds: customFocusTemplateIds,
+            },
+          ]
+        : [],
   };
 }

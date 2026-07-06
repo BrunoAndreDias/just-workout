@@ -13,6 +13,7 @@ import {
   generateTrainingPlanFromBlueprint,
   type TrainingPlan,
   type TrainingPlanDraft,
+  validateTrainingPlanDraftContent,
 } from "./training-plan";
 import { acceptTrainingPlanDraft, saveGeneratedTrainingPlan } from "./training-plan-repository";
 
@@ -59,10 +60,33 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
     return normalizedBlueprint.trainingPlanDraft;
   }
 
+  const content = generateTrainingPlanContentFromBlueprint({
+    blueprint: resolution.resolvedBlueprint,
+  });
   const trainingPlanDraft: TrainingPlanDraft = {
-    content: generateTrainingPlanContentFromBlueprint({
-      blueprint: resolution.resolvedBlueprint,
-    }),
+    content,
+    validation: validateTrainingPlanDraftContent({ content }),
+  };
+
+  await dependencies.savePlanBlueprint({
+    ...normalizedBlueprint,
+    trainingPlanDraft,
+    updatedAt: dependencies.getTimestamp(),
+  });
+
+  return trainingPlanDraft;
+}
+
+export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+): Promise<TrainingPlanDraft> {
+  const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
+  const content = generateTrainingPlanContentFromBlueprint({
+    blueprint: resolution.resolvedBlueprint,
+  });
+  const trainingPlanDraft: TrainingPlanDraft = {
+    content,
+    validation: validateTrainingPlanDraftContent({ content }),
   };
 
   await dependencies.savePlanBlueprint({
@@ -98,6 +122,10 @@ export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
 
   if (!trainingPlanDraft) {
     throw new Error("Cannot accept a Training Plan Draft before one exists.");
+  }
+
+  if (trainingPlanDraft.validation.blockers.length > 0) {
+    throw new Error(trainingPlanDraft.validation.blockers[0]);
   }
 
   const timestamp = dependencies.getTimestamp();

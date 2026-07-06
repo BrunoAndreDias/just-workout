@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -733,6 +733,78 @@ describe("Plan Builder canonical route", () => {
     expect(await getActiveTrainingPlans()).toHaveLength(1);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       trainingPlanDraft: null,
+    });
+  });
+
+  it("edits Workout Templates in the draft, warns for custom focus, and Reset Draft discards the edits", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
+
+    const firstTemplateLabel = (await screen.findAllByLabelText("Workout Template label"))[0]!;
+
+    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
+    await user.click(screen.getAllByRole("button", { name: /^replace with custom focus$/i })[0]!);
+    await user.click(screen.getAllByRole("button", { name: /^move down$/i })[0]!);
+
+    expect(await screen.findByText("Draft warnings")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
+      ),
+    ).toBeVisible();
+    expect(
+      (await planBuilderService.getOrCreatePlanBlueprint()).trainingPlanDraft?.content.workoutTemplates,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: "Conditioning Day Cardio Focus",
+          purpose: "custom-focus",
+          supersetGroups: [],
+        }),
+      ]),
+    );
+
+    await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
+
+    expect(await screen.findByDisplayValue("Full Body A")).toBeVisible();
+    expect(screen.queryByText("Draft warnings")).not.toBeInTheDocument();
+  });
+
+  it("preserves custom-focus Workout Template edits in the accepted Active Training Plan", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    const generateButton = screen.queryByRole("button", { name: /^generate training plan$/i });
+    if (generateButton) {
+      await user.click(generateButton);
+      await user.click(
+        await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+      );
+    }
+
+    const firstTemplateLabel = (await screen.findAllByLabelText("Workout Template label"))[0]!;
+    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
+    await user.click(screen.getAllByRole("button", { name: /^replace with custom focus$/i })[0]!);
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+    });
+
+    const [activeTrainingPlan] = await getActiveTrainingPlans();
+
+    expect(activeTrainingPlan?.workoutTemplates[0]).toMatchObject({
+      label: "Conditioning Day Cardio Focus",
+      purpose: "custom-focus",
+      supersetGroups: [],
     });
   });
 });

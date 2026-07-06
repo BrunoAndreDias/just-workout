@@ -434,6 +434,10 @@ describe("plan blueprint invalidation and redirects", () => {
           weeklyRepTargets: [],
           workoutTemplates: [],
         },
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
       },
     });
 

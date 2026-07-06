@@ -1,4 +1,9 @@
-import type { TrainingPlanContent, WorkoutTemplate } from "../training-plan/training-plan";
+import {
+  type TrainingPlanContent,
+  validateTrainingPlanDraftContent,
+  type WorkoutTemplate,
+  type WorkoutTemplatePurpose,
+} from "../training-plan/training-plan";
 import { getExerciseCatalogExercise, isMainCompoundEligible } from "./exercise-catalog";
 import {
   createDefaultExerciseSelectionPreferences,
@@ -794,7 +799,12 @@ function normalizeTrainingPlanDraft(
 
   const content = normalizeTrainingPlanDraftContent(trainingPlanDraft.content);
 
-  return content ? { content } : null;
+  return content
+    ? {
+        content,
+        validation: validateTrainingPlanDraftContent({ content }),
+      }
+    : null;
 }
 
 function normalizeTrainingPlanDraftContent(
@@ -964,7 +974,8 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
     !Array.isArray(workoutTemplate.supersetGroups) ||
     (workoutTemplate.purpose !== undefined &&
       workoutTemplate.purpose !== null &&
-      workoutTemplate.purpose !== "strength")
+      workoutTemplate.purpose !== "strength" &&
+      workoutTemplate.purpose !== "custom-focus")
   ) {
     return null;
   }
@@ -972,13 +983,149 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
   return {
     id: workoutTemplate.id,
     label: workoutTemplate.label,
-    purpose: "strength",
+    purpose: normalizeWorkoutTemplatePurpose(workoutTemplate.purpose),
     supersetGroups: workoutTemplate.supersetGroups as WorkoutTemplate["supersetGroups"],
+  };
+}
+
+export function renameTrainingPlanDraftWorkoutTemplate({
+  blueprint,
+  label,
+  templateId,
+  timestamp,
+}: {
+  blueprint: PlanBlueprint;
+  label: string;
+  templateId: string;
+  timestamp: string;
+}): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId ? { ...template, label } : template,
+    ),
+  });
+}
+
+export function reorderTrainingPlanDraftWorkoutTemplate({
+  blueprint,
+  targetIndex,
+  templateId,
+  timestamp,
+}: {
+  blueprint: PlanBlueprint;
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+}): PlanBlueprint {
+  const workoutTemplates = blueprint.trainingPlanDraft?.content.workoutTemplates;
+
+  if (!workoutTemplates) {
+    return blueprint;
+  }
+
+  const currentIndex = workoutTemplates.findIndex((template) => template.id === templateId);
+
+  if (currentIndex === -1 || targetIndex < 0 || targetIndex >= workoutTemplates.length) {
+    return blueprint;
+  }
+
+  const reorderedTemplates = [...workoutTemplates];
+  const [movedTemplate] = reorderedTemplates.splice(currentIndex, 1);
+
+  if (!movedTemplate) {
+    return blueprint;
+  }
+
+  reorderedTemplates.splice(targetIndex, 0, movedTemplate);
+
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: reorderedTemplates,
+  });
+}
+
+export function updateTrainingPlanDraftWorkoutTemplatePurpose({
+  blueprint,
+  purpose,
+  templateId,
+  timestamp,
+}: {
+  blueprint: PlanBlueprint;
+  purpose: WorkoutTemplatePurpose;
+  templateId: string;
+  timestamp: string;
+}): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId ? { ...template, purpose } : template,
+    ),
+  });
+}
+
+export function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
+  blueprint,
+  templateId,
+  timestamp,
+}: {
+  blueprint: PlanBlueprint;
+  templateId: string;
+  timestamp: string;
+}): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId
+        ? {
+            ...template,
+            label: `${template.label} Cardio Focus`,
+            purpose: "custom-focus",
+            supersetGroups: [],
+          }
+        : template,
+    ),
+  });
+}
+
+function updateTrainingPlanDraft({
+  blueprint,
+  timestamp,
+  workoutTemplates,
+}: {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  workoutTemplates: ReadonlyArray<WorkoutTemplate> | undefined;
+}): PlanBlueprint {
+  if (!blueprint.trainingPlanDraft || !workoutTemplates) {
+    return blueprint;
+  }
+
+  const content = {
+    ...blueprint.trainingPlanDraft.content,
+    workoutTemplates,
+  };
+
+  return {
+    ...blueprint,
+    trainingPlanDraft: {
+      content,
+      validation: validateTrainingPlanDraftContent({ content }),
+    },
+    updatedAt: timestamp,
   };
 }
 
 function isRecord(candidate: unknown): candidate is Record<string, unknown> {
   return typeof candidate === "object" && candidate !== null;
+}
+
+function normalizeWorkoutTemplatePurpose(purpose: unknown): WorkoutTemplatePurpose {
+  return purpose === "custom-focus" ? "custom-focus" : "strength";
 }
 
 function isPositiveInteger(candidate: unknown): candidate is number {

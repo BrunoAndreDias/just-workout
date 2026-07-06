@@ -8,8 +8,12 @@ import {
   useUpdateMainCompoundPreferencesMutation,
   useUpdateMainCompoundRotationPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
+  useRenameTrainingPlanDraftWorkoutTemplateMutation,
+  useReorderTrainingPlanDraftWorkoutTemplateMutation,
+  useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
+  useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation,
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "../builder-state/plan-builder-mutations";
@@ -175,6 +179,16 @@ export function useOnePageGenerateStep({
   const { mutateAsync: acceptDraft, isPending: isAcceptingDraft } = useMutation({
     mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
+  const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
+    mutationFn: trainingPlanService.resetTrainingPlanDraft,
+  });
+  const { mutate: renameDraftWorkoutTemplate } = useRenameTrainingPlanDraftWorkoutTemplateMutation();
+  const { mutate: reorderDraftWorkoutTemplate } =
+    useReorderTrainingPlanDraftWorkoutTemplateMutation();
+  const { mutate: updateDraftWorkoutTemplatePurpose } =
+    useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation();
+  const { mutate: replaceDraftWorkoutTemplateWithCustomFocus } =
+    useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation();
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -194,7 +208,11 @@ export function useOnePageGenerateStep({
   }
 
   return {
-    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults || isAcceptingDraft,
+    isGenerating:
+      isStartingGenerateStep ||
+      isAcceptingRecommendedDefaults ||
+      isAcceptingDraft ||
+      isResettingDraft,
     onAcceptDraft: async () => {
       const acceptedTrainingPlan = await acceptDraft();
 
@@ -213,6 +231,37 @@ export function useOnePageGenerateStep({
     },
     onCancelRecommendedDefaults: () => {
       onPendingDefaultResolutionChange(null);
+    },
+    onRenameWorkoutTemplate: (templateId: string, label: string) => {
+      renameDraftWorkoutTemplate({
+        label,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => {
+      reorderDraftWorkoutTemplate({
+        targetIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => {
+      replaceDraftWorkoutTemplateWithCustomFocus({
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onResetDraft: async () => {
+      await resetDraft();
+      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
+    },
+    onSetWorkoutTemplatePurpose: (templateId: string, purpose: "custom-focus" | "strength") => {
+      updateDraftWorkoutTemplatePurpose({
+        purpose,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
     },
     onGenerateTrainingPlan: async () => {
       const resolution = defaultResolution;

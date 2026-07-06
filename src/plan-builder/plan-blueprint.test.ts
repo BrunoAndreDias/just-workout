@@ -262,6 +262,10 @@ describe("plan blueprint", () => {
 
     expect(blueprint.trainingPlanDraft).toEqual({
       content,
+      validation: {
+        blockers: [],
+        warnings: [],
+      },
     });
   });
 

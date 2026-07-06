@@ -1,7 +1,7 @@
 import { Wand2 } from "lucide-react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
-import type { TrainingPlanDraft } from "../../../training-plan";
+import type { TrainingPlanDraft, WorkoutTemplatePurpose } from "../../../training-plan";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -30,6 +30,11 @@ type GenerateTrainingPlanStepProps = {
   isGenerating: boolean;
   onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
+  onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
+  onRenameWorkoutTemplate: (templateId: string, label: string) => void;
+  onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
+  onResetDraft: () => Promise<void>;
+  onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
@@ -47,6 +52,11 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     isGenerating,
     onAcceptDraft,
     onGenerateTrainingPlan,
+    onMoveWorkoutTemplate,
+    onRenameWorkoutTemplate,
+    onReplaceWorkoutTemplateWithCustomFocus,
+    onResetDraft,
+    onSetWorkoutTemplatePurpose,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
@@ -61,6 +71,11 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
       <TrainingPlanDraftReview
         isAccepting={isGenerating}
         onAcceptDraft={onAcceptDraft}
+        onMoveWorkoutTemplate={onMoveWorkoutTemplate}
+        onRenameWorkoutTemplate={onRenameWorkoutTemplate}
+        onReplaceWorkoutTemplateWithCustomFocus={onReplaceWorkoutTemplateWithCustomFocus}
+        onResetDraft={onResetDraft}
+        onSetWorkoutTemplatePurpose={onSetWorkoutTemplatePurpose}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -151,11 +166,21 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 function TrainingPlanDraftReview({
   isAccepting,
   onAcceptDraft,
+  onMoveWorkoutTemplate,
+  onRenameWorkoutTemplate,
+  onReplaceWorkoutTemplateWithCustomFocus,
+  onResetDraft,
+  onSetWorkoutTemplatePurpose,
   summary,
   trainingPlanDraft,
 }: {
   isAccepting: boolean;
   onAcceptDraft: () => Promise<void>;
+  onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
+  onRenameWorkoutTemplate: (templateId: string, label: string) => void;
+  onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
+  onResetDraft: () => Promise<void>;
+  onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
@@ -171,6 +196,16 @@ function TrainingPlanDraftReview({
             </p>
           </div>
           <StepActions>
+            <Button
+              disabled={isAccepting}
+              onClick={() => {
+                void onResetDraft();
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Reset Draft
+            </Button>
             <Button
               disabled={isAccepting}
               onClick={() => {
@@ -198,18 +233,88 @@ function TrainingPlanDraftReview({
         </dl>
       </StepPanel>
 
+      {trainingPlanDraft.validation.warnings.length > 0 ? (
+        <StepPanel>
+          <h4 className="text-base font-black text-amber-950">Draft warnings</h4>
+          <ul className="mt-3 space-y-2 text-sm text-amber-900">
+            {trainingPlanDraft.validation.warnings.map((warning) => (
+              <li key={warning.kind}>{warning.message}</li>
+            ))}
+          </ul>
+        </StepPanel>
+      ) : null}
+
       <div className="grid gap-4">
-        {trainingPlanDraft.content.workoutTemplates.map((template) => (
+        {trainingPlanDraft.content.workoutTemplates.map((template, templateIndex, templates) => (
           <StepPanel key={template.id}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-lg font-black text-stone-950">{template.label}</h4>
+              <div className="min-w-0 flex-1">
+                <label className="text-xs font-semibold uppercase text-stone-500" htmlFor={template.id}>
+                  Workout Template label
+                </label>
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+                  id={template.id}
+                  onChange={(event) => {
+                    onRenameWorkoutTemplate(template.id, event.target.value);
+                  }}
+                  type="text"
+                  value={template.label}
+                />
                 <p className="text-sm text-stone-600">
-                  {template.purpose === "strength" ? "Strength-focused template" : template.purpose}
+                  {getWorkoutTemplatePurposeDescription(template.purpose)}
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={templateIndex === 0}
+                  onClick={() => {
+                    onMoveWorkoutTemplate(template.id, templateIndex - 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move up
+                </Button>
+                <Button
+                  disabled={templateIndex === templates.length - 1}
+                  onClick={() => {
+                    onMoveWorkoutTemplate(template.id, templateIndex + 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move down
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                onClick={() => {
+                  onSetWorkoutTemplatePurpose(
+                    template.id,
+                    template.purpose === "strength" ? "custom-focus" : "strength",
+                  );
+                }}
+                type="button"
+                variant="secondary"
+              >
+                {template.purpose === "strength" ? "Make custom focus" : "Make strength focus"}
+              </Button>
+              <Button
+                onClick={() => {
+                  onReplaceWorkoutTemplateWithCustomFocus(template.id);
+                }}
+                type="button"
+                variant="secondary"
+              >
+                Replace with custom focus
+              </Button>
               <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
-                {template.supersetGroups.length} groups
+                {template.purpose === "custom-focus"
+                  ? "Custom focus"
+                  : `${template.supersetGroups.length} groups`}
               </span>
             </div>
 
@@ -255,6 +360,10 @@ function TrainingPlanDraftReview({
       </div>
     </div>
   );
+}
+
+function getWorkoutTemplatePurposeDescription(purpose: WorkoutTemplatePurpose) {
+  return purpose === "custom-focus" ? "Custom-focus template" : "Strength-focused template";
 }
 
 function DefaultGenerationConfirmation({

@@ -284,6 +284,10 @@ describe("trainingPlanService", () => {
           weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
           workoutTemplates: createTrainingPlan().workoutTemplates,
         },
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
       },
     });
     await seedTrainingPlanData({
@@ -307,6 +311,55 @@ describe("trainingPlanService", () => {
       id: blueprint.id,
       trainingPlanDraft: null,
     });
+  });
+
+  it("preserves custom-focus Workout Template edits when accepting a Training Plan Draft", async () => {
+    const blueprint = createCompleteBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "Alternating Full Body A/B",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+          workoutTemplates: [
+            {
+              id: "template-cardio",
+              label: "Cardio Focus",
+              purpose: "custom-focus",
+              supersetGroups: [],
+            },
+          ],
+        },
+        validation: {
+          blockers: [],
+          warnings: [
+            {
+              kind: "custom_focus_reduces_strength_coverage",
+              message:
+                "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
+              templateIds: ["template-cardio"],
+            },
+          ],
+        },
+      },
+    });
+
+    const acceptedTrainingPlan = await trainingPlanService.acceptTrainingPlanDraft();
+
+    expect(acceptedTrainingPlan.workoutTemplates).toEqual([
+      {
+        id: "template-cardio",
+        label: "Cardio Focus",
+        purpose: "custom-focus",
+        supersetGroups: [],
+      },
+    ]);
   });
 });
 

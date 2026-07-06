@@ -4,8 +4,11 @@ export type {
   SupersetGroup,
   TrainingPlan,
   TrainingPlanDraft,
+  TrainingPlanDraftValidation,
+  TrainingPlanDraftWarning,
   TrainingPlanSlot,
   WorkoutTemplate,
+  WorkoutTemplatePurpose,
 } from "./training-plan";
 export {
   getTrainingPlanRouteTarget,

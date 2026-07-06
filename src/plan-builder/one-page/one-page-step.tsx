@@ -172,6 +172,13 @@ function renderOnePageActiveStep({
           isGenerating={generateStep.isGenerating}
           onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
+          onMoveWorkoutTemplate={generateStep.onMoveWorkoutTemplate}
+          onRenameWorkoutTemplate={generateStep.onRenameWorkoutTemplate}
+          onReplaceWorkoutTemplateWithCustomFocus={
+            generateStep.onReplaceWorkoutTemplateWithCustomFocus
+          }
+          onResetDraft={generateStep.onResetDraft}
+          onSetWorkoutTemplatePurpose={generateStep.onSetWorkoutTemplatePurpose}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {
