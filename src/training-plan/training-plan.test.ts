@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
-import { generateTrainingPlanFromBlueprint, type WorkoutTemplate } from "./training-plan";
+import {
+  generateTrainingPlanContentFromBlueprint,
+  generateTrainingPlanFromBlueprint,
+  type WorkoutTemplate,
+} from "./training-plan";
 import type { TrainingPrescription } from "./training-prescription";
 
 describe("generateTrainingPlanFromBlueprint", () => {
@@ -69,6 +73,32 @@ describe("generateTrainingPlanFromBlueprint", () => {
       { repRange: { max: 20, min: 12 }, setCount: 3 },
       { repRange: { max: 20, min: 12 }, setCount: 3 },
     ]);
+  });
+
+  it("extracts draft-ready Training Plan content without lifecycle fields while preserving generated content", () => {
+    const blueprint = createCompleteBlueprint();
+    const content = generateTrainingPlanContentFromBlueprint({ blueprint });
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint,
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(content).toEqual({
+      exerciseSelectionPreferences: trainingPlan.exerciseSelectionPreferences,
+      isolationExercisePreferences: trainingPlan.isolationExercisePreferences,
+      mainCompoundRotationPools: trainingPlan.mainCompoundRotationPools,
+      repRangeStyle: trainingPlan.repRangeStyle,
+      split: trainingPlan.split,
+      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+      trainingFrequencyDaysPerWeek: trainingPlan.trainingFrequencyDaysPerWeek,
+      trainingGoal: trainingPlan.trainingGoal,
+      weeklyRepTargets: trainingPlan.weeklyRepTargets,
+      workoutTemplates: trainingPlan.workoutTemplates,
+    });
+    expect(content.workoutTemplates.every((template) => template.purpose === "strength")).toBe(
+      true,
+    );
   });
 
   it("keeps generated Training Prescriptions independent between workout slots and generations", () => {
@@ -699,6 +729,7 @@ function createCompleteBlueprint({
     split,
     trainingFrequencyDaysPerWeek,
     trainingGoal: "build-muscle",
+    trainingPlanDraft: null,
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",

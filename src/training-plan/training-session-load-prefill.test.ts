@@ -226,6 +226,7 @@ function createWorkoutTemplate(slot: TrainingPlanSlot): WorkoutTemplate {
   return {
     id: "template-1",
     label: "Full Body A",
+    purpose: "strength",
     supersetGroups: [
       {
         id: "group-1",

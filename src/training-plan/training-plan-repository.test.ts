@@ -263,6 +263,32 @@ describe("trainingPlanRepository", () => {
     ]);
   });
 
+  it("defaults legacy persisted Workout Templates to strength purpose", async () => {
+    const trainingPlan = createTrainingPlan({
+      workoutTemplates: createTrainingPlan().workoutTemplates.map((template) => {
+        const legacyTemplate: Partial<(typeof trainingPlan)["workoutTemplates"][number]> = {
+          ...template,
+        };
+
+        delete legacyTemplate.purpose;
+
+        return legacyTemplate as (typeof trainingPlan)["workoutTemplates"][number];
+      }),
+    });
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+    });
+
+    expect(await getTrainingPlan(trainingPlan.id)).toMatchObject({
+      workoutTemplates: expect.arrayContaining([
+        expect.objectContaining({
+          purpose: "strength",
+        }),
+      ]),
+    });
+  });
+
   it("updates inherited Training Week bodyweight without overwriting per-session overrides", async () => {
     const trainingPlan = createTrainingPlan({
       baselineBodyweight: 80,
@@ -477,6 +503,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     split: "alternating-full-body-a-b",
     trainingFrequencyDaysPerWeek: 3,
     trainingGoal: "build-muscle",
+    trainingPlanDraft: null,
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",

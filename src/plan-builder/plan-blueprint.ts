@@ -1,3 +1,4 @@
+import type { TrainingPlanContent, WorkoutTemplate } from "../training-plan/training-plan";
 import { getExerciseCatalogExercise, isMainCompoundEligible } from "./exercise-catalog";
 import {
   createDefaultExerciseSelectionPreferences,
@@ -21,7 +22,7 @@ import {
   normalizeMainCompoundRotationPreferences,
   updateMainCompoundRotationPreferenceBucket,
 } from "./main-compound-rotation-preferences";
-import { isRepRangeStyleId } from "./plan-blueprint-options";
+import { isRepRangeStyleId, isTrainingFrequencyDaysPerWeek } from "./plan-blueprint-options";
 
 export {
   type PlanBlueprintDefaultResolution,
@@ -131,6 +132,7 @@ export function createDefaultPlanBlueprint({
     confirmedBuilderSteps: getConfirmedBuilderSteps({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
     }),
+    trainingPlanDraft: null,
   };
 }
 
@@ -276,6 +278,7 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
       rotationPools: blueprint.mainCompoundRotationPools,
     }),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
+    trainingPlanDraft: normalizeTrainingPlanDraft(blueprint.trainingPlanDraft),
   };
 }
 
@@ -763,6 +766,206 @@ function normalizeEquipmentPresetSource(
   return hasStoredFullGymEquipmentPreset(blueprint.exerciseSelectionPreferences)
     ? userSelectedEquipmentPresetSource
     : null;
+}
+
+function normalizeTrainingPlanDraft(
+  trainingPlanDraft: unknown,
+): PlanBlueprint["trainingPlanDraft"] {
+  if (!isRecord(trainingPlanDraft) || !isRecord(trainingPlanDraft.content)) {
+    return null;
+  }
+
+  const content = normalizeTrainingPlanDraftContent(trainingPlanDraft.content);
+
+  return content ? { content } : null;
+}
+
+function normalizeTrainingPlanDraftContent(
+  content: Record<string, unknown>,
+): TrainingPlanContent | null {
+  const normalizedContent = normalizeRequiredTrainingPlanDraftContent(content);
+
+  if (!normalizedContent) {
+    return null;
+  }
+
+  return applyOptionalTrainingPlanDraftContent(content, normalizedContent);
+}
+
+function normalizeRequiredTrainingPlanDraftContent(
+  content: Record<string, unknown>,
+): TrainingPlanContent | null {
+  const {
+    mainCompoundRotationPools,
+    repRangeStyle,
+    split,
+    trainingBlockWeeks,
+    trainingFrequencyDaysPerWeek,
+    trainingGoal,
+    weeklyRepTargets,
+  } = content;
+  const workoutTemplates = normalizeDraftWorkoutTemplates(content.workoutTemplates);
+
+  if (
+    !Array.isArray(mainCompoundRotationPools) ||
+    !isRepRangeStyleId(repRangeStyle) ||
+    typeof split !== "string" ||
+    !isPositiveInteger(trainingBlockWeeks) ||
+    !isTrainingFrequencyDaysPerWeek(trainingFrequencyDaysPerWeek) ||
+    trainingGoal !== "build-muscle" ||
+    !Array.isArray(weeklyRepTargets) ||
+    !workoutTemplates
+  ) {
+    return null;
+  }
+
+  const normalizedContent: TrainingPlanContent = {
+    mainCompoundRotationPools:
+      mainCompoundRotationPools as TrainingPlanContent["mainCompoundRotationPools"],
+    repRangeStyle,
+    split,
+    trainingBlockWeeks,
+    trainingFrequencyDaysPerWeek,
+    trainingGoal,
+    weeklyRepTargets: weeklyRepTargets as TrainingPlanContent["weeklyRepTargets"],
+    workoutTemplates,
+  };
+
+  return normalizedContent;
+}
+
+function applyOptionalTrainingPlanDraftContent(
+  content: Record<string, unknown>,
+  normalizedContent: TrainingPlanContent,
+): TrainingPlanContent | null {
+  if (
+    !applyDraftBaselineBodyweight(content, normalizedContent) ||
+    !applyDraftStartingLoadSuggestions(content, normalizedContent) ||
+    !applyDraftTrainingBlock(content, normalizedContent)
+  ) {
+    return null;
+  }
+
+  if (hasDefinedContentField(content, "exerciseSelectionPreferences")) {
+    normalizedContent.exerciseSelectionPreferences = normalizeExerciseSelectionPreferences(
+      content.exerciseSelectionPreferences,
+    );
+  }
+
+  if (hasDefinedContentField(content, "isolationExercisePreferences")) {
+    normalizedContent.isolationExercisePreferences = normalizeIsolationExercisePreferences(
+      content.isolationExercisePreferences,
+    );
+  }
+
+  return normalizedContent;
+}
+
+function applyDraftBaselineBodyweight(
+  content: Record<string, unknown>,
+  normalizedContent: TrainingPlanContent,
+): boolean {
+  if (!hasDefinedContentField(content, "baselineBodyweight")) {
+    return true;
+  }
+
+  if (typeof content.baselineBodyweight !== "number" && content.baselineBodyweight !== null) {
+    return false;
+  }
+
+  normalizedContent.baselineBodyweight = content.baselineBodyweight;
+  return true;
+}
+
+function applyDraftStartingLoadSuggestions(
+  content: Record<string, unknown>,
+  normalizedContent: TrainingPlanContent,
+): boolean {
+  if (!hasDefinedContentField(content, "startingLoadSuggestions")) {
+    return true;
+  }
+
+  if (!Array.isArray(content.startingLoadSuggestions)) {
+    return false;
+  }
+
+  normalizedContent.startingLoadSuggestions =
+    content.startingLoadSuggestions as TrainingPlanContent["startingLoadSuggestions"];
+  return true;
+}
+
+function applyDraftTrainingBlock(
+  content: Record<string, unknown>,
+  normalizedContent: TrainingPlanContent,
+): boolean {
+  if (!hasDefinedContentField(content, "trainingBlock")) {
+    return true;
+  }
+
+  if (!isRecord(content.trainingBlock)) {
+    return false;
+  }
+
+  normalizedContent.trainingBlock = content.trainingBlock as TrainingPlanContent["trainingBlock"];
+  return true;
+}
+
+function hasDefinedContentField(
+  content: Record<string, unknown>,
+  field: keyof TrainingPlanContent,
+): boolean {
+  return Object.hasOwn(content, field) && content[field] !== undefined;
+}
+
+function normalizeDraftWorkoutTemplates(
+  workoutTemplates: unknown,
+): ReadonlyArray<WorkoutTemplate> | null {
+  if (!Array.isArray(workoutTemplates)) {
+    return null;
+  }
+
+  const normalizedWorkoutTemplates: WorkoutTemplate[] = [];
+
+  for (const workoutTemplate of workoutTemplates) {
+    const normalizedWorkoutTemplate = normalizeDraftWorkoutTemplate(workoutTemplate);
+
+    if (!normalizedWorkoutTemplate) {
+      return null;
+    }
+
+    normalizedWorkoutTemplates.push(normalizedWorkoutTemplate);
+  }
+
+  return normalizedWorkoutTemplates;
+}
+
+function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplate | null {
+  if (
+    !isRecord(workoutTemplate) ||
+    typeof workoutTemplate.id !== "string" ||
+    typeof workoutTemplate.label !== "string" ||
+    !Array.isArray(workoutTemplate.supersetGroups) ||
+    (workoutTemplate.purpose !== undefined &&
+      workoutTemplate.purpose !== null &&
+      workoutTemplate.purpose !== "strength")
+  ) {
+    return null;
+  }
+
+  return {
+    id: workoutTemplate.id,
+    label: workoutTemplate.label,
+    purpose: "strength",
+    supersetGroups: workoutTemplate.supersetGroups as WorkoutTemplate["supersetGroups"],
+  };
+}
+
+function isRecord(candidate: unknown): candidate is Record<string, unknown> {
+  return typeof candidate === "object" && candidate !== null;
+}
+
+function isPositiveInteger(candidate: unknown): candidate is number {
+  return typeof candidate === "number" && Number.isInteger(candidate) && candidate > 0;
 }
 
 function normalizeStoredEquipmentPresetSource(candidate: unknown): EquipmentPresetSource | null {

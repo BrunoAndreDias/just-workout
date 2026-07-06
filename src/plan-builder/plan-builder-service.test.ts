@@ -128,6 +128,19 @@ describe("planBuilderService", () => {
     });
   });
 
+  it("resumes blueprints saved before Training Plan Draft existed with no draft", async () => {
+    const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+    const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };
+
+    delete legacyBlueprint.trainingPlanDraft;
+
+    await savePlanBlueprint(legacyBlueprint as PlanBlueprint);
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      trainingPlanDraft: null,
+    });
+  });
+
   it("resumes blueprints saved before Main Compound Preferences existed with empty buckets", async () => {
     const currentBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
     const legacyBlueprint: Partial<PlanBlueprint> = { ...currentBlueprint };

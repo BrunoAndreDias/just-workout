@@ -192,6 +192,7 @@ function createNextTrainingPlanStub(): ReviewTrainingBlockTransitionWorkflow["pr
       {
         id: "template-1",
         label: "Full Body A",
+        purpose: "strength",
         supersetGroups: [
           {
             id: "group-1",
