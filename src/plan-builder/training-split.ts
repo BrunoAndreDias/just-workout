@@ -327,11 +327,3 @@ function supportsTrainingFrequency(
     (supportedFrequency) => supportedFrequency === trainingFrequencyDaysPerWeek,
   );
 }
-
-export const unsupportedTrainingSplitCategories = [
-  {
-    description:
-      "Body-part split weeks usually drop muscle frequency too low for the 2-5 days/week builder options, so Just Workout keeps them out of this step.",
-    title: "Body-part split weeks",
-  },
-] as const;

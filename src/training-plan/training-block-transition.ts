@@ -51,9 +51,6 @@ export type EditNextTrainingBlockTransitionLoadSuggestionInput = {
   userEditedLoad: number;
 };
 
-/** Choice the user makes when creating the next Training Block from the review. */
-export type NextTrainingBlockTransitionReviewMode = "accept_proposal" | "skip_rotation";
-
 type AcceptNextTrainingBlockTransitionReviewInput =
   | {
       preview?: NextTrainingBlockPreview;

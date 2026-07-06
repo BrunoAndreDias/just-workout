@@ -423,10 +423,6 @@ export function getRampSnapshot(state: RampState): RampSnapshot {
   };
 }
 
-export function getScenarioIds(): ReadonlyArray<RampScenarioId> {
-  return SCENARIOS.map((scenario) => scenario.id);
-}
-
 function createExternalSlot({
   firstCompletionLoadKg,
   id,

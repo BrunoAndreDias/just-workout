@@ -91,13 +91,6 @@ export function getTrainingSessionStartChoiceHref(planId: string): string {
   return `${getTrainingSessionHistoryHref(planId)}/new`;
 }
 
-export function getTrainingSessionStartHref({
-  planId,
-  templateId,
-}: TrainingSessionRouteParams): string {
-  return `${getTrainingSessionStartChoiceHref(planId)}/${encodeURIComponent(templateId)}`;
-}
-
 export function parseTrainingPlanPathname(pathname: string): TrainingPlanRouteParams | null {
   const match = /^\/training-plans\/([^/]+)$/.exec(pathname);
   const planId = match?.[1];

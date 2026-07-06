@@ -96,7 +96,7 @@ export const trainingFrequencyOptions = [
   },
 ] as const satisfies ReadonlyArray<TrainingFrequencyOption>;
 
-export const trainingFrequencyRecommendations = {
+const trainingFrequencyRecommendations = {
   2: {
     description:
       "Two focused sessions keep the plan realistic when your week is tight and you still want time to recover well.",

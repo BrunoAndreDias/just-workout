@@ -54,7 +54,7 @@ const smallerVolumeTargetMuscleGroupSet: ReadonlySet<VolumeMuscleGroupId> =
   new Set<VolumeMuscleGroupId>(smallerVolumeTargetMuscleGroups);
 const optionalVolumeMuscleGroupSet: ReadonlySet<unknown> = new Set(optionalVolumeMuscleGroups);
 
-export const defaultVolumePresetId = "balanced" satisfies VolumePresetId;
+const defaultVolumePresetId = "balanced" satisfies VolumePresetId;
 
 export const volumePresets = [
   {
@@ -84,7 +84,7 @@ export function isVolumePresetId(value: unknown): value is VolumePresetId {
   return volumePresets.some((preset) => preset.id === value);
 }
 
-export function isVolumePresetSource(value: unknown): value is VolumePresetSource {
+function isVolumePresetSource(value: unknown): value is VolumePresetSource {
   return value === "recommended_default" || value === "user_selected";
 }
 
@@ -229,7 +229,7 @@ export function selectTrainingVolumeConfiguration({
   };
 }
 
-export function estimateWeeklySetRange({
+function estimateWeeklySetRange({
   target,
   volumeEstimationRepRange,
 }: {

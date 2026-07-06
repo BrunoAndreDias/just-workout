@@ -6,10 +6,7 @@ import {
 import type { TrainingSplitId } from "./training-split";
 import type { WeeklyRepTarget } from "./training-volume";
 
-export type {
-  ExerciseCatalogMuscleGroupId,
-  MovementPatternId,
-} from "./exercise-catalog";
+export type { MovementPatternId } from "./exercise-catalog";
 export { exerciseCatalogMuscleGroups } from "./exercise-catalog";
 export type ExerciseSelectionStrategyId = "balanced";
 export type EquipmentPresetId = "full_gym";
@@ -160,10 +157,6 @@ const movementPatternSessionBiasBySplit = {
 } as const satisfies Record<TrainingSplitId, Record<MovementPatternCoverageGroupId, string>>;
 const defaultExerciseSelectionStrategyId = "balanced" satisfies ExerciseSelectionStrategyId;
 const defaultEquipmentPresetId = "full_gym" satisfies EquipmentPresetId;
-export const emptyExerciseSelectionPendingInputs = {
-  avoidedExercise: "",
-  preferredExercise: "",
-} as const satisfies ExerciseSelectionPendingInputs;
 const exerciseSelectionStrategies = [
   {
     description:
@@ -442,7 +435,7 @@ export function isExerciseSelectionPreferencesConfirmationReady({
   );
 }
 
-export function hasExerciseSelectionPreferenceValidationErrors(
+function hasExerciseSelectionPreferenceValidationErrors(
   validationErrors: ExerciseSelectionPreferenceValidationErrors,
 ): boolean {
   return Object.keys(validationErrors).length > 0;

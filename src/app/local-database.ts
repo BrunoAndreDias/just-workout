@@ -2,7 +2,7 @@ import Dexie, { type Table } from "dexie";
 import type { PlanBlueprint } from "../plan-builder";
 import type { TrainingPlan, TrainingSession } from "../training-plan";
 
-export class JustWorkoutDatabase extends Dexie {
+class JustWorkoutDatabase extends Dexie {
   planBlueprints!: Table<PlanBlueprint, string>;
   trainingPlans!: Table<TrainingPlan, string>;
   trainingSessions!: Table<TrainingSession, string>;

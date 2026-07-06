@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type TrainingPlan, trainingPlanService } from "../../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "../exercise-catalog";
-import type { ExerciseSelectionPreferences } from "../exercise-selection-preferences";
 import {
   type PlanBlueprint,
   type RepRangeStyleId,
@@ -16,11 +14,7 @@ import {
   projectPlanBlueprintCommand,
 } from "../plan-blueprint-command";
 import type { TrainingSplitId } from "../training-split";
-import type {
-  OptionalVolumeMuscleGroupId,
-  TrainingVolumeConfiguration,
-  VolumePresetId,
-} from "../training-volume";
+import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 import type { MainCompoundSelection } from "../weekly-movement-coverage";
 import { planBuilderBlueprintQueryKey } from "./plan-builder-config";
 
@@ -62,18 +56,6 @@ type UpdateOptionalVolumeTargetMutationVariables = {
   timestamp: string;
 };
 
-type UpdateMainCompoundSelectionMutationVariables = {
-  exerciseId: string;
-  movementPattern: MainCompoundSelection["movementPattern"];
-  timestamp: string;
-};
-
-type UpdateMainCompoundRotationPoolMutationVariables = {
-  exerciseIds: ReadonlyArray<string>;
-  movementPattern: MainCompoundSelection["movementPattern"];
-  timestamp: string;
-};
-
 type UpdateMainCompoundRotationPreferencesMutationVariables = {
   exerciseIds: ReadonlyArray<string>;
   movementPattern: MainCompoundSelection["movementPattern"];
@@ -90,20 +72,6 @@ type UpdateIsolationExercisePreferencesMutationVariables = {
   exerciseIds: ReadonlyArray<string>;
   primaryMuscleGroup: ExerciseCatalogMuscleGroupId;
   timestamp: string;
-};
-
-type ConfirmTrainingVolumeMutationVariables = {
-  timestamp: string;
-  trainingVolumeConfiguration: TrainingVolumeConfiguration;
-};
-
-type ConfirmExerciseSelectionPreferencesMutationVariables = {
-  exerciseSelectionPreferences?: ExerciseSelectionPreferences;
-  timestamp: string;
-};
-
-type ApplyResolvedPlanBlueprintMutationVariables = {
-  blueprint: PlanBlueprint;
 };
 
 export function usePlanBuilderBlueprint() {
@@ -133,24 +101,6 @@ export function useUpdateTrainingSplitMutation() {
   });
 }
 
-export function useConfirmTrainingFrequencyMutation() {
-  return usePlanBlueprintMutation<TrainingFrequencyMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.confirmTrainingFrequency,
-  });
-}
-
-export function useConfirmTrainingSplitMutation() {
-  return usePlanBlueprintMutation<TrainingSplitMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.confirmTrainingSplit,
-  });
-}
-
-export function useConfirmRepRangeStyleMutation() {
-  return usePlanBlueprintMutation<RepRangeStyleMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.confirmRepRangeStyle,
-  });
-}
-
 export function useUpdateRepRangeStyleMutation() {
   return usePlanBlueprintMutation<RepRangeStyleMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateRepRangeStyle,
@@ -175,30 +125,6 @@ export function useUpdateOptionalVolumeTargetMutation() {
   });
 }
 
-export function useConfirmTrainingVolumeMutation() {
-  return usePlanBlueprintMutation<ConfirmTrainingVolumeMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.confirmTrainingVolume,
-  });
-}
-
-export function useConfirmExerciseSelectionPreferencesMutation() {
-  return usePlanBlueprintMutation<ConfirmExerciseSelectionPreferencesMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.confirmExerciseSelectionPreferences,
-  });
-}
-
-export function useUpdateMainCompoundSelectionMutation() {
-  return usePlanBlueprintMutation<UpdateMainCompoundSelectionMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.updateMainCompoundSelection,
-  });
-}
-
-export function useUpdateMainCompoundRotationPoolMutation() {
-  return usePlanBlueprintMutation<UpdateMainCompoundRotationPoolMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.updateMainCompoundRotationPool,
-  });
-}
-
 export function useUpdateMainCompoundRotationPreferencesMutation() {
   return usePlanBlueprintMutation<UpdateMainCompoundRotationPreferencesMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateMainCompoundRotationPreferences,
@@ -214,18 +140,6 @@ export function useUpdateMainCompoundPreferencesMutation() {
 export function useUpdateIsolationExercisePreferencesMutation() {
   return usePlanBlueprintMutation<UpdateIsolationExercisePreferencesMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateIsolationExercisePreferences,
-  });
-}
-
-export function useGenerateTrainingPlanMutation() {
-  return useMutation<TrainingPlan, Error, void>({
-    mutationFn: trainingPlanService.generateTrainingPlan,
-  });
-}
-
-export function useApplyResolvedPlanBlueprintMutation() {
-  return usePlanBlueprintMutation<ApplyResolvedPlanBlueprintMutationVariables>({
-    buildCommand: planBlueprintCommandBuilders.applyResolvedPlanBlueprint,
   });
 }
 

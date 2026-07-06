@@ -19,7 +19,7 @@ import type { PlanBlueprint } from "./plan-blueprint";
 import { formatMovementPatternLabel } from "./weekly-movement-coverage";
 
 export type MainCompoundRotationPreferenceReadModel = MainCompoundPreferenceReadModel;
-export type MainCompoundRotationPreferenceRowReadModel = MainCompoundPreferenceRowReadModel;
+type MainCompoundRotationPreferenceRowReadModel = MainCompoundPreferenceRowReadModel;
 
 export function getMainCompoundRotationPreferenceReadModel({
   blueprint,

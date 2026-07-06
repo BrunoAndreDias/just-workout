@@ -1,14 +1,5 @@
-export type {
-  NextTrainingBlockLoadSuggestion,
-  NextTrainingBlockPreview,
-} from "./training-block";
-export { applyNextTrainingBlockLoadSuggestionEdit } from "./training-block";
+export type { NextTrainingBlockLoadSuggestion } from "./training-block";
 export type { NextTrainingBlockTransitionWorkflow } from "./training-block-transition";
-export {
-  acceptNextTrainingBlockTransition,
-  createNextTrainingBlockTransitionPreview,
-  createNextTrainingBlockTransitionWorkflow,
-} from "./training-block-transition";
 export type {
   SupersetGroup,
   TrainingPlan,
@@ -19,7 +10,6 @@ export {
   getTrainingPlanRouteTarget,
   getTrainingSessionHistoryHref,
   getTrainingSessionStartChoiceHref,
-  getTrainingSessionStartHref,
   isTrainingPlansNavigationPathname,
   type TrainingPlanRouteTarget,
   trainingPlanPaths,

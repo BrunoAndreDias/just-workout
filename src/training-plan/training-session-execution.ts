@@ -353,7 +353,7 @@ export function createInitialTrainingSessionDrafts(
   );
 }
 
-export function createDefaultTrainingSessionSetDrafts(
+function createDefaultTrainingSessionSetDrafts(
   slot?: TrainingPlanSlot,
   startingLoad?: string,
 ): TrainingSessionSetDraft[] {
@@ -368,9 +368,7 @@ export function createDefaultTrainingSessionSetDrafts(
   }));
 }
 
-export function getDefaultTrainingSessionSetDraft(
-  slot?: TrainingPlanSlot,
-): TrainingSessionSetDraft {
+function getDefaultTrainingSessionSetDraft(slot?: TrainingPlanSlot): TrainingSessionSetDraft {
   return (
     createDefaultTrainingSessionSetDrafts(slot)[0] ?? {
       done: false,

@@ -88,8 +88,6 @@ export type {
   PlanBlueprint,
   PlanBlueprintSummary,
   PlanBlueprintTransition,
-  PlanBuilderGuardedStep,
-  PlanBuilderRedirectStep,
   RepRangeStyle,
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
@@ -373,7 +371,7 @@ export function selectRepRangeStyle({
   };
 }
 
-export function initializeTrainingVolume({
+function initializeTrainingVolume({
   blueprint,
   timestamp,
 }: InitializeTrainingVolumeOptions): PlanBlueprint {
@@ -484,7 +482,7 @@ export function updateExerciseSelectionPreferences({
   };
 }
 
-export function selectMainCompound({
+function selectMainCompound({
   blueprint,
   exerciseId,
   movementPattern,
@@ -562,7 +560,7 @@ export function updateMainCompoundPreferences({
   };
 }
 
-export function updateMainCompoundRotationPreferences({
+function updateMainCompoundRotationPreferences({
   blueprint,
   exerciseIds,
   movementPattern,
