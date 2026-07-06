@@ -143,6 +143,7 @@ export function generateTrainingPlanFromBlueprint({
   };
 }
 
+/** Promotes draft content into a persisted Active Training Plan identity. */
 export function createTrainingPlanFromDraft({
   draft,
   id,

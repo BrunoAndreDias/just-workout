@@ -20,20 +20,38 @@ type TrainingPlanGenerationDependencies = {
   createTrainingPlanId: () => string;
   getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
   getTimestamp: () => string;
-  savePlanBlueprint?: (blueprint: PlanBlueprint) => Promise<PlanBlueprint>;
   saveActiveTrainingPlan: (trainingPlan: TrainingPlan) => Promise<TrainingPlan>;
 };
 
-const defaultTrainingPlanGenerationDependencies: TrainingPlanGenerationDependencies = {
+type TrainingPlanDraftGenerationDependencies = {
+  getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
+  getTimestamp: () => string;
+  savePlanBlueprint: (blueprint: PlanBlueprint) => Promise<PlanBlueprint>;
+};
+
+type TrainingPlanDraftAcceptanceDependencies = {
+  createTrainingPlanId: () => string;
+  getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
+  getTimestamp: () => string;
+};
+
+type CurrentPlanBlueprintDependencies = {
+  getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
+};
+
+const defaultTrainingPlanGenerationDependencies = {
   createTrainingPlanId: () => crypto.randomUUID(),
   getCurrentPlanBlueprint,
   getTimestamp: () => new Date().toISOString(),
   savePlanBlueprint,
   saveActiveTrainingPlan: saveGeneratedTrainingPlan,
-};
+} satisfies TrainingPlanDraftAcceptanceDependencies &
+  TrainingPlanDraftGenerationDependencies &
+  TrainingPlanGenerationDependencies;
 
+/** Creates or reuses the current Plan Blueprint's persisted Training Plan Draft. */
 export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
-  dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {
   const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
 
@@ -47,7 +65,7 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
     }),
   };
 
-  await (dependencies.savePlanBlueprint ?? savePlanBlueprint)({
+  await dependencies.savePlanBlueprint({
     ...normalizedBlueprint,
     trainingPlanDraft,
     updatedAt: dependencies.getTimestamp(),
@@ -71,8 +89,9 @@ export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
   return dependencies.saveActiveTrainingPlan(trainingPlan);
 }
 
+/** Accepts the current Plan Blueprint's saved draft into a new Active Training Plan. */
 export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
-  dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+  dependencies: TrainingPlanDraftAcceptanceDependencies = defaultTrainingPlanGenerationDependencies,
 ) {
   const { normalizedBlueprint } = await getReadyResolvedPlanBlueprint(dependencies);
   const trainingPlanDraft = normalizedBlueprint.trainingPlanDraft;
@@ -100,7 +119,7 @@ export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
 }
 
 async function getReadyResolvedPlanBlueprint(
-  dependencies: TrainingPlanGenerationDependencies,
+  dependencies: CurrentPlanBlueprintDependencies,
 ): Promise<{
   normalizedBlueprint: PlanBlueprint;
   resolution: ReturnType<typeof resolvePlanBlueprintRecommendedDefaults>;

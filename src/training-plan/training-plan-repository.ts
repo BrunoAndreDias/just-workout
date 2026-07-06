@@ -85,6 +85,7 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
   return normalizedTrainingPlan;
 }
 
+/** Atomically saves an accepted draft as the Active Training Plan and clears it from the Plan Blueprint. */
 export async function acceptTrainingPlanDraft({
   blueprint,
   trainingPlan,

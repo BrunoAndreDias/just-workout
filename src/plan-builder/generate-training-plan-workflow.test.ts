@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetLocalDatabase } from "../app/local-database";
 import {
   acceptGenerateTrainingPlanRecommendedDefaults,
-  type GenerateTrainingPlanWorkflowDependencies,
   startGenerateTrainingPlanWorkflow,
 } from "./generate-training-plan-workflow";
 import {
@@ -9,35 +9,39 @@ import {
   type PlanBlueprint,
   type PlanBlueprintDefaultResolution,
 } from "./plan-blueprint";
+import { planBuilderService } from "./plan-builder-service";
 import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 
 describe("Generate Training Plan workflow", () => {
+  beforeEach(async () => {
+    await resetLocalDatabase();
+  });
+
   it("returns pending Recommended Defaults without applying or generating", async () => {
     const resolution = createDefaultResolution({ isReady: false });
-    const events: string[] = [];
 
     const result = await startGenerateTrainingPlanWorkflow({
       defaultResolution: resolution,
-      dependencies: createWorkflowDependencies(events),
     });
 
     expect(result).toEqual({
       resolution,
       status: "pending_recommended_defaults",
     });
-    expect(events).toEqual([]);
   });
 
   it("creates a Training Plan Draft when the Plan Blueprint is ready", async () => {
-    const events: string[] = [];
+    const resolution = createDefaultResolution({ isReady: true });
 
-    const result = await startGenerateTrainingPlanWorkflow({
-      defaultResolution: createDefaultResolution({ isReady: true }),
-      dependencies: createWorkflowDependencies(events),
+    await planBuilderService.applyResolvedPlanBlueprint({
+      blueprint: resolution.resolvedBlueprint,
     });
 
-    expect(events).toEqual(["generate-training-plan-draft"]);
+    const result = await startGenerateTrainingPlanWorkflow({
+      defaultResolution: resolution,
+    });
+
     expect(result).toMatchObject({
       status: "draft_ready",
       trainingPlanDraft: {
@@ -46,10 +50,16 @@ describe("Generate Training Plan workflow", () => {
         },
       },
     });
+    if (result.status !== "draft_ready") {
+      throw new Error(`Expected draft-ready result, received ${result.status}.`);
+    }
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      trainingPlanDraft: result.trainingPlanDraft,
+    });
   });
 
   it("returns blocked when generation has blocking issues", async () => {
-    const events: string[] = [];
     const resolution = createDefaultResolution({
       blockingIssues: [
         {
@@ -64,29 +74,21 @@ describe("Generate Training Plan workflow", () => {
 
     const result = await startGenerateTrainingPlanWorkflow({
       defaultResolution: resolution,
-      dependencies: createWorkflowDependencies(events),
     });
 
     expect(result).toEqual({
       blockingIssues: resolution.blockingIssues,
       status: "blocked",
     });
-    expect(events).toEqual([]);
   });
 
   it("applies accepted Recommended Defaults before creating the Training Plan Draft", async () => {
-    const events: string[] = [];
     const resolution = createDefaultResolution({ isReady: false });
 
     const result = await acceptGenerateTrainingPlanRecommendedDefaults({
-      dependencies: createWorkflowDependencies(events),
       resolution,
     });
 
-    expect(events).toEqual([
-      "apply-resolved-plan-blueprint:plan-blueprint-test",
-      "generate-training-plan-draft",
-    ]);
     expect(result).toMatchObject({
       status: "draft_ready",
       trainingPlanDraft: {
@@ -94,6 +96,14 @@ describe("Generate Training Plan workflow", () => {
           split: "3-Day Full Body",
         },
       },
+    });
+    if (result.status !== "draft_ready") {
+      throw new Error(`Expected draft-ready result, received ${result.status}.`);
+    }
+
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      id: resolution.resolvedBlueprint.id,
+      trainingPlanDraft: result.trainingPlanDraft,
     });
   });
 });
@@ -140,31 +150,5 @@ function createResolvedBlueprint(): PlanBlueprint {
     mainCompoundSelections: completeMainCompoundSelections,
     repRanges: "balanced_hypertrophy",
     split: "full-body-3-day",
-  };
-}
-
-function createWorkflowDependencies(events: string[]): GenerateTrainingPlanWorkflowDependencies {
-  return {
-    applyResolvedPlanBlueprint: async ({ blueprint }) => {
-      events.push(`apply-resolved-plan-blueprint:${blueprint.id}`);
-
-      return blueprint;
-    },
-    generateTrainingPlanDraft: async () => {
-      events.push("generate-training-plan-draft");
-
-      return {
-        content: {
-          mainCompoundRotationPools: [],
-          repRangeStyle: "balanced_hypertrophy",
-          split: "3-Day Full Body",
-          trainingBlockWeeks: 6,
-          trainingFrequencyDaysPerWeek: 3,
-          trainingGoal: "build-muscle",
-          weeklyRepTargets: [],
-          workoutTemplates: [],
-        },
-      };
-    },
   };
 }
