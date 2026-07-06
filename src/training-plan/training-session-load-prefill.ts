@@ -58,7 +58,7 @@ export function createTrainingSessionLoadPrefills({
 
     const persistedSuggestion = persistedSuggestionsByExerciseId.get(slot.exerciseId);
 
-    if (persistedSuggestion) {
+    if (persistedSuggestion && hasPersistedEffectiveLoad(persistedSuggestion)) {
       return {
         ...persistedSuggestion,
         showPrefillExplanation: persistedSuggestion.kind === "exact_previous_exercise",
@@ -105,6 +105,10 @@ function getUniqueWorkoutTemplateSlots(
   }
 
   return [...slotsByExerciseId.values()];
+}
+
+function hasPersistedEffectiveLoad(suggestion: TrainingPlanStartingLoadSuggestion): boolean {
+  return suggestion.effectiveLoad !== null;
 }
 
 function getLatestCompletedExerciseHistory({

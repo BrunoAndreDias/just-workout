@@ -736,22 +736,11 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
-  it("edits draft-local starting loads and Baseline Bodyweight before acceptance, then resets them from current builder choices", async () => {
+  it("resets draft-local starting loads and Baseline Bodyweight from current builder choices", async () => {
     const user = userEvent.setup();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
-
-    await user.click(await getOnePageSectionButton("Generate"));
-    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
-    );
-
-    const suggestedLoadInput = (
-      await screen.findAllByLabelText(/suggested starting load for flat barbell bench press/i)
-    )[0] as HTMLInputElement;
-    const baselineBodyweightInput = (await screen.findByLabelText(
-      /^baseline bodyweight$/i,
-    )) as HTMLInputElement;
+    const { baselineBodyweightInput, suggestedLoadInput } =
+      await openGeneratedTrainingPlanDraft(user);
 
     await user.clear(suggestedLoadInput);
     await user.type(suggestedLoadInput, "42.5");
@@ -771,6 +760,13 @@ describe("Plan Builder canonical route", () => {
       expect(suggestedLoadInput).toHaveValue(null);
       expect(baselineBodyweightInput).toHaveValue(null);
     });
+  });
+
+  it("accepts draft-local starting loads and Baseline Bodyweight into the Active Training Plan", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    const { baselineBodyweightInput, suggestedLoadInput } =
+      await openGeneratedTrainingPlanDraft(user);
 
     await user.clear(suggestedLoadInput);
     await user.type(suggestedLoadInput, "45");
@@ -789,6 +785,7 @@ describe("Plan Builder canonical route", () => {
             baselineBodyweight: 81,
             startingLoadSuggestions: expect.arrayContaining([
               expect.objectContaining({
+                effectiveLoad: 45,
                 exerciseId: "flat-barbell-bench-press",
                 userEditedLoad: 45,
               }),
@@ -799,6 +796,23 @@ describe("Plan Builder canonical route", () => {
     });
   });
 });
+
+async function openGeneratedTrainingPlanDraft(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await getOnePageSectionButton("Generate"));
+  await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+  await user.click(
+    await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+  );
+
+  const suggestedLoadInput = (
+    await screen.findAllByLabelText(/suggested starting load for flat barbell bench press/i)
+  )[0] as HTMLInputElement;
+  const baselineBodyweightInput = (await screen.findByLabelText(
+    /^baseline bodyweight$/i,
+  )) as HTMLInputElement;
+
+  return { baselineBodyweightInput, suggestedLoadInput };
+}
 
 function renderPlanBuilder({
   initialEntries = [planBuilderPaths.entry],

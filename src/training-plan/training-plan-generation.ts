@@ -6,6 +6,7 @@ import {
 import {
   getCurrentPlanBlueprint,
   savePlanBlueprint,
+  updateCurrentPlanBlueprint,
 } from "../plan-builder/plan-builder-repository";
 import {
   createTrainingPlanFromDraft,
@@ -13,6 +14,7 @@ import {
   generateTrainingPlanFromBlueprint,
   type TrainingPlan,
   type TrainingPlanDraft,
+  type TrainingPlanDraftSetupUpdate,
 } from "./training-plan";
 import { acceptTrainingPlanDraft, saveGeneratedTrainingPlan } from "./training-plan-repository";
 
@@ -27,6 +29,13 @@ type TrainingPlanDraftGenerationDependencies = {
   getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
   getTimestamp: () => string;
   savePlanBlueprint: (blueprint: PlanBlueprint) => Promise<PlanBlueprint>;
+};
+
+type TrainingPlanDraftSetupSaveDependencies = {
+  getTimestamp: () => string;
+  updateCurrentPlanBlueprint: (
+    updateBlueprint: (blueprint: PlanBlueprint | null) => PlanBlueprint,
+  ) => Promise<PlanBlueprint>;
 };
 
 type TrainingPlanDraftAcceptanceDependencies = {
@@ -45,8 +54,10 @@ const defaultTrainingPlanGenerationDependencies = {
   getTimestamp: () => new Date().toISOString(),
   savePlanBlueprint,
   saveActiveTrainingPlan: saveGeneratedTrainingPlan,
+  updateCurrentPlanBlueprint,
 } satisfies TrainingPlanDraftAcceptanceDependencies &
   TrainingPlanDraftGenerationDependencies &
+  TrainingPlanDraftSetupSaveDependencies &
   TrainingPlanGenerationDependencies;
 
 /** Creates or reuses the current Plan Blueprint's persisted Training Plan Draft. */
@@ -74,30 +85,53 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
   return trainingPlanDraft;
 }
 
-export async function saveTrainingPlanDraftFromCurrentPlanBlueprint({
+/**
+ * Saves one draft setup field onto the current persisted Training Plan Draft.
+ *
+ * The merge happens against the latest Plan Blueprint in a write transaction so independent setup
+ * edits do not replace each other with stale draft snapshots.
+ */
+export async function saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
   dependencies = defaultTrainingPlanGenerationDependencies,
-  draft,
+  update,
 }: {
-  dependencies?: TrainingPlanDraftGenerationDependencies;
-  draft: TrainingPlanDraft;
+  dependencies?: TrainingPlanDraftSetupSaveDependencies;
+  update: TrainingPlanDraftSetupUpdate;
 }): Promise<TrainingPlanDraft> {
-  const blueprint = await dependencies.getCurrentPlanBlueprint();
+  const savedBlueprint = await dependencies.updateCurrentPlanBlueprint((blueprint) => {
+    if (!blueprint) {
+      throw new Error("Cannot save a Training Plan Draft without a Plan Blueprint.");
+    }
 
-  if (!blueprint) {
-    throw new Error("Cannot save a Training Plan Draft without a Plan Blueprint.");
-  }
+    const normalizedBlueprint = normalizePlanBlueprint(blueprint);
+    const trainingPlanDraft = normalizedBlueprint.trainingPlanDraft;
 
-  const normalizedBlueprint = normalizePlanBlueprint(blueprint);
+    if (!trainingPlanDraft) {
+      throw new Error("Cannot save Training Plan Draft setup before a draft exists.");
+    }
 
-  await dependencies.savePlanBlueprint({
-    ...normalizedBlueprint,
-    trainingPlanDraft: draft,
-    updatedAt: dependencies.getTimestamp(),
+    return {
+      ...normalizedBlueprint,
+      trainingPlanDraft: applyTrainingPlanDraftSetupUpdate({
+        trainingPlanDraft,
+        update,
+      }),
+      updatedAt: dependencies.getTimestamp(),
+    };
   });
 
-  return draft;
+  if (!savedBlueprint.trainingPlanDraft) {
+    throw new Error("Expected saved Plan Blueprint to include a Training Plan Draft.");
+  }
+
+  return savedBlueprint.trainingPlanDraft;
 }
 
+/**
+ * Regenerates the current Training Plan Draft from the latest Plan Blueprint choices.
+ *
+ * This discards draft-local setup edits such as Baseline Bodyweight and edited starting loads.
+ */
 export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
   dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {
@@ -115,6 +149,31 @@ export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
   });
 
   return trainingPlanDraft;
+}
+
+function applyTrainingPlanDraftSetupUpdate({
+  trainingPlanDraft,
+  update,
+}: {
+  trainingPlanDraft: TrainingPlanDraft;
+  update: TrainingPlanDraftSetupUpdate;
+}): TrainingPlanDraft {
+  switch (update.kind) {
+    case "baseline_bodyweight":
+      return {
+        content: {
+          ...trainingPlanDraft.content,
+          baselineBodyweight: update.baselineBodyweight,
+        },
+      };
+    case "starting_load_suggestions":
+      return {
+        content: {
+          ...trainingPlanDraft.content,
+          startingLoadSuggestions: update.startingLoadSuggestions,
+        },
+      };
+  }
 }
 
 export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(

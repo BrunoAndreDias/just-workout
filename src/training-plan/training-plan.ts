@@ -113,6 +113,16 @@ export type TrainingPlanDraft = {
   content: TrainingPlanContent;
 };
 
+export type TrainingPlanDraftSetupUpdate =
+  | {
+      baselineBodyweight: number | null;
+      kind: "baseline_bodyweight";
+    }
+  | {
+      kind: "starting_load_suggestions";
+      startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+    };
+
 type GenerateTrainingPlanOptions = {
   blueprint: PlanBlueprint;
   id: string;

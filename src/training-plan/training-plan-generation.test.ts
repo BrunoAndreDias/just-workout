@@ -8,7 +8,7 @@ import {
   generateActiveTrainingPlanFromCurrentPlanBlueprint,
   generateTrainingPlanDraftFromCurrentPlanBlueprint,
   resetTrainingPlanDraftFromCurrentPlanBlueprint,
-  saveTrainingPlanDraftFromCurrentPlanBlueprint,
+  saveTrainingPlanDraftSetupFromCurrentPlanBlueprint,
 } from "./training-plan-generation";
 
 describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
@@ -158,56 +158,65 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
     expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
   });
 
-  it("saves draft-local setup values, preserves them on accept, and discards them on reset", async () => {
-    const savedBlueprints: PlanBlueprint[] = [];
-    let currentBlueprint = createCompleteBlueprint();
-
-    const dependencies = {
-      createTrainingPlanId: () => "training-plan-test",
-      getCurrentPlanBlueprint: async () => currentBlueprint,
-      getTimestamp: () => "2026-06-07T10:00:00.000Z",
-      saveActiveTrainingPlan: async (plan: TrainingPlan) => plan,
-      savePlanBlueprint: async (blueprint: PlanBlueprint) => {
-        currentBlueprint = blueprint;
-        savedBlueprints.push(blueprint);
-
-        return blueprint;
-      },
-    };
-
+  it("saves draft-local setup values onto the current Training Plan Draft", async () => {
+    const { dependencies, getCurrentBlueprint } = createDraftGenerationTestContext();
     const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
-    const firstSuggestion = generatedDraft.content.startingLoadSuggestions?.[0];
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
 
-    expect(firstSuggestion).toBeDefined();
-
-    await saveTrainingPlanDraftFromCurrentPlanBlueprint({
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
       dependencies,
-      draft: {
-        content: {
-          ...generatedDraft.content,
-          baselineBodyweight: 82,
-          startingLoadSuggestions: generatedDraft.content.startingLoadSuggestions?.map(
-            (suggestion, index) =>
-              index === 0
-                ? {
-                    ...suggestion,
-                    userEditedLoad: 42.5,
-                  }
-                : suggestion,
-          ),
-        },
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
       },
     });
 
-    expect(currentBlueprint.trainingPlanDraft).toMatchObject({
+    expect(getCurrentBlueprint().trainingPlanDraft).toMatchObject({
       content: {
         baselineBodyweight: 82,
         startingLoadSuggestions: expect.arrayContaining([
           expect.objectContaining({
-            exerciseId: firstSuggestion?.exerciseId,
+            effectiveLoad: 42.5,
+            exerciseId: firstSuggestion.exerciseId,
             userEditedLoad: 42.5,
           }),
         ]),
+      },
+    });
+  });
+
+  it("accepts draft-local setup values into the Active Training Plan", async () => {
+    const { dependencies } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
+
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
       },
     });
 
@@ -218,27 +227,118 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
       baselineBodyweight: 82,
       startingLoadSuggestions: expect.arrayContaining([
         expect.objectContaining({
-          exerciseId: firstSuggestion?.exerciseId,
+          effectiveLoad: 42.5,
+          exerciseId: firstSuggestion.exerciseId,
           userEditedLoad: 42.5,
         }),
       ]),
     });
+  });
 
-    await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+  it("resets draft-local setup values from the current Plan Blueprint choices", async () => {
+    const { dependencies } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
+
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
+      },
+    });
+
     const resetDraft = await resetTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
 
-    expect(resetDraft.content.baselineBodyweight ?? null).toBeNull();
-    expect(resetDraft.content.startingLoadSuggestions).toEqual(
-      expect.arrayContaining([
+    expect(resetDraft.content.baselineBodyweight).toBeUndefined();
+    expect(resetDraft.content).toMatchObject({
+      startingLoadSuggestions: expect.arrayContaining([
         expect.objectContaining({
-          exerciseId: firstSuggestion?.exerciseId,
+          effectiveLoad: null,
+          exerciseId: firstSuggestion.exerciseId,
           userEditedLoad: null,
         }),
       ]),
-    );
-    expect(savedBlueprints).not.toHaveLength(0);
+    });
   });
 });
+
+function createDraftGenerationTestContext() {
+  let currentBlueprint = createCompleteBlueprint();
+
+  const dependencies = {
+    createTrainingPlanId: () => "training-plan-test",
+    getCurrentPlanBlueprint: async () => currentBlueprint,
+    getTimestamp: () => "2026-06-07T10:00:00.000Z",
+    saveActiveTrainingPlan: async (plan: TrainingPlan) => plan,
+    savePlanBlueprint: async (blueprint: PlanBlueprint) => {
+      currentBlueprint = blueprint;
+
+      return blueprint;
+    },
+    updateCurrentPlanBlueprint: async (
+      updateBlueprint: (blueprint: PlanBlueprint | null) => PlanBlueprint,
+    ) => {
+      currentBlueprint = updateBlueprint(currentBlueprint);
+
+      return currentBlueprint;
+    },
+  };
+
+  return {
+    dependencies,
+    getCurrentBlueprint: () => currentBlueprint,
+  };
+}
+
+function getFirstStartingLoadSuggestion(
+  draft: Awaited<ReturnType<typeof generateTrainingPlanDraftFromCurrentPlanBlueprint>>,
+) {
+  const firstSuggestion = draft.content.startingLoadSuggestions?.[0];
+
+  if (!firstSuggestion) {
+    throw new Error("Expected generated draft to include starting load suggestions.");
+  }
+
+  return firstSuggestion;
+}
+
+function setEditedLoad({
+  draft,
+  exerciseId,
+  userEditedLoad,
+}: {
+  draft: Awaited<ReturnType<typeof generateTrainingPlanDraftFromCurrentPlanBlueprint>>;
+  exerciseId: string;
+  userEditedLoad: number;
+}) {
+  const startingLoadSuggestions = draft.content.startingLoadSuggestions;
+
+  if (!startingLoadSuggestions) {
+    throw new Error("Expected generated draft to include starting load suggestions.");
+  }
+
+  return startingLoadSuggestions.map((suggestion) =>
+    suggestion.exerciseId === exerciseId
+      ? {
+          ...suggestion,
+          effectiveLoad: userEditedLoad,
+          userEditedLoad,
+        }
+      : suggestion,
+  );
+}
 
 function createCompleteBlueprint(): PlanBlueprint {
   return {

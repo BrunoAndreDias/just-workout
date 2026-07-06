@@ -173,7 +173,7 @@ function renderOnePageActiveStep({
           onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
           onResetDraft={generateStep.onResetDraft}
-          onSaveDraft={generateStep.onSaveDraft}
+          onSaveDraftSetup={generateStep.onSaveDraftSetup}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {

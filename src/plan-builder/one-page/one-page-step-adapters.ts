@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { trainingPlanService, trainingPlansQueryOptions } from "../../training-plan";
+import {
+  type TrainingPlanDraftSetupUpdate,
+  trainingPlanService,
+  trainingPlansQueryOptions,
+} from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
   useUpdateIsolationExercisePreferencesMutation,
@@ -177,35 +181,30 @@ export function useOnePageGenerateStep({
     mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
   const { mutateAsync: saveDraft, isPending: isSavingDraft } = useMutation({
-    mutationFn: trainingPlanService.saveTrainingPlanDraft,
-    onSuccess: (savedDraft) => {
-      queryClient.setQueryData<PlanBlueprint | undefined>(
-        planBuilderBlueprintQueryKey,
-        (blueprint) =>
-          blueprint
-            ? {
-                ...blueprint,
-                trainingPlanDraft: savedDraft,
-              }
-            : blueprint,
-      );
-    },
+    mutationFn: trainingPlanService.saveTrainingPlanDraftSetup,
+    onSuccess: updateCachedTrainingPlanDraft,
+    scope: { id: "training-plan-draft-setup" },
   });
   const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
     mutationFn: trainingPlanService.resetTrainingPlanDraft,
-    onSuccess: (savedDraft) => {
-      queryClient.setQueryData<PlanBlueprint | undefined>(
-        planBuilderBlueprintQueryKey,
-        (blueprint) =>
-          blueprint
-            ? {
-                ...blueprint,
-                trainingPlanDraft: savedDraft,
-              }
-            : blueprint,
-      );
-    },
+    onSuccess: updateCachedTrainingPlanDraft,
+    scope: { id: "training-plan-draft-setup" },
   });
+
+  function updateCachedTrainingPlanDraft(
+    savedDraft: NonNullable<PlanBlueprint["trainingPlanDraft"]>,
+  ) {
+    queryClient.setQueryData<PlanBlueprint | undefined>(
+      planBuilderBlueprintQueryKey,
+      (blueprint) =>
+        blueprint
+          ? {
+              ...blueprint,
+              trainingPlanDraft: savedDraft,
+            }
+          : blueprint,
+    );
+  }
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -253,8 +252,8 @@ export function useOnePageGenerateStep({
     onResetDraft: async () => {
       await resetDraft();
     },
-    onSaveDraft: async (draft: NonNullable<PlanBlueprint["trainingPlanDraft"]>) => {
-      await saveDraft(draft);
+    onSaveDraftSetup: async (update: TrainingPlanDraftSetupUpdate) => {
+      await saveDraft(update);
     },
     onGenerateTrainingPlan: async () => {
       const resolution = defaultResolution;

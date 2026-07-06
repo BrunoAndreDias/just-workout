@@ -2,7 +2,7 @@ import { Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
-import type { TrainingPlanDraft } from "../../../training-plan";
+import type { TrainingPlanDraft, TrainingPlanDraftSetupUpdate } from "../../../training-plan";
 import { parsePositiveBodyweight } from "../../../training-plan/bodyweight-input";
 import {
   hasBodyweightLoadExercise,
@@ -37,11 +37,14 @@ type GenerateTrainingPlanStepProps = {
   onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
   onResetDraft: () => Promise<void>;
-  onSaveDraft: (draft: TrainingPlanDraft) => Promise<void>;
+  onSaveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
 };
+
+type TrainingPlanDraftSlot =
+  TrainingPlanDraft["content"]["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
 
 const generateStepPreferenceMappingCopy =
   "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
@@ -56,7 +59,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     onAcceptDraft,
     onGenerateTrainingPlan,
     onResetDraft,
-    onSaveDraft,
+    onSaveDraftSetup,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
@@ -72,7 +75,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
         isAccepting={isGenerating}
         onAcceptDraft={onAcceptDraft}
         onResetDraft={onResetDraft}
-        onSaveDraft={onSaveDraft}
+        onSaveDraftSetup={onSaveDraftSetup}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -164,14 +167,14 @@ function TrainingPlanDraftReview({
   isAccepting,
   onAcceptDraft,
   onResetDraft,
-  onSaveDraft,
+  onSaveDraftSetup,
   summary,
   trainingPlanDraft,
 }: {
   isAccepting: boolean;
   onAcceptDraft: () => Promise<void>;
   onResetDraft: () => Promise<void>;
-  onSaveDraft: (draft: TrainingPlanDraft) => Promise<void>;
+  onSaveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
@@ -260,11 +263,9 @@ function TrainingPlanDraftReview({
                   setBaselineBodyweightInput(event.currentTarget.value);
                 }}
                 onBlur={() => {
-                  void onSaveDraft({
-                    content: {
-                      ...trainingPlanDraft.content,
-                      baselineBodyweight: parsePositiveBodyweight(baselineBodyweightInput),
-                    },
+                  void onSaveDraftSetup({
+                    baselineBodyweight: parsePositiveBodyweight(baselineBodyweightInput),
+                    kind: "baseline_bodyweight",
                   });
                 }}
                 step={0.1}
@@ -340,23 +341,15 @@ function TrainingPlanDraftReview({
                               return;
                             }
 
-                            void onSaveDraft({
-                              content: {
-                                ...trainingPlanDraft.content,
-                                startingLoadSuggestions: (
-                                  trainingPlanDraft.content.startingLoadSuggestions ?? []
-                                ).map((suggestion) =>
-                                  suggestion.exerciseId === slot.exerciseId
-                                    ? {
-                                        ...suggestion,
-                                        userEditedLoad: parseEditableLoad({
-                                          isBodyweightExercise: isBodyweightLoadExercise(slot),
-                                          value: nextValue,
-                                        }),
-                                      }
-                                    : suggestion,
-                                ),
-                              },
+                            void onSaveDraftSetup({
+                              kind: "starting_load_suggestions",
+                              startingLoadSuggestions: updateStartingLoadSuggestions({
+                                exerciseId: slot.exerciseId,
+                                isBodyweightExercise: isBodyweightLoadExercise(slot),
+                                startingLoadSuggestions:
+                                  trainingPlanDraft.content.startingLoadSuggestions ?? [],
+                                value: nextValue,
+                              }),
                             });
                           }}
                           slot={slot}
@@ -383,9 +376,7 @@ function DraftStartingLoadEditor({
 }: {
   loadInputValue: string;
   onInputChange: (value: string, options?: { persist?: boolean }) => void;
-  slot: NonNullable<
-    TrainingPlanDraft["content"]["workoutTemplates"][number]["supersetGroups"][number]["slots"][number]
-  >;
+  slot: TrainingPlanDraftSlot;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
   const loadSuggestion = trainingPlanDraft.content.startingLoadSuggestions?.find(
@@ -452,6 +443,30 @@ function parseEditableLoad({
   }
 
   return parsedValue;
+}
+
+function updateStartingLoadSuggestions({
+  exerciseId,
+  isBodyweightExercise,
+  startingLoadSuggestions,
+  value,
+}: {
+  exerciseId: string;
+  isBodyweightExercise: boolean;
+  startingLoadSuggestions: NonNullable<TrainingPlanDraft["content"]["startingLoadSuggestions"]>;
+  value: string;
+}): NonNullable<TrainingPlanDraft["content"]["startingLoadSuggestions"]> {
+  const userEditedLoad = parseEditableLoad({ isBodyweightExercise, value });
+
+  return startingLoadSuggestions.map((suggestion) =>
+    suggestion.exerciseId === exerciseId
+      ? {
+          ...suggestion,
+          effectiveLoad: userEditedLoad ?? suggestion.suggestedLoad,
+          userEditedLoad,
+        }
+      : suggestion,
+  );
 }
 
 function DefaultGenerationConfirmation({
