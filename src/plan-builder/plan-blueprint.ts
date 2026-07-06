@@ -131,6 +131,7 @@ export function createDefaultPlanBlueprint({
     confirmedBuilderSteps: getConfirmedBuilderSteps({
       confirmedBuilderSteps: defaultConfirmedBuilderSteps,
     }),
+    trainingPlanDraft: null,
   };
 }
 
@@ -276,6 +277,7 @@ export function normalizePlanBlueprint(blueprint: StoredPlanBlueprint): PlanBlue
       rotationPools: blueprint.mainCompoundRotationPools,
     }),
     confirmedBuilderSteps: getConfirmedBuilderSteps(blueprint),
+    trainingPlanDraft: normalizeTrainingPlanDraft(blueprint.trainingPlanDraft),
   };
 }
 
@@ -763,6 +765,22 @@ function normalizeEquipmentPresetSource(
   return hasStoredFullGymEquipmentPreset(blueprint.exerciseSelectionPreferences)
     ? userSelectedEquipmentPresetSource
     : null;
+}
+
+function normalizeTrainingPlanDraft(
+  trainingPlanDraft: unknown,
+): PlanBlueprint["trainingPlanDraft"] {
+  if (
+    trainingPlanDraft &&
+    typeof trainingPlanDraft === "object" &&
+    "content" in trainingPlanDraft &&
+    trainingPlanDraft.content &&
+    typeof trainingPlanDraft.content === "object"
+  ) {
+    return trainingPlanDraft as NonNullable<PlanBlueprint["trainingPlanDraft"]>;
+  }
+
+  return null;
 }
 
 function normalizeStoredEquipmentPresetSource(candidate: unknown): EquipmentPresetSource | null {

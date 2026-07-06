@@ -18,6 +18,7 @@ export function createWorkoutTemplates({
   return templateDrafts.map((template) => ({
     id: template.id,
     label: template.label,
+    purpose: "strength",
     supersetGroups: createSupersetGroups({
       fullBodyFocus: "upper",
       isAlternatingFullBodyAB: split === "alternating-full-body-a-b",

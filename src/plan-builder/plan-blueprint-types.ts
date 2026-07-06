@@ -1,3 +1,4 @@
+import type { TrainingPlanDraft } from "../training-plan/training-plan";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { IsolationExercisePreferenceBucket } from "./isolation-exercise-preferences";
 import type { MainCompoundPreferenceBucket } from "./main-compound-preferences";
@@ -74,6 +75,7 @@ export type PlanBlueprint = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   equipmentPresetSource: EquipmentPresetSource | null;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
+  trainingPlanDraft?: TrainingPlanDraft | null;
 };
 
 export type PlanBlueprintSummary = {
@@ -322,6 +324,7 @@ export type StoredPlanBlueprint = Omit<
   | "mainCompoundRotationPreferences"
   | "mainCompoundSelections"
   | "mainCompoundRotationPools"
+  | "trainingPlanDraft"
   | "volumePreset"
   | "volumePresetSource"
   | "weeklyRepTargets"
@@ -334,6 +337,7 @@ export type StoredPlanBlueprint = Omit<
   mainCompoundRotationPreferences?: unknown;
   mainCompoundSelections?: unknown;
   mainCompoundRotationPools?: unknown;
+  trainingPlanDraft?: unknown;
   volumePreset?: unknown;
   volumePresetSource?: unknown;
   weeklyRepTargets?: unknown;

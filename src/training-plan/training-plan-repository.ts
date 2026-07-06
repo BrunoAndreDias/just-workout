@@ -349,6 +349,10 @@ function normalizeTrainingPlan(trainingPlan: PersistedTrainingPlan): TrainingPla
     baselineBodyweight: trainingPlan.baselineBodyweight ?? null,
     undoableTrainingBlockTransition: trainingPlan.undoableTrainingBlockTransition ?? null,
     weeklyBodyweightUpdates: trainingPlan.weeklyBodyweightUpdates ?? [],
+    workoutTemplates: trainingPlan.workoutTemplates.map((template) => ({
+      ...template,
+      purpose: template.purpose ?? "strength",
+    })),
   };
 }
 

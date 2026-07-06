@@ -104,6 +104,7 @@ describe("plan blueprint", () => {
         strategy: "balanced",
       },
       equipmentPresetSource: null,
+      trainingPlanDraft: null,
       confirmedBuilderSteps: {
         exercises: false,
         frequency: false,

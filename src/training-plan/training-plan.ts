@@ -51,6 +51,7 @@ export type SupersetGroup = {
 export type WorkoutTemplate = {
   id: string;
   label: string;
+  purpose?: "strength";
   supersetGroups: ReadonlyArray<SupersetGroup>;
 };
 
@@ -90,6 +91,25 @@ export type TrainingPlan = {
   workoutTemplates: ReadonlyArray<WorkoutTemplate>;
 };
 
+export type TrainingPlanContent = Pick<
+  TrainingPlan,
+  | "exerciseSelectionPreferences"
+  | "isolationExercisePreferences"
+  | "mainCompoundRotationPools"
+  | "repRangeStyle"
+  | "split"
+  | "trainingBlockWeeks"
+  | "trainingFrequencyDaysPerWeek"
+  | "trainingGoal"
+  | "weeklyRepTargets"
+  | "workoutTemplates"
+> &
+  Partial<Pick<TrainingPlan, "baselineBodyweight" | "startingLoadSuggestions" | "trainingBlock">>;
+
+export type TrainingPlanDraft = {
+  content: TrainingPlanContent;
+};
+
 type GenerateTrainingPlanOptions = {
   blueprint: PlanBlueprint;
   id: string;
@@ -101,6 +121,23 @@ export function generateTrainingPlanFromBlueprint({
   id,
   timestamp,
 }: GenerateTrainingPlanOptions): TrainingPlan {
+  const content = generateTrainingPlanContentFromBlueprint({ blueprint });
+
+  return {
+    ...content,
+    active: true,
+    generatedAt: timestamp,
+    id,
+    sourceBlueprintId: blueprint.id,
+    updatedAt: timestamp,
+  };
+}
+
+export function generateTrainingPlanContentFromBlueprint({
+  blueprint,
+}: {
+  blueprint: PlanBlueprint;
+}): TrainingPlanContent {
   const { repRanges, split, weeklyRepTargets } = blueprint;
 
   if (!split) {
@@ -128,19 +165,14 @@ export function generateTrainingPlanFromBlueprint({
   });
 
   return {
-    active: true,
     exerciseSelectionPreferences: blueprint.exerciseSelectionPreferences,
-    generatedAt: timestamp,
-    id,
     isolationExercisePreferences: blueprint.isolationExercisePreferences,
     mainCompoundRotationPools,
     repRangeStyle: repRanges,
-    sourceBlueprintId: blueprint.id,
     split: splitLabel,
     trainingBlockWeeks: 6,
     trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
     trainingGoal: blueprint.trainingGoal,
-    updatedAt: timestamp,
     weeklyRepTargets,
     workoutTemplates: prescribedWorkoutTemplates,
   };
