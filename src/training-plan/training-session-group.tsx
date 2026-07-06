@@ -22,6 +22,8 @@ export function TrainingSessionGroup({
   onAction: (action: TrainingSessionExecutionAction) => void;
 }) {
   const finalRoundIndex = group.rounds[group.rounds.length - 1]?.roundIndex ?? 0;
+  const roundIndexes = group.rounds.map((round) => round.roundIndex);
+  const exerciseRows = createExerciseRows(group);
 
   return (
     <section
@@ -61,25 +63,25 @@ export function TrainingSessionGroup({
             <table className="training-session-table">
               <thead>
                 <tr>
-                  <th scope="col">Round</th>
                   <th scope="col">Exercise</th>
-                  <th scope="col">Pattern</th>
-                  <th scope="col">Previous</th>
-                  <th scope="col">Weight</th>
-                  <th scope="col">Reps</th>
-                  <th scope="col">Target RIR</th>
-                  <th scope="col">RIR</th>
-                  <th scope="col">Done</th>
+                  {group.rounds.map((round) => (
+                    <th key={`${group.groupId}-set-${round.roundIndex}`} scope="col">
+                      Set {round.roundIndex}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              {group.rounds.map((round) => (
-                <RoundSessionRows
-                  finalRoundIndex={finalRoundIndex}
-                  key={`${group.groupId}-round-${round.roundIndex}`}
-                  onAction={onAction}
-                  round={round}
-                />
-              ))}
+              <tbody>
+                {exerciseRows.map((exerciseRow) => (
+                  <ExerciseSessionRow
+                    exerciseRow={exerciseRow}
+                    finalRoundIndex={finalRoundIndex}
+                    key={exerciseRow.rowId}
+                    onAction={onAction}
+                    roundIndexes={roundIndexes}
+                  />
+                ))}
+              </tbody>
             </table>
           </div>
         </>
@@ -147,33 +149,118 @@ function TrainingSessionNow({ group }: { group: TrainingSessionExecutionGroup })
   );
 }
 
-function RoundSessionRows({
+type ExerciseSessionRow = {
+  exerciseName: string;
+  movementPatternLabel: string;
+  prescriptionLabel: string;
+  rowId: string;
+  sets: ReadonlyArray<TrainingSessionExecutionSetRow | null>;
+};
+
+function createExerciseRows(group: TrainingSessionExecutionGroup): ExerciseSessionRow[] {
+  const roundIndexes = group.rounds.map((round) => round.roundIndex);
+  const exerciseRows = new Map<string, ExerciseSessionRow>();
+
+  for (const round of group.rounds) {
+    for (const row of round.rows) {
+      const rowId = getExerciseRowId(row);
+      const exerciseRow =
+        exerciseRows.get(rowId) ??
+        ({
+          exerciseName: row.exerciseName,
+          movementPatternLabel: row.movementPatternLabel,
+          prescriptionLabel: row.prescriptionLabel,
+          rowId,
+          sets: roundIndexes.map(() => null),
+        } satisfies ExerciseSessionRow);
+      const setPosition = roundIndexes.indexOf(row.setIndex);
+
+      if (setPosition >= 0) {
+        exerciseRow.sets = exerciseRow.sets.map((currentSet, index) =>
+          index === setPosition ? row : currentSet,
+        );
+      }
+
+      exerciseRows.set(rowId, exerciseRow);
+    }
+  }
+
+  return Array.from(exerciseRows.values());
+}
+
+function getExerciseRowId(row: TrainingSessionExecutionSetRow): string {
+  return row.setId.replace(/-set-\d+$/, "");
+}
+
+function ExerciseSessionRow({
+  exerciseRow,
   finalRoundIndex,
   onAction,
-  round,
+  roundIndexes,
 }: {
+  exerciseRow: ExerciseSessionRow;
   finalRoundIndex: number;
   onAction: (action: TrainingSessionExecutionAction) => void;
-  round: TrainingSessionExecutionGroup["rounds"][number];
+  roundIndexes: ReadonlyArray<number>;
 }) {
   return (
-    <tbody aria-label={`Round ${round.roundIndex} superset`} className="training-session-round">
-      {round.rows.map((row) => (
-        <tr
-          className={getTrainingSessionRowClassName({
-            done: row.done,
-            isFuture: row.setIndex === finalRoundIndex,
-          })}
-          key={row.setId}
-        >
-          <TrainingSessionSetCells onAction={onAction} row={row} />
-        </tr>
+    <tr className="training-session-exercise-row">
+      <th scope="row">
+        <span className="training-session-exercise-row__name">{exerciseRow.exerciseName}</span>
+        <span className="training-session-exercise-row__meta">
+          {exerciseRow.movementPatternLabel}
+          <span className="training-session-prescription">{exerciseRow.prescriptionLabel}</span>
+        </span>
+      </th>
+      {exerciseRow.sets.map((row, index) => (
+        <TrainingSessionSetCell
+          isFuture={row?.setIndex === finalRoundIndex}
+          key={row?.setId ?? `${exerciseRow.rowId}-empty-set-${roundIndexes[index]}`}
+          onAction={onAction}
+          row={row}
+          setIndex={roundIndexes[index] ?? index + 1}
+        />
       ))}
-    </tbody>
+    </tr>
   );
 }
 
-function TrainingSessionSetCells({
+function TrainingSessionSetCell({
+  isFuture,
+  onAction,
+  row,
+  setIndex,
+}: {
+  isFuture: boolean;
+  onAction: (action: TrainingSessionExecutionAction) => void;
+  row: TrainingSessionExecutionSetRow | null;
+  setIndex: number;
+}) {
+  if (!row) {
+    return (
+      <td
+        className="training-session-set-cell training-session-set-cell--empty"
+        data-set-label={`Set ${setIndex}`}
+      >
+        <span>Not planned</span>
+      </td>
+    );
+  }
+
+  return (
+    <td
+      className={getTrainingSessionSetCellClassName({
+        done: row.done,
+        isFuture,
+      })}
+      data-set-label={`Set ${setIndex}`}
+    >
+      <TrainingSessionSetControls onAction={onAction} row={row} />
+    </td>
+  );
+}
+
+function TrainingSessionSetControls({
   onAction,
   row,
 }: {
@@ -181,21 +268,14 @@ function TrainingSessionSetCells({
   row: TrainingSessionExecutionSetRow;
 }) {
   return (
-    <>
-      <td>{row.setIndex}</td>
-      <td>
-        {row.exerciseName}
-        <span className="training-session-prescription">{row.prescriptionLabel}</span>
-      </td>
-      <td>{row.movementPatternLabel}</td>
-      <td>{row.previousSetLabel}</td>
-      <td>
+    <div className="training-session-set-cell__inner">
+      <div className="training-session-set-cell__controls">
         <label className="training-session-sr" htmlFor={`${row.inputId}-weight`}>
-          Set {row.setIndex} weight
+          {row.exerciseName} set {row.setIndex} weight
         </label>
         <div className="training-session-weight-input">
           <input
-            aria-label={`Set ${row.setIndex} weight`}
+            aria-label={`${row.exerciseName} set ${row.setIndex} weight`}
             id={`${row.inputId}-weight`}
             inputMode="decimal"
             min={row.weightInputMin}
@@ -207,13 +287,11 @@ function TrainingSessionSetCells({
           />
           <span>kg</span>
         </div>
-      </td>
-      <td>
         <label className="training-session-sr" htmlFor={`${row.inputId}-reps`}>
-          Set {row.setIndex} reps
+          {row.exerciseName} set {row.setIndex} reps
         </label>
         <input
-          aria-label={`Set ${row.setIndex} reps`}
+          aria-label={`${row.exerciseName} set ${row.setIndex} reps`}
           className="training-session-reps-input"
           id={`${row.inputId}-reps`}
           inputMode="numeric"
@@ -224,14 +302,11 @@ function TrainingSessionSetCells({
           type="number"
           value={row.reps}
         />
-      </td>
-      <td>{row.targetRir}</td>
-      <td>
         <label className="training-session-sr" htmlFor={`${row.inputId}-rir`}>
-          Set {row.setIndex} RIR
+          {row.exerciseName} set {row.setIndex} RIR
         </label>
         <input
-          aria-label={`Set ${row.setIndex} RIR`}
+          aria-label={`${row.exerciseName} set ${row.setIndex} RIR`}
           className="training-session-reps-input"
           id={`${row.inputId}-rir`}
           inputMode="numeric"
@@ -242,8 +317,6 @@ function TrainingSessionSetCells({
           type="number"
           value={row.rir}
         />
-      </td>
-      <td>
         <label className="training-session-done">
           <input
             aria-label={row.doneLabel}
@@ -257,16 +330,19 @@ function TrainingSessionSetCells({
             <span className="training-session-done__mark" />
           </span>
         </label>
-      </td>
-    </>
+      </div>
+      <span className="training-session-set-cell__previous">
+        Prev <strong>{row.previousSetLabel}</strong> · Target RIR <strong>{row.targetRir}</strong>
+      </span>
+    </div>
   );
 }
 
-function getTrainingSessionRowClassName(row: { done: boolean; isFuture: boolean }): string {
+function getTrainingSessionSetCellClassName(row: { done: boolean; isFuture: boolean }): string {
   return [
-    "training-session-exercise-row",
-    row.done ? "training-session-exercise-row--done" : "",
-    row.isFuture ? "training-session-exercise-row--future" : "",
+    "training-session-set-cell",
+    row.done ? "training-session-set-cell--done" : "",
+    row.isFuture ? "training-session-set-cell--future" : "",
   ]
     .filter(Boolean)
     .join(" ");

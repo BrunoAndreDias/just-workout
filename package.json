@@ -17,6 +17,7 @@
     "fallow": "fallow",
     "fallow:audit": "fallow audit --changed-since HEAD --gate all",
     "fallow:audit:staged": "git diff --cached --quiet || git diff --cached --binary | fallow audit --changed-since HEAD --diff-stdin --gate all",
+    "prototype:training-block-ramp": "tsx src/training-plan/prototype-training-block-ramp/tui.ts",
     "sandcastle": "tsx .sandcastle/main.ts",
     "sandcastle:build-image": "sandcastle docker build-image --image-name sandcastle:just-workout-v2",
     "sandcastle:remove-image": "sandcastle docker remove-image --image-name sandcastle:just-workout-v2",

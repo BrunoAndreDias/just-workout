@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -371,12 +371,14 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const inclineBenchRow = within(firstRound).getByRole("row", {
-      name: /1 Incline Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const inclineBenchRow = within(firstSuperset).getByRole("row", {
+      name: /Incline Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    expect(within(inclineBenchRow).getByLabelText("Set 1 weight")).toHaveValue(42.5);
+    expect(
+      within(inclineBenchRow).getByLabelText("Incline Dumbbell Bench Press set 1 weight"),
+    ).toHaveValue(42.5);
   });
 
   it("swaps a current-block workout slot after completed history exists without rewriting completed sessions", async () => {
@@ -449,12 +451,14 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const declineBenchRow = within(firstRound).getByRole("row", {
-      name: /1 Decline Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const declineBenchRow = within(firstSuperset).getByRole("row", {
+      name: /Decline Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    expect(within(declineBenchRow).getByLabelText("Set 1 weight")).toHaveValue(null);
+    expect(
+      within(declineBenchRow).getByLabelText("Decline Dumbbell Bench Press set 1 weight"),
+    ).toHaveValue(null);
   });
 
   it("shows non-blocking Volume Target Notices on Overview without surfacing them during Training Sessions", async () => {
@@ -709,8 +713,7 @@ describe("TrainingPlanRoute", () => {
     ).toBeVisible();
     expect(suggestedLoadInput.value).toBe("");
 
-    await user.clear(suggestedLoadInput);
-    await user.type(suggestedLoadInput, "92.5");
+    changeNumberInput(suggestedLoadInput, "92.5");
 
     expect(suggestedLoadInput).toHaveValue(92.5);
     expect(within(blockSummary).getAllByText("Edited start: 92.5 kg")).toHaveLength(2);
@@ -845,8 +848,7 @@ describe("TrainingPlanRoute", () => {
       "Suggested starting load for Incline Dumbbell Bench Press",
     );
 
-    await user.clear(suggestedLoadInput);
-    await user.type(suggestedLoadInput, "92.5");
+    changeNumberInput(suggestedLoadInput, "92.5");
     await user.click(
       within(blockSummary).getByRole("button", { name: "Accept next Training Block" }),
     );
@@ -1084,48 +1086,35 @@ describe("TrainingPlanRoute", () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
 
-    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
-
-    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
-
-    const startNextWorkoutButton = screen.getAllByRole("button", {
-      name: "Start next workout",
-    })[0];
-
-    if (!startNextWorkoutButton) {
-      throw new Error("Expected Start next workout button to be visible.");
-    }
-
-    await user.click(startNextWorkoutButton);
+    renderTrainingPlan({
+      initialEntries: ["/training-plans/training-plan-test/sessions/new/template-1"],
+    });
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Superset 1" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
     expect(benchPressRow).toBeVisible();
     expect(
-      within(firstRound).getByRole("row", {
-        name: /1 Pull-Ups.*Vertical pull/i,
+      within(firstSuperset).getByRole("row", {
+        name: /Pull-Ups.*Vertical pull/i,
       }),
     ).toBeVisible();
 
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
-    await user.click(
-      within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
+    changeNumberInput(screen.getByLabelText("Flat Dumbbell Bench Press set 1 weight"), "40");
+    changeNumberInput(screen.getByLabelText("Flat Dumbbell Bench Press set 1 reps"), "10");
+    clickTrainingSessionControl(
+      screen.getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
     );
     const sessionBodyweightInput = screen.getByRole("spinbutton", {
       name: "Session Bodyweight",
     });
 
-    await user.clear(sessionBodyweightInput);
-    await user.type(sessionBodyweightInput, "80");
+    changeNumberInput(sessionBodyweightInput, "80");
 
     expect(
       within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 not done/i),
@@ -1158,7 +1147,6 @@ describe("TrainingPlanRoute", () => {
   });
 
   it("opens the next superset after the current superset is completed and closed", async () => {
-    const user = userEvent.setup();
     await seedTrainingPlan();
 
     renderTrainingPlan({
@@ -1178,7 +1166,7 @@ describe("TrainingPlanRoute", () => {
     ).toBeVisible();
 
     for (const checkbox of within(firstSuperset).getAllByRole("checkbox")) {
-      await user.click(checkbox);
+      clickTrainingSessionControl(checkbox);
     }
 
     expect(
@@ -1203,16 +1191,16 @@ describe("TrainingPlanRoute", () => {
     await user.click(screen.getByRole("button", { name: "Start Full Body B session" }));
 
     expect(await screen.findByRole("heading", { name: "Full Body B session" })).toBeVisible();
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
 
     expect(
-      within(firstRound).getByRole("row", {
-        name: /1 Flat Barbell Bench Press.*Horizontal push/i,
+      within(firstSuperset).getByRole("row", {
+        name: /Flat Barbell Bench Press.*Horizontal push/i,
       }),
     ).toBeVisible();
     expect(
-      within(firstRound).getByRole("row", {
-        name: /1 Barbell Squats.*Quad dominant/i,
+      within(firstSuperset).getByRole("row", {
+        name: /Barbell Squats.*Quad dominant/i,
       }),
     ).toBeVisible();
   });
@@ -1226,16 +1214,21 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
-    const pullUpsRow = within(firstRound).getByRole("row", {
-      name: /1 Pull-Ups.*Vertical pull/i,
+    const pullUpsRow = within(firstSuperset).getByRole("row", {
+      name: /Pull-Ups.*Vertical pull/i,
     });
 
-    expect(within(benchPressRow).getByLabelText("Set 1 weight")).toHaveAttribute("min", "0");
-    expect(within(pullUpsRow).getByLabelText("Set 1 weight")).toHaveAttribute("min", "-200");
+    expect(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 weight"),
+    ).toHaveAttribute("min", "0");
+    expect(within(pullUpsRow).getByLabelText("Pull-Ups set 1 weight")).toHaveAttribute(
+      "min",
+      "-200",
+    );
   });
 
   it("prefills a next-cycle workout session with the saved suggested starting load", async () => {
@@ -1247,13 +1240,17 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    for (const setIndex of [1, 2, 3]) {
-      const round = screen.getByRole("rowgroup", { name: `Round ${setIndex} superset` });
-      const inclineBenchRow = within(round).getByRole("row", {
-        name: new RegExp(`${setIndex} Incline Dumbbell Bench Press.*Horizontal push`, "i"),
-      });
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const inclineBenchRow = within(firstSuperset).getByRole("row", {
+      name: /Incline Dumbbell Bench Press.*Horizontal push/i,
+    });
 
-      expect(within(inclineBenchRow).getByLabelText(`Set ${setIndex} weight`)).toHaveValue(92.5);
+    for (const setIndex of [1, 2, 3]) {
+      expect(
+        within(inclineBenchRow).getByLabelText(
+          `Incline Dumbbell Bench Press set ${setIndex} weight`,
+        ),
+      ).toHaveValue(92.5);
     }
   });
 
@@ -1292,16 +1289,17 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    expect(within(benchPressRow).getByLabelText("Set 1 weight")).toHaveValue(40);
+    expect(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 weight"),
+    ).toHaveValue(40);
   });
 
   it("dismisses the exact-history prefill note after the user edits the exercise", async () => {
-    const user = userEvent.setup();
     await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
 
     renderTrainingPlan({
@@ -1315,13 +1313,15 @@ describe("TrainingPlanRoute", () => {
       ),
     ).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "42.5");
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 weight"),
+      "42.5",
+    );
 
     expect(
       screen.queryByText(
@@ -1331,7 +1331,6 @@ describe("TrainingPlanRoute", () => {
   });
 
   it("dismisses the exact-history prefill note after the user edits reps", async () => {
-    const user = userEvent.setup();
     await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
 
     renderTrainingPlan({
@@ -1345,13 +1344,15 @@ describe("TrainingPlanRoute", () => {
       ),
     ).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "7");
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 reps"),
+      "7",
+    );
 
     expect(
       screen.queryByText(
@@ -1361,7 +1362,6 @@ describe("TrainingPlanRoute", () => {
   });
 
   it("dismisses the exact-history prefill note after the user completes a set", async () => {
-    const user = userEvent.setup();
     await seedTrainingPlanWithExactHistoryStartingLoadSuggestion();
 
     renderTrainingPlan({
@@ -1375,12 +1375,12 @@ describe("TrainingPlanRoute", () => {
       ),
     ).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    await user.click(
+    clickTrainingSessionControl(
       within(benchPressRow).getByLabelText("Mark Flat Dumbbell Bench Press set 1 done"),
     );
 
@@ -1463,7 +1463,7 @@ describe("TrainingPlanRoute", () => {
       name: "Inherited Bodyweight Default",
     });
 
-    await user.type(baselineBodyweightInput, "81");
+    changeNumberInput(baselineBodyweightInput, "81");
     await user.click(screen.getByRole("button", { name: "Save baseline bodyweight" }));
 
     await waitFor(() => {
@@ -1474,8 +1474,7 @@ describe("TrainingPlanRoute", () => {
       ).toHaveValue(81);
     });
 
-    await user.clear(inheritedBodyweightDefaultInput);
-    await user.type(inheritedBodyweightDefaultInput, "82");
+    changeNumberInput(inheritedBodyweightDefaultInput, "82");
     await user.click(screen.getByRole("button", { name: "Save Training Week bodyweight" }));
 
     await waitFor(() => {
@@ -1513,21 +1512,24 @@ describe("TrainingPlanRoute", () => {
 
     expect(sessionBodyweightInput).toHaveValue(82);
 
-    await user.clear(sessionBodyweightInput);
-    await user.type(sessionBodyweightInput, "80");
+    changeNumberInput(sessionBodyweightInput, "80");
 
     expect(screen.getByText("Stored as a Per-Session Bodyweight Override.")).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
-    await user.click(
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 weight"),
+      "40",
+    );
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 reps"),
+      "10",
+    );
+    clickTrainingSessionControl(
       within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
     );
     await user.click(screen.getByRole("button", { name: "Complete session" }));
@@ -1552,16 +1554,20 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
-    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
-    const benchPressRow = within(firstRound).getByRole("row", {
-      name: /1 Flat Dumbbell Bench Press.*Horizontal push/i,
+    const firstSuperset = screen.getByRole("region", { name: "Superset 1" });
+    const benchPressRow = within(firstSuperset).getByRole("row", {
+      name: /Flat Dumbbell Bench Press.*Horizontal push/i,
     });
 
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 weight"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 weight"), "40");
-    await user.clear(within(benchPressRow).getByLabelText("Set 1 reps"));
-    await user.type(within(benchPressRow).getByLabelText("Set 1 reps"), "10");
-    await user.click(
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 weight"),
+      "40",
+    );
+    changeNumberInput(
+      within(benchPressRow).getByLabelText("Flat Dumbbell Bench Press set 1 reps"),
+      "10",
+    );
+    clickTrainingSessionControl(
       within(benchPressRow).getByLabelText(/Mark Flat Dumbbell Bench Press set 1 done/i),
     );
     await user.click(screen.getByRole("button", { name: "Complete session" }));
@@ -1928,7 +1934,7 @@ describe("TrainingPlanRoute", () => {
       name: "Historical Bodyweight Correction",
     });
 
-    await user.type(historicalBodyweightCorrectionInput, "81");
+    changeNumberInput(historicalBodyweightCorrectionInput, "81");
     await user.click(
       within(sessionDetails).getByRole("button", {
         name: "Save historical bodyweight correction",
@@ -2497,6 +2503,16 @@ function restoreDefaultMatchMedia() {
     value: defaultMatchMedia,
     writable: true,
   });
+}
+
+function changeNumberInput(input: HTMLElement, value: string) {
+  fireEvent.change(input, {
+    target: { value },
+  });
+}
+
+function clickTrainingSessionControl(control: HTMLElement) {
+  fireEvent.click(control);
 }
 
 function getClosestSection(element: HTMLElement): HTMLElement {

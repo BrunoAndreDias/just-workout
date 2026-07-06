@@ -17,6 +17,10 @@ import {
   getTrainingBlockExerciseSwapChoices,
 } from "../training-block";
 import type { TrainingSession } from "../training-session";
+import {
+  shouldShowTrainingBlockTransitionPrototype,
+  TrainingBlockTransitionPrototype,
+} from "./prototype-training-block-transition";
 import { TrainingBlockExerciseSwap } from "./training-block-exercise-swap";
 import type { ActiveTrainingPlanWeekProgressReadModel } from "./training-week-progress-read-model";
 import "./training-block-progress.css";
@@ -55,6 +59,20 @@ export function TrainingBlockProgress({
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
   const isNextBlockReady =
     weeksUntilRotation === 0 && nextTrainingBlockTransition?.kind === "review";
+
+  if (
+    nextTrainingBlockTransition?.kind === "review" &&
+    shouldShowTrainingBlockTransitionPrototype()
+  ) {
+    return (
+      <TrainingBlockTransitionPrototype
+        blockWeek={blockWeek}
+        cycleNumber={cycleNumber}
+        trainingBlockWeeks={trainingBlockWeeks}
+        transition={nextTrainingBlockTransition}
+      />
+    );
+  }
 
   return (
     <section className="active-training-plan-progress" aria-labelledby={summaryId}>

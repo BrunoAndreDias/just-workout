@@ -308,14 +308,45 @@ function useTrainingSessionData(
   const trainingSessionsQuery = useQuery(
     trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
   );
+  const trainingPlan = trainingPlanQuery.data;
+  const trainingSessions = trainingSessionsQuery.data ?? [];
+  const sessionHistoryReady = routeParams === null || !trainingSessionsQuery.isPending;
+  const workoutTemplate = useMemo(
+    () => getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan }),
+    [routeParams, trainingPlan],
+  );
+  const sessionIntent = useMemo(
+    () =>
+      trainingPlan && routeParams
+        ? resolveRequestedTrainingSessionIntent({
+            requestedIntent: routeParams.requestedIntent ?? undefined,
+            trainingPlan,
+            trainingSessions,
+          })
+        : "planned",
+    [routeParams, trainingPlan, trainingSessions],
+  );
+  const startingLoadPrefills = useMemo(
+    () =>
+      trainingPlan && workoutTemplate
+        ? createTrainingSessionLoadPrefills({
+            previousTrainingSessions: trainingSessions,
+            trainingPlan,
+            workoutTemplate,
+          })
+        : [],
+    [trainingPlan, trainingSessions, workoutTemplate],
+  );
 
-  return buildTrainingSessionData({
-    routeParams,
-    sessionHistoryReady: routeParams === null || !trainingSessionsQuery.isPending,
-    trainingPlan: trainingPlanQuery.data,
+  return {
+    previousTrainingSessions: trainingSessions,
+    sessionIntent,
+    sessionHistoryReady,
+    startingLoadPrefills,
+    trainingPlan,
     trainingPlanQuery,
-    trainingSessions: trainingSessionsQuery.data ?? [],
-  });
+    workoutTemplate,
+  };
 }
 
 function useTrainingSessionReadModel({
@@ -598,47 +629,6 @@ function TrainingSessionBodyweightPanel({
       </label>
     </section>
   );
-}
-
-function buildTrainingSessionData({
-  routeParams,
-  sessionHistoryReady,
-  trainingPlan,
-  trainingPlanQuery,
-  trainingSessions,
-}: {
-  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null;
-  sessionHistoryReady: boolean;
-  trainingPlan: TrainingPlan | null | undefined;
-  trainingPlanQuery: ReturnType<typeof useQuery<TrainingPlan | null>>;
-  trainingSessions: ReadonlyArray<TrainingSession>;
-}) {
-  const workoutTemplate = getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan });
-  const sessionIntent =
-    trainingPlan && routeParams
-      ? resolveRequestedTrainingSessionIntent({
-          requestedIntent: routeParams.requestedIntent ?? undefined,
-          trainingPlan,
-          trainingSessions,
-        })
-      : "planned";
-
-  return {
-    previousTrainingSessions: trainingSessions,
-    sessionIntent,
-    sessionHistoryReady,
-    startingLoadPrefills:
-      trainingPlan && workoutTemplate
-        ? createTrainingSessionLoadPrefills({
-            previousTrainingSessions: trainingSessions,
-            trainingPlan,
-            workoutTemplate,
-          })
-        : [],
-    trainingPlan,
-    trainingPlanQuery,
-    workoutTemplate,
-  };
 }
 
 function hasWorkoutTemplateBodyweightExercises(workoutTemplate: WorkoutTemplate): boolean {

@@ -16,6 +16,14 @@ _Avoid_: Routine, program
 The **Training Plan** the user currently follows. Generating a new **Training Plan** makes it the **Active Training Plan** instead of any previous one.
 _Avoid_: Current routine, selected program
 
+**Training History**:
+The product surface for reviewing completed Training Sessions, **Training Week Volume Progression**, session-level progression, and supporting details. **Training History** is the full progress-review surface today and can later grow into a broader analytics area, while the **Active Training Plan** should show only compact progress signals that link back to it. It should not own weekly bodyweight defaults, but it can allow narrow completed-session bodyweight corrections when analysis data is wrong or missing.
+_Avoid_: Active plan dashboard, full analytics product, workout execution screen, weekly bodyweight edit surface
+
+**Training Surface**:
+The **Active Training Plan** surface where the user chooses the current week's Workout Template, sees or edits that Training Week's bodyweight default, and starts a Training Session. It should feel like the ongoing Training area rather than a one-time start action.
+_Avoid_: Start training section, Training History, analytics workspace
+
 **Training Block**:
 A defined span of time within a **Training Plan** before selected exercises are reviewed or rotated for a different training stimulus. The default **Training Block** length is 6 weeks.
 _Avoid_: Mesocycle, phase, cycle
@@ -92,17 +100,85 @@ _Avoid_: Objective, routine type
 The intensity bias a user chooses in the **Plan Builder** before **Training Volume**, exercises, or the generated **Training Plan** exist. A **Rep Range Style** describes broad reps-per-set targets and informs how **Weekly Rep Targets** are estimated as sets and later translated into set and rep targets.
 _Avoid_: Intensity setting, rep scheme, programming controls
 
+**Reps In Reserve**:
+The number of additional good reps the user believes they could have completed at the end of a set. **Reps In Reserve** is diagnostic context for training difficulty, fatigue, recovery, sleep, meals, or load suitability; it does not decide **Training Week Progress Verdicts**.
+_Avoid_: Progress score, volume metric, automatic progression trigger
+
 **Training Volume**:
 The planned amount of training work per muscle group across workouts and weeks. **Training Volume** is canonically expressed as **Weekly Rep Targets** and works with **Rep Range Style** when a later **Training Plan** translates that work into set and rep targets.
 _Avoid_: Workload, weekly set target
 
 **Completed Load Volume**:
-The amount of completed loaded work from Training Sessions, calculated from weight multiplied by reps and grouped by session, week, or Movement Pattern.
+The amount of completed loaded work from Training Sessions, calculated from effective load multiplied by reps and grouped by session, week, or Movement Pattern. For ordinary loaded exercises, effective load is the recorded external weight. For bodyweight exercises, effective load can include **Session Bodyweight** plus the set's signed load adjustment when Session Bodyweight is known, floored at zero.
 _Avoid_: Training Volume, workload, tonnage
 
+**Session Bodyweight**:
+The bodyweight value used to calculate effective load for bodyweight exercises in a **Training Session**. It is resolved from **Baseline Bodyweight**, a **Weekly Bodyweight Update**, or a per-session edit, and is stored with the Training Session so volume comparisons can explain which bodyweight value was used.
+_Avoid_: Bodyweight exercise load, guessed bodyweight, profile-only weight
+
+**Session Bodyweight Source**:
+The origin of the **Session Bodyweight** stored on a Training Session, such as **Baseline Bodyweight**, **Weekly Bodyweight Update**, **Per-Session Bodyweight Override**, or **Historical Bodyweight Correction**. It lets Just Workout update only sessions that inherited a weekly value while preserving explicit session-level values.
+_Avoid_: Hidden bodyweight source, bodyweight note, unexplained recalculation
+
+**Baseline Bodyweight**:
+The first bodyweight value the user defines before generating or starting an **Active Training Plan** when that plan contains bodyweight exercises, so those exercises have an editable default for **Session Bodyweight**. It can be added later when a bodyweight exercise first appears through a swap, rotation, or session edit, and should be required before completing a Training Session whose bodyweight exercise needs known load volume.
+_Avoid_: Profile-only weight, guessed bodyweight, required weigh-in
+
+**Weekly Bodyweight Update**:
+An optional bodyweight edit for a **Training Week** that becomes the default **Session Bodyweight** for Training Sessions in that week, including already completed Training Sessions that inherited the weekly default. It should not overwrite a Training Session where the user set a per-session bodyweight value.
+_Avoid_: Historical rewrite, automatic bodyweight progression, daily weigh-in
+
+**Inherited Bodyweight Default**:
+The editable bodyweight value carried into a Training Week from the most recent **Weekly Bodyweight Update** or **Baseline Bodyweight** when the user has not set a new weekly value yet.
+_Avoid_: Guessed bodyweight, hidden default, required weekly weigh-in
+
+**Per-Session Bodyweight Override**:
+A bodyweight value the user sets for one Training Session when that session differs from the **Weekly Bodyweight Update**. It takes precedence over the weekly value and should not be changed by later edits to the Training Week's bodyweight.
+_Avoid_: Weekly bodyweight edit, temporary hint, guessed session weight
+
+**Historical Bodyweight Correction**:
+A correction to the **Session Bodyweight** stored on a completed Training Session when the inherited or missing value does not match what the user actually weighed for that session. It recalculates that Training Session's **Completed Load Volume**, the affected Training Week, and any Training Week comparisons that reference it.
+_Avoid_: Weekly bodyweight update, hidden recalculation, guessed historical bodyweight
+
+**Training Session Volume Progression**:
+An informational comparison between one completed Training Session's **Completed Load Volume** and the previous comparable Training Session for the same **Workout Template**. A Training Session can show progression when its total **Completed Load Volume** increases, even if only one or two exercises improved and the rest stayed flat.
+_Avoid_: Training Volume progression, every-exercise progression requirement, strength progression by load only
+
+**Training Week Volume Progression**:
+An informational comparison between one **Training Week**'s **Completed Load Volume** and the immediately previous **Training Week**. It is the primary long-term load-volume progress signal, while **Training Session Volume Progression** explains which comparable sessions improved or regressed and whether completion differences affected the comparison.
+_Avoid_: Training Volume progression, pure completion progress, exercise-by-exercise pass/fail
+
+**Training Week Progress Verdict**:
+The top-line user-facing result for a **Training Week**, decided only by total **Completed Load Volume** compared with the previous **Training Week**. A Training Week can be shown as progressed, unchanged, regressed, or not comparable, while session-level and movement-pattern details explain the result without overriding it.
+_Avoid_: Exercise pass/fail, session-only progression, kg-only strength progress
+
+**Training Week Completion Context**:
+A user-facing note attached to a **Training Week Progress Verdict** when the number of completed Training Sessions differs from the previous **Training Week**. It explains that a progression or regression may be affected by doing more or fewer sessions, without changing the volume-based verdict.
+_Avoid_: Progress adjustment, missed-workout excuse, hidden completion factor
+
+**Extra Training Session**:
+A completed Training Session beyond the Active Training Plan's expected **Training Frequency** for a **Training Week**. In the first configurable version, an Extra Training Session repeats any existing **Workout Template** from the **Active Training Plan** rather than creating an ad hoc exercise list. It does not consume the normal next-workout sequence or automatically change future **Training Frequency**. Extra Training Sessions count toward that week's **Completed Load Volume** and **Training Week Volume Progression**, can provide exact-exercise history for later progression or **Previous Exercise Load Prefill**, and appear in **Training Week Completion Context** as extra completed sessions. Extra status records the user's intent from the start flow instead of being inferred only from completed-session counts. Configurable ad hoc workout creation is a future capability outside the first progress-review scope.
+_Avoid_: Ignored bonus workout, untracked optional workout, separate volume bucket
+
+**Training Week Volume Reference**:
+The previous **Training Week**'s total **Completed Load Volume** shown as an informational objective for the current **Training Week**. It gives the user a concrete volume to aim for during the week, including week 1 of a new **Training Block**, but it is not a prescription or failure threshold.
+_Avoid_: Required weekly target, planned Training Volume, pass/fail quota
+
+**Partial Volume Comparison**:
+A progress comparison where known **Completed Load Volume** is shown, but at least one completed bodyweight exercise lacks **Session Bodyweight** and therefore has unknown load volume. A **Partial Volume Comparison** should warn the user that the verdict or reference is based only on known volume instead of silently treating unknown bodyweight work as zero.
+_Avoid_: Zero-volume bodyweight comparison, hidden missing bodyweight, blocked progress review
+
+**Missing Historical Bodyweight**:
+The state of an older completed Training Session with bodyweight exercises but no stored **Session Bodyweight**. Adding a new **Baseline Bodyweight** should not automatically backfill Missing Historical Bodyweight; the user resolves it by editing that Training Week's bodyweight or that specific Training Session.
+_Avoid_: Automatic bodyweight backfill, guessed past weight, zero-volume bodyweight history
+
 **Loaded Set**:
-A completed set with positive external weight and positive reps. Bodyweight-only work can be part of a Training Session, but it is not a **Loaded Set** unless external weight is recorded.
+A completed set with positive reps and positive effective load. Bodyweight-only work can be a **Loaded Set** when **Session Bodyweight** is known; otherwise it remains visible in the Training Session without contributing known **Completed Load Volume**.
 _Avoid_: Completed set, bodyweight set
+
+**Bodyweight Load Adjustment**:
+The signed set-level load recorded for a bodyweight exercise: zero for bodyweight-only work, positive for added load, and negative for assisted work. For machine assistance, the negative value is the machine's assistance amount; for band assistance, it is a user-estimated assistance amount rather than an automatic calculation.
+_Avoid_: Bodyweight, Session Bodyweight, automatic band calculation
 
 **Volume Preset**:
 A **Plan Builder** choice that positions **Weekly Rep Targets** within the source-backed optimal volume range. The Balanced **Volume Preset** is the recommended default for the current intermediate Build Muscle profile.
@@ -166,7 +242,27 @@ _Avoid_: Alternate compound, backup exercise, variation
 
 **Main Compound Rotation Proposal**:
 A suggested set of main compound replacements presented at a **Training Block** boundary. A **Main Compound Rotation Proposal** may include only some **Main Compound Selections**, and the user confirms, skips, or changes the proposed replacements before they affect the **Training Plan**.
-_Avoid_: Automatic exercise swap, hidden rotation, forced replacement
+_Avoid_: Full exercise rotation proposal, automatic exercise swap, hidden rotation, forced replacement
+
+**Training Block Exercise Rotation Proposal**:
+A suggested set of exercise replacements across **Workout Exercise Roles** presented at a **Training Block** boundary. A **Training Block Exercise Rotation Proposal** can include main compounds, secondary compounds, isolation exercises, abs, and other accessory slots; the user confirms, skips, or changes the proposed replacements before they affect the **Training Plan**. Changing an individual proposed replacement is a **Training Block Exercise Swap** inside the pending proposal.
+_Avoid_: Main Compound Rotation Proposal, automatic exercise swap, hidden rotation, forced replacement
+
+**Training Block Rotation Coverage Target**:
+The intended share of eligible exercise slots included in a **Training Block Exercise Rotation Proposal**. The current target is every eligible slot that has a compatible replacement, without forcing avoided exercises, unsafe substitutions, duplicate exercises inside the same **Workout Template**, or invalid movement coverage just to rotate more.
+_Avoid_: Fixed replacement count, partial rotation target, forced rotation
+
+**Training Block Exercise Swap**:
+A user-requested replacement of a generated exercise slot inside the current **Training Block** or a **Training Block Exercise Rotation Proposal**. A **Training Block Exercise Swap** applies to future Training Sessions in the current Training Block for the same Movement Pattern and **Workout Exercise Role**, while preserving target muscle intent and avoidance or safety constraints. Before the first completed Training Session in a Training Block, the swap can also shape that first Training Session because the block has no completed session history yet. Replacement choices are limited to compatible exercises rather than free-text or plan redesign choices.
+_Avoid_: Regenerate the plan, free-text exercise change, hidden automatic replacement, permanent plan-wide exercise change
+
+**First-Time Exercise Starting Load**:
+A user-entered or intentionally unknown starting load for an exercise the user has not previously performed in Just Workout. Just Workout should not infer a **First-Time Exercise Starting Load** from the same Movement Pattern or from the exercise it replaced in a swap; the first completed Training Session supplies the exercise's initial known load and **Completed Load Volume**.
+_Avoid_: Movement Pattern load fallback, automatic new-exercise load, required pre-generation load
+
+**Previous Exercise Load Prefill**:
+An editable load value prefilled from the last completed load for the same exercise in the previous **Training Block**, preferably from that block's final **Training Week**. A **Previous Exercise Load Prefill** can appear when exact exercise history exists, including for kept exercises, skipped replacements, accepted rotations, and manually swapped-in exercises, and should be accompanied by a temporary message in the next-block review and the first relevant Training Session. The message disappears for that exercise once the user edits its load or reps, saves a set, or completes a set in the new Training Block.
+_Avoid_: Starting load reset, Movement Pattern load fallback, locked suggested load
 
 **User-Defined Exercise**:
 An exercise added by the user because it is not already available in Just Workout's exercise catalog. A **User-Defined Exercise** must identify its primary muscle group, optional secondary muscle groups, movement pattern, and compound-or-isolation role so Just Workout can evaluate whether it fits a **Training Plan**. User-defined exercise creation is a future capability; if no valid catalog exercise remains for a required **Movement Pattern**, generation blocks and explains the problem rather than creating a new exercise inline.

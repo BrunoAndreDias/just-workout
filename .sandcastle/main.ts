@@ -43,6 +43,28 @@ const planSchema = z.object({
 const MAX_ITERATIONS = 10;
 const SANDBOX_IMAGE_NAME = "sandcastle:just-workout-v2";
 const COMPLETION_SIGNAL = "<promise>COMPLETE</promise>";
+const DEFAULT_AGENT_IDLE_TIMEOUT_SECONDS = 20 * 60;
+
+const readPositiveIntegerEnv = (name: string, fallback: number) => {
+  const value = process.env[name];
+
+  if (value === undefined || value.trim() === "") {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer number of seconds.`);
+  }
+
+  return parsed;
+};
+
+const AGENT_IDLE_TIMEOUT_SECONDS = readPositiveIntegerEnv(
+  "SANDCASTLE_IDLE_TIMEOUT_SECONDS",
+  DEFAULT_AGENT_IDLE_TIMEOUT_SECONDS,
+);
 
 // Hooks run inside the sandbox before the agent starts each iteration.
 // This repo uses pnpm, so refresh dependencies with the locked pnpm graph.
@@ -112,6 +134,10 @@ const sandboxProvider = docker({
 
 ensureDockerImage();
 
+console.log(
+  `Agent idle timeout: ${AGENT_IDLE_TIMEOUT_SECONDS}s (override with SANDCASTLE_IDLE_TIMEOUT_SECONDS).`,
+);
+
 for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
 
@@ -131,6 +157,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     // One iteration is enough: the planner just needs to read and reason,
     // not write code. (Structured output requires maxIterations: 1.)
     maxIterations: 1,
+    idleTimeoutSeconds: AGENT_IDLE_TIMEOUT_SECONDS,
     // Opus for planning: dependency analysis benefits from deeper reasoning.
     agent: sandcastle.codex("gpt-5.5"),
     promptFile: "./.sandcastle/plan-prompt.md",
@@ -177,6 +204,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
         const implement = await sandbox.run({
           name: "implementer",
           maxIterations: 100,
+          idleTimeoutSeconds: AGENT_IDLE_TIMEOUT_SECONDS,
           agent: sandcastle.codex("gpt-5.4"),
           promptFile: "./.sandcastle/implement-prompt.md",
           promptArgs: {
@@ -191,6 +219,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
           const review = await sandbox.run({
             name: "reviewer",
             maxIterations: 1,
+            idleTimeoutSeconds: AGENT_IDLE_TIMEOUT_SECONDS,
             agent: sandcastle.codex("gpt-5.5", { effort: "high" }),
             promptFile: "./.sandcastle/review-prompt.md",
             promptArgs: {
@@ -267,7 +296,8 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     sandbox: sandboxProvider,
     name: "merger",
     maxIterations: 1,
-    agent: sandcastle.codex("gpt-5.4"),
+    idleTimeoutSeconds: AGENT_IDLE_TIMEOUT_SECONDS,
+    agent: sandcastle.codex("gpt-5.5"),
     completionSignal: COMPLETION_SIGNAL,
     promptFile: "./.sandcastle/merge-prompt.md",
     promptArgs: {

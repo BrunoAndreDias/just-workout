@@ -4,17 +4,28 @@ import type { TrainingSessionExecutionGroup } from "./training-session-execution
 import { TrainingSessionGroup } from "./training-session-group";
 
 describe("TrainingSessionGroup", () => {
-  it("shows the generated round count instead of a hard-coded summary", () => {
+  it("shows one exercise row with generated set controls", () => {
     render(<TrainingSessionGroup group={createTrainingSessionGroup()} onAction={() => {}} />);
 
     expect(screen.getByText("4 rounds")).toBeVisible();
     expect(screen.queryByText("3 rounds")).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Set 4" })).toBeVisible();
+    expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(
-      within(screen.getByRole("rowgroup", { name: "Round 3 superset" })).getByRole("row"),
-    ).not.toHaveClass("training-session-exercise-row--future");
+      screen
+        .getByLabelText("Incline Dumbbell Bench Press set 3 weight")
+        .closest(".training-session-set-cell"),
+    ).not.toHaveClass("training-session-set-cell--future");
     expect(
-      within(screen.getByRole("rowgroup", { name: "Round 4 superset" })).getByRole("row"),
-    ).toHaveClass("training-session-exercise-row--future");
+      screen
+        .getByLabelText("Incline Dumbbell Bench Press set 4 weight")
+        .closest(".training-session-set-cell"),
+    ).toHaveClass("training-session-set-cell--future");
+    expect(
+      within(screen.getByRole("row", { name: /Incline Dumbbell Bench Press/i })).getAllByRole(
+        "spinbutton",
+      ),
+    ).toHaveLength(12);
   });
 });
 
