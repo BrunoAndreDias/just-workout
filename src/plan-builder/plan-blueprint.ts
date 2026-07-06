@@ -71,6 +71,9 @@ import type {
   CreateDefaultPlanBlueprintOptions,
   InitializeTrainingVolumeOptions,
   PlanBlueprint,
+  RenameTrainingPlanDraftWorkoutTemplateOptions,
+  ReorderTrainingPlanDraftWorkoutTemplateOptions,
+  ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions,
   SelectMainCompoundOptions,
   SelectRepRangeStyleOptions,
   SelectTrainingFrequencyOptions,
@@ -84,6 +87,8 @@ import type {
   UpdateMainCompoundPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
   UpdateMainCompoundRotationPreferencesOptions,
+  UpdateTrainingPlanDraftOptions,
+  UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions,
 } from "./plan-blueprint-types";
 import {
   type EquipmentPresetSource,
@@ -988,17 +993,13 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
   };
 }
 
+/** Renames a Workout Template inside the saved Training Plan Draft. */
 export function renameTrainingPlanDraftWorkoutTemplate({
   blueprint,
   label,
   templateId,
   timestamp,
-}: {
-  blueprint: PlanBlueprint;
-  label: string;
-  templateId: string;
-  timestamp: string;
-}): PlanBlueprint {
+}: RenameTrainingPlanDraftWorkoutTemplateOptions): PlanBlueprint {
   return updateTrainingPlanDraft({
     blueprint,
     timestamp,
@@ -1008,17 +1009,13 @@ export function renameTrainingPlanDraftWorkoutTemplate({
   });
 }
 
+/** Moves a Workout Template inside the saved Training Plan Draft. */
 export function reorderTrainingPlanDraftWorkoutTemplate({
   blueprint,
   targetIndex,
   templateId,
   timestamp,
-}: {
-  blueprint: PlanBlueprint;
-  targetIndex: number;
-  templateId: string;
-  timestamp: string;
-}): PlanBlueprint {
+}: ReorderTrainingPlanDraftWorkoutTemplateOptions): PlanBlueprint {
   const workoutTemplates = blueprint.trainingPlanDraft?.content.workoutTemplates;
 
   if (!workoutTemplates) {
@@ -1047,17 +1044,13 @@ export function reorderTrainingPlanDraftWorkoutTemplate({
   });
 }
 
+/** Updates the purpose of a Workout Template inside the saved Training Plan Draft. */
 export function updateTrainingPlanDraftWorkoutTemplatePurpose({
   blueprint,
   purpose,
   templateId,
   timestamp,
-}: {
-  blueprint: PlanBlueprint;
-  purpose: WorkoutTemplatePurpose;
-  templateId: string;
-  timestamp: string;
-}): PlanBlueprint {
+}: UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions): PlanBlueprint {
   return updateTrainingPlanDraft({
     blueprint,
     timestamp,
@@ -1067,15 +1060,12 @@ export function updateTrainingPlanDraftWorkoutTemplatePurpose({
   });
 }
 
+/** Replaces a draft Workout Template with an empty custom-focus template. */
 export function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
   blueprint,
   templateId,
   timestamp,
-}: {
-  blueprint: PlanBlueprint;
-  templateId: string;
-  timestamp: string;
-}): PlanBlueprint {
+}: ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions): PlanBlueprint {
   return updateTrainingPlanDraft({
     blueprint,
     timestamp,
@@ -1096,11 +1086,7 @@ function updateTrainingPlanDraft({
   blueprint,
   timestamp,
   workoutTemplates,
-}: {
-  blueprint: PlanBlueprint;
-  timestamp: string;
-  workoutTemplates: ReadonlyArray<WorkoutTemplate> | undefined;
-}): PlanBlueprint {
+}: UpdateTrainingPlanDraftOptions): PlanBlueprint {
   if (!blueprint.trainingPlanDraft || !workoutTemplates) {
     return blueprint;
   }

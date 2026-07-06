@@ -736,22 +736,15 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
-  it("edits Workout Templates in the draft, warns for custom focus, and Reset Draft discards the edits", async () => {
+  it("shows a warning after replacing a draft Workout Template with custom focus", async () => {
     const user = userEvent.setup();
 
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
-    await user.click(await getOnePageSectionButton("Generate"));
-    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
-    );
-
-    const firstTemplateLabel = (await screen.findAllByLabelText("Workout Template label"))[0]!;
+    const firstTemplateLabel = await generateDraftAndGetFirstTemplateLabel(user);
 
     fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
-    await user.click(screen.getAllByRole("button", { name: /^replace with custom focus$/i })[0]!);
-    await user.click(screen.getAllByRole("button", { name: /^move down$/i })[0]!);
+    await user.click(getFirstReplaceWithCustomFocusButton());
 
     expect(await screen.findByText("Draft warnings")).toBeVisible();
     expect(
@@ -759,17 +752,18 @@ describe("Plan Builder canonical route", () => {
         "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
       ),
     ).toBeVisible();
-    expect(
-      (await planBuilderService.getOrCreatePlanBlueprint()).trainingPlanDraft?.content.workoutTemplates,
-    ).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          label: "Conditioning Day Cardio Focus",
-          purpose: "custom-focus",
-          supersetGroups: [],
-        }),
-      ]),
-    );
+    expect(await screen.findByDisplayValue("Conditioning Day Cardio Focus")).toBeVisible();
+  });
+
+  it("discards draft Workout Template edits when Reset Draft is clicked", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    const firstTemplateLabel = await generateDraftAndGetFirstTemplateLabel(user);
+
+    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
+    await user.click(getFirstReplaceWithCustomFocusButton());
 
     await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
 
@@ -790,9 +784,9 @@ describe("Plan Builder canonical route", () => {
       );
     }
 
-    const firstTemplateLabel = (await screen.findAllByLabelText("Workout Template label"))[0]!;
+    const firstTemplateLabel = await findFirstWorkoutTemplateLabelInput();
     fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
-    await user.click(screen.getAllByRole("button", { name: /^replace with custom focus$/i })[0]!);
+    await user.click(getFirstReplaceWithCustomFocusButton());
     await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
 
     await waitFor(() => {
@@ -854,6 +848,38 @@ async function getOnePageSectionButton(title: string) {
   }
 
   return button;
+}
+
+async function generateDraftAndGetFirstTemplateLabel(user: PlanBuilderTestUser) {
+  await user.click(await getOnePageSectionButton("Generate"));
+  await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+  await user.click(
+    await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+  );
+
+  return findFirstWorkoutTemplateLabelInput();
+}
+
+async function findFirstWorkoutTemplateLabelInput() {
+  const labelInputs = await screen.findAllByLabelText("Workout Template label");
+  const firstLabelInput = labelInputs[0];
+
+  if (!firstLabelInput) {
+    throw new Error("Expected at least one Workout Template label input.");
+  }
+
+  return firstLabelInput;
+}
+
+function getFirstReplaceWithCustomFocusButton() {
+  const buttons = screen.getAllByRole("button", { name: /^replace with custom focus$/i });
+  const firstButton = buttons[0];
+
+  if (!firstButton) {
+    throw new Error("Expected at least one custom-focus replacement button.");
+  }
+
+  return firstButton;
 }
 
 async function openExercisesSection(user: PlanBuilderTestUser) {

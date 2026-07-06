@@ -1,16 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { trainingPlanService, trainingPlansQueryOptions } from "../../training-plan";
+import {
+  trainingPlanService,
+  trainingPlansQueryOptions,
+  type WorkoutTemplatePurpose,
+} from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
+  useRenameTrainingPlanDraftWorkoutTemplateMutation,
+  useReorderTrainingPlanDraftWorkoutTemplateMutation,
+  useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
   useUpdateMainCompoundRotationPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
-  useRenameTrainingPlanDraftWorkoutTemplateMutation,
-  useReorderTrainingPlanDraftWorkoutTemplateMutation,
-  useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
   useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation,
@@ -182,7 +186,8 @@ export function useOnePageGenerateStep({
   const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
     mutationFn: trainingPlanService.resetTrainingPlanDraft,
   });
-  const { mutate: renameDraftWorkoutTemplate } = useRenameTrainingPlanDraftWorkoutTemplateMutation();
+  const { mutate: renameDraftWorkoutTemplate } =
+    useRenameTrainingPlanDraftWorkoutTemplateMutation();
   const { mutate: reorderDraftWorkoutTemplate } =
     useReorderTrainingPlanDraftWorkoutTemplateMutation();
   const { mutate: updateDraftWorkoutTemplatePurpose } =
@@ -256,7 +261,7 @@ export function useOnePageGenerateStep({
       await resetDraft();
       await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
     },
-    onSetWorkoutTemplatePurpose: (templateId: string, purpose: "custom-focus" | "strength") => {
+    onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => {
       updateDraftWorkoutTemplatePurpose({
         purpose,
         templateId,

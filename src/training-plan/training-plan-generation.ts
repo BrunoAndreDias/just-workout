@@ -60,19 +60,11 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
     return normalizedBlueprint.trainingPlanDraft;
   }
 
-  const content = generateTrainingPlanContentFromBlueprint({
+  const trainingPlanDraft = buildTrainingPlanDraft({
     blueprint: resolution.resolvedBlueprint,
   });
-  const trainingPlanDraft: TrainingPlanDraft = {
-    content,
-    validation: validateTrainingPlanDraftContent({ content }),
-  };
 
-  await dependencies.savePlanBlueprint({
-    ...normalizedBlueprint,
-    trainingPlanDraft,
-    updatedAt: dependencies.getTimestamp(),
-  });
+  await saveTrainingPlanDraft({ dependencies, normalizedBlueprint, trainingPlanDraft });
 
   return trainingPlanDraft;
 }
@@ -81,19 +73,11 @@ export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
   dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {
   const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
-  const content = generateTrainingPlanContentFromBlueprint({
+  const trainingPlanDraft = buildTrainingPlanDraft({
     blueprint: resolution.resolvedBlueprint,
   });
-  const trainingPlanDraft: TrainingPlanDraft = {
-    content,
-    validation: validateTrainingPlanDraftContent({ content }),
-  };
 
-  await dependencies.savePlanBlueprint({
-    ...normalizedBlueprint,
-    trainingPlanDraft,
-    updatedAt: dependencies.getTimestamp(),
-  });
+  await saveTrainingPlanDraft({ dependencies, normalizedBlueprint, trainingPlanDraft });
 
   return trainingPlanDraft;
 }
@@ -172,4 +156,29 @@ async function getReadyResolvedPlanBlueprint(
   }
 
   return { normalizedBlueprint, resolution };
+}
+
+function buildTrainingPlanDraft({ blueprint }: { blueprint: PlanBlueprint }): TrainingPlanDraft {
+  const content = generateTrainingPlanContentFromBlueprint({ blueprint });
+
+  return {
+    content,
+    validation: validateTrainingPlanDraftContent({ content }),
+  };
+}
+
+async function saveTrainingPlanDraft({
+  dependencies,
+  normalizedBlueprint,
+  trainingPlanDraft,
+}: {
+  dependencies: TrainingPlanDraftGenerationDependencies;
+  normalizedBlueprint: PlanBlueprint;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  await dependencies.savePlanBlueprint({
+    ...normalizedBlueprint,
+    trainingPlanDraft,
+    updatedAt: dependencies.getTimestamp(),
+  });
 }

@@ -1,6 +1,6 @@
+import type { WorkoutTemplatePurpose } from "../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "./exercise-catalog";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
-import type { WorkoutTemplatePurpose } from "../training-plan";
 import {
   applyPlanBlueprintTransition,
   createDefaultPlanBlueprint,
@@ -10,9 +10,9 @@ import {
   type RepRangeStyleId,
   renameTrainingPlanDraftWorkoutTemplate,
   reorderTrainingPlanDraftWorkoutTemplate,
+  replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   type TrainingFrequencyDaysPerWeek,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
-  replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";

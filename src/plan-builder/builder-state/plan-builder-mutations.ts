@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ExerciseCatalogMuscleGroupId } from "../exercise-catalog";
 import type { WorkoutTemplatePurpose } from "../../training-plan";
+import type { ExerciseCatalogMuscleGroupId } from "../exercise-catalog";
 import {
   type PlanBlueprint,
   type RepRangeStyleId,
@@ -188,7 +188,8 @@ export function useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation() {
 export function useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation() {
   return usePlanBlueprintMutation<ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutationVariables>(
     {
-      buildCommand: planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
+      buildCommand:
+        planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
     },
   );
 }

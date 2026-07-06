@@ -1,4 +1,8 @@
-import type { TrainingPlanDraft } from "../training-plan/training-plan";
+import type {
+  TrainingPlanDraft,
+  WorkoutTemplate,
+  WorkoutTemplatePurpose,
+} from "../training-plan/training-plan";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import type { IsolationExercisePreferenceBucket } from "./isolation-exercise-preferences";
 import type { MainCompoundPreferenceBucket } from "./main-compound-preferences";
@@ -216,6 +220,39 @@ export type ConfirmExerciseSelectionPreferencesOptions = {
   blueprint: PlanBlueprint;
   exerciseSelectionPreferences?: ExerciseSelectionPreferences;
   timestamp: string;
+};
+
+export type RenameTrainingPlanDraftWorkoutTemplateOptions = {
+  blueprint: PlanBlueprint;
+  label: string;
+  templateId: string;
+  timestamp: string;
+};
+
+export type ReorderTrainingPlanDraftWorkoutTemplateOptions = {
+  blueprint: PlanBlueprint;
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+export type UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions = {
+  blueprint: PlanBlueprint;
+  purpose: WorkoutTemplatePurpose;
+  templateId: string;
+  timestamp: string;
+};
+
+export type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions = {
+  blueprint: PlanBlueprint;
+  templateId: string;
+  timestamp: string;
+};
+
+export type UpdateTrainingPlanDraftOptions = {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+  workoutTemplates: ReadonlyArray<WorkoutTemplate> | undefined;
 };
 
 export type PlanBlueprintTransition =

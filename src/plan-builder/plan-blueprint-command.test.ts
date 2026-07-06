@@ -82,12 +82,11 @@ describe("plan blueprint command", () => {
       }),
     );
 
-    const command = planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus(
-      {
+    const command =
+      planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
         templateId: "template-1",
         timestamp: "2026-05-30T10:30:00.000Z",
-      },
-    );
+      });
 
     const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
     const persistedBlueprint = await persistPlanBlueprintCommand(command);

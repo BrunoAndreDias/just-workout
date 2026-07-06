@@ -137,7 +137,9 @@ async function applyResolvedPlanBlueprint(
 }
 
 async function renameTrainingPlanDraftWorkoutTemplate(
-  options: Parameters<typeof planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate>[0],
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate
+  >[0],
 ) {
   return persistPlanBlueprintCommand(
     planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate(options),

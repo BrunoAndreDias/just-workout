@@ -27,17 +27,21 @@ type RecommendedDefaultsConfirmationProps = {
 
 type GenerateTrainingPlanStepProps = {
   blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
+  draftActions: TrainingPlanDraftActions;
   isGenerating: boolean;
-  onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
-  onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
-  onRenameWorkoutTemplate: (templateId: string, label: string) => void;
-  onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
-  onResetDraft: () => Promise<void>;
-  onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
+};
+
+type TrainingPlanDraftActions = {
+  acceptDraft: () => Promise<void>;
+  moveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
+  renameWorkoutTemplate: (templateId: string, label: string) => void;
+  replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
+  resetDraft: () => Promise<void>;
+  setWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
 };
 
 const generateStepPreferenceMappingCopy =
@@ -49,14 +53,9 @@ const defaultGenerationPreferenceMappingCopy =
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
+    draftActions,
     isGenerating,
-    onAcceptDraft,
     onGenerateTrainingPlan,
-    onMoveWorkoutTemplate,
-    onRenameWorkoutTemplate,
-    onReplaceWorkoutTemplateWithCustomFocus,
-    onResetDraft,
-    onSetWorkoutTemplatePurpose,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
@@ -69,13 +68,8 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   if (trainingPlanDraft) {
     return (
       <TrainingPlanDraftReview
+        draftActions={draftActions}
         isAccepting={isGenerating}
-        onAcceptDraft={onAcceptDraft}
-        onMoveWorkoutTemplate={onMoveWorkoutTemplate}
-        onRenameWorkoutTemplate={onRenameWorkoutTemplate}
-        onReplaceWorkoutTemplateWithCustomFocus={onReplaceWorkoutTemplateWithCustomFocus}
-        onResetDraft={onResetDraft}
-        onSetWorkoutTemplatePurpose={onSetWorkoutTemplatePurpose}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -164,23 +158,13 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 }
 
 function TrainingPlanDraftReview({
+  draftActions,
   isAccepting,
-  onAcceptDraft,
-  onMoveWorkoutTemplate,
-  onRenameWorkoutTemplate,
-  onReplaceWorkoutTemplateWithCustomFocus,
-  onResetDraft,
-  onSetWorkoutTemplatePurpose,
   summary,
   trainingPlanDraft,
 }: {
+  draftActions: TrainingPlanDraftActions;
   isAccepting: boolean;
-  onAcceptDraft: () => Promise<void>;
-  onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
-  onRenameWorkoutTemplate: (templateId: string, label: string) => void;
-  onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
-  onResetDraft: () => Promise<void>;
-  onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
@@ -199,7 +183,7 @@ function TrainingPlanDraftReview({
             <Button
               disabled={isAccepting}
               onClick={() => {
-                void onResetDraft();
+                void draftActions.resetDraft();
               }}
               type="button"
               variant="secondary"
@@ -209,7 +193,7 @@ function TrainingPlanDraftReview({
             <Button
               disabled={isAccepting}
               onClick={() => {
-                void onAcceptDraft();
+                void draftActions.acceptDraft();
               }}
               type="button"
               variant="builderPrimary"
@@ -249,14 +233,17 @@ function TrainingPlanDraftReview({
           <StepPanel key={template.id}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <label className="text-xs font-semibold uppercase text-stone-500" htmlFor={template.id}>
+                <label
+                  className="text-xs font-semibold uppercase text-stone-500"
+                  htmlFor={template.id}
+                >
                   Workout Template label
                 </label>
                 <input
                   className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
                   id={template.id}
                   onChange={(event) => {
-                    onRenameWorkoutTemplate(template.id, event.target.value);
+                    draftActions.renameWorkoutTemplate(template.id, event.target.value);
                   }}
                   type="text"
                   value={template.label}
@@ -269,7 +256,7 @@ function TrainingPlanDraftReview({
                 <Button
                   disabled={templateIndex === 0}
                   onClick={() => {
-                    onMoveWorkoutTemplate(template.id, templateIndex - 1);
+                    draftActions.moveWorkoutTemplate(template.id, templateIndex - 1);
                   }}
                   type="button"
                   variant="secondary"
@@ -279,7 +266,7 @@ function TrainingPlanDraftReview({
                 <Button
                   disabled={templateIndex === templates.length - 1}
                   onClick={() => {
-                    onMoveWorkoutTemplate(template.id, templateIndex + 1);
+                    draftActions.moveWorkoutTemplate(template.id, templateIndex + 1);
                   }}
                   type="button"
                   variant="secondary"
@@ -292,7 +279,7 @@ function TrainingPlanDraftReview({
             <div className="mt-4 flex flex-wrap gap-2">
               <Button
                 onClick={() => {
-                  onSetWorkoutTemplatePurpose(
+                  draftActions.setWorkoutTemplatePurpose(
                     template.id,
                     template.purpose === "strength" ? "custom-focus" : "strength",
                   );
@@ -304,7 +291,7 @@ function TrainingPlanDraftReview({
               </Button>
               <Button
                 onClick={() => {
-                  onReplaceWorkoutTemplateWithCustomFocus(template.id);
+                  draftActions.replaceWorkoutTemplateWithCustomFocus(template.id);
                 }}
                 type="button"
                 variant="secondary"

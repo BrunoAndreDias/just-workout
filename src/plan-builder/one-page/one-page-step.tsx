@@ -169,16 +169,17 @@ function renderOnePageActiveStep({
       return (
         <GenerateTrainingPlanStep
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
+          draftActions={{
+            acceptDraft: generateStep.onAcceptDraft,
+            moveWorkoutTemplate: generateStep.onMoveWorkoutTemplate,
+            renameWorkoutTemplate: generateStep.onRenameWorkoutTemplate,
+            replaceWorkoutTemplateWithCustomFocus:
+              generateStep.onReplaceWorkoutTemplateWithCustomFocus,
+            resetDraft: generateStep.onResetDraft,
+            setWorkoutTemplatePurpose: generateStep.onSetWorkoutTemplatePurpose,
+          }}
           isGenerating={generateStep.isGenerating}
-          onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
-          onMoveWorkoutTemplate={generateStep.onMoveWorkoutTemplate}
-          onRenameWorkoutTemplate={generateStep.onRenameWorkoutTemplate}
-          onReplaceWorkoutTemplateWithCustomFocus={
-            generateStep.onReplaceWorkoutTemplateWithCustomFocus
-          }
-          onResetDraft={generateStep.onResetDraft}
-          onSetWorkoutTemplatePurpose={generateStep.onSetWorkoutTemplatePurpose}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {
