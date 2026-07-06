@@ -333,6 +333,49 @@ describe("trainingPlanService", () => {
       "Cannot accept Stale Builder Output. Reset Draft from current Plan Builder choices first.",
     );
   });
+
+  it("resets Stale Builder Output from the current Plan Blueprint choices", async () => {
+    const blueprint = createCompleteBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      split: "upper-lower-4-day",
+      trainingFrequencyDaysPerWeek: 4,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "Alternating Full Body A/B",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+          workoutTemplates: createTrainingPlan().workoutTemplates,
+        },
+        isStale: true,
+      },
+    });
+
+    const resetDraft = await trainingPlanService.resetTrainingPlanDraft();
+
+    expect(resetDraft).toMatchObject({
+      content: {
+        split: "4-Day Upper/Lower",
+        trainingFrequencyDaysPerWeek: 4,
+      },
+      isStale: false,
+    });
+    expect(await getCurrentPlanBlueprint()).toMatchObject({
+      id: blueprint.id,
+      trainingPlanDraft: {
+        content: {
+          split: "4-Day Upper/Lower",
+          trainingFrequencyDaysPerWeek: 4,
+        },
+        isStale: false,
+      },
+    });
+  });
 });
 
 function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan {

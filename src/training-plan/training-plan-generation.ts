@@ -59,6 +59,7 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
   });
 }
 
+/** Regenerates the current Plan Blueprint's Training Plan Draft and clears stale output state. */
 export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
   dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {

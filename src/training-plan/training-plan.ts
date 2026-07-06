@@ -111,6 +111,7 @@ export type TrainingPlanContent = Pick<
 /** Pending Training Plan content held by Plan Builder until the user accepts it as an Active Plan. */
 export type TrainingPlanDraft = {
   content: TrainingPlanContent;
+  /** True when current Plan Builder choices no longer match this generated draft content. */
   isStale?: boolean;
 };
 

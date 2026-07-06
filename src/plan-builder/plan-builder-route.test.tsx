@@ -5,11 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
-import { trainingPlanService } from "../training-plan";
 import { getActiveTrainingPlans } from "../training-plan/training-plan-repository";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
-import { acceptGenerateTrainingPlanRecommendedDefaults } from "./generate-training-plan-workflow";
-import { resolvePlanBlueprintRecommendedDefaults } from "./plan-blueprint";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { savePlanBlueprint } from "./plan-builder-repository";
 import { planBuilderService } from "./plan-builder-service";
@@ -41,6 +38,9 @@ const confirmedExerciseDefaultsOverviewCopy =
 
 const generateStepPreferenceMappingCopy =
   "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+
+const defaultGenerationPreferenceMappingCopy =
+  "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
 
 describe("Plan Builder canonical route", () => {
   beforeEach(async () => {
@@ -609,21 +609,37 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
-  it.skip("accepts fully defaulted Recommended Defaults before generating a Training Plan Draft and persists them into the Plan Blueprint", async () => {
+  it("accepts fully defaulted Recommended Defaults before generating a Training Plan Draft and persists them into the Plan Blueprint", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
     await user.click(await getOnePageSectionButton("Generate"));
-    const resolution = resolvePlanBlueprintRecommendedDefaults(
-      await planBuilderService.getOrCreatePlanBlueprint(),
-    );
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
-    expect(resolution.isReady).toBe(false);
-    await acceptGenerateTrainingPlanRecommendedDefaults({ resolution });
+    const confirmation = await screen.findByRole("dialog", {
+      name: /default generation confirmation/i,
+    });
+
+    expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced hypertrophy")).toBeVisible();
+    expect(within(confirmation).getByText("Balanced volume preset")).toBeVisible();
+    expect(within(confirmation).getByText("Full gym equipment preset")).toBeVisible();
+    expect(within(confirmation).getByText(defaultGenerationPreferenceMappingCopy)).toBeVisible();
+    expect(
+      within(confirmation).getByText(
+        "Recommended Default Main Compound Selection for Horizontal push: Flat Barbell Bench Press",
+      ),
+    ).toBeVisible();
+
+    await user.click(
+      within(confirmation).getByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
+    expect(await screen.findByRole("heading", { name: "Training Plan Draft" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeVisible();
     expect(await getActiveTrainingPlans()).toHaveLength(0);
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -699,16 +715,11 @@ describe("Plan Builder canonical route", () => {
     expect(await getActiveTrainingPlans()).toHaveLength(0);
   });
 
-  it.skip("accepts a read-only Training Plan Draft into the Active Training Plan route and clears the saved draft", async () => {
+  it("accepts a read-only Training Plan Draft into the Active Training Plan route and clears the saved draft", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
-    await user.click(await getOnePageSectionButton("Generate"));
-    await acceptGenerateTrainingPlanRecommendedDefaults({
-      resolution: resolvePlanBlueprintRecommendedDefaults(
-        await planBuilderService.getOrCreatePlanBlueprint(),
-      ),
-    });
+    await generateDraftWithRecommendedDefaults(user);
 
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -718,27 +729,23 @@ describe("Plan Builder canonical route", () => {
       });
     });
 
-    await trainingPlanService.acceptTrainingPlanDraft();
+    await user.click(await screen.findByRole("button", { name: /^accept draft$/i }));
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
     });
+    expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
     expect(await getActiveTrainingPlans()).toHaveLength(1);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       trainingPlanDraft: null,
     });
   });
 
-  it.skip("marks a saved Training Plan Draft as Stale Builder Output after upstream Generate Step edits and lets the user reset it", async () => {
+  it("marks a saved Training Plan Draft as Stale Builder Output after upstream Generate Step edits and lets the user reset it", async () => {
     const user = userEvent.setup();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
-    await user.click(await getOnePageSectionButton("Generate"));
-    await acceptGenerateTrainingPlanRecommendedDefaults({
-      resolution: resolvePlanBlueprintRecommendedDefaults(
-        await planBuilderService.getOrCreatePlanBlueprint(),
-      ),
-    });
+    await generateDraftWithRecommendedDefaults(user);
 
     await waitFor(async () => {
       expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -748,28 +755,36 @@ describe("Plan Builder canonical route", () => {
       });
     });
 
-    await user.click(await getOnePageSectionButton("Training schedule"));
-    await user.click(screen.getByRole("radio", { name: /4 days per week/i }));
+    await user.click(screen.getByRole("radio", { name: /strength-leaning/i }));
 
-    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
-      trainingFrequencyDaysPerWeek: 4,
-      trainingPlanDraft: {
-        isStale: true,
-      },
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        repRanges: "strength_leaning",
+        trainingPlanDraft: {
+          isStale: true,
+        },
+      });
     });
+    expect(await screen.findByText(/stale builder output/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /^cancel$/i })).not.toBeInTheDocument();
 
-    await trainingPlanService.resetTrainingPlanDraft();
+    await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
 
     await waitFor(async () => {
       expect((await planBuilderService.getOrCreatePlanBlueprint()).trainingPlanDraft).toMatchObject(
         {
           content: {
-            trainingFrequencyDaysPerWeek: 4,
+            repRangeStyle: "strength_leaning",
           },
           isStale: false,
         },
       );
     });
+    await waitFor(() => {
+      expect(screen.queryByText(/stale builder output/i)).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
   });
 });
 
@@ -818,6 +833,15 @@ async function getOnePageSectionButton(title: string) {
   }
 
   return button;
+}
+
+async function generateDraftWithRecommendedDefaults(user: PlanBuilderTestUser) {
+  await user.click(await getOnePageSectionButton("Generate"));
+  await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+  await user.click(
+    await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+  );
+  expect(await screen.findByRole("heading", { name: "Training Plan Draft" })).toBeVisible();
 }
 
 async function openExercisesSection(user: PlanBuilderTestUser) {

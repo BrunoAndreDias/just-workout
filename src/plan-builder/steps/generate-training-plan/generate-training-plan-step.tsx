@@ -36,52 +36,40 @@ type RecommendedDefaultsConfirmationProps = {
   resolution: PlanBlueprintDefaultResolution;
 };
 
+type DraftGenerationInputProps = {
+  blueprint: PlanBlueprint;
+  onOptionalVolumeTargetToggle: (
+    muscleGroup: OptionalVolumeMuscleGroupId,
+    isEnabled: boolean,
+  ) => void;
+  onRepRangeStyleChange: (repRangeStyle: PlanBlueprint["repRanges"] & string) => void;
+  onTrainingFrequencyChange: (
+    trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
+  ) => void;
+  onTrainingSplitChange: (split: TrainingSplitId) => void;
+  onVolumePresetChange: (volumePreset: VolumePresetId) => void;
+  repRangeStyle: RepRangeStyle;
+  savedRepRangeStyleId: PlanBlueprint["repRanges"] | null;
+  visibleTrainingSplitId: TrainingSplitId;
+};
+
 type GenerateTrainingPlanStepProps = {
-  blueprint?: PlanBlueprint | null;
   blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
+  generationInputs: DraftGenerationInputProps;
   isGenerating: boolean;
   onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
-  onOptionalVolumeTargetToggle?: (
-    muscleGroup: OptionalVolumeMuscleGroupId,
-    isEnabled: boolean,
-  ) => void;
-  onRepRangeStyleChange?: (repRangeStyle: PlanBlueprint["repRanges"] & string) => void;
-  onResetDraft?: () => Promise<void>;
-  onTrainingFrequencyChange?: (
-    trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
-  ) => void;
-  onTrainingSplitChange?: (split: TrainingSplitId) => void;
-  onVolumePresetChange?: (volumePreset: VolumePresetId) => void;
-  repRangeStyle?: RepRangeStyle | null;
+  onResetDraft: () => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
-  savedRepRangeStyleId?: PlanBlueprint["repRanges"];
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
-  visibleTrainingSplitId?: TrainingSplitId | null;
 };
 
-type DraftGenerationInputProps = {
-  blueprint: PlanBlueprint | null;
-  onOptionalVolumeTargetToggle?: (
-    muscleGroup: OptionalVolumeMuscleGroupId,
-    isEnabled: boolean,
-  ) => void;
-  onRepRangeStyleChange?: (repRangeStyle: PlanBlueprint["repRanges"] & string) => void;
-  onTrainingFrequencyChange?: (
-    trainingFrequencyDaysPerWeek: PlanBlueprint["trainingFrequencyDaysPerWeek"],
-  ) => void;
-  onTrainingSplitChange?: (split: TrainingSplitId) => void;
-  onVolumePresetChange?: (volumePreset: VolumePresetId) => void;
-  repRangeStyle: RepRangeStyle | null;
-  savedRepRangeStyleId: PlanBlueprint["repRanges"] | null;
-  visibleTrainingSplitId: TrainingSplitId | null;
-};
-
-type TrainingPlanDraftReviewProps = DraftGenerationInputProps & {
+type TrainingPlanDraftReviewProps = {
+  generationInputs: DraftGenerationInputProps;
   isAccepting: boolean;
   onAcceptDraft: () => Promise<void>;
-  onResetDraft?: () => Promise<void>;
+  onResetDraft: () => Promise<void>;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 };
@@ -95,22 +83,14 @@ const defaultGenerationPreferenceMappingCopy =
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
-    blueprint,
+    generationInputs,
     isGenerating,
     onAcceptDraft,
     onGenerateTrainingPlan,
-    onOptionalVolumeTargetToggle,
-    onRepRangeStyleChange,
     onResetDraft,
-    onTrainingFrequencyChange,
-    onTrainingSplitChange,
-    onVolumePresetChange,
-    repRangeStyle,
     recommendedDefaultsConfirmation,
-    savedRepRangeStyleId,
     summary,
     trainingPlanDraft,
-    visibleTrainingSplitId,
   } = props;
 
   if (shouldShowTrainingPlanDraftReviewPrototype()) {
@@ -120,20 +100,12 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   if (trainingPlanDraft) {
     return (
       <TrainingPlanDraftReview
-        blueprint={blueprint ?? null}
+        generationInputs={generationInputs}
         isAccepting={isGenerating}
         onAcceptDraft={onAcceptDraft}
-        onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
-        onRepRangeStyleChange={onRepRangeStyleChange}
         onResetDraft={onResetDraft}
-        onTrainingFrequencyChange={onTrainingFrequencyChange}
-        onTrainingSplitChange={onTrainingSplitChange}
-        onVolumePresetChange={onVolumePresetChange}
-        repRangeStyle={repRangeStyle ?? null}
-        savedRepRangeStyleId={savedRepRangeStyleId ?? null}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
-        visibleTrainingSplitId={visibleTrainingSplitId ?? null}
       />
     );
   }
@@ -220,12 +192,12 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 }
 
 function TrainingPlanDraftReview({
+  generationInputs,
   isAccepting,
   onAcceptDraft,
   onResetDraft,
   summary,
   trainingPlanDraft,
-  ...draftGenerationInputs
 }: TrainingPlanDraftReviewProps) {
   const isStale = trainingPlanDraft.isStale === true;
 
@@ -240,7 +212,7 @@ function TrainingPlanDraftReview({
         trainingPlanDraft={trainingPlanDraft}
       />
 
-      <DraftGenerationInputs {...draftGenerationInputs} />
+      <DraftGenerationInputs {...generationInputs} />
 
       <div className="grid gap-4">
         {trainingPlanDraft.content.workoutTemplates.map((template) => (
@@ -312,7 +284,7 @@ function TrainingPlanDraftReviewHeader({
   isAccepting: boolean;
   isStale: boolean;
   onAcceptDraft: () => Promise<void>;
-  onResetDraft?: () => Promise<void>;
+  onResetDraft: () => Promise<void>;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
@@ -333,18 +305,16 @@ function TrainingPlanDraftReviewHeader({
           ) : null}
         </div>
         <StepActions>
-          {onResetDraft ? (
-            <Button
-              disabled={isAccepting}
-              onClick={() => {
-                void onResetDraft();
-              }}
-              type="button"
-              variant="secondary"
-            >
-              Reset Draft
-            </Button>
-          ) : null}
+          <Button
+            disabled={isAccepting}
+            onClick={() => {
+              void onResetDraft();
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Reset Draft
+          </Button>
           <Button
             disabled={isAccepting || isStale}
             onClick={() => {
@@ -385,19 +355,6 @@ function DraftGenerationInputs({
   savedRepRangeStyleId,
   visibleTrainingSplitId,
 }: DraftGenerationInputProps) {
-  if (
-    !blueprint ||
-    !onTrainingFrequencyChange ||
-    !onTrainingSplitChange ||
-    !onRepRangeStyleChange ||
-    !onVolumePresetChange ||
-    !onOptionalVolumeTargetToggle ||
-    !repRangeStyle ||
-    !visibleTrainingSplitId
-  ) {
-    return null;
-  }
-
   return (
     <div className="grid gap-4">
       <StepPanel>
