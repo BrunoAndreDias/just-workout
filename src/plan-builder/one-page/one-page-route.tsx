@@ -20,7 +20,9 @@ import "./one-page-route.css";
 
 export function PlanBuilderOnePageRoute() {
   const { blueprint, summary } = usePlanBuilderBlueprint();
-  const [activeStep, setActiveStep] = useState<PlanBuilderStep | null>(null);
+  const [activeStep, setActiveStep] = useState<PlanBuilderStep | null>(
+    getInitialPlanBuilderActiveStep,
+  );
   const [closingStep, setClosingStep] = useState<PlanBuilderStep | null>(null);
   const [isRestoringOverview, setIsRestoringOverview] = useState(false);
   const closeAnimationTimeoutRef = useRef<number | null>(null);
@@ -215,4 +217,16 @@ export function PlanBuilderOnePageRoute() {
 
 function resetPlanBuilderViewportScroll() {
   window.scrollTo({ left: 0, top: 0, behavior: "auto" });
+}
+
+function getInitialPlanBuilderActiveStep(): PlanBuilderStep | null {
+  if (
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("prototype") === "training-plan-draft"
+  ) {
+    return "generate";
+  }
+
+  return null;
 }

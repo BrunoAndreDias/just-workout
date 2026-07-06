@@ -13,6 +13,10 @@ import { PlanBuilderStepStatusCard } from "../../shared-ui/step-status-card/step
 import { getTrainingSplitLabel } from "../../training-split";
 import { getVolumePreset } from "../../training-volume";
 import { formatMovementPatternLabel } from "../../weekly-movement-coverage";
+import {
+  shouldShowTrainingPlanDraftReviewPrototype,
+  TrainingPlanDraftReviewPrototype,
+} from "./prototype-training-plan-draft-review";
 
 type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
@@ -42,6 +46,10 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     recommendedDefaultsConfirmation,
     summary,
   } = props;
+
+  if (shouldShowTrainingPlanDraftReviewPrototype()) {
+    return <TrainingPlanDraftReviewPrototype summary={summary} />;
+  }
 
   return (
     <>

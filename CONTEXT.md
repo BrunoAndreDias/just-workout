@@ -12,6 +12,10 @@ _Avoid_: StrongPlan
 The final generated plan a user follows for their training. A **Training Plan** is created deliberately from a completed **Plan Builder**, contains the workout structure the user will perform over time, and keeps the **Training Frequency** it was built for.
 _Avoid_: Routine, program
 
+**Training Plan Draft**:
+An editable generated candidate in the **Generate Step** before it becomes a **Training Plan**. A **Training Plan Draft** belongs to the **Plan Builder**, can contain draft-local edits to generated details, and is not followable until the user accepts it. If upstream **Plan Builder** choices change, the draft becomes **Stale Builder Output** until the user resets it from current **Plan Builder** choices.
+_Avoid_: Suggested Training Plan, draft Active Training Plan, preview Training Plan, cancelled plan
+
 **Active Training Plan**:
 The **Training Plan** the user currently follows. Generating a new **Training Plan** makes it the **Active Training Plan** instead of any previous one.
 _Avoid_: Current routine, selected program
@@ -31,6 +35,10 @@ _Avoid_: Mesocycle, phase, cycle
 **Workout Template**:
 A reusable workout structure inside a **Training Plan** that represents one session the user can perform. In the first generated **Training Plan**, **Workout Templates** are split-derived structures with concrete exercise slots, while exact sets, reps, progression, and future user configurability can be added later.
 _Avoid_: Workout day, generated routine
+
+**Workout Template Purpose**:
+The declared focus of a **Workout Template** inside a **Training Plan Draft** or **Training Plan**. Strength-focused templates contribute to strength movement coverage and **Weekly Rep Targets**. A custom-focus template, such as a cardio-focused template, can intentionally opt out of strength coverage and should make that reduced strength coverage visible before acceptance.
+_Avoid_: Workout type, day category, split day
 
 **Superset Group**:
 The default exercise grouping inside a generated **Workout Template**, where related concrete exercise slots are performed together before moving to the next group. A **Superset Group** can combine main compound work, secondary movement work, abs, or isolation work, and its exact structure can become configurable later.
