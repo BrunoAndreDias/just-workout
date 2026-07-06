@@ -74,6 +74,49 @@ export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
   return trainingPlanDraft;
 }
 
+export async function saveTrainingPlanDraftFromCurrentPlanBlueprint({
+  dependencies = defaultTrainingPlanGenerationDependencies,
+  draft,
+}: {
+  dependencies?: TrainingPlanDraftGenerationDependencies;
+  draft: TrainingPlanDraft;
+}): Promise<TrainingPlanDraft> {
+  const blueprint = await dependencies.getCurrentPlanBlueprint();
+
+  if (!blueprint) {
+    throw new Error("Cannot save a Training Plan Draft without a Plan Blueprint.");
+  }
+
+  const normalizedBlueprint = normalizePlanBlueprint(blueprint);
+
+  await dependencies.savePlanBlueprint({
+    ...normalizedBlueprint,
+    trainingPlanDraft: draft,
+    updatedAt: dependencies.getTimestamp(),
+  });
+
+  return draft;
+}
+
+export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+): Promise<TrainingPlanDraft> {
+  const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
+  const trainingPlanDraft: TrainingPlanDraft = {
+    content: generateTrainingPlanContentFromBlueprint({
+      blueprint: resolution.resolvedBlueprint,
+    }),
+  };
+
+  await dependencies.savePlanBlueprint({
+    ...normalizedBlueprint,
+    trainingPlanDraft,
+    updatedAt: dependencies.getTimestamp(),
+  });
+
+  return trainingPlanDraft;
+}
+
 export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
   dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ) {

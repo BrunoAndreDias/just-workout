@@ -735,6 +735,69 @@ describe("Plan Builder canonical route", () => {
       trainingPlanDraft: null,
     });
   });
+
+  it("edits draft-local starting loads and Baseline Bodyweight before acceptance, then resets them from current builder choices", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
+
+    const suggestedLoadInput = (
+      await screen.findAllByLabelText(/suggested starting load for flat barbell bench press/i)
+    )[0] as HTMLInputElement;
+    const baselineBodyweightInput = (await screen.findByLabelText(
+      /^baseline bodyweight$/i,
+    )) as HTMLInputElement;
+
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "42.5");
+    await user.clear(baselineBodyweightInput);
+    await user.type(baselineBodyweightInput, "82");
+    await user.tab();
+
+    await waitFor(() => {
+      expect(suggestedLoadInput).toHaveValue(42.5);
+      expect(baselineBodyweightInput).toHaveValue(82);
+      expect(screen.getAllByText("Edited start: 42.5 kg").length).toBeGreaterThan(0);
+    });
+
+    await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
+
+    await waitFor(() => {
+      expect(suggestedLoadInput).toHaveValue(null);
+      expect(baselineBodyweightInput).toHaveValue(null);
+    });
+
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "45");
+    await user.clear(baselineBodyweightInput);
+    await user.type(baselineBodyweightInput, "81");
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+    });
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    await waitFor(async () => {
+      expect(await getActiveTrainingPlans()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            baselineBodyweight: 81,
+            startingLoadSuggestions: expect.arrayContaining([
+              expect.objectContaining({
+                exerciseId: "flat-barbell-bench-press",
+                userEditedLoad: 45,
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+  });
 });
 
 function renderPlanBuilder({

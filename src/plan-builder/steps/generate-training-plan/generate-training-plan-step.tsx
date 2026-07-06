@@ -1,7 +1,13 @@
 import { Wand2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
 import type { TrainingPlanDraft } from "../../../training-plan";
+import { parsePositiveBodyweight } from "../../../training-plan/bodyweight-input";
+import {
+  hasBodyweightLoadExercise,
+  isBodyweightLoadExercise,
+} from "../../../training-plan/bodyweight-load";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -30,6 +36,8 @@ type GenerateTrainingPlanStepProps = {
   isGenerating: boolean;
   onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
+  onResetDraft: () => Promise<void>;
+  onSaveDraft: (draft: TrainingPlanDraft) => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
@@ -47,6 +55,8 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     isGenerating,
     onAcceptDraft,
     onGenerateTrainingPlan,
+    onResetDraft,
+    onSaveDraft,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
@@ -61,6 +71,8 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
       <TrainingPlanDraftReview
         isAccepting={isGenerating}
         onAcceptDraft={onAcceptDraft}
+        onResetDraft={onResetDraft}
+        onSaveDraft={onSaveDraft}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -151,14 +163,37 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 function TrainingPlanDraftReview({
   isAccepting,
   onAcceptDraft,
+  onResetDraft,
+  onSaveDraft,
   summary,
   trainingPlanDraft,
 }: {
   isAccepting: boolean;
   onAcceptDraft: () => Promise<void>;
+  onResetDraft: () => Promise<void>;
+  onSaveDraft: (draft: TrainingPlanDraft) => Promise<void>;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
+  const [editableLoadValues, setEditableLoadValues] = useState<Record<string, string>>({});
+  const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
+  const draftExercises = trainingPlanDraft.content.workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) => group.slots),
+  );
+  const requiresBodyweight = hasBodyweightLoadExercise(draftExercises);
+
+  useEffect(() => {
+    setEditableLoadValues(
+      Object.fromEntries(
+        (trainingPlanDraft.content.startingLoadSuggestions ?? []).map((suggestion) => [
+          suggestion.exerciseId,
+          formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
+        ]),
+      ),
+    );
+    setBaselineBodyweightInput(trainingPlanDraft.content.baselineBodyweight?.toString() ?? "");
+  }, [trainingPlanDraft]);
+
   return (
     <div className="grid gap-4">
       <StepPanel>
@@ -171,6 +206,16 @@ function TrainingPlanDraftReview({
             </p>
           </div>
           <StepActions>
+            <Button
+              disabled={isAccepting}
+              onClick={() => {
+                void onResetDraft();
+              }}
+              type="button"
+              variant="outline"
+            >
+              Reset Draft
+            </Button>
             <Button
               disabled={isAccepting}
               onClick={() => {
@@ -196,6 +241,45 @@ function TrainingPlanDraftReview({
             value={String(trainingPlanDraft.content.workoutTemplates.length)}
           />
         </dl>
+
+        {requiresBodyweight ? (
+          <section className="mt-5 rounded-2xl border border-stone-900/10 bg-white/70 p-4">
+            <h4 className="text-base font-black text-stone-950">Baseline Bodyweight</h4>
+            <p className="mt-2 text-sm text-stone-600">
+              Store known bodyweight so bodyweight exercise load volume has a usable default after
+              acceptance.
+            </p>
+            <label className="mt-3 block text-sm font-medium text-stone-700">
+              <span>Baseline Bodyweight</span>
+              <input
+                aria-label="Baseline Bodyweight"
+                className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+                inputMode="decimal"
+                min={0}
+                onChange={(event) => {
+                  setBaselineBodyweightInput(event.currentTarget.value);
+                }}
+                onBlur={() => {
+                  void onSaveDraft({
+                    content: {
+                      ...trainingPlanDraft.content,
+                      baselineBodyweight: parsePositiveBodyweight(baselineBodyweightInput),
+                    },
+                  });
+                }}
+                step={0.1}
+                type="number"
+                value={baselineBodyweightInput}
+              />
+            </label>
+            {trainingPlanDraft.content.baselineBodyweight ? null : (
+              <p className="mt-2 text-sm text-amber-800">
+                Missing Baseline Bodyweight: bodyweight exercise volume will stay partial until you
+                set it here or later on the Training surface.
+              </p>
+            )}
+          </section>
+        ) : null}
       </StepPanel>
 
       <div className="grid gap-4">
@@ -244,6 +328,40 @@ function TrainingPlanDraftReview({
                               : "Prescription pending"}
                           </span>
                         </div>
+                        <DraftStartingLoadEditor
+                          loadInputValue={editableLoadValues[slot.exerciseId] ?? ""}
+                          onInputChange={(nextValue, options) => {
+                            setEditableLoadValues((currentValues) => ({
+                              ...currentValues,
+                              [slot.exerciseId]: nextValue,
+                            }));
+
+                            if (options?.persist === false) {
+                              return;
+                            }
+
+                            void onSaveDraft({
+                              content: {
+                                ...trainingPlanDraft.content,
+                                startingLoadSuggestions: (
+                                  trainingPlanDraft.content.startingLoadSuggestions ?? []
+                                ).map((suggestion) =>
+                                  suggestion.exerciseId === slot.exerciseId
+                                    ? {
+                                        ...suggestion,
+                                        userEditedLoad: parseEditableLoad({
+                                          isBodyweightExercise: isBodyweightLoadExercise(slot),
+                                          value: nextValue,
+                                        }),
+                                      }
+                                    : suggestion,
+                                ),
+                              },
+                            });
+                          }}
+                          slot={slot}
+                          trainingPlanDraft={trainingPlanDraft}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -255,6 +373,85 @@ function TrainingPlanDraftReview({
       </div>
     </div>
   );
+}
+
+function DraftStartingLoadEditor({
+  loadInputValue,
+  onInputChange,
+  slot,
+  trainingPlanDraft,
+}: {
+  loadInputValue: string;
+  onInputChange: (value: string, options?: { persist?: boolean }) => void;
+  slot: NonNullable<
+    TrainingPlanDraft["content"]["workoutTemplates"][number]["supersetGroups"][number]["slots"][number]
+  >;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  const loadSuggestion = trainingPlanDraft.content.startingLoadSuggestions?.find(
+    (suggestion) => suggestion.exerciseId === slot.exerciseId,
+  );
+
+  if (!loadSuggestion) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 grid gap-1 text-sm text-stone-600">
+      <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
+      <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
+      <span>{loadSuggestion.reason}</span>
+      <label className="mt-1 block font-medium text-stone-700">
+        <span>Suggested starting load for {slot.exerciseName}</span>
+        <input
+          aria-label={`Suggested starting load for ${slot.exerciseName}`}
+          className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+          inputMode="decimal"
+          min={isBodyweightLoadExercise(slot) ? -200 : 0}
+          onBlur={() => onInputChange(loadInputValue)}
+          onChange={(event) => onInputChange(event.currentTarget.value, { persist: false })}
+          step={2.5}
+          type="number"
+          value={loadInputValue}
+        />
+      </label>
+      {loadSuggestion.userEditedLoad === null ? null : (
+        <span>Edited start: {formatLoad(loadSuggestion.userEditedLoad)}</span>
+      )}
+    </div>
+  );
+}
+
+function formatLoad(load: number | null): string {
+  return load === null ? "No previous load" : `${load} kg`;
+}
+
+function formatEditableLoad(load: number | null): string {
+  return load === null ? "" : String(load);
+}
+
+function parseEditableLoad({
+  isBodyweightExercise,
+  value,
+}: {
+  isBodyweightExercise: boolean;
+  value: string;
+}): number | null {
+  if (value.trim() === "") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return null;
+  }
+
+  if (!isBodyweightExercise && parsedValue < 0) {
+    return null;
+  }
+
+  return parsedValue;
 }
 
 function DefaultGenerationConfirmation({

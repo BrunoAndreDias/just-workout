@@ -19,6 +19,7 @@ import {
   startGenerateTrainingPlanWorkflow,
 } from "../generate-training-plan-workflow";
 import type {
+  PlanBlueprint,
   PlanBlueprintDefaultResolution,
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
@@ -175,6 +176,36 @@ export function useOnePageGenerateStep({
   const { mutateAsync: acceptDraft, isPending: isAcceptingDraft } = useMutation({
     mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
+  const { mutateAsync: saveDraft, isPending: isSavingDraft } = useMutation({
+    mutationFn: trainingPlanService.saveTrainingPlanDraft,
+    onSuccess: (savedDraft) => {
+      queryClient.setQueryData<PlanBlueprint | undefined>(
+        planBuilderBlueprintQueryKey,
+        (blueprint) =>
+          blueprint
+            ? {
+                ...blueprint,
+                trainingPlanDraft: savedDraft,
+              }
+            : blueprint,
+      );
+    },
+  });
+  const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
+    mutationFn: trainingPlanService.resetTrainingPlanDraft,
+    onSuccess: (savedDraft) => {
+      queryClient.setQueryData<PlanBlueprint | undefined>(
+        planBuilderBlueprintQueryKey,
+        (blueprint) =>
+          blueprint
+            ? {
+                ...blueprint,
+                trainingPlanDraft: savedDraft,
+              }
+            : blueprint,
+      );
+    },
+  });
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -194,7 +225,12 @@ export function useOnePageGenerateStep({
   }
 
   return {
-    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults || isAcceptingDraft,
+    isGenerating:
+      isStartingGenerateStep ||
+      isAcceptingRecommendedDefaults ||
+      isAcceptingDraft ||
+      isSavingDraft ||
+      isResettingDraft,
     onAcceptDraft: async () => {
       const acceptedTrainingPlan = await acceptDraft();
 
@@ -213,6 +249,12 @@ export function useOnePageGenerateStep({
     },
     onCancelRecommendedDefaults: () => {
       onPendingDefaultResolutionChange(null);
+    },
+    onResetDraft: async () => {
+      await resetDraft();
+    },
+    onSaveDraft: async (draft: NonNullable<PlanBlueprint["trainingPlanDraft"]>) => {
+      await saveDraft(draft);
     },
     onGenerateTrainingPlan: async () => {
       const resolution = defaultResolution;

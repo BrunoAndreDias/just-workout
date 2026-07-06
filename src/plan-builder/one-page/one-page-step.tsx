@@ -172,6 +172,8 @@ function renderOnePageActiveStep({
           isGenerating={generateStep.isGenerating}
           onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
+          onResetDraft={generateStep.onResetDraft}
+          onSaveDraft={generateStep.onSaveDraft}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {

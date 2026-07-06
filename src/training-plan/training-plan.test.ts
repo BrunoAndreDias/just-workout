@@ -90,6 +90,7 @@ describe("generateTrainingPlanFromBlueprint", () => {
       mainCompoundRotationPools: trainingPlan.mainCompoundRotationPools,
       repRangeStyle: trainingPlan.repRangeStyle,
       split: trainingPlan.split,
+      startingLoadSuggestions: trainingPlan.startingLoadSuggestions,
       trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
       trainingFrequencyDaysPerWeek: trainingPlan.trainingFrequencyDaysPerWeek,
       trainingGoal: trainingPlan.trainingGoal,
