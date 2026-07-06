@@ -4,11 +4,14 @@ import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import {
   applyConfirmedTrainingBlockExerciseRotations,
   applyNextTrainingBlockLoadSuggestionEdit,
+  applyTrainingBlockExerciseSwapToPreview,
+  applyTrainingBlockExerciseSwapToTrainingPlan,
   applyTrainingBlockProgressionRule,
   estimateNextTrainingBlockLoadSuggestions,
   generateNextTrainingBlock,
   generateNextTrainingBlockPreview,
   generateWeeklyIntensityTargets,
+  getTrainingBlockExerciseSwapChoices,
   getTrainingBlockExerciseTargetRir,
   previewTrainingBlockExerciseRotations,
 } from "./training-block";
@@ -744,6 +747,66 @@ describe("generateNextTrainingBlock", () => {
     );
   });
 
+  it("lists only compatible non-avoided swap choices for the selected slot", () => {
+    const choices = getTrainingBlockExerciseSwapChoices({
+      groupId: "group-1",
+      slotIndex: 0,
+      templateId: "template-1",
+      trainingPlan: createTrainingPlan({
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoid-1", rawText: "Decline Dumbbell Bench Press" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+      }),
+    });
+
+    expect(choices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          exerciseId: "flat-barbell-bench-press",
+          exerciseName: "Flat Barbell Bench Press",
+        }),
+        expect.objectContaining({
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+        }),
+      ]),
+    );
+    expect(choices).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          exerciseId: "decline-dumbbell-bench-press",
+        }),
+        expect.objectContaining({
+          exerciseId: "standing-dumbbell-curls",
+        }),
+      ]),
+    );
+  });
+
+  it("applies a current-block swap only to the selected generated slot", () => {
+    const swappedPlan = applyTrainingBlockExerciseSwapToTrainingPlan({
+      groupId: "group-1",
+      nextExerciseId: "incline-dumbbell-bench-press",
+      slotIndex: 0,
+      templateId: "template-1",
+      timestamp: "2026-07-19T09:00:00.000Z",
+      trainingPlan: createTrainingPlan(),
+    });
+
+    expect(swappedPlan.updatedAt).toBe("2026-07-19T09:00:00.000Z");
+    expect(swappedPlan.workoutTemplates[0]?.supersetGroups[0]?.slots[0]).toMatchObject({
+      exerciseId: "incline-dumbbell-bench-press",
+      exerciseName: "Incline Dumbbell Bench Press",
+    });
+    expect(swappedPlan.workoutTemplates[0]?.supersetGroups[0]?.slots[1]).toMatchObject({
+      exerciseId: "bent-over-barbell-rows",
+      exerciseName: "Bent Over Barbell Rows",
+    });
+  });
+
   it("keeps one slot when rotating both would duplicate an exercise inside the same Workout Template", () => {
     const previousPlan = createTrainingPlan({
       exerciseSelectionPreferences: {
@@ -941,6 +1004,80 @@ describe("generateNextTrainingBlock", () => {
       }),
     );
     expect(preview.weeklyIntensityTargets).toHaveLength(6);
+  });
+
+  it("applies a proposal-row swap to the selected slot and recalculates exact-exercise prefills", () => {
+    const trainingPlan = createTrainingPlan();
+    const preview = generateNextTrainingBlockPreview({
+      availableLoadIncrement: 2.5,
+      completedWeeks: [1, 2, 3, 4, 5, 6],
+      currentBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+      nextBlockId: "training-block-2",
+      nextPlanId: "training-plan-2",
+      sessions: [
+        ...createCompletedTrainingBlockSessions(),
+        createTrainingSession({
+          completedAt: "2026-07-11T10:00:00.000Z",
+          exerciseId: "decline-barbell-bench-press",
+          exerciseName: "Decline Barbell Bench Press",
+          weight: 102.5,
+        }),
+      ],
+      startDate: "2026-07-19",
+      timestamp: "2026-07-19T09:00:00.000Z",
+      trainingPlan,
+    });
+
+    const swappedPreview = applyTrainingBlockExerciseSwapToPreview({
+      nextExerciseId: "decline-barbell-bench-press",
+      preview,
+      sessions: [
+        ...createCompletedTrainingBlockSessions(),
+        createTrainingSession({
+          completedAt: "2026-07-11T10:00:00.000Z",
+          exerciseId: "decline-barbell-bench-press",
+          exerciseName: "Decline Barbell Bench Press",
+          weight: 102.5,
+        }),
+      ],
+      slotIndex: 0,
+      templateId: "template-1",
+      groupId: "group-1",
+    });
+
+    expect(
+      swappedPreview.rotation.rotated.filter(
+        (rotation) =>
+          rotation.movementPattern === "horizontal_push" &&
+          rotation.nextExerciseId === "decline-barbell-bench-press",
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          groupId: "group-1",
+          nextExerciseId: "decline-barbell-bench-press",
+          previousExerciseId: "flat-barbell-bench-press",
+          templateId: "template-1",
+        }),
+      ]),
+    );
+    expect(swappedPreview.loadSuggestions).toContainEqual(
+      expect.objectContaining({
+        exerciseId: "decline-barbell-bench-press",
+        kind: "exact_previous_exercise",
+        previousLoad: 102.5,
+        suggestedLoad: 102.5,
+      }),
+    );
   });
 
   it("prefills the latest exact same-exercise working load without a reset", () => {

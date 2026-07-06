@@ -56,6 +56,7 @@ export type NextTrainingBlockTransitionReviewMode = "accept_proposal" | "skip_ro
 /** Review-state workflow shown when the current block can create its successor. */
 export type NextTrainingBlockTransitionReviewWorkflow = {
   accept?: (input: {
+    preview?: NextTrainingBlockPreview;
     reviewMode: NextTrainingBlockTransitionReviewMode;
     suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   }) => Promise<TrainingPlan>;
@@ -145,10 +146,11 @@ export function createNextTrainingBlockTransitionWorkflow({
   }
 
   return {
-    accept: async ({ reviewMode, suggestions }) => {
+    accept: async ({ preview: acceptedPreview, reviewMode, suggestions }) => {
       const nextTrainingPlan = acceptNextTrainingBlockTransition({
         currentTrainingPlan: trainingPlan,
-        preview: reviewMode === "skip_rotation" ? skipRotationPreview : preview,
+        preview:
+          acceptedPreview ?? (reviewMode === "skip_rotation" ? skipRotationPreview : preview),
         suggestions,
       });
       const savedTrainingPlan = await saveAcceptedTrainingPlan(nextTrainingPlan);

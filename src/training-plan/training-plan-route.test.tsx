@@ -306,6 +306,151 @@ describe("TrainingPlanRoute", () => {
     expect(within(workoutPanel).queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("swaps a current-block workout slot before the first completed session and updates the next visible session", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-08-29",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-07-19",
+        status: "active",
+        weekNumber: 1,
+      },
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-07-12T10:00:00.000Z",
+        exerciseId: "incline-dumbbell-bench-press",
+        exerciseName: "Incline Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 42.5,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Full Body A" }));
+
+    const workoutPanel = screen.getByRole("tabpanel", { name: "Full Body A" });
+    const benchRow = getClosestArticle(
+      within(workoutPanel).getByRole("heading", {
+        name: "Flat Dumbbell Bench Press",
+      }),
+    );
+
+    await user.click(within(benchRow).getByRole("button", { name: /swap exercise/i }));
+
+    expect(
+      within(benchRow).getByText(
+        "This updates the next visible session and 1 workout slot for the rest of Training Block 1.",
+      ),
+    ).toBeVisible();
+
+    await user.selectOptions(
+      within(benchRow).getByRole("combobox", { name: "Compatible replacement" }),
+      "incline-dumbbell-bench-press",
+    );
+    await user.click(within(benchRow).getByRole("button", { name: "Apply swap" }));
+
+    expect(
+      within(workoutPanel).getByRole("heading", { name: "Incline Dumbbell Bench Press" }),
+    ).toBeVisible();
+
+    await user.click(
+      within(workoutPanel).getByRole("button", { name: "Start Full Body A session" }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const inclineBenchRow = within(firstRound).getByRole("row", {
+      name: /1 Incline Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    expect(within(inclineBenchRow).getByLabelText("Set 1 weight")).toHaveValue(42.5);
+  });
+
+  it("swaps a current-block workout slot after completed history exists without rewriting completed sessions", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-08-29",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-07-19",
+        status: "active",
+        weekNumber: 2,
+      },
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: "2026-07-20T10:00:00.000Z",
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 40,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Full Body A" }));
+
+    const workoutPanel = screen.getByRole("tabpanel", { name: "Full Body A" });
+    const benchRow = getClosestArticle(
+      within(workoutPanel).getByRole("heading", {
+        name: "Flat Dumbbell Bench Press",
+      }),
+    );
+
+    await user.click(within(benchRow).getByRole("button", { name: /swap exercise/i }));
+
+    expect(
+      within(benchRow).getByText(
+        "This updates 1 future workout slot in Training Block 1. Completed sessions stay in Training History.",
+      ),
+    ).toBeVisible();
+
+    await user.selectOptions(
+      within(benchRow).getByRole("combobox", { name: "Compatible replacement" }),
+      "decline-dumbbell-bench-press",
+    );
+    await user.click(within(benchRow).getByRole("button", { name: "Apply swap" }));
+
+    const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
+
+    expect(completedSessions[0]?.exercises[0]).toMatchObject({
+      exerciseId: "flat-dumbbell-bench-press",
+      exerciseName: "Flat Dumbbell Bench Press",
+    });
+
+    await user.click(
+      within(workoutPanel).getByRole("button", { name: "Start Full Body A session" }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
+
+    const firstRound = screen.getByRole("rowgroup", { name: "Round 1 superset" });
+    const declineBenchRow = within(firstRound).getByRole("row", {
+      name: /1 Decline Dumbbell Bench Press.*Horizontal push/i,
+    });
+
+    expect(within(declineBenchRow).getByLabelText("Set 1 weight")).toHaveValue(null);
+  });
+
   it("shows non-blocking Volume Target Notices on Overview without surfacing them during Training Sessions", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan({
@@ -567,6 +712,86 @@ describe("TrainingPlanRoute", () => {
     await user.click(within(blockSummary).getByRole("button", { name: "View Training History" }));
 
     expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+  });
+
+  it("swaps an individual proposal row and recalculates the replacement load from exact exercise history", async () => {
+    const user = userEvent.setup();
+    await seedTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      split: "full-body-2-day",
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "active",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    await seedCompletedTrainingSessions([
+      ...createCompletedTrainingBlockSessionOverrides(),
+      {
+        completedAt: "2026-07-11T10:00:00.000Z",
+        exerciseId: "decline-barbell-bench-press",
+        exerciseName: "Decline Barbell Bench Press",
+        movementPattern: "horizontal_push",
+        weight: 102.5,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    const blockSummary = getClosestSection(
+      await screen.findByRole("heading", { name: "Training Block 1" }),
+    );
+
+    await user.click(
+      within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
+    );
+
+    const rotationProposal = within(blockSummary).getByRole("region", {
+      name: "Training Block Exercise Rotation Proposal",
+    });
+    const benchProposalRow = getClosestListItem(
+      within(rotationProposal).getAllByText(
+        /Flat Barbell Bench Press.*Incline Dumbbell Bench Press/,
+      )[0] as HTMLElement,
+    );
+
+    await user.click(within(benchProposalRow).getByRole("button", { name: /swap exercise/i }));
+
+    await user.selectOptions(
+      within(benchProposalRow).getByRole("combobox", { name: "Compatible replacement" }),
+      "decline-barbell-bench-press",
+    );
+
+    expect(
+      within(benchProposalRow).getByText(
+        "This updates 1 next-block slot for the same Movement Pattern and Workout Exercise Role.",
+      ),
+    ).toBeVisible();
+
+    await user.click(within(benchProposalRow).getByRole("button", { name: "Apply swap" }));
+
+    expect(
+      within(rotationProposal).getAllByText(/Decline Barbell Bench Press/).length,
+    ).toBeGreaterThan(0);
+
+    const suggestedLoadInput = within(blockSummary).getByLabelText(
+      "Suggested starting load for Decline Barbell Bench Press",
+    ) as HTMLInputElement;
+    const swappedSuggestion = getClosestListItem(suggestedLoadInput);
+
+    expect(within(swappedSuggestion).getByText("Previous load: 102.5 kg")).toBeVisible();
+    expect(suggestedLoadInput).toHaveValue(102.5);
   });
 
   it("accepts the next Training Block review from the active Training Plan", async () => {
@@ -2121,6 +2346,26 @@ function getClosestSection(element: HTMLElement): HTMLElement {
   }
 
   return section;
+}
+
+function getClosestArticle(element: HTMLElement): HTMLElement {
+  const article = element.closest("article");
+
+  if (!article) {
+    throw new Error("Expected element to have an article ancestor.");
+  }
+
+  return article;
+}
+
+function getClosestListItem(element: HTMLElement): HTMLElement {
+  const listItem = element.closest("li");
+
+  if (!listItem) {
+    throw new Error("Expected element to have a list item ancestor.");
+  }
+
+  return listItem;
 }
 
 function getFirstElement<T>(elements: Array<T>): T {

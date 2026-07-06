@@ -2,6 +2,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { History, Play } from "lucide-react";
 import { useState } from "react";
 import { PageHeader, PageMain } from "../../design-system/typography";
+import {
+  hasCompletedTrainingBlockSessions,
+  type TrainingBlockExerciseSwapSlotLocator,
+} from "../training-block";
 import type { NextTrainingBlockTransitionWorkflow } from "../training-block-transition";
 import type { TrainingPlan } from "../training-plan";
 import type { TrainingSession } from "../training-session";
@@ -21,10 +25,14 @@ import "./active-training-plan-page.css";
 
 export function ActiveTrainingPlanPage({
   nextTrainingBlockTransition,
+  onSwapCurrentBlockExercise,
   trainingPlan,
   trainingSessions = [],
 }: {
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
+  onSwapCurrentBlockExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
   trainingPlan: TrainingPlan;
   trainingSessions?: ReadonlyArray<TrainingSession>;
 }) {
@@ -42,8 +50,15 @@ export function ActiveTrainingPlanPage({
         <ActiveTrainingPlanActions
           nextTrainingBlockTransition={nextTrainingBlockTransition}
           readModel={readModel}
+          trainingSessions={trainingSessions}
         />
-        <ActiveTrainingPlanTabs readModel={readModel} setActiveTabId={setActiveTabId} />
+        <ActiveTrainingPlanTabs
+          onSwapCurrentBlockExercise={onSwapCurrentBlockExercise}
+          readModel={readModel}
+          setActiveTabId={setActiveTabId}
+          trainingPlan={trainingPlan}
+          trainingSessions={trainingSessions}
+        />
         <MobileStartWorkoutCta action={readModel.actions.startNextWorkout} />
       </PageMain>
     </section>
@@ -61,9 +76,11 @@ export function ActiveTrainingPlanLoading({ children }: { children: string }) {
 function ActiveTrainingPlanActions({
   nextTrainingBlockTransition,
   readModel,
+  trainingSessions,
 }: {
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
   readModel: ActiveTrainingPlanPageReadModel;
+  trainingSessions: ReadonlyArray<TrainingSession>;
 }) {
   const navigate = useNavigate();
 
@@ -103,6 +120,7 @@ function ActiveTrainingPlanActions({
         onOpenTrainingHistory={() => {
           void navigate(readModel.actions.trainingHistory.routeTarget);
         }}
+        trainingSessions={trainingSessions}
         trainingWeekProgress={readModel.progress.trainingWeekProgress}
         trainingBlockWeeks={readModel.progress.trainingBlockWeeks}
       />
@@ -138,11 +156,19 @@ function MobileStartWorkoutCta({
 }
 
 function ActiveTrainingPlanTabs({
+  onSwapCurrentBlockExercise,
   readModel,
   setActiveTabId,
+  trainingPlan,
+  trainingSessions,
 }: {
+  onSwapCurrentBlockExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
   readModel: ActiveTrainingPlanPageReadModel;
   setActiveTabId: (activeTabId: ActiveTrainingPlanTabId) => void;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
 }) {
   const activePanel = readModel.activeTab.panel;
 
@@ -158,7 +184,12 @@ function ActiveTrainingPlanTabs({
         {activePanel.kind === "workout" ? <WorkoutSummaryPills /> : null}
       </div>
 
-      <ActiveTrainingPlanTabPanel readModel={readModel} />
+      <ActiveTrainingPlanTabPanel
+        onSwapCurrentBlockExercise={onSwapCurrentBlockExercise}
+        readModel={readModel}
+        trainingPlan={trainingPlan}
+        trainingSessions={trainingSessions}
+      />
     </div>
   );
 }
@@ -194,10 +225,26 @@ function ActiveTrainingPlanTabList({
   );
 }
 
-function ActiveTrainingPlanTabPanel({ readModel }: { readModel: ActiveTrainingPlanPageReadModel }) {
+function ActiveTrainingPlanTabPanel({
+  onSwapCurrentBlockExercise,
+  readModel,
+  trainingPlan,
+  trainingSessions,
+}: {
+  onSwapCurrentBlockExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
+  readModel: ActiveTrainingPlanPageReadModel;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}) {
   const navigate = useNavigate();
   const activeTab = readModel.activeTab;
   const panel = activeTab.panel;
+  const hasCompletedSessionsInCurrentBlock = hasCompletedTrainingBlockSessions({
+    trainingBlock: trainingPlan.trainingBlock,
+    trainingSessions,
+  });
 
   return (
     <div className="active-training-plan-content-grid">
@@ -221,7 +268,13 @@ function ActiveTrainingPlanTabPanel({ readModel }: { readModel: ActiveTrainingPl
                 <span>{panel.startAction.label}</span>
               </button>
             </div>
-            <WorkoutBlueprint workoutTemplate={panel.workoutTemplate} />
+            <WorkoutBlueprint
+              hasCompletedSessionsInCurrentBlock={hasCompletedSessionsInCurrentBlock}
+              onSwapExercise={onSwapCurrentBlockExercise}
+              trainingBlockCycleNumber={trainingPlan.trainingBlock?.cycleNumber}
+              trainingPlan={trainingPlan}
+              workoutTemplate={panel.workoutTemplate}
+            />
           </>
         ) : panel.kind === "overview" ? (
           <OverviewTab readModel={readModel.overview} />

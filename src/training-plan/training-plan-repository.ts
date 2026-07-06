@@ -76,17 +76,21 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
   return normalizedTrainingPlan;
 }
 
+export async function saveTrainingPlan(trainingPlan: TrainingPlan): Promise<TrainingPlan> {
+  const normalizedTrainingPlan = normalizeTrainingPlan(trainingPlan);
+
+  await db.trainingPlans.put(normalizedTrainingPlan);
+
+  return normalizedTrainingPlan;
+}
+
 /**
  * Persists an accepted next Training Block onto the existing Training Plan identity.
  *
  * Unlike generated-plan saves, accepting a next block does not deactivate or clone plans.
  */
 export async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan): Promise<TrainingPlan> {
-  const normalizedTrainingPlan = normalizeTrainingPlan(trainingPlan);
-
-  await db.trainingPlans.put(normalizedTrainingPlan);
-
-  return normalizedTrainingPlan;
+  return saveTrainingPlan(trainingPlan);
 }
 
 /** Restores the saved pre-acceptance Training Block state while undo is still available. */
