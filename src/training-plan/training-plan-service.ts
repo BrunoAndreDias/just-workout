@@ -1,9 +1,10 @@
-import type { TrainingPlan } from "./training-plan";
+import type { TrainingPlan, TrainingPlanDraftSetupUpdate } from "./training-plan";
 import {
   acceptTrainingPlanDraftFromCurrentPlanBlueprint,
   generateActiveTrainingPlanFromCurrentPlanBlueprint,
   generateTrainingPlanDraftFromCurrentPlanBlueprint,
   resetTrainingPlanDraftFromCurrentPlanBlueprint,
+  saveTrainingPlanDraftSetupFromCurrentPlanBlueprint,
 } from "./training-plan-generation";
 import {
   clearUndoableTrainingBlockTransition as clearUndoableTrainingBlockTransitionRecord,
@@ -36,6 +37,10 @@ async function generateTrainingPlanDraft() {
 
 async function acceptTrainingPlanDraft() {
   return acceptTrainingPlanDraftFromCurrentPlanBlueprint();
+}
+
+async function saveTrainingPlanDraftSetup(update: TrainingPlanDraftSetupUpdate) {
+  return saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({ update });
 }
 
 async function resetTrainingPlanDraft() {
@@ -165,10 +170,11 @@ export const trainingPlanService = {
   clearUndoableTrainingBlockTransition,
   saveBaselineBodyweight,
   acceptTrainingPlanDraft,
+  saveTrainingPlanDraftSetup,
+  resetTrainingPlanDraft,
   saveAcceptedTrainingPlan,
   saveTrainingPlan,
   generateTrainingPlanDraft,
-  resetTrainingPlanDraft,
   saveHistoricalBodyweightCorrection,
   saveTrainingWeekBodyweight,
   undoAcceptedTrainingBlockTransition,

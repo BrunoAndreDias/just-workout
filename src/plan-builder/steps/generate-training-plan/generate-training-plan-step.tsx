@@ -1,7 +1,17 @@
 import { Wand2 } from "lucide-react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
-import type { TrainingPlanDraft, WorkoutTemplatePurpose } from "../../../training-plan";
+import type {
+  TrainingPlanDraft,
+  TrainingPlanDraftSetupUpdate,
+  WorkoutTemplatePurpose,
+} from "../../../training-plan";
+import { parsePositiveBodyweight } from "../../../training-plan/bodyweight-input";
+import {
+  hasBodyweightLoadExercise,
+  isBodyweightLoadExercise,
+} from "../../../training-plan/bodyweight-load";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -70,8 +80,12 @@ type TrainingPlanDraftActions = {
   renameWorkoutTemplate: (templateId: string, label: string) => void;
   replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
   resetDraft: () => Promise<void>;
+  saveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
   setWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
 };
+
+type TrainingPlanDraftSlot =
+  TrainingPlanDraft["content"]["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
 
 const generateStepPreferenceMappingCopy =
   "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
@@ -202,61 +216,37 @@ function TrainingPlanDraftReview({
   trainingPlanDraft: TrainingPlanDraft;
 }) {
   const isStale = trainingPlanDraft.isStale === true;
+  const [editableLoadValues, setEditableLoadValues] = useState<Record<string, string>>({});
+  const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
+  const draftExercises = trainingPlanDraft.content.workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) => group.slots),
+  );
+  const requiresBodyweight = hasBodyweightLoadExercise(draftExercises);
+
+  useEffect(() => {
+    setEditableLoadValues(
+      Object.fromEntries(
+        (trainingPlanDraft.content.startingLoadSuggestions ?? []).map((suggestion) => [
+          suggestion.exerciseId,
+          formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
+        ]),
+      ),
+    );
+    setBaselineBodyweightInput(trainingPlanDraft.content.baselineBodyweight?.toString() ?? "");
+  }, [trainingPlanDraft]);
 
   return (
     <div className="grid gap-4">
-      <StepPanel>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
-            <p className="mt-3 max-w-3xl text-sm text-stone-600">
-              Review the generated Workout Templates, Superset Groups, exercise slots, and Training
-              Prescriptions before creating the Active Training Plan.
-            </p>
-            {isStale ? (
-              <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                Stale Builder Output. Reset Draft to regenerate from your current Plan Builder
-                choices before accepting it.
-              </p>
-            ) : null}
-          </div>
-          <StepActions>
-            <Button
-              disabled={isAccepting}
-              onClick={() => {
-                void draftActions.resetDraft();
-              }}
-              type="button"
-              variant="secondary"
-            >
-              Reset Draft
-            </Button>
-            <Button
-              disabled={isAccepting || isStale}
-              onClick={() => {
-                void draftActions.acceptDraft();
-              }}
-              type="button"
-              variant="builderPrimary"
-            >
-              {isAccepting ? "Accepting..." : "Accept Draft"}
-            </Button>
-          </StepActions>
-        </div>
-
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-          <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
-          <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
-          <GenerateSummaryField
-            label="Rep ranges"
-            value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
-          />
-          <GenerateSummaryField
-            label="Templates"
-            value={String(trainingPlanDraft.content.workoutTemplates.length)}
-          />
-        </dl>
-      </StepPanel>
+      <TrainingPlanDraftHeader
+        baselineBodyweightInput={baselineBodyweightInput}
+        draftActions={draftActions}
+        isAccepting={isAccepting}
+        isStale={isStale}
+        onBaselineBodyweightInputChange={setBaselineBodyweightInput}
+        requiresBodyweight={requiresBodyweight}
+        summary={summary}
+        trainingPlanDraft={trainingPlanDraft}
+      />
 
       <DraftGenerationInputs {...generationInputs} />
 
@@ -273,122 +263,450 @@ function TrainingPlanDraftReview({
 
       <div className="grid gap-4">
         {trainingPlanDraft.content.workoutTemplates.map((template, templateIndex, templates) => (
-          <StepPanel key={template.id}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <label
-                  className="text-xs font-semibold uppercase text-stone-500"
-                  htmlFor={template.id}
-                >
-                  Workout Template label
-                </label>
-                <input
-                  className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
-                  id={template.id}
-                  onChange={(event) => {
-                    draftActions.renameWorkoutTemplate(template.id, event.target.value);
-                  }}
-                  type="text"
-                  value={template.label}
-                />
-                <p className="text-sm text-stone-600">
-                  {getWorkoutTemplatePurposeDescription(template.purpose)}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={templateIndex === 0}
-                  onClick={() => {
-                    draftActions.moveWorkoutTemplate(template.id, templateIndex - 1);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  Move up
-                </Button>
-                <Button
-                  disabled={templateIndex === templates.length - 1}
-                  onClick={() => {
-                    draftActions.moveWorkoutTemplate(template.id, templateIndex + 1);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  Move down
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                onClick={() => {
-                  draftActions.setWorkoutTemplatePurpose(
-                    template.id,
-                    template.purpose === "strength" ? "custom-focus" : "strength",
-                  );
-                }}
-                type="button"
-                variant="secondary"
-              >
-                {template.purpose === "strength" ? "Make custom focus" : "Make strength focus"}
-              </Button>
-              <Button
-                onClick={() => {
-                  draftActions.replaceWorkoutTemplateWithCustomFocus(template.id);
-                }}
-                type="button"
-                variant="secondary"
-              >
-                Replace with custom focus
-              </Button>
-              <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
-                {template.purpose === "custom-focus"
-                  ? "Custom focus"
-                  : `${template.supersetGroups.length} groups`}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-4">
-              {template.supersetGroups.map((group) => (
-                <section
-                  aria-label={group.title}
-                  className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
-                  key={group.id}
-                >
-                  <h5 className="text-base font-black text-stone-950">{group.title}</h5>
-                  <ul className="mt-3 space-y-3">
-                    {group.slots.map((slot) => (
-                      <li
-                        className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3"
-                        key={`${group.id}-${slot.exerciseId}-${slot.slotLabel}`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <strong className="text-sm text-stone-950">{slot.exerciseName}</strong>
-                          <span className="text-xs font-semibold uppercase text-stone-500">
-                            {slot.slotLabel}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
-                          <span>{slot.role}</span>
-                          <span>
-                            {formatTrainingPlanDraftMovementPattern(slot.movementPattern)}
-                          </span>
-                          <span>
-                            {slot.trainingPrescription
-                              ? `${slot.trainingPrescription.setCount} × ${slot.trainingPrescription.repRange.min}–${slot.trainingPrescription.repRange.max}`
-                              : "Prescription pending"}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          </StepPanel>
+          <TrainingPlanDraftTemplateCard
+            draftActions={draftActions}
+            editableLoadValues={editableLoadValues}
+            key={template.id}
+            onEditableLoadValueChange={setEditableLoadValues}
+            template={template}
+            templateIndex={templateIndex}
+            templatesLength={templates.length}
+            trainingPlanDraft={trainingPlanDraft}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+function TrainingPlanDraftHeader({
+  baselineBodyweightInput,
+  draftActions,
+  isAccepting,
+  isStale,
+  onBaselineBodyweightInputChange,
+  requiresBodyweight,
+  summary,
+  trainingPlanDraft,
+}: {
+  baselineBodyweightInput: string;
+  draftActions: TrainingPlanDraftActions;
+  isAccepting: boolean;
+  isStale: boolean;
+  onBaselineBodyweightInputChange: (value: string) => void;
+  requiresBodyweight: boolean;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <StepPanel>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
+          <p className="mt-3 max-w-3xl text-sm text-stone-600">
+            Review the generated Workout Templates, Superset Groups, exercise slots, and Training
+            Prescriptions before creating the Active Training Plan.
+          </p>
+          {isStale ? (
+            <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+              Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices
+              before accepting it.
+            </p>
+          ) : null}
+        </div>
+        <StepActions>
+          <Button
+            disabled={isAccepting}
+            onClick={() => {
+              void draftActions.resetDraft();
+            }}
+            type="button"
+            variant="outline"
+          >
+            Reset Draft
+          </Button>
+          <Button
+            disabled={isAccepting || isStale}
+            onClick={() => {
+              void draftActions.acceptDraft();
+            }}
+            type="button"
+            variant="builderPrimary"
+          >
+            {isAccepting ? "Accepting..." : "Accept Draft"}
+          </Button>
+        </StepActions>
+      </div>
+
+      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+        <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
+        <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
+        <GenerateSummaryField
+          label="Rep ranges"
+          value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
+        />
+        <GenerateSummaryField
+          label="Templates"
+          value={String(trainingPlanDraft.content.workoutTemplates.length)}
+        />
+      </dl>
+
+      {requiresBodyweight ? (
+        <BaselineBodyweightDraftSetup
+          baselineBodyweight={trainingPlanDraft.content.baselineBodyweight}
+          baselineBodyweightInput={baselineBodyweightInput}
+          onBaselineBodyweightInputChange={onBaselineBodyweightInputChange}
+          onSaveDraftSetup={draftActions.saveDraftSetup}
+        />
+      ) : null}
+    </StepPanel>
+  );
+}
+
+function BaselineBodyweightDraftSetup({
+  baselineBodyweight,
+  baselineBodyweightInput,
+  onBaselineBodyweightInputChange,
+  onSaveDraftSetup,
+}: {
+  baselineBodyweight?: number | null;
+  baselineBodyweightInput: string;
+  onBaselineBodyweightInputChange: (value: string) => void;
+  onSaveDraftSetup: TrainingPlanDraftActions["saveDraftSetup"];
+}) {
+  return (
+    <section className="mt-5 rounded-2xl border border-stone-900/10 bg-white/70 p-4">
+      <h4 className="text-base font-black text-stone-950">Baseline Bodyweight</h4>
+      <p className="mt-2 text-sm text-stone-600">
+        Store known bodyweight so bodyweight exercise load volume has a usable default after
+        acceptance.
+      </p>
+      <label className="mt-3 block text-sm font-medium text-stone-700">
+        <span>Baseline Bodyweight</span>
+        <input
+          aria-label="Baseline Bodyweight"
+          className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+          inputMode="decimal"
+          min={0}
+          onBlur={() => {
+            void onSaveDraftSetup({
+              baselineBodyweight: parsePositiveBodyweight(baselineBodyweightInput),
+              kind: "baseline_bodyweight",
+            });
+          }}
+          onChange={(event) => {
+            onBaselineBodyweightInputChange(event.currentTarget.value);
+          }}
+          step={0.1}
+          type="number"
+          value={baselineBodyweightInput}
+        />
+      </label>
+      {baselineBodyweight ? null : (
+        <p className="mt-2 text-sm text-amber-800">
+          Missing Baseline Bodyweight: bodyweight exercise volume will stay partial until you set it
+          here or later on the Training surface.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function TrainingPlanDraftTemplateCard({
+  draftActions,
+  editableLoadValues,
+  onEditableLoadValueChange,
+  template,
+  templateIndex,
+  templatesLength,
+  trainingPlanDraft,
+}: {
+  draftActions: TrainingPlanDraftActions;
+  editableLoadValues: Record<string, string>;
+  onEditableLoadValueChange: Dispatch<SetStateAction<Record<string, string>>>;
+  template: TrainingPlanDraft["content"]["workoutTemplates"][number];
+  templateIndex: number;
+  templatesLength: number;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <StepPanel>
+      <TrainingPlanDraftTemplateHeader
+        draftActions={draftActions}
+        template={template}
+        templateIndex={templateIndex}
+        templatesLength={templatesLength}
+      />
+
+      <div className="mt-4 grid gap-4">
+        {template.supersetGroups.map((group) => (
+          <section
+            aria-label={group.title}
+            className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
+            key={group.id}
+          >
+            <h5 className="text-base font-black text-stone-950">{group.title}</h5>
+            <ul className="mt-3 space-y-3">
+              {group.slots.map((slot) => (
+                <TrainingPlanDraftSlotItem
+                  draftActions={draftActions}
+                  editableLoadValues={editableLoadValues}
+                  key={`${group.id}-${slot.exerciseId}-${slot.slotLabel}`}
+                  onEditableLoadValueChange={onEditableLoadValueChange}
+                  slot={slot}
+                  trainingPlanDraft={trainingPlanDraft}
+                />
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </StepPanel>
+  );
+}
+
+function TrainingPlanDraftTemplateHeader({
+  draftActions,
+  template,
+  templateIndex,
+  templatesLength,
+}: {
+  draftActions: TrainingPlanDraftActions;
+  template: TrainingPlanDraft["content"]["workoutTemplates"][number];
+  templateIndex: number;
+  templatesLength: number;
+}) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <label className="text-xs font-semibold uppercase text-stone-500" htmlFor={template.id}>
+            Workout Template label
+          </label>
+          <input
+            className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+            id={template.id}
+            onChange={(event) => {
+              draftActions.renameWorkoutTemplate(template.id, event.target.value);
+            }}
+            type="text"
+            value={template.label}
+          />
+          <p className="text-sm text-stone-600">
+            {getWorkoutTemplatePurposeDescription(template.purpose)}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={templateIndex === 0}
+            onClick={() => {
+              draftActions.moveWorkoutTemplate(template.id, templateIndex - 1);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Move up
+          </Button>
+          <Button
+            disabled={templateIndex === templatesLength - 1}
+            onClick={() => {
+              draftActions.moveWorkoutTemplate(template.id, templateIndex + 1);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Move down
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          onClick={() => {
+            draftActions.setWorkoutTemplatePurpose(
+              template.id,
+              template.purpose === "strength" ? "custom-focus" : "strength",
+            );
+          }}
+          type="button"
+          variant="secondary"
+        >
+          {template.purpose === "strength" ? "Make custom focus" : "Make strength focus"}
+        </Button>
+        <Button
+          onClick={() => {
+            draftActions.replaceWorkoutTemplateWithCustomFocus(template.id);
+          }}
+          type="button"
+          variant="secondary"
+        >
+          Replace with custom focus
+        </Button>
+        <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
+          {template.purpose === "custom-focus"
+            ? "Custom focus"
+            : `${template.supersetGroups.length} groups`}
+        </span>
+      </div>
+    </>
+  );
+}
+
+function TrainingPlanDraftSlotItem({
+  draftActions,
+  editableLoadValues,
+  onEditableLoadValueChange,
+  slot,
+  trainingPlanDraft,
+}: {
+  draftActions: TrainingPlanDraftActions;
+  editableLoadValues: Record<string, string>;
+  onEditableLoadValueChange: Dispatch<SetStateAction<Record<string, string>>>;
+  slot: TrainingPlanDraftSlot;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <li className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <strong className="text-sm text-stone-950">{slot.exerciseName}</strong>
+        <span className="text-xs font-semibold uppercase text-stone-500">{slot.slotLabel}</span>
+      </div>
+      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
+        <span>{slot.role}</span>
+        <span>{formatTrainingPlanDraftMovementPattern(slot.movementPattern)}</span>
+        <span>
+          {slot.trainingPrescription
+            ? `${slot.trainingPrescription.setCount} × ${slot.trainingPrescription.repRange.min}–${slot.trainingPrescription.repRange.max}`
+            : "Prescription pending"}
+        </span>
+      </div>
+      <DraftStartingLoadEditor
+        loadInputValue={editableLoadValues[slot.exerciseId] ?? ""}
+        onInputChange={(nextValue, options) => {
+          onEditableLoadValueChange((currentValues) => ({
+            ...currentValues,
+            [slot.exerciseId]: nextValue,
+          }));
+
+          if (options?.persist === false) {
+            return;
+          }
+
+          void draftActions.saveDraftSetup({
+            kind: "starting_load_suggestions",
+            startingLoadSuggestions: updateStartingLoadSuggestions({
+              exerciseId: slot.exerciseId,
+              isBodyweightExercise: isBodyweightLoadExercise(slot),
+              startingLoadSuggestions: trainingPlanDraft.content.startingLoadSuggestions ?? [],
+              value: nextValue,
+            }),
+          });
+        }}
+        slot={slot}
+        trainingPlanDraft={trainingPlanDraft}
+      />
+    </li>
+  );
+}
+
+function DraftStartingLoadEditor({
+  loadInputValue,
+  onInputChange,
+  slot,
+  trainingPlanDraft,
+}: {
+  loadInputValue: string;
+  onInputChange: (value: string, options?: { persist?: boolean }) => void;
+  slot: TrainingPlanDraftSlot;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  const loadSuggestion = trainingPlanDraft.content.startingLoadSuggestions?.find(
+    (suggestion) => suggestion.exerciseId === slot.exerciseId,
+  );
+
+  if (!loadSuggestion) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 grid gap-1 text-sm text-stone-600">
+      <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
+      <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
+      <span>{loadSuggestion.reason}</span>
+      <label className="mt-1 block font-medium text-stone-700">
+        <span>Suggested starting load for {slot.exerciseName}</span>
+        <input
+          aria-label={`Suggested starting load for ${slot.exerciseName}`}
+          className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+          inputMode="decimal"
+          min={isBodyweightLoadExercise(slot) ? -200 : 0}
+          onBlur={() => onInputChange(loadInputValue)}
+          onChange={(event) => onInputChange(event.currentTarget.value, { persist: false })}
+          step={2.5}
+          type="number"
+          value={loadInputValue}
+        />
+      </label>
+      {loadSuggestion.userEditedLoad === null ? null : (
+        <span>Edited start: {formatLoad(loadSuggestion.userEditedLoad)}</span>
+      )}
+    </div>
+  );
+}
+
+function formatLoad(load: number | null): string {
+  return load === null ? "No previous load" : `${load} kg`;
+}
+
+function formatEditableLoad(load: number | null): string {
+  return load === null ? "" : String(load);
+}
+
+function parseEditableLoad({
+  isBodyweightExercise,
+  value,
+}: {
+  isBodyweightExercise: boolean;
+  value: string;
+}): number | null {
+  if (value.trim() === "") {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return null;
+  }
+
+  if (!isBodyweightExercise && parsedValue < 0) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
+function updateStartingLoadSuggestions({
+  exerciseId,
+  isBodyweightExercise,
+  startingLoadSuggestions,
+  value,
+}: {
+  exerciseId: string;
+  isBodyweightExercise: boolean;
+  startingLoadSuggestions: NonNullable<TrainingPlanDraft["content"]["startingLoadSuggestions"]>;
+  value: string;
+}): NonNullable<TrainingPlanDraft["content"]["startingLoadSuggestions"]> {
+  const userEditedLoad = parseEditableLoad({ isBodyweightExercise, value });
+
+  return startingLoadSuggestions.map((suggestion) =>
+    suggestion.exerciseId === exerciseId
+      ? {
+          ...suggestion,
+          effectiveLoad: userEditedLoad ?? suggestion.suggestedLoad,
+          userEditedLoad,
+        }
+      : suggestion,
   );
 }
 

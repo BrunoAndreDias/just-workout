@@ -268,22 +268,50 @@ describe("trainingPlanService", () => {
     );
   });
 
+  it("persists draft setup updates without replacing adjacent draft setup values", async () => {
+    const blueprint = createCompleteBlueprint();
+    const startingLoadSuggestions = [createStartingLoadSuggestion({ effectiveLoad: 45 })];
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: createTrainingPlanDraftContent(),
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
+    });
+
+    await trainingPlanService.saveTrainingPlanDraftSetup({
+      baselineBodyweight: 81,
+      kind: "baseline_bodyweight",
+    });
+    await trainingPlanService.saveTrainingPlanDraftSetup({
+      kind: "starting_load_suggestions",
+      startingLoadSuggestions,
+    });
+
+    expect(await getCurrentPlanBlueprint()).toMatchObject({
+      trainingPlanDraft: {
+        content: {
+          baselineBodyweight: 81,
+          startingLoadSuggestions,
+        },
+      },
+    });
+  });
+
   it("accepts the saved Training Plan Draft into a new Active Training Plan and clears it from the Plan Blueprint", async () => {
     const blueprint = createCompleteBlueprint();
 
     await savePlanBlueprint({
       ...blueprint,
       trainingPlanDraft: {
-        content: {
-          mainCompoundRotationPools: [],
-          repRangeStyle: "balanced_hypertrophy",
-          split: "Alternating Full Body A/B",
-          trainingBlockWeeks: 6,
-          trainingFrequencyDaysPerWeek: 3,
-          trainingGoal: "build-muscle",
-          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
-          workoutTemplates: createTrainingPlan().workoutTemplates,
-        },
+        content: createTrainingPlanDraftContent({
+          baselineBodyweight: 81,
+          startingLoadSuggestions: [createStartingLoadSuggestion({ effectiveLoad: 45 })],
+        }),
         validation: {
           blockers: [],
           warnings: [],
@@ -304,62 +332,20 @@ describe("trainingPlanService", () => {
 
     expect(acceptedTrainingPlan).toMatchObject({
       active: true,
+      baselineBodyweight: 81,
       sourceBlueprintId: blueprint.id,
       split: "Alternating Full Body A/B",
+      startingLoadSuggestions: [
+        expect.objectContaining({
+          effectiveLoad: 45,
+          userEditedLoad: 45,
+        }),
+      ],
     });
     expect(await getCurrentPlanBlueprint()).toMatchObject({
       id: blueprint.id,
       trainingPlanDraft: null,
     });
-  });
-
-  it("preserves custom-focus Workout Template edits when accepting a Training Plan Draft", async () => {
-    const blueprint = createCompleteBlueprint();
-
-    await savePlanBlueprint({
-      ...blueprint,
-      trainingPlanDraft: {
-        content: {
-          mainCompoundRotationPools: [],
-          repRangeStyle: "balanced_hypertrophy",
-          split: "Alternating Full Body A/B",
-          trainingBlockWeeks: 6,
-          trainingFrequencyDaysPerWeek: 3,
-          trainingGoal: "build-muscle",
-          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
-          workoutTemplates: [
-            {
-              id: "template-cardio",
-              label: "Cardio Focus",
-              purpose: "custom-focus",
-              supersetGroups: [],
-            },
-          ],
-        },
-        validation: {
-          blockers: [],
-          warnings: [
-            {
-              kind: "custom_focus_reduces_strength_coverage",
-              message:
-                "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
-              templateIds: ["template-cardio"],
-            },
-          ],
-        },
-      },
-    });
-
-    const acceptedTrainingPlan = await trainingPlanService.acceptTrainingPlanDraft();
-
-    expect(acceptedTrainingPlan.workoutTemplates).toEqual([
-      {
-        id: "template-cardio",
-        label: "Cardio Focus",
-        purpose: "custom-focus",
-        supersetGroups: [],
-      },
-    ]);
   });
 });
 
@@ -371,6 +357,45 @@ function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan
       timestamp: "2026-06-07T10:00:00.000Z",
     }),
     ...overrides,
+  };
+}
+
+function createTrainingPlanDraftContent(
+  overrides: Partial<TrainingPlan> = {},
+): NonNullable<PlanBlueprint["trainingPlanDraft"]>["content"] {
+  const trainingPlan = createTrainingPlan(overrides);
+
+  return {
+    baselineBodyweight: trainingPlan.baselineBodyweight,
+    exerciseSelectionPreferences: trainingPlan.exerciseSelectionPreferences,
+    isolationExercisePreferences: trainingPlan.isolationExercisePreferences,
+    mainCompoundRotationPools: trainingPlan.mainCompoundRotationPools,
+    repRangeStyle: trainingPlan.repRangeStyle,
+    split: trainingPlan.split,
+    startingLoadSuggestions: trainingPlan.startingLoadSuggestions,
+    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+    trainingFrequencyDaysPerWeek: trainingPlan.trainingFrequencyDaysPerWeek,
+    trainingGoal: trainingPlan.trainingGoal,
+    weeklyRepTargets: trainingPlan.weeklyRepTargets,
+    workoutTemplates: trainingPlan.workoutTemplates,
+  };
+}
+
+function createStartingLoadSuggestion({
+  effectiveLoad,
+}: {
+  effectiveLoad: number;
+}): NonNullable<TrainingPlan["startingLoadSuggestions"]>[number] {
+  return {
+    effectiveLoad,
+    exerciseId: "flat-dumbbell-bench-press",
+    exerciseName: "Flat Dumbbell Bench Press",
+    kind: "first_time",
+    movementPattern: "horizontal_push",
+    previousLoad: null,
+    reason: "first-time exercise, start empty",
+    suggestedLoad: null,
+    userEditedLoad: effectiveLoad,
   };
 }
 

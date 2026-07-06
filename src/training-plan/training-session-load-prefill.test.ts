@@ -99,6 +99,50 @@ describe("Training Session load prefills", () => {
     ]);
   });
 
+  it("ignores empty persisted first-time suggestions when exact exercise history exists", () => {
+    const trainingPlan = createTrainingPlan({
+      startingLoadSuggestions: [
+        {
+          effectiveLoad: null,
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+          kind: "first_time",
+          movementPattern: "horizontal_push",
+          previousLoad: null,
+          reason: "first-time exercise, start empty",
+          suggestedLoad: null,
+          userEditedLoad: null,
+        },
+      ],
+      workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
+    });
+
+    expect(
+      createTrainingSessionLoadPrefills({
+        previousTrainingSessions: [
+          createTrainingSession({
+            completedAt: "2026-07-12T10:00:00.000Z",
+            exerciseId: "incline-dumbbell-bench-press",
+            exerciseName: "Incline Dumbbell Bench Press",
+            trainingBlockId: "training-block-1",
+            trainingBlockWeekNumber: 6,
+            weight: 87.5,
+          }),
+        ],
+        trainingPlan,
+        workoutTemplate: trainingPlan.workoutTemplates[0] as WorkoutTemplate,
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        effectiveLoad: 87.5,
+        exerciseId: "incline-dumbbell-bench-press",
+        kind: "exact_previous_exercise",
+        previousLoad: 87.5,
+        showPrefillExplanation: true,
+      }),
+    ]);
+  });
+
   it("progresses the next exact-exercise prefill from completed sets and target RIR", () => {
     const trainingPlan = createTrainingPlan({
       workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),

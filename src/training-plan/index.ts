@@ -4,6 +4,7 @@ export type {
   SupersetGroup,
   TrainingPlan,
   TrainingPlanDraft,
+  TrainingPlanDraftSetupUpdate,
   TrainingPlanSlot,
   WorkoutTemplate,
   WorkoutTemplatePurpose,

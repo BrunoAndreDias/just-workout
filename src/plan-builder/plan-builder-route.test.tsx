@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -736,72 +736,83 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
-  it("shows a warning after replacing a draft Workout Template with custom focus", async () => {
+  it("resets draft-local starting loads and Baseline Bodyweight from current builder choices", async () => {
     const user = userEvent.setup();
-
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    const { baselineBodyweightInput, suggestedLoadInput } =
+      await openGeneratedTrainingPlanDraft(user);
 
-    const firstTemplateLabel = await generateDraftAndGetFirstTemplateLabel(user);
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "42.5");
+    await user.clear(baselineBodyweightInput);
+    await user.type(baselineBodyweightInput, "82");
+    await user.tab();
 
-    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
-    await user.click(getFirstReplaceWithCustomFocusButton());
-
-    expect(await screen.findByText("Draft warnings")).toBeVisible();
-    expect(
-      screen.getByText(
-        "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
-      ),
-    ).toBeVisible();
-    expect(await screen.findByDisplayValue("Conditioning Day Cardio Focus")).toBeVisible();
-  });
-
-  it("discards draft Workout Template edits when Reset Draft is clicked", async () => {
-    const user = userEvent.setup();
-
-    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
-
-    const firstTemplateLabel = await generateDraftAndGetFirstTemplateLabel(user);
-
-    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
-    await user.click(getFirstReplaceWithCustomFocusButton());
+    await waitFor(() => {
+      expect(suggestedLoadInput).toHaveValue(42.5);
+      expect(baselineBodyweightInput).toHaveValue(82);
+      expect(screen.getAllByText("Edited start: 42.5 kg").length).toBeGreaterThan(0);
+    });
 
     await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
 
-    expect(await screen.findByDisplayValue("Full Body A")).toBeVisible();
-    expect(screen.queryByText("Draft warnings")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(suggestedLoadInput).toHaveValue(null);
+      expect(baselineBodyweightInput).toHaveValue(null);
+    });
   });
 
-  it("preserves custom-focus Workout Template edits in the accepted Active Training Plan", async () => {
+  it("accepts draft-local starting loads and Baseline Bodyweight into the Active Training Plan", async () => {
     const user = userEvent.setup();
-    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    const { baselineBodyweightInput, suggestedLoadInput } =
+      await openGeneratedTrainingPlanDraft(user);
 
-    await user.click(await getOnePageSectionButton("Generate"));
-    const generateButton = screen.queryByRole("button", { name: /^generate training plan$/i });
-    if (generateButton) {
-      await user.click(generateButton);
-      await user.click(
-        await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
-      );
-    }
-
-    const firstTemplateLabel = await findFirstWorkoutTemplateLabelInput();
-    fireEvent.change(firstTemplateLabel, { target: { value: "Conditioning Day" } });
-    await user.click(getFirstReplaceWithCustomFocusButton());
+    await user.clear(suggestedLoadInput);
+    await user.type(suggestedLoadInput, "45");
+    await user.clear(baselineBodyweightInput);
+    await user.type(baselineBodyweightInput, "81");
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+    });
     await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
-    });
-
-    const [activeTrainingPlan] = await getActiveTrainingPlans();
-
-    expect(activeTrainingPlan?.workoutTemplates[0]).toMatchObject({
-      label: "Conditioning Day Cardio Focus",
-      purpose: "custom-focus",
-      supersetGroups: [],
+    await waitFor(async () => {
+      expect(await getActiveTrainingPlans()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            baselineBodyweight: 81,
+            startingLoadSuggestions: expect.arrayContaining([
+              expect.objectContaining({
+                effectiveLoad: 45,
+                exerciseId: "flat-barbell-bench-press",
+                userEditedLoad: 45,
+              }),
+            ]),
+          }),
+        ]),
+      );
     });
   });
 });
+
+async function openGeneratedTrainingPlanDraft(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await getOnePageSectionButton("Generate"));
+  await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+  await user.click(
+    await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+  );
+
+  const suggestedLoadInput = (
+    await screen.findAllByLabelText(/suggested starting load for flat barbell bench press/i)
+  )[0] as HTMLInputElement;
+  const baselineBodyweightInput = (await screen.findByLabelText(
+    /^baseline bodyweight$/i,
+  )) as HTMLInputElement;
+
+  return { baselineBodyweightInput, suggestedLoadInput };
+}
 
 function renderPlanBuilder({
   initialEntries = [planBuilderPaths.entry],
@@ -848,38 +859,6 @@ async function getOnePageSectionButton(title: string) {
   }
 
   return button;
-}
-
-async function generateDraftAndGetFirstTemplateLabel(user: PlanBuilderTestUser) {
-  await user.click(await getOnePageSectionButton("Generate"));
-  await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
-  await user.click(
-    await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
-  );
-
-  return findFirstWorkoutTemplateLabelInput();
-}
-
-async function findFirstWorkoutTemplateLabelInput() {
-  const labelInputs = await screen.findAllByLabelText("Workout Template label");
-  const firstLabelInput = labelInputs[0];
-
-  if (!firstLabelInput) {
-    throw new Error("Expected at least one Workout Template label input.");
-  }
-
-  return firstLabelInput;
-}
-
-function getFirstReplaceWithCustomFocusButton() {
-  const buttons = screen.getAllByRole("button", { name: /^replace with custom focus$/i });
-  const firstButton = buttons[0];
-
-  if (!firstButton) {
-    throw new Error("Expected at least one custom-focus replacement button.");
-  }
-
-  return firstButton;
 }
 
 async function openExercisesSection(user: PlanBuilderTestUser) {

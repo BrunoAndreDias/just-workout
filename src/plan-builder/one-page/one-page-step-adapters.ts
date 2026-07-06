@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import {
+  type TrainingPlanDraftSetupUpdate,
   trainingPlanService,
   trainingPlansQueryOptions,
-  type WorkoutTemplatePurpose,
 } from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
@@ -27,6 +27,7 @@ import {
   startGenerateTrainingPlanWorkflow,
 } from "../generate-training-plan-workflow";
 import type {
+  PlanBlueprint,
   PlanBlueprintDefaultResolution,
   RepRangeStyleId,
   TrainingFrequencyDaysPerWeek,
@@ -183,8 +184,15 @@ export function useOnePageGenerateStep({
   const { mutateAsync: acceptDraft, isPending: isAcceptingDraft } = useMutation({
     mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
+  const { mutateAsync: saveDraft, isPending: isSavingDraft } = useMutation({
+    mutationFn: trainingPlanService.saveTrainingPlanDraftSetup,
+    onSuccess: updateCachedTrainingPlanDraft,
+    scope: { id: "training-plan-draft-setup" },
+  });
   const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
     mutationFn: trainingPlanService.resetTrainingPlanDraft,
+    onSuccess: updateCachedTrainingPlanDraft,
+    scope: { id: "training-plan-draft-setup" },
   });
   const { mutate: renameDraftWorkoutTemplate } =
     useRenameTrainingPlanDraftWorkoutTemplateMutation();
@@ -194,6 +202,21 @@ export function useOnePageGenerateStep({
     useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation();
   const { mutate: replaceDraftWorkoutTemplateWithCustomFocus } =
     useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation();
+
+  function updateCachedTrainingPlanDraft(
+    savedDraft: NonNullable<PlanBlueprint["trainingPlanDraft"]>,
+  ) {
+    queryClient.setQueryData<PlanBlueprint | undefined>(
+      planBuilderBlueprintQueryKey,
+      (blueprint) =>
+        blueprint
+          ? {
+              ...blueprint,
+              trainingPlanDraft: savedDraft,
+            }
+          : blueprint,
+    );
+  }
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -217,6 +240,7 @@ export function useOnePageGenerateStep({
       isStartingGenerateStep ||
       isAcceptingRecommendedDefaults ||
       isAcceptingDraft ||
+      isSavingDraft ||
       isResettingDraft,
     onAcceptDraft: async () => {
       const acceptedTrainingPlan = await acceptDraft();
@@ -237,36 +261,11 @@ export function useOnePageGenerateStep({
     onCancelRecommendedDefaults: () => {
       onPendingDefaultResolutionChange(null);
     },
-    onRenameWorkoutTemplate: (templateId: string, label: string) => {
-      renameDraftWorkoutTemplate({
-        label,
-        templateId,
-        timestamp: new Date().toISOString(),
-      });
-    },
-    onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => {
-      reorderDraftWorkoutTemplate({
-        targetIndex,
-        templateId,
-        timestamp: new Date().toISOString(),
-      });
-    },
-    onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => {
-      replaceDraftWorkoutTemplateWithCustomFocus({
-        templateId,
-        timestamp: new Date().toISOString(),
-      });
-    },
     onResetDraft: async () => {
       await resetDraft();
-      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
     },
-    onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => {
-      updateDraftWorkoutTemplatePurpose({
-        purpose,
-        templateId,
-        timestamp: new Date().toISOString(),
-      });
+    onSaveDraftSetup: async (update: TrainingPlanDraftSetupUpdate) => {
+      await saveDraft(update);
     },
     onGenerateTrainingPlan: async () => {
       const resolution = defaultResolution;
@@ -278,6 +277,30 @@ export function useOnePageGenerateStep({
       const result = await startGenerateStep({ defaultResolution: resolution });
 
       await applyWorkflowResult(result);
+    },
+    onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => {
+      reorderDraftWorkoutTemplate({ targetIndex, templateId, timestamp: new Date().toISOString() });
+    },
+    onRenameWorkoutTemplate: (templateId: string, label: string) => {
+      renameDraftWorkoutTemplate({ label, templateId, timestamp: new Date().toISOString() });
+    },
+    onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => {
+      replaceDraftWorkoutTemplateWithCustomFocus({
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSetWorkoutTemplatePurpose: (
+      templateId: string,
+      purpose: NonNullable<
+        PlanBlueprint["trainingPlanDraft"]
+      >["content"]["workoutTemplates"][number]["purpose"],
+    ) => {
+      updateDraftWorkoutTemplatePurpose({
+        purpose,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
     },
   };
 }

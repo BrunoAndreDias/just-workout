@@ -129,6 +129,16 @@ export type TrainingPlanDraft = {
   validation: TrainingPlanDraftValidation;
 };
 
+export type TrainingPlanDraftSetupUpdate =
+  | {
+      baselineBodyweight: number | null;
+      kind: "baseline_bodyweight";
+    }
+  | {
+      kind: "starting_load_suggestions";
+      startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+    };
+
 type GenerateTrainingPlanOptions = {
   blueprint: PlanBlueprint;
   id: string;
@@ -207,6 +217,9 @@ export function generateTrainingPlanContentFromBlueprint({
     repRangeStyle: repRanges,
     workoutTemplates,
   });
+  const startingLoadSuggestions = createDefaultStartingLoadSuggestions({
+    workoutTemplates: prescribedWorkoutTemplates,
+  });
 
   return {
     exerciseSelectionPreferences: blueprint.exerciseSelectionPreferences,
@@ -214,12 +227,45 @@ export function generateTrainingPlanContentFromBlueprint({
     mainCompoundRotationPools,
     repRangeStyle: repRanges,
     split: splitLabel,
+    startingLoadSuggestions,
     trainingBlockWeeks: 6,
     trainingFrequencyDaysPerWeek: blueprint.trainingFrequencyDaysPerWeek,
     trainingGoal: blueprint.trainingGoal,
     weeklyRepTargets,
     workoutTemplates: prescribedWorkoutTemplates,
   };
+}
+
+function createDefaultStartingLoadSuggestions({
+  workoutTemplates,
+}: {
+  workoutTemplates: ReadonlyArray<WorkoutTemplate>;
+}): ReadonlyArray<TrainingPlanStartingLoadSuggestion> {
+  const seenExerciseIds = new Set<string>();
+  const suggestions: TrainingPlanStartingLoadSuggestion[] = [];
+
+  for (const slot of workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) => group.slots),
+  )) {
+    if (seenExerciseIds.has(slot.exerciseId)) {
+      continue;
+    }
+
+    seenExerciseIds.add(slot.exerciseId);
+    suggestions.push({
+      effectiveLoad: null,
+      exerciseId: slot.exerciseId,
+      exerciseName: slot.exerciseName,
+      kind: "first_time",
+      movementPattern: slot.movementPattern,
+      previousLoad: null,
+      reason: "first-time exercise, start empty",
+      suggestedLoad: null,
+      userEditedLoad: null,
+    });
+  }
+
+  return suggestions;
 }
 
 export function validateTrainingPlanDraftContent({

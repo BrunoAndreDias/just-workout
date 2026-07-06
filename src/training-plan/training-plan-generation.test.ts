@@ -3,7 +3,13 @@ import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import type { TrainingPlan } from "./training-plan";
-import { generateActiveTrainingPlanFromCurrentPlanBlueprint } from "./training-plan-generation";
+import {
+  acceptTrainingPlanDraftFromCurrentPlanBlueprint,
+  generateActiveTrainingPlanFromCurrentPlanBlueprint,
+  generateTrainingPlanDraftFromCurrentPlanBlueprint,
+  resetTrainingPlanDraftFromCurrentPlanBlueprint,
+  saveTrainingPlanDraftSetupFromCurrentPlanBlueprint,
+} from "./training-plan-generation";
 
 describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
   it("loads and normalizes the current Plan Blueprint before saving the generated Active Training Plan", async () => {
@@ -151,7 +157,188 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
 
     expect(saveActiveTrainingPlan).not.toHaveBeenCalled();
   });
+
+  it("saves draft-local setup values onto the current Training Plan Draft", async () => {
+    const { dependencies, getCurrentBlueprint } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
+
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
+      },
+    });
+
+    expect(getCurrentBlueprint().trainingPlanDraft).toMatchObject({
+      content: {
+        baselineBodyweight: 82,
+        startingLoadSuggestions: expect.arrayContaining([
+          expect.objectContaining({
+            effectiveLoad: 42.5,
+            exerciseId: firstSuggestion.exerciseId,
+            userEditedLoad: 42.5,
+          }),
+        ]),
+      },
+    });
+  });
+
+  it("accepts draft-local setup values into the Active Training Plan", async () => {
+    const { dependencies } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
+
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
+      },
+    });
+
+    const acceptedTrainingPlan =
+      await acceptTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+
+    expect(acceptedTrainingPlan).toMatchObject({
+      baselineBodyweight: 82,
+      startingLoadSuggestions: expect.arrayContaining([
+        expect.objectContaining({
+          effectiveLoad: 42.5,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
+      ]),
+    });
+  });
+
+  it("resets draft-local setup values from the current Plan Blueprint choices", async () => {
+    const { dependencies } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+    const firstSuggestion = getFirstStartingLoadSuggestion(generatedDraft);
+
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+    await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        kind: "starting_load_suggestions",
+        startingLoadSuggestions: setEditedLoad({
+          draft: generatedDraft,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: 42.5,
+        }),
+      },
+    });
+
+    const resetDraft = await resetTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+
+    expect(resetDraft.content.baselineBodyweight).toBeUndefined();
+    expect(resetDraft.content).toMatchObject({
+      startingLoadSuggestions: expect.arrayContaining([
+        expect.objectContaining({
+          effectiveLoad: null,
+          exerciseId: firstSuggestion.exerciseId,
+          userEditedLoad: null,
+        }),
+      ]),
+    });
+  });
 });
+
+function createDraftGenerationTestContext() {
+  let currentBlueprint = createCompleteBlueprint();
+
+  const dependencies = {
+    createTrainingPlanId: () => "training-plan-test",
+    getCurrentPlanBlueprint: async () => currentBlueprint,
+    getTimestamp: () => "2026-06-07T10:00:00.000Z",
+    saveActiveTrainingPlan: async (plan: TrainingPlan) => plan,
+    savePlanBlueprint: async (blueprint: PlanBlueprint) => {
+      currentBlueprint = blueprint;
+
+      return blueprint;
+    },
+    updateCurrentPlanBlueprint: async (
+      updateBlueprint: (blueprint: PlanBlueprint | null) => PlanBlueprint,
+    ) => {
+      currentBlueprint = updateBlueprint(currentBlueprint);
+
+      return currentBlueprint;
+    },
+  };
+
+  return {
+    dependencies,
+    getCurrentBlueprint: () => currentBlueprint,
+  };
+}
+
+function getFirstStartingLoadSuggestion(
+  draft: Awaited<ReturnType<typeof generateTrainingPlanDraftFromCurrentPlanBlueprint>>,
+) {
+  const firstSuggestion = draft.content.startingLoadSuggestions?.[0];
+
+  if (!firstSuggestion) {
+    throw new Error("Expected generated draft to include starting load suggestions.");
+  }
+
+  return firstSuggestion;
+}
+
+function setEditedLoad({
+  draft,
+  exerciseId,
+  userEditedLoad,
+}: {
+  draft: Awaited<ReturnType<typeof generateTrainingPlanDraftFromCurrentPlanBlueprint>>;
+  exerciseId: string;
+  userEditedLoad: number;
+}) {
+  const startingLoadSuggestions = draft.content.startingLoadSuggestions;
+
+  if (!startingLoadSuggestions) {
+    throw new Error("Expected generated draft to include starting load suggestions.");
+  }
+
+  return startingLoadSuggestions.map((suggestion) =>
+    suggestion.exerciseId === exerciseId
+      ? {
+          ...suggestion,
+          effectiveLoad: userEditedLoad,
+          userEditedLoad,
+        }
+      : suggestion,
+  );
+}
 
 function createCompleteBlueprint(): PlanBlueprint {
   return {
