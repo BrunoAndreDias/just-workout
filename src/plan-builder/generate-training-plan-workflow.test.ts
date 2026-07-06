@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { TrainingPlan } from "../training-plan";
 import {
   acceptGenerateTrainingPlanRecommendedDefaults,
   type GenerateTrainingPlanWorkflowDependencies,
@@ -30,7 +29,7 @@ describe("Generate Training Plan workflow", () => {
     expect(events).toEqual([]);
   });
 
-  it("generates an Active Training Plan route target when the Plan Blueprint is ready", async () => {
+  it("creates a Training Plan Draft when the Plan Blueprint is ready", async () => {
     const events: string[] = [];
 
     const result = await startGenerateTrainingPlanWorkflow({
@@ -38,14 +37,14 @@ describe("Generate Training Plan workflow", () => {
       dependencies: createWorkflowDependencies(events),
     });
 
-    expect(events).toEqual(["generate-active-training-plan"]);
+    expect(events).toEqual(["generate-training-plan-draft"]);
     expect(result).toMatchObject({
-      routeTarget: {
-        params: { planId: "training-plan-test" },
-        to: "/training-plans/$planId",
+      status: "draft_ready",
+      trainingPlanDraft: {
+        content: {
+          split: "3-Day Full Body",
+        },
       },
-      status: "generated",
-      trainingPlan: { id: "training-plan-test" },
     });
   });
 
@@ -75,7 +74,7 @@ describe("Generate Training Plan workflow", () => {
     expect(events).toEqual([]);
   });
 
-  it("applies accepted Recommended Defaults before generating the Active Training Plan", async () => {
+  it("applies accepted Recommended Defaults before creating the Training Plan Draft", async () => {
     const events: string[] = [];
     const resolution = createDefaultResolution({ isReady: false });
 
@@ -86,15 +85,15 @@ describe("Generate Training Plan workflow", () => {
 
     expect(events).toEqual([
       "apply-resolved-plan-blueprint:plan-blueprint-test",
-      "generate-active-training-plan",
+      "generate-training-plan-draft",
     ]);
     expect(result).toMatchObject({
-      routeTarget: {
-        params: { planId: "training-plan-test" },
-        to: "/training-plans/$planId",
+      status: "draft_ready",
+      trainingPlanDraft: {
+        content: {
+          split: "3-Day Full Body",
+        },
       },
-      status: "generated",
-      trainingPlan: { id: "training-plan-test" },
     });
   });
 });
@@ -151,28 +150,21 @@ function createWorkflowDependencies(events: string[]): GenerateTrainingPlanWorkf
 
       return blueprint;
     },
-    generateActiveTrainingPlan: async () => {
-      events.push("generate-active-training-plan");
+    generateTrainingPlanDraft: async () => {
+      events.push("generate-training-plan-draft");
 
-      return createGeneratedTrainingPlan();
+      return {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "3-Day Full Body",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: [],
+          workoutTemplates: [],
+        },
+      };
     },
-  };
-}
-
-function createGeneratedTrainingPlan(): TrainingPlan {
-  return {
-    active: true,
-    generatedAt: "2026-06-17T09:05:00.000Z",
-    id: "training-plan-test",
-    mainCompoundRotationPools: [],
-    repRangeStyle: "balanced_hypertrophy",
-    sourceBlueprintId: "plan-blueprint-test",
-    split: "3-Day Full Body",
-    trainingBlockWeeks: 6,
-    trainingFrequencyDaysPerWeek: 3,
-    trainingGoal: "build-muscle",
-    updatedAt: "2026-06-17T09:05:00.000Z",
-    weeklyRepTargets: [],
-    workoutTemplates: [],
   };
 }

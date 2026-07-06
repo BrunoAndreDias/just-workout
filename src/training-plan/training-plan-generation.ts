@@ -3,14 +3,24 @@ import {
   type PlanBlueprint,
   resolvePlanBlueprintRecommendedDefaults,
 } from "../plan-builder/plan-blueprint";
-import { getCurrentPlanBlueprint } from "../plan-builder/plan-builder-repository";
-import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
-import { saveGeneratedTrainingPlan } from "./training-plan-repository";
+import {
+  getCurrentPlanBlueprint,
+  savePlanBlueprint,
+} from "../plan-builder/plan-builder-repository";
+import {
+  createTrainingPlanFromDraft,
+  generateTrainingPlanContentFromBlueprint,
+  generateTrainingPlanFromBlueprint,
+  type TrainingPlan,
+  type TrainingPlanDraft,
+} from "./training-plan";
+import { acceptTrainingPlanDraft, saveGeneratedTrainingPlan } from "./training-plan-repository";
 
 type TrainingPlanGenerationDependencies = {
   createTrainingPlanId: () => string;
   getCurrentPlanBlueprint: () => Promise<PlanBlueprint | null>;
   getTimestamp: () => string;
+  savePlanBlueprint?: (blueprint: PlanBlueprint) => Promise<PlanBlueprint>;
   saveActiveTrainingPlan: (trainingPlan: TrainingPlan) => Promise<TrainingPlan>;
 };
 
@@ -18,12 +28,83 @@ const defaultTrainingPlanGenerationDependencies: TrainingPlanGenerationDependenc
   createTrainingPlanId: () => crypto.randomUUID(),
   getCurrentPlanBlueprint,
   getTimestamp: () => new Date().toISOString(),
+  savePlanBlueprint,
   saveActiveTrainingPlan: saveGeneratedTrainingPlan,
 };
+
+export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+): Promise<TrainingPlanDraft> {
+  const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
+
+  if (normalizedBlueprint.trainingPlanDraft) {
+    return normalizedBlueprint.trainingPlanDraft;
+  }
+
+  const trainingPlanDraft: TrainingPlanDraft = {
+    content: generateTrainingPlanContentFromBlueprint({
+      blueprint: resolution.resolvedBlueprint,
+    }),
+  };
+
+  await (dependencies.savePlanBlueprint ?? savePlanBlueprint)({
+    ...normalizedBlueprint,
+    trainingPlanDraft,
+    updatedAt: dependencies.getTimestamp(),
+  });
+
+  return trainingPlanDraft;
+}
 
 export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
   dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ) {
+  const { resolution } = await getReadyResolvedPlanBlueprint(dependencies);
+
+  const timestamp = dependencies.getTimestamp();
+  const trainingPlan = generateTrainingPlanFromBlueprint({
+    blueprint: resolution.resolvedBlueprint,
+    id: dependencies.createTrainingPlanId(),
+    timestamp,
+  });
+
+  return dependencies.saveActiveTrainingPlan(trainingPlan);
+}
+
+export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+) {
+  const { normalizedBlueprint } = await getReadyResolvedPlanBlueprint(dependencies);
+  const trainingPlanDraft = normalizedBlueprint.trainingPlanDraft;
+
+  if (!trainingPlanDraft) {
+    throw new Error("Cannot accept a Training Plan Draft before one exists.");
+  }
+
+  const timestamp = dependencies.getTimestamp();
+  const trainingPlan = createTrainingPlanFromDraft({
+    draft: trainingPlanDraft,
+    id: dependencies.createTrainingPlanId(),
+    sourceBlueprintId: normalizedBlueprint.id,
+    timestamp,
+  });
+
+  return acceptTrainingPlanDraft({
+    blueprint: {
+      ...normalizedBlueprint,
+      trainingPlanDraft: null,
+      updatedAt: timestamp,
+    },
+    trainingPlan,
+  });
+}
+
+async function getReadyResolvedPlanBlueprint(
+  dependencies: TrainingPlanGenerationDependencies,
+): Promise<{
+  normalizedBlueprint: PlanBlueprint;
+  resolution: ReturnType<typeof resolvePlanBlueprintRecommendedDefaults>;
+}> {
   const blueprint = await dependencies.getCurrentPlanBlueprint();
 
   if (!blueprint) {
@@ -43,12 +124,5 @@ export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
     throw new Error("Cannot generate a Training Plan while Recommended Defaults are pending.");
   }
 
-  const timestamp = dependencies.getTimestamp();
-  const trainingPlan = generateTrainingPlanFromBlueprint({
-    blueprint: resolution.resolvedBlueprint,
-    id: dependencies.createTrainingPlanId(),
-    timestamp,
-  });
-
-  return dependencies.saveActiveTrainingPlan(trainingPlan);
+  return { normalizedBlueprint, resolution };
 }

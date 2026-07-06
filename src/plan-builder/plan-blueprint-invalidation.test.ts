@@ -417,6 +417,35 @@ describe("plan blueprint invalidation and redirects", () => {
     });
   });
 
+  it("clears a saved Training Plan Draft when upstream Plan Builder choices change", () => {
+    const blueprint = createConfirmedPlanBlueprint({
+      confirmedBuilderSteps: {
+        exercises: true,
+      },
+      mainCompoundSelections: completeMainCompoundSelections,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "Upper / Lower",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 4,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: [],
+          workoutTemplates: [],
+        },
+      },
+    });
+
+    expect(
+      selectRepRangeStyle({
+        blueprint,
+        repRangeStyle: "strength_leaning",
+        timestamp: firstUpdateTimestamp,
+      }).trainingPlanDraft,
+    ).toBeNull();
+  });
+
   it("redirects guarded routes to the earliest unconfirmed or invalid prerequisite step", () => {
     const blueprintWithIncompatibleSplit = createTestPlanBlueprint({
       confirmedBuilderSteps: {

@@ -119,6 +119,13 @@ type GenerateTrainingPlanOptions = {
   timestamp: string;
 };
 
+type CreateTrainingPlanFromDraftOptions = {
+  draft: TrainingPlanDraft;
+  id: string;
+  sourceBlueprintId: string;
+  timestamp: string;
+};
+
 export function generateTrainingPlanFromBlueprint({
   blueprint,
   id,
@@ -132,6 +139,22 @@ export function generateTrainingPlanFromBlueprint({
     generatedAt: timestamp,
     id,
     sourceBlueprintId: blueprint.id,
+    updatedAt: timestamp,
+  };
+}
+
+export function createTrainingPlanFromDraft({
+  draft,
+  id,
+  sourceBlueprintId,
+  timestamp,
+}: CreateTrainingPlanFromDraftOptions): TrainingPlan {
+  return {
+    ...draft.content,
+    active: true,
+    generatedAt: timestamp,
+    id,
+    sourceBlueprintId,
     updatedAt: timestamp,
   };
 }

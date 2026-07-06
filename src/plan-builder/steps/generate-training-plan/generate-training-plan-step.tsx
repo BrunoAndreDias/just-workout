@@ -1,6 +1,7 @@
 import { Wand2 } from "lucide-react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
+import type { TrainingPlanDraft } from "../../../training-plan";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -27,9 +28,11 @@ type RecommendedDefaultsConfirmationProps = {
 type GenerateTrainingPlanStepProps = {
   blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
   isGenerating: boolean;
+  onAcceptDraft: () => Promise<void>;
   onGenerateTrainingPlan: () => Promise<void>;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft | null;
 };
 
 const generateStepPreferenceMappingCopy =
@@ -42,13 +45,26 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
     isGenerating,
+    onAcceptDraft,
     onGenerateTrainingPlan,
     recommendedDefaultsConfirmation,
     summary,
+    trainingPlanDraft,
   } = props;
 
   if (shouldShowTrainingPlanDraftReviewPrototype()) {
     return <TrainingPlanDraftReviewPrototype summary={summary} />;
+  }
+
+  if (trainingPlanDraft) {
+    return (
+      <TrainingPlanDraftReview
+        isAccepting={isGenerating}
+        onAcceptDraft={onAcceptDraft}
+        summary={summary}
+        trainingPlanDraft={trainingPlanDraft}
+      />
+    );
   }
 
   return (
@@ -129,6 +145,115 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
         />
       ) : null}
     </>
+  );
+}
+
+function TrainingPlanDraftReview({
+  isAccepting,
+  onAcceptDraft,
+  summary,
+  trainingPlanDraft,
+}: {
+  isAccepting: boolean;
+  onAcceptDraft: () => Promise<void>;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <div className="grid gap-4">
+      <StepPanel>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
+            <p className="mt-3 max-w-3xl text-sm text-stone-600">
+              Review the generated Workout Templates, Superset Groups, exercise slots, and Training
+              Prescriptions before creating the Active Training Plan.
+            </p>
+          </div>
+          <StepActions>
+            <Button
+              disabled={isAccepting}
+              onClick={() => {
+                void onAcceptDraft();
+              }}
+              type="button"
+              variant="builderPrimary"
+            >
+              {isAccepting ? "Accepting..." : "Accept Draft"}
+            </Button>
+          </StepActions>
+        </div>
+
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+          <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
+          <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
+          <GenerateSummaryField
+            label="Rep ranges"
+            value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
+          />
+          <GenerateSummaryField
+            label="Templates"
+            value={String(trainingPlanDraft.content.workoutTemplates.length)}
+          />
+        </dl>
+      </StepPanel>
+
+      <div className="grid gap-4">
+        {trainingPlanDraft.content.workoutTemplates.map((template) => (
+          <StepPanel key={template.id}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="text-lg font-black text-stone-950">{template.label}</h4>
+                <p className="text-sm text-stone-600">
+                  {template.purpose === "strength" ? "Strength-focused template" : template.purpose}
+                </p>
+              </div>
+              <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
+                {template.supersetGroups.length} groups
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-4">
+              {template.supersetGroups.map((group) => (
+                <section
+                  aria-label={group.title}
+                  className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
+                  key={group.id}
+                >
+                  <h5 className="text-base font-black text-stone-950">{group.title}</h5>
+                  <ul className="mt-3 space-y-3">
+                    {group.slots.map((slot) => (
+                      <li
+                        className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3"
+                        key={`${group.id}-${slot.exerciseId}-${slot.slotLabel}`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <strong className="text-sm text-stone-950">{slot.exerciseName}</strong>
+                          <span className="text-xs font-semibold uppercase text-stone-500">
+                            {slot.slotLabel}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
+                          <span>{slot.role}</span>
+                          <span>
+                            {formatTrainingPlanDraftMovementPattern(slot.movementPattern)}
+                          </span>
+                          <span>
+                            {slot.trainingPrescription
+                              ? `${slot.trainingPrescription.setCount} × ${slot.trainingPrescription.repRange.min}–${slot.trainingPrescription.repRange.max}`
+                              : "Prescription pending"}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </StepPanel>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -247,4 +372,22 @@ function getMainCompoundSelectionRecommendedDefaultLabel(
     getExerciseCatalogExercise(recommendedDefault.exerciseId)?.name ?? "Main compound";
 
   return `Recommended Default Main Compound Selection for ${formatMovementPatternLabel(recommendedDefault.movementPattern)}: ${exerciseName}`;
+}
+
+function formatTrainingPlanDraftMovementPattern(movementPattern: string): string {
+  if (
+    movementPattern === "horizontal_push" ||
+    movementPattern === "horizontal_pull" ||
+    movementPattern === "vertical_push" ||
+    movementPattern === "vertical_pull" ||
+    movementPattern === "quad_dominant" ||
+    movementPattern === "hip_hamstring_dominant"
+  ) {
+    return formatMovementPatternLabel(movementPattern);
+  }
+
+  return movementPattern
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

@@ -3,6 +3,7 @@ export type { NextTrainingBlockTransitionWorkflow } from "./training-block-trans
 export type {
   SupersetGroup,
   TrainingPlan,
+  TrainingPlanDraft,
   TrainingPlanSlot,
   WorkoutTemplate,
 } from "./training-plan";

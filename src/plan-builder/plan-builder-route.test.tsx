@@ -609,7 +609,7 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
-  it("accepts fully defaulted Recommended Defaults before generating and persists them into the Plan Blueprint", async () => {
+  it("accepts fully defaulted Recommended Defaults before generating a Training Plan Draft and persists them into the Plan Blueprint", async () => {
     const user = userEvent.setup();
     const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
 
@@ -636,15 +636,21 @@ describe("Plan Builder canonical route", () => {
     );
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+      expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
-    expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
-    expect(await getActiveTrainingPlans()).toHaveLength(1);
+    expect(await screen.findByRole("heading", { name: "Training Plan Draft" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeVisible();
+    expect(await getActiveTrainingPlans()).toHaveLength(0);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
       equipmentPresetSource: "user_selected",
       mainCompoundSelections: completeMainCompoundSelections,
       repRanges: "balanced_hypertrophy",
       split: "full-body-3-day",
+      trainingPlanDraft: {
+        content: {
+          split: "3-Day Full Body",
+        },
+      },
       volumePreset: "balanced",
     });
   });
@@ -704,6 +710,30 @@ describe("Plan Builder canonical route", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: /^generate training plan$/i })).toBeDisabled();
     expect(await getActiveTrainingPlans()).toHaveLength(0);
+  });
+
+  it("accepts a read-only Training Plan Draft into the Active Training Plan route and clears the saved draft", async () => {
+    const user = userEvent.setup();
+    const { router } = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Generate"));
+    await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /^generate with recommended defaults$/i }),
+    );
+
+    const acceptDraftButton = await screen.findByRole("button", { name: /^accept draft$/i });
+
+    await user.click(acceptDraftButton);
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toMatch(/^\/training-plans\/[^/]+$/);
+    });
+    expect(await screen.findByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
+    expect(await getActiveTrainingPlans()).toHaveLength(1);
+    expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+      trainingPlanDraft: null,
+    });
   });
 });
 

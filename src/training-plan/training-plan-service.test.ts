@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
+import {
+  getCurrentPlanBlueprint,
+  savePlanBlueprint,
+} from "../plan-builder/plan-builder-repository";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
@@ -262,6 +266,47 @@ describe("trainingPlanService", () => {
         }),
       ]),
     );
+  });
+
+  it("accepts the saved Training Plan Draft into a new Active Training Plan and clears it from the Plan Blueprint", async () => {
+    const blueprint = createCompleteBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "Alternating Full Body A/B",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+          workoutTemplates: createTrainingPlan().workoutTemplates,
+        },
+      },
+    });
+    await seedTrainingPlanData({
+      trainingPlans: [
+        createTrainingPlan({
+          active: true,
+          id: "previous-active-plan",
+          updatedAt: "2026-06-07T09:30:00.000Z",
+        }),
+      ],
+    });
+
+    const acceptedTrainingPlan = await trainingPlanService.acceptTrainingPlanDraft();
+
+    expect(acceptedTrainingPlan).toMatchObject({
+      active: true,
+      sourceBlueprintId: blueprint.id,
+      split: "Alternating Full Body A/B",
+    });
+    expect(await getCurrentPlanBlueprint()).toMatchObject({
+      id: blueprint.id,
+      trainingPlanDraft: null,
+    });
   });
 });
 

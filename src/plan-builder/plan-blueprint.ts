@@ -315,6 +315,7 @@ export function selectTrainingFrequency({
     ...blueprint,
     confirmedBuilderSteps,
     split,
+    trainingPlanDraft: null,
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
@@ -345,6 +346,7 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
       split: isSameTrainingSplit ? confirmedBuilderSteps.split : false,
     },
     split: selectedTrainingSplitId,
+    trainingPlanDraft: null,
     updatedAt: options.timestamp,
   };
 }
@@ -370,6 +372,7 @@ export function selectRepRangeStyle({
       volume: isSameRepRangeStyle ? confirmedBuilderSteps.volume : false,
     },
     repRanges: repRangeStyle,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -390,6 +393,7 @@ function initializeTrainingVolume({
       exercises: false,
       volume: false,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -423,6 +427,7 @@ export function selectTrainingVolumePreset({
       exercises: hasVolumePresetChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -455,6 +460,7 @@ export function setOptionalVolumeTargetEnabled({
       exercises: hasEnabledStateChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -481,6 +487,7 @@ export function updateExerciseSelectionPreferences({
     },
     equipmentPresetSource: userSelectedEquipmentPresetSource,
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -530,6 +537,7 @@ function selectMainCompound({
     },
     mainCompoundSelections: nextMainCompoundSelections,
     mainCompoundRotationPools: nextMainCompoundRotationPools,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -559,6 +567,7 @@ export function updateMainCompoundPreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundPreferences: nextMainCompoundPreferences,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -588,6 +597,7 @@ function updateMainCompoundRotationPreferences({
       exercises: hasRotationPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundRotationPreferences: nextMainCompoundRotationPreferences,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -617,6 +627,7 @@ function updateIsolationExercisePreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     isolationExercisePreferences: nextIsolationExercisePreferences,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -645,6 +656,7 @@ export function updateMainCompoundRotationPool({
       exercises: false,
     },
     mainCompoundRotationPools: nextMainCompoundRotationPools,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -666,6 +678,7 @@ export function confirmTrainingFrequency({
       ...updatedBlueprint.confirmedBuilderSteps,
       frequency: true,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -687,6 +700,7 @@ export function confirmTrainingSplit({
       ...updatedBlueprint.confirmedBuilderSteps,
       split: true,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -708,6 +722,7 @@ export function confirmRepRangeStyle({
       ...updatedBlueprint.confirmedBuilderSteps,
       repRanges: true,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -726,6 +741,7 @@ export function confirmTrainingVolume({
       ...blueprint.confirmedBuilderSteps,
       volume: true,
     },
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }
@@ -752,6 +768,7 @@ export function confirmExerciseSelectionPreferences({
       exercises: true,
     },
     equipmentPresetSource: userSelectedEquipmentPresetSource,
+    trainingPlanDraft: null,
     updatedAt: timestamp,
   };
 }

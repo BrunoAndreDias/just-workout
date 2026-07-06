@@ -1,6 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { trainingPlanService, trainingPlansQueryOptions } from "../../training-plan";
+import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
   useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
@@ -160,6 +162,7 @@ export function useOnePageGenerateStep({
   navigate: ReturnType<typeof useNavigate>;
   onPendingDefaultResolutionChange: (resolution: PlanBlueprintDefaultResolution | null) => void;
 }) {
+  const queryClient = useQueryClient();
   const { mutateAsync: startGenerateStep, isPending: isStartingGenerateStep } = useMutation({
     mutationFn: startGenerateTrainingPlanWorkflow,
   });
@@ -168,6 +171,9 @@ export function useOnePageGenerateStep({
     isPending: isAcceptingRecommendedDefaults,
   } = useMutation({
     mutationFn: acceptGenerateTrainingPlanRecommendedDefaults,
+  });
+  const { mutateAsync: acceptDraft, isPending: isAcceptingDraft } = useMutation({
+    mutationFn: trainingPlanService.acceptTrainingPlanDraft,
   });
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
@@ -184,11 +190,22 @@ export function useOnePageGenerateStep({
     }
 
     onPendingDefaultResolutionChange(null);
-    await navigate(result.routeTarget);
+    await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
   }
 
   return {
-    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults,
+    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults || isAcceptingDraft,
+    onAcceptDraft: async () => {
+      const acceptedTrainingPlan = await acceptDraft();
+
+      queryClient.setQueryData(planBuilderBlueprintQueryKey, undefined);
+      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
+      await queryClient.invalidateQueries({ queryKey: trainingPlansQueryOptions().queryKey });
+      await navigate({
+        params: { planId: acceptedTrainingPlan.id },
+        to: "/training-plans/$planId",
+      });
+    },
     onAcceptRecommendedDefaults: async (resolution: PlanBlueprintDefaultResolution) => {
       const result = await acceptRecommendedDefaultsAndGenerate({ resolution });
 

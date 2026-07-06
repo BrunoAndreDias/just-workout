@@ -1,4 +1,5 @@
 import { db } from "../app/local-database";
+import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 import {
@@ -79,6 +80,25 @@ export async function saveGeneratedTrainingPlan(trainingPlan: TrainingPlan): Pro
   await db.transaction("rw", db.trainingPlans, async () => {
     await deactivateActiveTrainingPlans(normalizedTrainingPlan.generatedAt);
     await db.trainingPlans.put(normalizedTrainingPlan);
+  });
+
+  return normalizedTrainingPlan;
+}
+
+export async function acceptTrainingPlanDraft({
+  blueprint,
+  trainingPlan,
+}: {
+  blueprint: PlanBlueprint;
+  trainingPlan: TrainingPlan;
+}): Promise<TrainingPlan> {
+  const normalizedTrainingPlan = normalizeTrainingPlan(trainingPlan);
+
+  await db.transaction("rw", db.planBlueprints, db.trainingPlans, async () => {
+    await deactivateActiveTrainingPlans(normalizedTrainingPlan.generatedAt);
+    await db.trainingPlans.put(normalizedTrainingPlan);
+    await db.planBlueprints.clear();
+    await db.planBlueprints.put(blueprint);
   });
 
   return normalizedTrainingPlan;

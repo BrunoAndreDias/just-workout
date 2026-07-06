@@ -1,22 +1,14 @@
-import {
-  getTrainingPlanRouteTarget,
-  type TrainingPlan,
-  type TrainingPlanRouteTarget,
-  trainingPlanService,
-} from "../training-plan";
+import { type TrainingPlanDraft, trainingPlanService } from "../training-plan";
 import type { PlanBlueprint, PlanBlueprintDefaultResolution } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 
-export type GenerateTrainingPlanRouteTarget = TrainingPlanRouteTarget;
-
-export type GenerateTrainingPlanWorkflowGeneratedResult = {
-  routeTarget: GenerateTrainingPlanRouteTarget;
-  status: "generated";
-  trainingPlan: TrainingPlan;
+export type GenerateTrainingPlanWorkflowDraftReadyResult = {
+  status: "draft_ready";
+  trainingPlanDraft: TrainingPlanDraft;
 };
 
 export type GenerateTrainingPlanWorkflowResult =
-  | GenerateTrainingPlanWorkflowGeneratedResult
+  | GenerateTrainingPlanWorkflowDraftReadyResult
   | {
       blockingIssues: PlanBlueprintDefaultResolution["blockingIssues"];
       status: "blocked";
@@ -28,12 +20,12 @@ export type GenerateTrainingPlanWorkflowResult =
 
 export type GenerateTrainingPlanWorkflowDependencies = {
   applyResolvedPlanBlueprint: (options: { blueprint: PlanBlueprint }) => Promise<PlanBlueprint>;
-  generateActiveTrainingPlan: () => Promise<TrainingPlan>;
+  generateTrainingPlanDraft: () => Promise<TrainingPlanDraft>;
 };
 
 const defaultGenerateTrainingPlanWorkflowDependencies: GenerateTrainingPlanWorkflowDependencies = {
   applyResolvedPlanBlueprint: planBuilderService.applyResolvedPlanBlueprint,
-  generateActiveTrainingPlan: trainingPlanService.generateTrainingPlan,
+  generateTrainingPlanDraft: trainingPlanService.generateTrainingPlanDraft,
 };
 
 export async function startGenerateTrainingPlanWorkflow({
@@ -57,7 +49,7 @@ export async function startGenerateTrainingPlanWorkflow({
     };
   }
 
-  return generateActiveTrainingPlanResult(dependencies);
+  return generateTrainingPlanDraftResult(dependencies);
 }
 
 export async function acceptGenerateTrainingPlanRecommendedDefaults({
@@ -66,20 +58,19 @@ export async function acceptGenerateTrainingPlanRecommendedDefaults({
 }: {
   dependencies?: GenerateTrainingPlanWorkflowDependencies;
   resolution: PlanBlueprintDefaultResolution;
-}): Promise<GenerateTrainingPlanWorkflowGeneratedResult> {
+}): Promise<GenerateTrainingPlanWorkflowDraftReadyResult> {
   await dependencies.applyResolvedPlanBlueprint({ blueprint: resolution.resolvedBlueprint });
 
-  return generateActiveTrainingPlanResult(dependencies);
+  return generateTrainingPlanDraftResult(dependencies);
 }
 
-async function generateActiveTrainingPlanResult(
+async function generateTrainingPlanDraftResult(
   dependencies: GenerateTrainingPlanWorkflowDependencies,
-): Promise<GenerateTrainingPlanWorkflowGeneratedResult> {
-  const trainingPlan = await dependencies.generateActiveTrainingPlan();
+): Promise<GenerateTrainingPlanWorkflowDraftReadyResult> {
+  const trainingPlanDraft = await dependencies.generateTrainingPlanDraft();
 
   return {
-    routeTarget: getTrainingPlanRouteTarget(trainingPlan.id),
-    status: "generated",
-    trainingPlan,
+    status: "draft_ready",
+    trainingPlanDraft,
   };
 }

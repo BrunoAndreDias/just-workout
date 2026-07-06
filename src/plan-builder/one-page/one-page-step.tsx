@@ -170,6 +170,7 @@ function renderOnePageActiveStep({
         <GenerateTrainingPlanStep
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
           isGenerating={generateStep.isGenerating}
+          onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
@@ -181,6 +182,7 @@ function renderOnePageActiveStep({
               : null
           }
           summary={summary}
+          trainingPlanDraft={blueprint.trainingPlanDraft}
         />
       );
   }
