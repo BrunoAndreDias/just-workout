@@ -76,8 +76,19 @@ type DraftGenerationInputProps = {
 
 type TrainingPlanDraftActions = {
   acceptDraft: () => Promise<void>;
+  addSupersetGroup: (templateId: string, targetIndex: number) => void;
+  deleteSupersetGroup: (templateId: string, groupId: string) => void;
   moveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
+  moveDraftSlotToSupersetGroup: (
+    templateId: string,
+    sourceGroupId: string,
+    slotIndex: number,
+    targetGroupId: string,
+    targetSlotIndex: number,
+  ) => void;
+  moveSupersetGroup: (templateId: string, groupId: string, targetIndex: number) => void;
   renameWorkoutTemplate: (templateId: string, label: string) => void;
+  renameSupersetGroup: (templateId: string, groupId: string, title: string) => void;
   replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
   resetDraft: () => Promise<void>;
   saveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
@@ -222,6 +233,7 @@ function TrainingPlanDraftReview({
     template.supersetGroups.flatMap((group) => group.slots),
   );
   const requiresBodyweight = hasBodyweightLoadExercise(draftExercises);
+  const hasBlockers = trainingPlanDraft.validation.blockers.length > 0;
 
   useEffect(() => {
     setEditableLoadValues(
@@ -256,6 +268,17 @@ function TrainingPlanDraftReview({
           <ul className="mt-3 space-y-2 text-sm text-amber-900">
             {trainingPlanDraft.validation.warnings.map((warning) => (
               <li key={warning.kind}>{warning.message}</li>
+            ))}
+          </ul>
+        </StepPanel>
+      ) : null}
+
+      {hasBlockers ? (
+        <StepPanel>
+          <h4 className="text-base font-black text-red-950">Draft blockers</h4>
+          <ul className="mt-3 space-y-2 text-sm text-red-900">
+            {trainingPlanDraft.validation.blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
             ))}
           </ul>
         </StepPanel>
@@ -298,6 +321,8 @@ function TrainingPlanDraftHeader({
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
+  const hasBlockers = trainingPlanDraft.validation.blockers.length > 0;
+
   return (
     <StepPanel>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -326,7 +351,7 @@ function TrainingPlanDraftHeader({
             Reset Draft
           </Button>
           <Button
-            disabled={isAccepting || isStale}
+            disabled={isAccepting || isStale || hasBlockers}
             onClick={() => {
               void draftActions.acceptDraft();
             }}
@@ -439,27 +464,98 @@ function TrainingPlanDraftTemplateCard({
       />
 
       <div className="mt-4 grid gap-4">
-        {template.supersetGroups.map((group) => (
+        {template.supersetGroups.map((group, groupIndex) => (
           <section
             aria-label={group.title}
             className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
             key={group.id}
           >
-            <h5 className="text-base font-black text-stone-950">{group.title}</h5>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <label
+                  className="text-xs font-semibold uppercase text-stone-500"
+                  htmlFor={group.id}
+                >
+                  Superset Group title
+                </label>
+                <input
+                  aria-label={`Superset Group title ${groupIndex + 1}`}
+                  className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+                  id={group.id}
+                  onChange={(event) => {
+                    draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
+                  }}
+                  type="text"
+                  value={group.title}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={groupIndex === 0}
+                  onClick={() => {
+                    draftActions.moveSupersetGroup(template.id, group.id, groupIndex - 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move group up
+                </Button>
+                <Button
+                  disabled={groupIndex === template.supersetGroups.length - 1}
+                  onClick={() => {
+                    draftActions.moveSupersetGroup(template.id, group.id, groupIndex + 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move group down
+                </Button>
+                <Button
+                  disabled={
+                    group.slots.length > 0 ||
+                    (template.purpose === "strength" && template.supersetGroups.length === 1)
+                  }
+                  onClick={() => {
+                    draftActions.deleteSupersetGroup(template.id, group.id);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Delete group
+                </Button>
+              </div>
+            </div>
             <ul className="mt-3 space-y-3">
-              {group.slots.map((slot) => (
+              {group.slots.map((slot, slotIndex) => (
                 <TrainingPlanDraftSlotItem
+                  currentGroupId={group.id}
                   draftActions={draftActions}
                   editableLoadValues={editableLoadValues}
                   key={`${group.id}-${slot.exerciseId}-${slot.slotLabel}`}
                   onEditableLoadValueChange={onEditableLoadValueChange}
                   slot={slot}
+                  slotIndex={slotIndex}
+                  template={template}
                   trainingPlanDraft={trainingPlanDraft}
                 />
               ))}
             </ul>
+            {group.slots.length === 0 ? (
+              <p className="mt-3 text-sm text-amber-800">
+                Empty group. Move a slot here or delete the group before accepting the draft.
+              </p>
+            ) : null}
           </section>
         ))}
+        <Button
+          onClick={() => {
+            draftActions.addSupersetGroup(template.id, template.supersetGroups.length);
+          }}
+          type="button"
+          variant="secondary"
+        >
+          Add Superset Group
+        </Button>
       </div>
     </StepPanel>
   );
@@ -553,18 +649,26 @@ function TrainingPlanDraftTemplateHeader({
 }
 
 function TrainingPlanDraftSlotItem({
+  currentGroupId,
   draftActions,
   editableLoadValues,
   onEditableLoadValueChange,
   slot,
+  slotIndex,
+  template,
   trainingPlanDraft,
 }: {
+  currentGroupId: string;
   draftActions: TrainingPlanDraftActions;
   editableLoadValues: Record<string, string>;
   onEditableLoadValueChange: Dispatch<SetStateAction<Record<string, string>>>;
   slot: TrainingPlanDraftSlot;
+  slotIndex: number;
+  template: TrainingPlanDraft["content"]["workoutTemplates"][number];
   trainingPlanDraft: TrainingPlanDraft;
 }) {
+  const moveTargets = template.supersetGroups.filter((group) => group.id !== currentGroupId);
+
   return (
     <li className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -580,6 +684,28 @@ function TrainingPlanDraftSlotItem({
             : "Prescription pending"}
         </span>
       </div>
+      {moveTargets.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {moveTargets.map((group) => (
+            <Button
+              key={group.id}
+              onClick={() => {
+                draftActions.moveDraftSlotToSupersetGroup(
+                  template.id,
+                  currentGroupId,
+                  slotIndex,
+                  group.id,
+                  group.slots.length,
+                );
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Move to {group.title}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       <DraftStartingLoadEditor
         loadInputValue={editableLoadValues[slot.exerciseId] ?? ""}
         onInputChange={(nextValue, options) => {

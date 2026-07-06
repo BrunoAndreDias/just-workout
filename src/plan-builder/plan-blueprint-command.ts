@@ -2,13 +2,18 @@ import type { WorkoutTemplatePurpose } from "../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "./exercise-catalog";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
+  addTrainingPlanDraftSupersetGroup,
   applyPlanBlueprintTransition,
   createDefaultPlanBlueprint,
+  deleteTrainingPlanDraftSupersetGroup,
+  moveTrainingPlanDraftSlotToSupersetGroup,
   normalizePlanBlueprint,
   type PlanBlueprint,
   type PlanBlueprintTransition,
   type RepRangeStyleId,
+  renameTrainingPlanDraftSupersetGroup,
   renameTrainingPlanDraftWorkoutTemplate,
+  reorderTrainingPlanDraftSupersetGroup,
   reorderTrainingPlanDraftWorkoutTemplate,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   type TrainingFrequencyDaysPerWeek,
@@ -50,6 +55,41 @@ export type PlanBlueprintCommand =
       timestamp: string;
       type: "replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus";
       templateId: string;
+    }
+  | {
+      targetIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "addTrainingPlanDraftSupersetGroup";
+    }
+  | {
+      groupId: string;
+      templateId: string;
+      timestamp: string;
+      title: string;
+      type: "renameTrainingPlanDraftSupersetGroup";
+    }
+  | {
+      groupId: string;
+      templateId: string;
+      timestamp: string;
+      type: "deleteTrainingPlanDraftSupersetGroup";
+    }
+  | {
+      groupId: string;
+      targetIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "reorderTrainingPlanDraftSupersetGroup";
+    }
+  | {
+      sourceGroupId: string;
+      slotIndex: number;
+      targetGroupId: string;
+      targetSlotIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "moveTrainingPlanDraftSlotToSupersetGroup";
     }
   | {
       blueprint: PlanBlueprint;
@@ -185,6 +225,41 @@ type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusCommandOptions = {
   timestamp?: string;
 };
 
+type AddTrainingPlanDraftSupersetGroupCommandOptions = {
+  targetIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
+type RenameTrainingPlanDraftSupersetGroupCommandOptions = {
+  groupId: string;
+  templateId: string;
+  timestamp?: string;
+  title: string;
+};
+
+type DeleteTrainingPlanDraftSupersetGroupCommandOptions = {
+  groupId: string;
+  templateId: string;
+  timestamp?: string;
+};
+
+type ReorderTrainingPlanDraftSupersetGroupCommandOptions = {
+  groupId: string;
+  targetIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
+type MoveTrainingPlanDraftSlotToSupersetGroupCommandOptions = {
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
 export async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
 
@@ -247,6 +322,46 @@ export function projectPlanBlueprintCommand({
         templateId: command.templateId,
         timestamp: command.timestamp,
       });
+    case "addTrainingPlanDraftSupersetGroup":
+      return addTrainingPlanDraftSupersetGroup({
+        blueprint,
+        targetIndex: command.targetIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "renameTrainingPlanDraftSupersetGroup":
+      return renameTrainingPlanDraftSupersetGroup({
+        blueprint,
+        groupId: command.groupId,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+        title: command.title,
+      });
+    case "deleteTrainingPlanDraftSupersetGroup":
+      return deleteTrainingPlanDraftSupersetGroup({
+        blueprint,
+        groupId: command.groupId,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "reorderTrainingPlanDraftSupersetGroup":
+      return reorderTrainingPlanDraftSupersetGroup({
+        blueprint,
+        groupId: command.groupId,
+        targetIndex: command.targetIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "moveTrainingPlanDraftSlotToSupersetGroup":
+      return moveTrainingPlanDraftSlotToSupersetGroup({
+        blueprint,
+        sourceGroupId: command.sourceGroupId,
+        slotIndex: command.slotIndex,
+        targetGroupId: command.targetGroupId,
+        targetSlotIndex: command.targetSlotIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
     case "replacePlanBlueprint":
       return command.blueprint;
   }
@@ -303,6 +418,76 @@ export const planBlueprintCommandBuilders = {
       templateId,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),
       type: "replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus",
+    } satisfies PlanBlueprintCommand;
+  },
+  addTrainingPlanDraftSupersetGroup({
+    targetIndex,
+    templateId,
+    timestamp,
+  }: AddTrainingPlanDraftSupersetGroupCommandOptions) {
+    return {
+      targetIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "addTrainingPlanDraftSupersetGroup",
+    } satisfies PlanBlueprintCommand;
+  },
+  renameTrainingPlanDraftSupersetGroup({
+    groupId,
+    templateId,
+    timestamp,
+    title,
+  }: RenameTrainingPlanDraftSupersetGroupCommandOptions) {
+    return {
+      groupId,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      title,
+      type: "renameTrainingPlanDraftSupersetGroup",
+    } satisfies PlanBlueprintCommand;
+  },
+  deleteTrainingPlanDraftSupersetGroup({
+    groupId,
+    templateId,
+    timestamp,
+  }: DeleteTrainingPlanDraftSupersetGroupCommandOptions) {
+    return {
+      groupId,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "deleteTrainingPlanDraftSupersetGroup",
+    } satisfies PlanBlueprintCommand;
+  },
+  reorderTrainingPlanDraftSupersetGroup({
+    groupId,
+    targetIndex,
+    templateId,
+    timestamp,
+  }: ReorderTrainingPlanDraftSupersetGroupCommandOptions) {
+    return {
+      groupId,
+      targetIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "reorderTrainingPlanDraftSupersetGroup",
+    } satisfies PlanBlueprintCommand;
+  },
+  moveTrainingPlanDraftSlotToSupersetGroup({
+    sourceGroupId,
+    slotIndex,
+    targetGroupId,
+    targetSlotIndex,
+    templateId,
+    timestamp,
+  }: MoveTrainingPlanDraftSlotToSupersetGroupCommandOptions) {
+    return {
+      sourceGroupId,
+      slotIndex,
+      targetGroupId,
+      targetSlotIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "moveTrainingPlanDraftSlotToSupersetGroup",
     } satisfies PlanBlueprintCommand;
   },
   confirmExerciseSelectionPreferences({

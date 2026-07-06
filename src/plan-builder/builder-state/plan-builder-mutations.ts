@@ -98,6 +98,41 @@ type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutationVariables = {
   timestamp: string;
 };
 
+type AddTrainingPlanDraftSupersetGroupMutationVariables = {
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+type RenameTrainingPlanDraftSupersetGroupMutationVariables = {
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+  title: string;
+};
+
+type DeleteTrainingPlanDraftSupersetGroupMutationVariables = {
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+};
+
+type ReorderTrainingPlanDraftSupersetGroupMutationVariables = {
+  groupId: string;
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+type MoveTrainingPlanDraftSlotToSupersetGroupMutationVariables = {
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
     queryKey: planBuilderBlueprintQueryKey,
@@ -192,6 +227,36 @@ export function useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutatio
         planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
     },
   );
+}
+
+export function useAddTrainingPlanDraftSupersetGroupMutation() {
+  return usePlanBlueprintMutation<AddTrainingPlanDraftSupersetGroupMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.addTrainingPlanDraftSupersetGroup,
+  });
+}
+
+export function useRenameTrainingPlanDraftSupersetGroupMutation() {
+  return usePlanBlueprintMutation<RenameTrainingPlanDraftSupersetGroupMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.renameTrainingPlanDraftSupersetGroup,
+  });
+}
+
+export function useDeleteTrainingPlanDraftSupersetGroupMutation() {
+  return usePlanBlueprintMutation<DeleteTrainingPlanDraftSupersetGroupMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.deleteTrainingPlanDraftSupersetGroup,
+  });
+}
+
+export function useReorderTrainingPlanDraftSupersetGroupMutation() {
+  return usePlanBlueprintMutation<ReorderTrainingPlanDraftSupersetGroupMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.reorderTrainingPlanDraftSupersetGroup,
+  });
+}
+
+export function useMoveTrainingPlanDraftSlotToSupersetGroupMutation() {
+  return usePlanBlueprintMutation<MoveTrainingPlanDraftSlotToSupersetGroupMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.moveTrainingPlanDraftSlotToSupersetGroup,
+  });
 }
 
 function usePlanBlueprintMutation<TVariables>({

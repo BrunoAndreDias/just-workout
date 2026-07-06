@@ -249,10 +249,54 @@ export type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions = {
   timestamp: string;
 };
 
+export type AddTrainingPlanDraftSupersetGroupOptions = {
+  blueprint: PlanBlueprint;
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+export type RenameTrainingPlanDraftSupersetGroupOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+  title: string;
+};
+
+export type DeleteTrainingPlanDraftSupersetGroupOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+};
+
+export type ReorderTrainingPlanDraftSupersetGroupOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+export type MoveTrainingPlanDraftSlotToSupersetGroupOptions = {
+  blueprint: PlanBlueprint;
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export type UpdateTrainingPlanDraftOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
   workoutTemplates: ReadonlyArray<WorkoutTemplate> | undefined;
+};
+
+export type TrainingPlanDraftGroupMutationHelpers = {
+  createSupersetGroupId?: () => string;
 };
 
 export type PlanBlueprintTransition =

@@ -8,7 +8,12 @@ import {
 } from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
+  useAddTrainingPlanDraftSupersetGroupMutation,
+  useDeleteTrainingPlanDraftSupersetGroupMutation,
+  useMoveTrainingPlanDraftSlotToSupersetGroupMutation,
+  useRenameTrainingPlanDraftSupersetGroupMutation,
   useRenameTrainingPlanDraftWorkoutTemplateMutation,
+  useReorderTrainingPlanDraftSupersetGroupMutation,
   useReorderTrainingPlanDraftWorkoutTemplateMutation,
   useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateIsolationExercisePreferencesMutation,
@@ -202,6 +207,12 @@ export function useOnePageGenerateStep({
     useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation();
   const { mutate: replaceDraftWorkoutTemplateWithCustomFocus } =
     useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation();
+  const { mutate: addDraftSupersetGroup } = useAddTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: renameDraftSupersetGroup } = useRenameTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: deleteDraftSupersetGroup } = useDeleteTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: reorderDraftSupersetGroup } = useReorderTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: moveDraftSlotToSupersetGroup } =
+    useMoveTrainingPlanDraftSlotToSupersetGroupMutation();
 
   function updateCachedTrainingPlanDraft(
     savedDraft: NonNullable<PlanBlueprint["trainingPlanDraft"]>,
@@ -281,8 +292,46 @@ export function useOnePageGenerateStep({
     onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => {
       reorderDraftWorkoutTemplate({ targetIndex, templateId, timestamp: new Date().toISOString() });
     },
+    onAddSupersetGroup: (templateId: string, targetIndex: number) => {
+      addDraftSupersetGroup({ targetIndex, templateId, timestamp: new Date().toISOString() });
+    },
     onRenameWorkoutTemplate: (templateId: string, label: string) => {
       renameDraftWorkoutTemplate({ label, templateId, timestamp: new Date().toISOString() });
+    },
+    onRenameSupersetGroup: (templateId: string, groupId: string, title: string) => {
+      renameDraftSupersetGroup({
+        groupId,
+        templateId,
+        timestamp: new Date().toISOString(),
+        title,
+      });
+    },
+    onDeleteSupersetGroup: (templateId: string, groupId: string) => {
+      deleteDraftSupersetGroup({ groupId, templateId, timestamp: new Date().toISOString() });
+    },
+    onMoveSupersetGroup: (templateId: string, groupId: string, targetIndex: number) => {
+      reorderDraftSupersetGroup({
+        groupId,
+        targetIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onMoveDraftSlotToSupersetGroup: (
+      templateId: string,
+      sourceGroupId: string,
+      slotIndex: number,
+      targetGroupId: string,
+      targetSlotIndex: number,
+    ) => {
+      moveDraftSlotToSupersetGroup({
+        sourceGroupId,
+        slotIndex,
+        targetGroupId,
+        targetSlotIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
     },
     onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => {
       replaceDraftWorkoutTemplateWithCustomFocus({

@@ -89,7 +89,24 @@ function createTestTrainingPlanContent(
         id: "template-1",
         label: "Upper A",
         purpose: "strength",
-        supersetGroups: [],
+        supersetGroups: [
+          {
+            id: "template-1-group-1",
+            slots: [
+              {
+                exerciseId: "flat-barbell-bench-press",
+                exerciseName: "Flat Barbell Bench Press",
+                kind: "exercise",
+                movementPattern: "horizontal_push",
+                role: "main_compound",
+                slotLabel: "A1",
+                targetMuscles: ["chest"],
+              },
+            ],
+            title: "Upper superset 1",
+            type: "superset",
+          },
+        ],
       },
     ],
     ...overrides,

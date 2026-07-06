@@ -171,8 +171,13 @@ function renderOnePageActiveStep({
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
           draftActions={{
             acceptDraft: generateStep.onAcceptDraft,
+            addSupersetGroup: generateStep.onAddSupersetGroup,
+            deleteSupersetGroup: generateStep.onDeleteSupersetGroup,
             moveWorkoutTemplate: generateStep.onMoveWorkoutTemplate,
+            moveDraftSlotToSupersetGroup: generateStep.onMoveDraftSlotToSupersetGroup,
+            moveSupersetGroup: generateStep.onMoveSupersetGroup,
             renameWorkoutTemplate: generateStep.onRenameWorkoutTemplate,
+            renameSupersetGroup: generateStep.onRenameSupersetGroup,
             replaceWorkoutTemplateWithCustomFocus:
               generateStep.onReplaceWorkoutTemplateWithCustomFocus,
             resetDraft: generateStep.onResetDraft,

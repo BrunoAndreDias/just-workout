@@ -273,12 +273,28 @@ export function validateTrainingPlanDraftContent({
 }: {
   content: TrainingPlanContent;
 }): TrainingPlanDraftValidation {
+  const blockers: string[] = [];
   const customFocusTemplateIds = content.workoutTemplates
     .filter((template) => template.purpose === "custom-focus")
     .map((template) => template.id);
+  const strengthTemplates = content.workoutTemplates.filter(
+    (template) => template.purpose === "strength",
+  );
+
+  if (strengthTemplates.some((template) => template.supersetGroups.length === 0)) {
+    blockers.push("Strength-focused Workout Templates must contain at least one Superset Group.");
+  }
+
+  if (
+    strengthTemplates.some((template) =>
+      template.supersetGroups.some((group) => group.slots.length === 0),
+    )
+  ) {
+    blockers.push("Strength-focused Workout Templates cannot contain empty Superset Groups.");
+  }
 
   return {
-    blockers: [],
+    blockers,
     warnings:
       customFocusTemplateIds.length > 0
         ? [

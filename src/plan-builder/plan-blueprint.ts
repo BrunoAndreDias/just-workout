@@ -62,6 +62,7 @@ export {
 export { summarizePlanBlueprint } from "./plan-blueprint-summary";
 
 import type {
+  AddTrainingPlanDraftSupersetGroupOptions,
   ApplyPlanBlueprintTransitionOptions,
   ConfirmExerciseSelectionPreferencesOptions,
   ConfirmRepRangeStyleOptions,
@@ -69,9 +70,13 @@ import type {
   ConfirmTrainingSplitOptions,
   ConfirmTrainingVolumeOptions,
   CreateDefaultPlanBlueprintOptions,
+  DeleteTrainingPlanDraftSupersetGroupOptions,
   InitializeTrainingVolumeOptions,
+  MoveTrainingPlanDraftSlotToSupersetGroupOptions,
   PlanBlueprint,
+  RenameTrainingPlanDraftSupersetGroupOptions,
   RenameTrainingPlanDraftWorkoutTemplateOptions,
+  ReorderTrainingPlanDraftSupersetGroupOptions,
   ReorderTrainingPlanDraftWorkoutTemplateOptions,
   ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions,
   SelectMainCompoundOptions,
@@ -82,6 +87,7 @@ import type {
   SetOptionalVolumeTargetEnabledOptions,
   StoredPlanBlueprint,
   TrainingFrequencyDaysPerWeek,
+  TrainingPlanDraftGroupMutationHelpers,
   UpdateExerciseSelectionPreferencesOptions,
   UpdateIsolationExercisePreferencesOptions,
   UpdateMainCompoundPreferencesOptions,
@@ -1094,6 +1100,172 @@ export function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
   });
 }
 
+export function addTrainingPlanDraftSupersetGroup(
+  { blueprint, targetIndex, templateId, timestamp }: AddTrainingPlanDraftSupersetGroupOptions,
+  helpers: TrainingPlanDraftGroupMutationHelpers = {},
+): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      if (targetIndex < 0 || targetIndex > template.supersetGroups.length) {
+        return template;
+      }
+
+      const nextGroupIndex = targetIndex + 1;
+      const supersetGroups = [...template.supersetGroups];
+      supersetGroups.splice(targetIndex, 0, {
+        id: helpers.createSupersetGroupId?.() ?? crypto.randomUUID(),
+        slots: [],
+        title: `Superset Group ${nextGroupIndex}`,
+        type: "superset",
+      });
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
+export function renameTrainingPlanDraftSupersetGroup({
+  blueprint,
+  groupId,
+  templateId,
+  timestamp,
+  title,
+}: RenameTrainingPlanDraftSupersetGroupOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => ({
+      ...template,
+      supersetGroups: template.supersetGroups.map((group) =>
+        group.id === groupId ? { ...group, title } : group,
+      ),
+    }),
+  });
+}
+
+export function deleteTrainingPlanDraftSupersetGroup({
+  blueprint,
+  groupId,
+  templateId,
+  timestamp,
+}: DeleteTrainingPlanDraftSupersetGroupOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const group = template.supersetGroups.find((candidate) => candidate.id === groupId);
+
+      if (!group || group.slots.length > 0) {
+        return template;
+      }
+
+      return {
+        ...template,
+        supersetGroups: template.supersetGroups.filter((candidate) => candidate.id !== groupId),
+      };
+    },
+  });
+}
+
+export function reorderTrainingPlanDraftSupersetGroup({
+  blueprint,
+  groupId,
+  targetIndex,
+  templateId,
+  timestamp,
+}: ReorderTrainingPlanDraftSupersetGroupOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const currentIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
+
+      if (currentIndex === -1 || targetIndex < 0 || targetIndex >= template.supersetGroups.length) {
+        return template;
+      }
+
+      const supersetGroups = [...template.supersetGroups];
+      const [movedGroup] = supersetGroups.splice(currentIndex, 1);
+
+      if (!movedGroup) {
+        return template;
+      }
+
+      supersetGroups.splice(targetIndex, 0, movedGroup);
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
+export function moveTrainingPlanDraftSlotToSupersetGroup({
+  blueprint,
+  sourceGroupId,
+  slotIndex,
+  targetGroupId,
+  targetSlotIndex,
+  templateId,
+  timestamp,
+}: MoveTrainingPlanDraftSlotToSupersetGroupOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const sourceGroupIndex = template.supersetGroups.findIndex(
+        (group) => group.id === sourceGroupId,
+      );
+      const targetGroupIndex = template.supersetGroups.findIndex(
+        (group) => group.id === targetGroupId,
+      );
+
+      if (sourceGroupIndex === -1 || targetGroupIndex === -1) {
+        return template;
+      }
+
+      const sourceGroup = template.supersetGroups[sourceGroupIndex];
+      const targetGroup = template.supersetGroups[targetGroupIndex];
+
+      if (
+        !sourceGroup ||
+        !targetGroup ||
+        slotIndex < 0 ||
+        slotIndex >= sourceGroup.slots.length ||
+        targetSlotIndex < 0 ||
+        targetSlotIndex > targetGroup.slots.length
+      ) {
+        return template;
+      }
+
+      const movedSlot = sourceGroup.slots[slotIndex];
+
+      if (!movedSlot) {
+        return template;
+      }
+
+      const supersetGroups = template.supersetGroups.map((group) => ({
+        ...group,
+        slots: [...group.slots],
+      }));
+
+      supersetGroups[sourceGroupIndex]?.slots.splice(slotIndex, 1);
+      const adjustedTargetIndex =
+        sourceGroupId === targetGroupId && slotIndex < targetSlotIndex
+          ? targetSlotIndex - 1
+          : targetSlotIndex;
+      supersetGroups[targetGroupIndex]?.slots.splice(adjustedTargetIndex, 0, movedSlot);
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
 function updateTrainingPlanDraft({
   blueprint,
   timestamp,
@@ -1116,6 +1288,26 @@ function updateTrainingPlanDraft({
     },
     updatedAt: timestamp,
   };
+}
+
+function updateTrainingPlanDraftTemplate({
+  blueprint,
+  templateId,
+  timestamp,
+  updateTemplate,
+}: {
+  blueprint: PlanBlueprint;
+  templateId: string;
+  timestamp: string;
+  updateTemplate: (template: WorkoutTemplate) => WorkoutTemplate;
+}): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId ? updateTemplate(template) : template,
+    ),
+  });
 }
 
 function isRecord(candidate: unknown): candidate is Record<string, unknown> {

@@ -176,16 +176,63 @@ async function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus(
   );
 }
 
+async function addTrainingPlanDraftSupersetGroup(
+  options: Parameters<typeof planBlueprintCommandBuilders.addTrainingPlanDraftSupersetGroup>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.addTrainingPlanDraftSupersetGroup(options),
+  );
+}
+
+async function renameTrainingPlanDraftSupersetGroup(
+  options: Parameters<typeof planBlueprintCommandBuilders.renameTrainingPlanDraftSupersetGroup>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.renameTrainingPlanDraftSupersetGroup(options),
+  );
+}
+
+async function deleteTrainingPlanDraftSupersetGroup(
+  options: Parameters<typeof planBlueprintCommandBuilders.deleteTrainingPlanDraftSupersetGroup>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.deleteTrainingPlanDraftSupersetGroup(options),
+  );
+}
+
+async function reorderTrainingPlanDraftSupersetGroup(
+  options: Parameters<typeof planBlueprintCommandBuilders.reorderTrainingPlanDraftSupersetGroup>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.reorderTrainingPlanDraftSupersetGroup(options),
+  );
+}
+
+async function moveTrainingPlanDraftSlotToSupersetGroup(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.moveTrainingPlanDraftSlotToSupersetGroup
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.moveTrainingPlanDraftSlotToSupersetGroup(options),
+  );
+}
+
 export const planBuilderService = {
+  addTrainingPlanDraftSupersetGroup,
   applyResolvedPlanBlueprint,
   confirmSelectedExerciseSelectionPreferences,
   confirmSelectedRepRangeStyle,
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
   confirmSelectedTrainingVolume,
+  deleteTrainingPlanDraftSupersetGroup,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
+  moveTrainingPlanDraftSlotToSupersetGroup,
   renameTrainingPlanDraftWorkoutTemplate,
+  renameTrainingPlanDraftSupersetGroup,
+  reorderTrainingPlanDraftSupersetGroup,
   reorderTrainingPlanDraftWorkoutTemplate,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   updateIsolationExercisePreferences,

@@ -762,6 +762,33 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
+  it("blocks empty Superset Groups and resets draft-local group edits from current builder choices", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+    await seedEditedTrainingPlanDraft();
+    firstRender.unmount();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await user.click(await getOnePageSectionButton("Generate"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Draft blockers")).toBeVisible();
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeDisabled();
+      expect(screen.getByDisplayValue("Main Pairing")).toBeVisible();
+      expect(screen.getByDisplayValue("Finisher Pair")).toBeVisible();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByDisplayValue("Main Pairing")).toBeNull();
+      expect(screen.queryByDisplayValue("Finisher Pair")).toBeNull();
+      expect(screen.queryByText("Draft blockers")).toBeNull();
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+    });
+  });
+
   it("accepts draft-local starting loads and Baseline Bodyweight into the Active Training Plan", async () => {
     const user = userEvent.setup();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
@@ -795,6 +822,48 @@ describe("Plan Builder canonical route", () => {
       );
     });
   });
+
+  it("accepts Superset Group edits and slot movement into the Active Training Plan", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+    await seedEditedTrainingPlanDraft({ moveSlotIntoNewGroup: true });
+    firstRender.unmount();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await user.click(await getOnePageSectionButton("Generate"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+      expect(screen.getByDisplayValue("Main Pairing")).toBeVisible();
+      expect(screen.getByDisplayValue("Finisher Pair")).toBeVisible();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    await waitFor(async () => {
+      expect(await getActiveTrainingPlans()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            workoutTemplates: expect.arrayContaining([
+              expect.objectContaining({
+                supersetGroups: expect.arrayContaining([
+                  expect.objectContaining({
+                    title: "Finisher Pair",
+                    slots: expect.arrayContaining([
+                      expect.objectContaining({
+                        exerciseId: "flat-barbell-bench-press",
+                      }),
+                    ]),
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+  });
 });
 
 async function openGeneratedTrainingPlanDraft(user: ReturnType<typeof userEvent.setup>) {
@@ -812,6 +881,67 @@ async function openGeneratedTrainingPlanDraft(user: ReturnType<typeof userEvent.
   )) as HTMLInputElement;
 
   return { baselineBodyweightInput, suggestedLoadInput };
+}
+
+async function seedEditedTrainingPlanDraft({
+  moveSlotIntoNewGroup = false,
+}: {
+  moveSlotIntoNewGroup?: boolean;
+} = {}) {
+  const initialBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+  const draft = initialBlueprint.trainingPlanDraft;
+  const template = draft?.content.workoutTemplates[0];
+  const firstGroup = template?.supersetGroups[0];
+
+  if (!template || !firstGroup) {
+    throw new Error("Expected a generated Training Plan Draft template.");
+  }
+
+  await planBuilderService.renameTrainingPlanDraftSupersetGroup({
+    groupId: firstGroup.id,
+    templateId: template.id,
+    timestamp: new Date().toISOString(),
+    title: "Main Pairing",
+  });
+  await planBuilderService.addTrainingPlanDraftSupersetGroup({
+    targetIndex: template.supersetGroups.length,
+    templateId: template.id,
+    timestamp: new Date().toISOString(),
+  });
+
+  const updatedBlueprint = await planBuilderService.getOrCreatePlanBlueprint();
+  const updatedTemplate = updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0];
+  const addedGroup = updatedTemplate?.supersetGroups.at(-1);
+
+  if (!updatedTemplate || !addedGroup) {
+    throw new Error("Expected the added Superset Group.");
+  }
+
+  await planBuilderService.renameTrainingPlanDraftSupersetGroup({
+    groupId: addedGroup.id,
+    templateId: updatedTemplate.id,
+    timestamp: new Date().toISOString(),
+    title: "Finisher Pair",
+  });
+
+  if (!moveSlotIntoNewGroup) {
+    return;
+  }
+
+  await planBuilderService.moveTrainingPlanDraftSlotToSupersetGroup({
+    sourceGroupId: firstGroup.id,
+    slotIndex: 0,
+    targetGroupId: addedGroup.id,
+    targetSlotIndex: 0,
+    templateId: updatedTemplate.id,
+    timestamp: new Date().toISOString(),
+  });
+  await planBuilderService.reorderTrainingPlanDraftSupersetGroup({
+    groupId: addedGroup.id,
+    targetIndex: Math.max(updatedTemplate.supersetGroups.length - 2, 0),
+    templateId: updatedTemplate.id,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 function renderPlanBuilder({
