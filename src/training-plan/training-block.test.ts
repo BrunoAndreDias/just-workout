@@ -276,6 +276,65 @@ describe("Training Block transition", () => {
       weekNumber: 1,
     });
   });
+
+  it("ignores proposal preview edits when accepting with skip rotation", async () => {
+    const trainingSessions = createCompletedTrainingBlockSessions();
+    const trainingPlan = createTrainingPlan({
+      mainCompoundRotationPools: [
+        {
+          exerciseIds: ["incline-dumbbell-bench-press"],
+          movementPattern: "horizontal_push",
+        },
+      ],
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+    const transition = createNextTrainingBlockTransitionWorkflow({
+      saveAcceptedTrainingPlan: async (nextTrainingPlan) => nextTrainingPlan,
+      trainingPlan,
+      trainingSessions,
+    });
+
+    if (transition?.kind !== "review" || !transition.accept) {
+      throw new Error("Expected an acceptable next Training Block transition.");
+    }
+
+    const editedProposalPreview = applyTrainingBlockExerciseSwapToPreview({
+      groupId: "group-1",
+      nextExerciseId: "decline-dumbbell-bench-press",
+      preview: transition.preview,
+      sessions: trainingSessions,
+      slotIndex: 0,
+      templateId: "template-1",
+    });
+    const acceptedPlan = await transition.accept({
+      preview: editedProposalPreview,
+      reviewMode: "skip_rotation",
+      suggestions: transition.skipRotationPreview.loadSuggestions,
+    } as Parameters<NonNullable<typeof transition.accept>>[0]);
+    const firstTemplateSlots = acceptedPlan.workoutTemplates[0]?.supersetGroups[0]?.slots;
+
+    expect(firstTemplateSlots).toContainEqual(
+      expect.objectContaining({
+        exerciseId: "flat-barbell-bench-press",
+        exerciseName: "Flat Barbell Bench Press",
+      }),
+    );
+    expect(firstTemplateSlots).not.toContainEqual(
+      expect.objectContaining({
+        exerciseId: "decline-dumbbell-bench-press",
+      }),
+    );
+  });
 });
 
 describe("generateNextTrainingBlock", () => {
@@ -781,6 +840,88 @@ describe("generateNextTrainingBlock", () => {
         }),
         expect.objectContaining({
           exerciseId: "standing-dumbbell-curls",
+        }),
+      ]),
+    );
+  });
+
+  it("excludes duplicate swap choices from another group at the same slot index", () => {
+    const choices = getTrainingBlockExerciseSwapChoices({
+      groupId: "group-1",
+      slotIndex: 0,
+      templateId: "template-1",
+      trainingPlan: createTrainingPlan({
+        workoutTemplates: [
+          {
+            id: "template-1",
+            label: "Upper A",
+            supersetGroups: [
+              {
+                id: "group-1",
+                slots: [
+                  {
+                    exerciseId: "flat-barbell-bench-press",
+                    exerciseName: "Flat Barbell Bench Press",
+                    kind: "exercise",
+                    movementPattern: "horizontal_push",
+                    role: "main_compound",
+                    slotLabel: "horizontal_push",
+                    targetMuscles: ["chest"],
+                  },
+                ],
+                title: "Upper superset 1",
+                type: "superset",
+              },
+              {
+                id: "group-2",
+                slots: [
+                  {
+                    exerciseId: "incline-dumbbell-bench-press",
+                    exerciseName: "Incline Dumbbell Bench Press",
+                    kind: "exercise",
+                    movementPattern: "horizontal_push",
+                    role: "main_compound",
+                    slotLabel: "horizontal_push",
+                    targetMuscles: ["chest"],
+                  },
+                ],
+                title: "Upper superset 2",
+                type: "superset",
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(choices).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          exerciseId: "incline-dumbbell-bench-press",
+        }),
+      ]),
+    );
+  });
+
+  it("excludes an avoided current-slot exercise from swap choices", () => {
+    const choices = getTrainingBlockExerciseSwapChoices({
+      groupId: "group-1",
+      slotIndex: 0,
+      templateId: "template-1",
+      trainingPlan: createTrainingPlan({
+        exerciseSelectionPreferences: {
+          avoidedExercises: [{ id: "avoid-1", rawText: "Flat Barbell Bench Press" }],
+          equipmentPreset: "full_gym",
+          preferredExercises: [],
+          strategy: "balanced",
+        },
+      }),
+    });
+
+    expect(choices).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          exerciseId: "flat-barbell-bench-press",
         }),
       ]),
     );

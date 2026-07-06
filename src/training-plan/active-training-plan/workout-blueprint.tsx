@@ -272,11 +272,7 @@ function ExercisePlanRow({
           trainingPlan,
         })
       : [];
-  const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount({
-    groupId: row.groupId,
-    slotIndex: row.slotIndex,
-    templateId: row.templateId,
-  });
+  const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount();
   const slotLabel = affectedSlotCount === 1 ? "slot" : "slots";
   const trainingBlockLabel = trainingBlockCycleNumber ?? 1;
   const scopeCopy = hasCompletedSessionsInCurrentBlock

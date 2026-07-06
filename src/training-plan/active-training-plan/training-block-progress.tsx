@@ -323,6 +323,14 @@ function TrainingBlockPreviewDetails({
             setIsAccepting(true);
 
             try {
+              if (reviewMode === "skip_rotation") {
+                await transition.accept?.({
+                  reviewMode,
+                  suggestions: activeLoadSuggestions,
+                });
+                return;
+              }
+
               await transition.accept?.({
                 preview: proposalPreview,
                 reviewMode,
@@ -407,11 +415,7 @@ function TrainingBlockRotationProposalSection({
           slotIndex,
           templateId,
         }) => {
-          const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount({
-            groupId,
-            slotIndex,
-            templateId,
-          });
+          const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount();
           const swapChoices = getTrainingBlockExerciseSwapChoices({
             groupId,
             slotIndex,

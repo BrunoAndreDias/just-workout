@@ -305,6 +305,7 @@ export function createSkippedTrainingBlockExerciseRotationPreview({
   };
 }
 
+/** Lists compatible exercise choices for one generated slot, with the current slot first when allowed. */
 export function getTrainingBlockExerciseSwapChoices({
   groupId,
   slotIndex,
@@ -344,31 +345,38 @@ export function getTrainingBlockExerciseSwapChoices({
     (choice) =>
       !wouldExerciseSwapCreateDuplicateInTemplate({
         exerciseId: choice.id,
+        groupId,
         slotIndex,
         template: resolvedSlot.template,
       }),
   );
 
-  return [
-    {
-      exerciseId: resolvedSlot.slot.exerciseId,
-      exerciseName: resolvedSlot.slot.exerciseName,
-      reason: "current exercise in this slot",
-    },
+  const currentSlotChoice = avoidedExerciseIds.has(resolvedSlot.slot.exerciseId)
+    ? []
+    : [
+        {
+          exerciseId: resolvedSlot.slot.exerciseId,
+          exerciseName: resolvedSlot.slot.exerciseName,
+          reason: "current exercise in this slot",
+        },
+      ];
+
+  return getUniqueTrainingBlockExerciseSwapChoices([
+    ...currentSlotChoice,
     ...compatibleChoices.map((choice) => ({
       exerciseId: choice.id,
       exerciseName: choice.name,
       reason: choice.reason,
     })),
-  ];
+  ]);
 }
 
-export function getTrainingBlockExerciseSwapAffectedSlotCount(
-  input: TrainingBlockExerciseSwapSlotLocator,
-): number {
-  return input.slotIndex >= 0 ? 1 : 0;
+/** Returns the number of generated slots changed by a selected-slot swap. */
+export function getTrainingBlockExerciseSwapAffectedSlotCount(): number {
+  return 1;
 }
 
+/** Applies an edited proposal-row exercise choice and recalculates next-block load prefills. */
 export function applyTrainingBlockExerciseSwapToPreview({
   availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
   groupId,
@@ -425,6 +433,7 @@ export function applyTrainingBlockExerciseSwapToPreview({
   };
 }
 
+/** Applies a current-block exercise choice to the stored Training Plan slot. */
 export function applyTrainingBlockExerciseSwapToTrainingPlan({
   groupId,
   nextExerciseId,
@@ -463,6 +472,7 @@ export function applyTrainingBlockExerciseSwapToTrainingPlan({
   };
 }
 
+/** Checks whether the current Training Block already has completed historical sessions. */
 export function hasCompletedTrainingBlockSessions({
   trainingBlock,
   trainingSessions,
@@ -1485,18 +1495,35 @@ function resolveTrainingBlockExerciseSwapSlot({
 
 function wouldExerciseSwapCreateDuplicateInTemplate({
   exerciseId,
+  groupId,
   slotIndex,
   template,
 }: {
   exerciseId: string;
+  groupId: string;
   slotIndex: number;
   template: TrainingPlan["workoutTemplates"][number];
 }): boolean {
   return template.supersetGroups.some((group) =>
     group.slots.some(
-      (slot, currentSlotIndex) => slot.exerciseId === exerciseId && currentSlotIndex !== slotIndex,
+      (slot, currentSlotIndex) =>
+        slot.exerciseId === exerciseId && (group.id !== groupId || currentSlotIndex !== slotIndex),
     ),
   );
+}
+
+function getUniqueTrainingBlockExerciseSwapChoices(
+  choices: ReadonlyArray<TrainingBlockExerciseSwapChoice>,
+): ReadonlyArray<TrainingBlockExerciseSwapChoice> {
+  const choicesByExerciseId = new Map<string, TrainingBlockExerciseSwapChoice>();
+
+  for (const choice of choices) {
+    if (!choicesByExerciseId.has(choice.exerciseId)) {
+      choicesByExerciseId.set(choice.exerciseId, choice);
+    }
+  }
+
+  return [...choicesByExerciseId.values()];
 }
 
 function applyTrainingBlockExerciseSwapToWorkoutTemplates({
