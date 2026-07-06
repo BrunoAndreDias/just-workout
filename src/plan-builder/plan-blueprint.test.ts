@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { TrainingPlanContent } from "../training-plan/training-plan";
 import {
   applyPlanBlueprintTransition,
   confirmExerciseSelectionPreferences,
@@ -64,6 +65,36 @@ const confirmedPlanBlueprintSteps = {
   split: true,
   volume: true,
 } satisfies PlanBlueprint["confirmedBuilderSteps"];
+
+function createTestTrainingPlanContent(
+  overrides: Partial<TrainingPlanContent> = {},
+): TrainingPlanContent {
+  return {
+    exerciseSelectionPreferences: {
+      avoidedExercises: [],
+      equipmentPreset: "full_gym",
+      preferredExercises: [],
+      strategy: "balanced",
+    },
+    isolationExercisePreferences: [],
+    mainCompoundRotationPools: [],
+    repRangeStyle: "balanced_hypertrophy",
+    split: "4-Day Upper/Lower",
+    trainingBlockWeeks: 6,
+    trainingFrequencyDaysPerWeek: 4,
+    trainingGoal: "build-muscle",
+    weeklyRepTargets: [],
+    workoutTemplates: [
+      {
+        id: "template-1",
+        label: "Upper A",
+        purpose: "strength",
+        supersetGroups: [],
+      },
+    ],
+    ...overrides,
+  };
+}
 
 function createConfirmedPlanBlueprint(overrides: TestPlanBlueprintOverrides = {}): PlanBlueprint {
   return createTestPlanBlueprint({
@@ -202,6 +233,50 @@ describe("plan blueprint", () => {
         strategy: "balanced",
       },
     });
+  });
+
+  it("normalizes Training Plan Draft content without lifecycle fields", () => {
+    const content = createTestTrainingPlanContent();
+    const legacyWorkoutTemplates = content.workoutTemplates.map((template) => {
+      const legacyTemplate: Partial<(typeof content.workoutTemplates)[number]> = { ...template };
+
+      delete legacyTemplate.purpose;
+
+      return legacyTemplate;
+    });
+
+    const blueprint = normalizePlanBlueprint({
+      ...createTestPlanBlueprint(),
+      trainingPlanDraft: {
+        content: {
+          ...content,
+          active: true,
+          generatedAt: "2026-06-07T10:00:00.000Z",
+          id: "training-plan-draft",
+          sourceBlueprintId: "blueprint-1",
+          updatedAt: "2026-06-07T10:00:00.000Z",
+          workoutTemplates: legacyWorkoutTemplates,
+        },
+      },
+    });
+
+    expect(blueprint.trainingPlanDraft).toEqual({
+      content,
+    });
+  });
+
+  it("normalizes malformed Training Plan Draft content to no draft", () => {
+    expect(
+      normalizePlanBlueprint({
+        ...createTestPlanBlueprint(),
+        trainingPlanDraft: {
+          content: {
+            ...createTestTrainingPlanContent(),
+            weeklyRepTargets: null,
+          },
+        },
+      }).trainingPlanDraft,
+    ).toBeNull();
   });
 
   it("limits training frequency choices to the v1 supported values", () => {

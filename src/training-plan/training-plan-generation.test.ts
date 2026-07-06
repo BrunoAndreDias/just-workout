@@ -180,6 +180,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     split: "upper-lower-4-day",
     trainingFrequencyDaysPerWeek: 4,
     trainingGoal: "build-muscle",
+    trainingPlanDraft: null,
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",

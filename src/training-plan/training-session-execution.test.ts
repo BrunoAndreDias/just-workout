@@ -661,6 +661,7 @@ function createWorkoutTemplate(): WorkoutTemplate {
   return {
     id: "template-1",
     label: "Full Body A",
+    purpose: "strength",
     supersetGroups: [
       {
         id: "group-1",
@@ -682,6 +683,7 @@ function createWorkoutTemplateWithTrainingPrescriptions(): WorkoutTemplate {
   return {
     id: "template-prescribed",
     label: "Upper",
+    purpose: "strength",
     supersetGroups: [
       {
         id: "group-1",
@@ -703,6 +705,7 @@ function createWorkoutTemplateWithMixedTrainingPrescriptionSetCounts(): WorkoutT
   return {
     id: "template-mixed-prescribed-set-counts",
     label: "Upper",
+    purpose: "strength",
     supersetGroups: [
       {
         id: "group-1",

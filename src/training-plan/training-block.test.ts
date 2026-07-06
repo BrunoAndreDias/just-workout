@@ -447,6 +447,7 @@ describe("generateNextTrainingBlock", () => {
           {
             id: "template-1",
             label: "Upper A",
+            purpose: "strength",
             supersetGroups: [
               {
                 id: "group-1",
@@ -508,6 +509,7 @@ describe("generateNextTrainingBlock", () => {
           {
             id: "template-1",
             label: "Upper A",
+            purpose: "strength",
             supersetGroups: [
               {
                 id: "group-1",
@@ -597,6 +599,7 @@ describe("generateNextTrainingBlock", () => {
           {
             id: "template-1",
             label: "Upper A",
+            purpose: "strength",
             supersetGroups: [
               {
                 id: "group-1",
@@ -641,6 +644,7 @@ describe("generateNextTrainingBlock", () => {
           {
             id: "template-1",
             label: "Upper A",
+            purpose: "strength",
             supersetGroups: [
               {
                 id: "group-1",
@@ -724,6 +728,7 @@ describe("generateNextTrainingBlock", () => {
         {
           id: "template-1",
           label: "Upper A",
+          purpose: "strength",
           supersetGroups: [
             {
               id: "group-1",
@@ -881,6 +886,7 @@ describe("generateNextTrainingBlock", () => {
           {
             id: "template-1",
             label: "Upper A",
+            purpose: "strength",
             supersetGroups: [
               {
                 id: "group-1",
@@ -1000,6 +1006,7 @@ describe("generateNextTrainingBlock", () => {
         {
           id: "template-1",
           label: "Upper A",
+          purpose: "strength",
           supersetGroups: [
             {
               id: "group-1",
@@ -1073,6 +1080,7 @@ describe("generateNextTrainingBlock", () => {
         {
           id: "template-1",
           label: "Upper A",
+          purpose: "strength",
           supersetGroups: [
             {
               id: "group-1",
@@ -1755,6 +1763,7 @@ function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan
       {
         id: "template-1",
         label: "Upper A",
+        purpose: "strength",
         supersetGroups: [
           {
             id: "group-1",

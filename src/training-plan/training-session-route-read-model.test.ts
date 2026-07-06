@@ -38,6 +38,7 @@ function createWorkoutTemplate(id: string, label: string): WorkoutTemplate {
   return {
     id,
     label,
+    purpose: "strength",
     supersetGroups: [],
   };
 }

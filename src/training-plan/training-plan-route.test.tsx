@@ -2596,6 +2596,7 @@ function createCompleteBlueprint({
     split,
     trainingFrequencyDaysPerWeek,
     trainingGoal: "build-muscle",
+    trainingPlanDraft: null,
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",

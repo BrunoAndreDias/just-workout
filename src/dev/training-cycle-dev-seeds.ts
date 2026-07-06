@@ -224,6 +224,7 @@ function createCompleteBlueprint(): PlanBlueprint {
     split: "alternating-full-body-a-b",
     trainingFrequencyDaysPerWeek: 3,
     trainingGoal: "build-muscle",
+    trainingPlanDraft: null,
     updatedAt: "2026-06-07T09:00:00.000Z",
     volumePreset: "balanced",
     volumePresetSource: "user_selected",

@@ -38,8 +38,8 @@ describe("Active Training Plan navigation", () => {
           },
         ],
         workoutTemplates: [
-          { id: "template-1", label: "Upper A", supersetGroups: [] },
-          { id: "template-2", label: "Lower A", supersetGroups: [] },
+          { id: "template-1", label: "Upper A", purpose: "strength", supersetGroups: [] },
+          { id: "template-2", label: "Lower A", purpose: "strength", supersetGroups: [] },
         ],
       }),
     ).toEqual({
@@ -92,8 +92,8 @@ describe("Active Training Plan navigation", () => {
           }),
         ],
         workoutTemplates: [
-          { id: "template-1", label: "Upper A", supersetGroups: [] },
-          { id: "template-2", label: "Lower A", supersetGroups: [] },
+          { id: "template-1", label: "Upper A", purpose: "strength", supersetGroups: [] },
+          { id: "template-2", label: "Lower A", purpose: "strength", supersetGroups: [] },
         ],
       }),
     ).toEqual({

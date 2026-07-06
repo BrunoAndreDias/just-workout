@@ -1,5 +1,5 @@
 import { db } from "../app/local-database";
-import type { TrainingPlan } from "./training-plan";
+import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
 import {
   getTrainingWeekRangeForReferenceDate,
@@ -8,8 +8,16 @@ import {
   upsertTrainingWeekBodyweightUpdate,
 } from "./training-week-bodyweight";
 
-type PersistedTrainingPlan = Omit<TrainingPlan, "baselineBodyweight" | "weeklyBodyweightUpdates"> &
-  Partial<Pick<TrainingPlan, "baselineBodyweight" | "weeklyBodyweightUpdates">>;
+type PersistedWorkoutTemplate = Omit<WorkoutTemplate, "purpose"> &
+  Partial<Pick<WorkoutTemplate, "purpose">>;
+
+type PersistedTrainingPlan = Omit<
+  TrainingPlan,
+  "baselineBodyweight" | "weeklyBodyweightUpdates" | "workoutTemplates"
+> &
+  Partial<Pick<TrainingPlan, "baselineBodyweight" | "weeklyBodyweightUpdates">> & {
+    workoutTemplates: ReadonlyArray<PersistedWorkoutTemplate>;
+  };
 
 type PersistedTrainingSession = Omit<
   TrainingSession,

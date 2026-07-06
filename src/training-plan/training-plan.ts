@@ -51,7 +51,8 @@ export type SupersetGroup = {
 export type WorkoutTemplate = {
   id: string;
   label: string;
-  purpose?: "strength";
+  /** Classifies how this Workout Template should be used inside a Training Plan. */
+  purpose: "strength";
   supersetGroups: ReadonlyArray<SupersetGroup>;
 };
 
@@ -91,6 +92,7 @@ export type TrainingPlan = {
   workoutTemplates: ReadonlyArray<WorkoutTemplate>;
 };
 
+/** Editable Training Plan fields that can be drafted before lifecycle fields are created. */
 export type TrainingPlanContent = Pick<
   TrainingPlan,
   | "exerciseSelectionPreferences"
@@ -106,6 +108,7 @@ export type TrainingPlanContent = Pick<
 > &
   Partial<Pick<TrainingPlan, "baselineBodyweight" | "startingLoadSuggestions" | "trainingBlock">>;
 
+/** Pending Training Plan content held by Plan Builder until the user accepts it as an Active Plan. */
 export type TrainingPlanDraft = {
   content: TrainingPlanContent;
 };
@@ -133,6 +136,7 @@ export function generateTrainingPlanFromBlueprint({
   };
 }
 
+/** Generates draft-ready Training Plan content without identity, active status, or timestamps. */
 export function generateTrainingPlanContentFromBlueprint({
   blueprint,
 }: {

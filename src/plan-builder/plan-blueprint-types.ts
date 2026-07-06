@@ -75,7 +75,8 @@ export type PlanBlueprint = {
   exerciseSelectionPreferences: ExerciseSelectionPreferences;
   equipmentPresetSource: EquipmentPresetSource | null;
   confirmedBuilderSteps: PlanBuilderConfirmedSteps;
-  trainingPlanDraft?: TrainingPlanDraft | null;
+  /** Draft Training Plan content saved while the Generate step is editable, or null before one exists. */
+  trainingPlanDraft: TrainingPlanDraft | null;
 };
 
 export type PlanBlueprintSummary = {
