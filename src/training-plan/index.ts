@@ -6,6 +6,7 @@ export type {
   TrainingPlanDraft,
   TrainingPlanSlot,
   WorkoutTemplate,
+  WorkoutTemplatePurpose,
 } from "./training-plan";
 export {
   getTrainingPlanRouteTarget,

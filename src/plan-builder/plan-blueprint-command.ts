@@ -1,3 +1,4 @@
+import type { WorkoutTemplatePurpose } from "../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "./exercise-catalog";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
@@ -7,7 +8,11 @@ import {
   type PlanBlueprint,
   type PlanBlueprintTransition,
   type RepRangeStyleId,
+  renameTrainingPlanDraftWorkoutTemplate,
+  reorderTrainingPlanDraftWorkoutTemplate,
+  replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   type TrainingFrequencyDaysPerWeek,
+  updateTrainingPlanDraftWorkoutTemplatePurpose,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
 import type { TrainingSplitId } from "./training-split";
@@ -22,6 +27,29 @@ export type PlanBlueprintCommand =
   | {
       transition: PlanBlueprintTransition;
       type: "planBlueprintTransition";
+    }
+  | {
+      timestamp: string;
+      type: "renameTrainingPlanDraftWorkoutTemplate";
+      label: string;
+      templateId: string;
+    }
+  | {
+      timestamp: string;
+      type: "reorderTrainingPlanDraftWorkoutTemplate";
+      targetIndex: number;
+      templateId: string;
+    }
+  | {
+      timestamp: string;
+      type: "updateTrainingPlanDraftWorkoutTemplatePurpose";
+      purpose: WorkoutTemplatePurpose;
+      templateId: string;
+    }
+  | {
+      timestamp: string;
+      type: "replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus";
+      templateId: string;
     }
   | {
       blueprint: PlanBlueprint;
@@ -134,6 +162,29 @@ type ApplyResolvedPlanBlueprintCommandOptions = {
   blueprint: PlanBlueprint;
 };
 
+type RenameTrainingPlanDraftWorkoutTemplateCommandOptions = {
+  label: string;
+  templateId: string;
+  timestamp?: string;
+};
+
+type ReorderTrainingPlanDraftWorkoutTemplateCommandOptions = {
+  targetIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
+type UpdateTrainingPlanDraftWorkoutTemplatePurposeCommandOptions = {
+  purpose: WorkoutTemplatePurpose;
+  templateId: string;
+  timestamp?: string;
+};
+
+type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusCommandOptions = {
+  templateId: string;
+  timestamp?: string;
+};
+
 export async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
 
@@ -169,6 +220,33 @@ export function projectPlanBlueprintCommand({
         blueprint,
         transition: command.transition,
       });
+    case "renameTrainingPlanDraftWorkoutTemplate":
+      return renameTrainingPlanDraftWorkoutTemplate({
+        blueprint,
+        label: command.label,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "reorderTrainingPlanDraftWorkoutTemplate":
+      return reorderTrainingPlanDraftWorkoutTemplate({
+        blueprint,
+        targetIndex: command.targetIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "updateTrainingPlanDraftWorkoutTemplatePurpose":
+      return updateTrainingPlanDraftWorkoutTemplatePurpose({
+        blueprint,
+        purpose: command.purpose,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus":
+      return replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
+        blueprint,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
     case "replacePlanBlueprint":
       return command.blueprint;
   }
@@ -179,6 +257,52 @@ export const planBlueprintCommandBuilders = {
     return {
       blueprint,
       type: "replacePlanBlueprint",
+    } satisfies PlanBlueprintCommand;
+  },
+  renameTrainingPlanDraftWorkoutTemplate({
+    label,
+    templateId,
+    timestamp,
+  }: RenameTrainingPlanDraftWorkoutTemplateCommandOptions) {
+    return {
+      label,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "renameTrainingPlanDraftWorkoutTemplate",
+    } satisfies PlanBlueprintCommand;
+  },
+  reorderTrainingPlanDraftWorkoutTemplate({
+    targetIndex,
+    templateId,
+    timestamp,
+  }: ReorderTrainingPlanDraftWorkoutTemplateCommandOptions) {
+    return {
+      targetIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "reorderTrainingPlanDraftWorkoutTemplate",
+    } satisfies PlanBlueprintCommand;
+  },
+  updateTrainingPlanDraftWorkoutTemplatePurpose({
+    purpose,
+    templateId,
+    timestamp,
+  }: UpdateTrainingPlanDraftWorkoutTemplatePurposeCommandOptions) {
+    return {
+      purpose,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "updateTrainingPlanDraftWorkoutTemplatePurpose",
+    } satisfies PlanBlueprintCommand;
+  },
+  replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
+    templateId,
+    timestamp,
+  }: ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusCommandOptions) {
+    return {
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus",
     } satisfies PlanBlueprintCommand;
   },
   confirmExerciseSelectionPreferences({

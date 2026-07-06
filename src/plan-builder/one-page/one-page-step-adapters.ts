@@ -1,15 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { trainingPlanService, trainingPlansQueryOptions } from "../../training-plan";
+import {
+  trainingPlanService,
+  trainingPlansQueryOptions,
+  type WorkoutTemplatePurpose,
+} from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
+  useRenameTrainingPlanDraftWorkoutTemplateMutation,
+  useReorderTrainingPlanDraftWorkoutTemplateMutation,
+  useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
   useUpdateMainCompoundRotationPreferencesMutation,
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
+  useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation,
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
 } from "../builder-state/plan-builder-mutations";
@@ -28,7 +36,6 @@ import type {
   MainCompoundPreferencesChange,
   MainCompoundRotationPreferencesChange,
 } from "../plan-builder-main-compound-preferences";
-import { planBuilderService } from "../plan-builder-service";
 import type { TrainingSplitId } from "../training-split";
 import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 
@@ -179,6 +186,14 @@ export function useOnePageGenerateStep({
   const { mutateAsync: resetDraft, isPending: isResettingDraft } = useMutation({
     mutationFn: trainingPlanService.resetTrainingPlanDraft,
   });
+  const { mutate: renameDraftWorkoutTemplate } =
+    useRenameTrainingPlanDraftWorkoutTemplateMutation();
+  const { mutate: reorderDraftWorkoutTemplate } =
+    useReorderTrainingPlanDraftWorkoutTemplateMutation();
+  const { mutate: updateDraftWorkoutTemplatePurpose } =
+    useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation();
+  const { mutate: replaceDraftWorkoutTemplateWithCustomFocus } =
+    useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation();
 
   async function applyWorkflowResult(result: GenerateTrainingPlanWorkflowResult) {
     if (result.status === "blocked") {
@@ -194,10 +209,6 @@ export function useOnePageGenerateStep({
     }
 
     onPendingDefaultResolutionChange(null);
-    queryClient.setQueryData(
-      planBuilderBlueprintQueryKey,
-      await planBuilderService.getOrCreatePlanBlueprint(),
-    );
     await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
   }
 
@@ -226,6 +237,37 @@ export function useOnePageGenerateStep({
     onCancelRecommendedDefaults: () => {
       onPendingDefaultResolutionChange(null);
     },
+    onRenameWorkoutTemplate: (templateId: string, label: string) => {
+      renameDraftWorkoutTemplate({
+        label,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onMoveWorkoutTemplate: (templateId: string, targetIndex: number) => {
+      reorderDraftWorkoutTemplate({
+        targetIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onReplaceWorkoutTemplateWithCustomFocus: (templateId: string) => {
+      replaceDraftWorkoutTemplateWithCustomFocus({
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onResetDraft: async () => {
+      await resetDraft();
+      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
+    },
+    onSetWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => {
+      updateDraftWorkoutTemplatePurpose({
+        purpose,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
     onGenerateTrainingPlan: async () => {
       const resolution = defaultResolution;
 
@@ -236,15 +278,6 @@ export function useOnePageGenerateStep({
       const result = await startGenerateStep({ defaultResolution: resolution });
 
       await applyWorkflowResult(result);
-    },
-    onResetDraft: async () => {
-      await resetDraft();
-      onPendingDefaultResolutionChange(null);
-      queryClient.setQueryData(
-        planBuilderBlueprintQueryKey,
-        await planBuilderService.getOrCreatePlanBlueprint(),
-      );
-      await queryClient.invalidateQueries({ queryKey: planBuilderBlueprintQueryKey });
     },
   };
 }

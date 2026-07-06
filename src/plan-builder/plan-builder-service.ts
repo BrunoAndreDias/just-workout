@@ -136,6 +136,46 @@ async function applyResolvedPlanBlueprint(
   );
 }
 
+async function renameTrainingPlanDraftWorkoutTemplate(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate(options),
+  );
+}
+
+async function reorderTrainingPlanDraftWorkoutTemplate(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.reorderTrainingPlanDraftWorkoutTemplate
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.reorderTrainingPlanDraftWorkoutTemplate(options),
+  );
+}
+
+async function updateTrainingPlanDraftWorkoutTemplatePurpose(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.updateTrainingPlanDraftWorkoutTemplatePurpose
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateTrainingPlanDraftWorkoutTemplatePurpose(options),
+  );
+}
+
+async function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus(options),
+  );
+}
+
 export const planBuilderService = {
   applyResolvedPlanBlueprint,
   confirmSelectedExerciseSelectionPreferences,
@@ -145,6 +185,9 @@ export const planBuilderService = {
   confirmSelectedTrainingVolume,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
+  renameTrainingPlanDraftWorkoutTemplate,
+  reorderTrainingPlanDraftWorkoutTemplate,
+  replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   updateIsolationExercisePreferences,
   updateMainCompoundPreferences,
   updateMainCompoundRotationPreferences,
@@ -153,6 +196,7 @@ export const planBuilderService = {
   updateMainCompoundSelection,
   updateOptionalVolumeTarget,
   updateRepRangeStyle,
+  updateTrainingPlanDraftWorkoutTemplatePurpose,
   updateTrainingSplit,
   updateTrainingFrequency,
   updateTrainingVolumePreset,

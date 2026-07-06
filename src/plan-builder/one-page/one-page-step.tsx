@@ -169,6 +169,15 @@ function renderOnePageActiveStep({
       return (
         <GenerateTrainingPlanStep
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
+          draftActions={{
+            acceptDraft: generateStep.onAcceptDraft,
+            moveWorkoutTemplate: generateStep.onMoveWorkoutTemplate,
+            renameWorkoutTemplate: generateStep.onRenameWorkoutTemplate,
+            replaceWorkoutTemplateWithCustomFocus:
+              generateStep.onReplaceWorkoutTemplateWithCustomFocus,
+            resetDraft: generateStep.onResetDraft,
+            setWorkoutTemplatePurpose: generateStep.onSetWorkoutTemplatePurpose,
+          }}
           generationInputs={{
             blueprint,
             onOptionalVolumeTargetToggle: volumeStep.onOptionalVolumeTargetToggle,
@@ -181,9 +190,7 @@ function renderOnePageActiveStep({
             visibleTrainingSplitId,
           }}
           isGenerating={generateStep.isGenerating}
-          onAcceptDraft={generateStep.onAcceptDraft}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
-          onResetDraft={generateStep.onResetDraft}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {

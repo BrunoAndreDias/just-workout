@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { WorkoutTemplatePurpose } from "../../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "../exercise-catalog";
 import {
   type PlanBlueprint,
@@ -74,6 +75,29 @@ type UpdateIsolationExercisePreferencesMutationVariables = {
   timestamp: string;
 };
 
+type RenameTrainingPlanDraftWorkoutTemplateMutationVariables = {
+  label: string;
+  templateId: string;
+  timestamp: string;
+};
+
+type ReorderTrainingPlanDraftWorkoutTemplateMutationVariables = {
+  targetIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+type UpdateTrainingPlanDraftWorkoutTemplatePurposeMutationVariables = {
+  purpose: WorkoutTemplatePurpose;
+  templateId: string;
+  timestamp: string;
+};
+
+type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutationVariables = {
+  templateId: string;
+  timestamp: string;
+};
+
 export function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
     queryKey: planBuilderBlueprintQueryKey,
@@ -141,6 +165,33 @@ export function useUpdateIsolationExercisePreferencesMutation() {
   return usePlanBlueprintMutation<UpdateIsolationExercisePreferencesMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.updateIsolationExercisePreferences,
   });
+}
+
+export function useRenameTrainingPlanDraftWorkoutTemplateMutation() {
+  return usePlanBlueprintMutation<RenameTrainingPlanDraftWorkoutTemplateMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate,
+  });
+}
+
+export function useReorderTrainingPlanDraftWorkoutTemplateMutation() {
+  return usePlanBlueprintMutation<ReorderTrainingPlanDraftWorkoutTemplateMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.reorderTrainingPlanDraftWorkoutTemplate,
+  });
+}
+
+export function useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation() {
+  return usePlanBlueprintMutation<UpdateTrainingPlanDraftWorkoutTemplatePurposeMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.updateTrainingPlanDraftWorkoutTemplatePurpose,
+  });
+}
+
+export function useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation() {
+  return usePlanBlueprintMutation<ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutationVariables>(
+    {
+      buildCommand:
+        planBlueprintCommandBuilders.replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
+    },
+  );
 }
 
 function usePlanBlueprintMutation<TVariables>({

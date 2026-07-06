@@ -1,4 +1,9 @@
-import type { TrainingPlanContent, WorkoutTemplate } from "../training-plan/training-plan";
+import {
+  type TrainingPlanContent,
+  validateTrainingPlanDraftContent,
+  type WorkoutTemplate,
+  type WorkoutTemplatePurpose,
+} from "../training-plan/training-plan";
 import { getExerciseCatalogExercise, isMainCompoundEligible } from "./exercise-catalog";
 import {
   createDefaultExerciseSelectionPreferences,
@@ -66,6 +71,9 @@ import type {
   CreateDefaultPlanBlueprintOptions,
   InitializeTrainingVolumeOptions,
   PlanBlueprint,
+  RenameTrainingPlanDraftWorkoutTemplateOptions,
+  ReorderTrainingPlanDraftWorkoutTemplateOptions,
+  ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions,
   SelectMainCompoundOptions,
   SelectRepRangeStyleOptions,
   SelectTrainingFrequencyOptions,
@@ -79,6 +87,8 @@ import type {
   UpdateMainCompoundPreferencesOptions,
   UpdateMainCompoundRotationPoolOptions,
   UpdateMainCompoundRotationPreferencesOptions,
+  UpdateTrainingPlanDraftOptions,
+  UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions,
 } from "./plan-blueprint-types";
 import {
   type EquipmentPresetSource,
@@ -139,7 +149,12 @@ export function createDefaultPlanBlueprint({
 function markTrainingPlanDraftStale(
   trainingPlanDraft: PlanBlueprint["trainingPlanDraft"],
 ): PlanBlueprint["trainingPlanDraft"] {
-  return trainingPlanDraft ? { ...trainingPlanDraft, isStale: true } : null;
+  return trainingPlanDraft
+    ? {
+        ...trainingPlanDraft,
+        isStale: true,
+      }
+    : null;
 }
 
 export function applyPlanBlueprintTransition({
@@ -321,10 +336,7 @@ export function selectTrainingFrequency({
     ...blueprint,
     confirmedBuilderSteps,
     split,
-    trainingPlanDraft:
-      hasTrainingFrequencyChanged || hasSplitChanged
-        ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-        : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     trainingFrequencyDaysPerWeek,
     updatedAt: timestamp,
   };
@@ -355,9 +367,7 @@ export function selectTrainingSplit(options: SelectTrainingSplitOptions): PlanBl
       split: isSameTrainingSplit ? confirmedBuilderSteps.split : false,
     },
     split: selectedTrainingSplitId,
-    trainingPlanDraft: isSameTrainingSplit
-      ? options.blueprint.trainingPlanDraft
-      : markTrainingPlanDraftStale(options.blueprint.trainingPlanDraft),
+    trainingPlanDraft: markTrainingPlanDraftStale(options.blueprint.trainingPlanDraft),
     updatedAt: options.timestamp,
   };
 }
@@ -383,9 +393,7 @@ export function selectRepRangeStyle({
       volume: isSameRepRangeStyle ? confirmedBuilderSteps.volume : false,
     },
     repRanges: repRangeStyle,
-    trainingPlanDraft: isSameRepRangeStyle
-      ? blueprint.trainingPlanDraft
-      : markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -440,9 +448,7 @@ export function selectTrainingVolumePreset({
       exercises: hasVolumePresetChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasVolumePresetChanged ? false : confirmedBuilderSteps.volume,
     },
-    trainingPlanDraft: hasVolumePresetChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -475,9 +481,7 @@ export function setOptionalVolumeTargetEnabled({
       exercises: hasEnabledStateChanged ? false : confirmedBuilderSteps.exercises,
       volume: hasEnabledStateChanged ? false : confirmedBuilderSteps.volume,
     },
-    trainingPlanDraft: hasEnabledStateChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -504,9 +508,7 @@ export function updateExerciseSelectionPreferences({
     },
     equipmentPresetSource: userSelectedEquipmentPresetSource,
     exerciseSelectionPreferences: normalizedExerciseSelectionPreferences,
-    trainingPlanDraft: hasExerciseSelectionPreferencesChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -556,9 +558,7 @@ function selectMainCompound({
     },
     mainCompoundSelections: nextMainCompoundSelections,
     mainCompoundRotationPools: nextMainCompoundRotationPools,
-    trainingPlanDraft: hasMainCompoundChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -588,9 +588,7 @@ export function updateMainCompoundPreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundPreferences: nextMainCompoundPreferences,
-    trainingPlanDraft: hasPreferencesChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -620,9 +618,7 @@ function updateMainCompoundRotationPreferences({
       exercises: hasRotationPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     mainCompoundRotationPreferences: nextMainCompoundRotationPreferences,
-    trainingPlanDraft: hasRotationPreferencesChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -652,9 +648,7 @@ function updateIsolationExercisePreferences({
       exercises: hasPreferencesChanged ? false : confirmedBuilderSteps.exercises,
     },
     isolationExercisePreferences: nextIsolationExercisePreferences,
-    trainingPlanDraft: hasPreferencesChanged
-      ? markTrainingPlanDraftStale(blueprint.trainingPlanDraft)
-      : blueprint.trainingPlanDraft,
+    trainingPlanDraft: markTrainingPlanDraftStale(blueprint.trainingPlanDraft),
     updatedAt: timestamp,
   };
 }
@@ -825,6 +819,7 @@ function normalizeTrainingPlanDraft(
     ? {
         content,
         isStale: trainingPlanDraft.isStale === true,
+        validation: validateTrainingPlanDraftContent({ content }),
       }
     : null;
 }
@@ -996,7 +991,8 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
     !Array.isArray(workoutTemplate.supersetGroups) ||
     (workoutTemplate.purpose !== undefined &&
       workoutTemplate.purpose !== null &&
-      workoutTemplate.purpose !== "strength")
+      workoutTemplate.purpose !== "strength" &&
+      workoutTemplate.purpose !== "custom-focus")
   ) {
     return null;
   }
@@ -1004,13 +1000,130 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
   return {
     id: workoutTemplate.id,
     label: workoutTemplate.label,
-    purpose: "strength",
+    purpose: normalizeWorkoutTemplatePurpose(workoutTemplate.purpose),
     supersetGroups: workoutTemplate.supersetGroups as WorkoutTemplate["supersetGroups"],
+  };
+}
+
+/** Renames a Workout Template inside the saved Training Plan Draft. */
+export function renameTrainingPlanDraftWorkoutTemplate({
+  blueprint,
+  label,
+  templateId,
+  timestamp,
+}: RenameTrainingPlanDraftWorkoutTemplateOptions): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId ? { ...template, label } : template,
+    ),
+  });
+}
+
+/** Moves a Workout Template inside the saved Training Plan Draft. */
+export function reorderTrainingPlanDraftWorkoutTemplate({
+  blueprint,
+  targetIndex,
+  templateId,
+  timestamp,
+}: ReorderTrainingPlanDraftWorkoutTemplateOptions): PlanBlueprint {
+  const workoutTemplates = blueprint.trainingPlanDraft?.content.workoutTemplates;
+
+  if (!workoutTemplates) {
+    return blueprint;
+  }
+
+  const currentIndex = workoutTemplates.findIndex((template) => template.id === templateId);
+
+  if (currentIndex === -1 || targetIndex < 0 || targetIndex >= workoutTemplates.length) {
+    return blueprint;
+  }
+
+  const reorderedTemplates = [...workoutTemplates];
+  const [movedTemplate] = reorderedTemplates.splice(currentIndex, 1);
+
+  if (!movedTemplate) {
+    return blueprint;
+  }
+
+  reorderedTemplates.splice(targetIndex, 0, movedTemplate);
+
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: reorderedTemplates,
+  });
+}
+
+/** Updates the purpose of a Workout Template inside the saved Training Plan Draft. */
+export function updateTrainingPlanDraftWorkoutTemplatePurpose({
+  blueprint,
+  purpose,
+  templateId,
+  timestamp,
+}: UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId ? { ...template, purpose } : template,
+    ),
+  });
+}
+
+/** Replaces a draft Workout Template with an empty custom-focus template. */
+export function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
+  blueprint,
+  templateId,
+  timestamp,
+}: ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions): PlanBlueprint {
+  return updateTrainingPlanDraft({
+    blueprint,
+    timestamp,
+    workoutTemplates: blueprint.trainingPlanDraft?.content.workoutTemplates.map((template) =>
+      template.id === templateId
+        ? {
+            ...template,
+            label: `${template.label} Cardio Focus`,
+            purpose: "custom-focus",
+            supersetGroups: [],
+          }
+        : template,
+    ),
+  });
+}
+
+function updateTrainingPlanDraft({
+  blueprint,
+  timestamp,
+  workoutTemplates,
+}: UpdateTrainingPlanDraftOptions): PlanBlueprint {
+  if (!blueprint.trainingPlanDraft || !workoutTemplates) {
+    return blueprint;
+  }
+
+  const content = {
+    ...blueprint.trainingPlanDraft.content,
+    workoutTemplates,
+  };
+
+  return {
+    ...blueprint,
+    trainingPlanDraft: {
+      content,
+      validation: validateTrainingPlanDraftContent({ content }),
+    },
+    updatedAt: timestamp,
   };
 }
 
 function isRecord(candidate: unknown): candidate is Record<string, unknown> {
   return typeof candidate === "object" && candidate !== null;
+}
+
+function normalizeWorkoutTemplatePurpose(purpose: unknown): WorkoutTemplatePurpose {
+  return purpose === "custom-focus" ? "custom-focus" : "strength";
 }
 
 function isPositiveInteger(candidate: unknown): candidate is number {

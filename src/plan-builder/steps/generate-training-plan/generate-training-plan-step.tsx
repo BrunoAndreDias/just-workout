@@ -1,7 +1,7 @@
 import { Wand2 } from "lucide-react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
-import type { TrainingPlanDraft } from "../../../training-plan";
+import type { TrainingPlanDraft, WorkoutTemplatePurpose } from "../../../training-plan";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -36,6 +36,17 @@ type RecommendedDefaultsConfirmationProps = {
   resolution: PlanBlueprintDefaultResolution;
 };
 
+type GenerateTrainingPlanStepProps = {
+  blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
+  draftActions: TrainingPlanDraftActions;
+  generationInputs: DraftGenerationInputProps;
+  isGenerating: boolean;
+  onGenerateTrainingPlan: () => Promise<void>;
+  recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft | null;
+};
+
 type DraftGenerationInputProps = {
   blueprint: PlanBlueprint;
   onOptionalVolumeTargetToggle: (
@@ -53,25 +64,13 @@ type DraftGenerationInputProps = {
   visibleTrainingSplitId: TrainingSplitId;
 };
 
-type GenerateTrainingPlanStepProps = {
-  blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
-  generationInputs: DraftGenerationInputProps;
-  isGenerating: boolean;
-  onAcceptDraft: () => Promise<void>;
-  onGenerateTrainingPlan: () => Promise<void>;
-  onResetDraft: () => Promise<void>;
-  recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
-  summary: PlanBlueprintSummary | null;
-  trainingPlanDraft: TrainingPlanDraft | null;
-};
-
-type TrainingPlanDraftReviewProps = {
-  generationInputs: DraftGenerationInputProps;
-  isAccepting: boolean;
-  onAcceptDraft: () => Promise<void>;
-  onResetDraft: () => Promise<void>;
-  summary: PlanBlueprintSummary | null;
-  trainingPlanDraft: TrainingPlanDraft;
+type TrainingPlanDraftActions = {
+  acceptDraft: () => Promise<void>;
+  moveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
+  renameWorkoutTemplate: (templateId: string, label: string) => void;
+  replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
+  resetDraft: () => Promise<void>;
+  setWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
 };
 
 const generateStepPreferenceMappingCopy =
@@ -83,11 +82,10 @@ const defaultGenerationPreferenceMappingCopy =
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
+    draftActions,
     generationInputs,
     isGenerating,
-    onAcceptDraft,
     onGenerateTrainingPlan,
-    onResetDraft,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
@@ -100,10 +98,9 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   if (trainingPlanDraft) {
     return (
       <TrainingPlanDraftReview
+        draftActions={draftActions}
         generationInputs={generationInputs}
         isAccepting={isGenerating}
-        onAcceptDraft={onAcceptDraft}
-        onResetDraft={onResetDraft}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -192,40 +189,162 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 }
 
 function TrainingPlanDraftReview({
+  draftActions,
   generationInputs,
   isAccepting,
-  onAcceptDraft,
-  onResetDraft,
   summary,
   trainingPlanDraft,
-}: TrainingPlanDraftReviewProps) {
+}: {
+  draftActions: TrainingPlanDraftActions;
+  generationInputs: DraftGenerationInputProps;
+  isAccepting: boolean;
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
   const isStale = trainingPlanDraft.isStale === true;
 
   return (
     <div className="grid gap-4">
-      <TrainingPlanDraftReviewHeader
-        isAccepting={isAccepting}
-        isStale={isStale}
-        onAcceptDraft={onAcceptDraft}
-        onResetDraft={onResetDraft}
-        summary={summary}
-        trainingPlanDraft={trainingPlanDraft}
-      />
+      <StepPanel>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
+            <p className="mt-3 max-w-3xl text-sm text-stone-600">
+              Review the generated Workout Templates, Superset Groups, exercise slots, and Training
+              Prescriptions before creating the Active Training Plan.
+            </p>
+            {isStale ? (
+              <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                Stale Builder Output. Reset Draft to regenerate from your current Plan Builder
+                choices before accepting it.
+              </p>
+            ) : null}
+          </div>
+          <StepActions>
+            <Button
+              disabled={isAccepting}
+              onClick={() => {
+                void draftActions.resetDraft();
+              }}
+              type="button"
+              variant="secondary"
+            >
+              Reset Draft
+            </Button>
+            <Button
+              disabled={isAccepting || isStale}
+              onClick={() => {
+                void draftActions.acceptDraft();
+              }}
+              type="button"
+              variant="builderPrimary"
+            >
+              {isAccepting ? "Accepting..." : "Accept Draft"}
+            </Button>
+          </StepActions>
+        </div>
+
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+          <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
+          <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
+          <GenerateSummaryField
+            label="Rep ranges"
+            value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
+          />
+          <GenerateSummaryField
+            label="Templates"
+            value={String(trainingPlanDraft.content.workoutTemplates.length)}
+          />
+        </dl>
+      </StepPanel>
 
       <DraftGenerationInputs {...generationInputs} />
 
+      {trainingPlanDraft.validation.warnings.length > 0 ? (
+        <StepPanel>
+          <h4 className="text-base font-black text-amber-950">Draft warnings</h4>
+          <ul className="mt-3 space-y-2 text-sm text-amber-900">
+            {trainingPlanDraft.validation.warnings.map((warning) => (
+              <li key={warning.kind}>{warning.message}</li>
+            ))}
+          </ul>
+        </StepPanel>
+      ) : null}
+
       <div className="grid gap-4">
-        {trainingPlanDraft.content.workoutTemplates.map((template) => (
+        {trainingPlanDraft.content.workoutTemplates.map((template, templateIndex, templates) => (
           <StepPanel key={template.id}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-lg font-black text-stone-950">{template.label}</h4>
+              <div className="min-w-0 flex-1">
+                <label
+                  className="text-xs font-semibold uppercase text-stone-500"
+                  htmlFor={template.id}
+                >
+                  Workout Template label
+                </label>
+                <input
+                  className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+                  id={template.id}
+                  onChange={(event) => {
+                    draftActions.renameWorkoutTemplate(template.id, event.target.value);
+                  }}
+                  type="text"
+                  value={template.label}
+                />
                 <p className="text-sm text-stone-600">
-                  {template.purpose === "strength" ? "Strength-focused template" : template.purpose}
+                  {getWorkoutTemplatePurposeDescription(template.purpose)}
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={templateIndex === 0}
+                  onClick={() => {
+                    draftActions.moveWorkoutTemplate(template.id, templateIndex - 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move up
+                </Button>
+                <Button
+                  disabled={templateIndex === templates.length - 1}
+                  onClick={() => {
+                    draftActions.moveWorkoutTemplate(template.id, templateIndex + 1);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Move down
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                onClick={() => {
+                  draftActions.setWorkoutTemplatePurpose(
+                    template.id,
+                    template.purpose === "strength" ? "custom-focus" : "strength",
+                  );
+                }}
+                type="button"
+                variant="secondary"
+              >
+                {template.purpose === "strength" ? "Make custom focus" : "Make strength focus"}
+              </Button>
+              <Button
+                onClick={() => {
+                  draftActions.replaceWorkoutTemplateWithCustomFocus(template.id);
+                }}
+                type="button"
+                variant="secondary"
+              >
+                Replace with custom focus
+              </Button>
               <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
-                {template.supersetGroups.length} groups
+                {template.purpose === "custom-focus"
+                  ? "Custom focus"
+                  : `${template.supersetGroups.length} groups`}
               </span>
             </div>
 
@@ -273,77 +392,6 @@ function TrainingPlanDraftReview({
   );
 }
 
-function TrainingPlanDraftReviewHeader({
-  isAccepting,
-  isStale,
-  onAcceptDraft,
-  onResetDraft,
-  summary,
-  trainingPlanDraft,
-}: {
-  isAccepting: boolean;
-  isStale: boolean;
-  onAcceptDraft: () => Promise<void>;
-  onResetDraft: () => Promise<void>;
-  summary: PlanBlueprintSummary | null;
-  trainingPlanDraft: TrainingPlanDraft;
-}) {
-  return (
-    <StepPanel>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
-          <p className="mt-3 max-w-3xl text-sm text-stone-600">
-            Review the generated Workout Templates, Superset Groups, exercise slots, and Training
-            Prescriptions before creating the Active Training Plan.
-          </p>
-          {isStale ? (
-            <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-              Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices
-              before accepting it.
-            </p>
-          ) : null}
-        </div>
-        <StepActions>
-          <Button
-            disabled={isAccepting}
-            onClick={() => {
-              void onResetDraft();
-            }}
-            type="button"
-            variant="secondary"
-          >
-            Reset Draft
-          </Button>
-          <Button
-            disabled={isAccepting || isStale}
-            onClick={() => {
-              void onAcceptDraft();
-            }}
-            type="button"
-            variant="builderPrimary"
-          >
-            {isAccepting ? "Accepting..." : "Accept Draft"}
-          </Button>
-        </StepActions>
-      </div>
-
-      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-        <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
-        <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
-        <GenerateSummaryField
-          label="Rep ranges"
-          value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
-        />
-        <GenerateSummaryField
-          label="Templates"
-          value={String(trainingPlanDraft.content.workoutTemplates.length)}
-        />
-      </dl>
-    </StepPanel>
-  );
-}
-
 function DraftGenerationInputs({
   blueprint,
   onOptionalVolumeTargetToggle,
@@ -385,6 +433,10 @@ function DraftGenerationInputs({
       </StepPanel>
     </div>
   );
+}
+
+function getWorkoutTemplatePurposeDescription(purpose: WorkoutTemplatePurpose) {
+  return purpose === "custom-focus" ? "Custom-focus template" : "Strength-focused template";
 }
 
 function DefaultGenerationConfirmation({

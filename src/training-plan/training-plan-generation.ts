@@ -13,6 +13,7 @@ import {
   generateTrainingPlanFromBlueprint,
   type TrainingPlan,
   type TrainingPlanDraft,
+  validateTrainingPlanDraftContent,
 } from "./training-plan";
 import { acceptTrainingPlanDraft, saveGeneratedTrainingPlan } from "./training-plan-repository";
 
@@ -53,51 +54,33 @@ const defaultTrainingPlanGenerationDependencies = {
 export async function generateTrainingPlanDraftFromCurrentPlanBlueprint(
   dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
 ): Promise<TrainingPlanDraft> {
-  return saveTrainingPlanDraftFromCurrentPlanBlueprint({
-    dependencies,
-    shouldReuseFreshDraft: true,
-  });
-}
-
-/** Regenerates the current Plan Blueprint's Training Plan Draft and clears stale output state. */
-export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
-  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
-): Promise<TrainingPlanDraft> {
-  return saveTrainingPlanDraftFromCurrentPlanBlueprint({
-    dependencies,
-    shouldReuseFreshDraft: false,
-  });
-}
-
-async function saveTrainingPlanDraftFromCurrentPlanBlueprint({
-  dependencies,
-  shouldReuseFreshDraft,
-}: {
-  dependencies: TrainingPlanDraftGenerationDependencies;
-  shouldReuseFreshDraft: boolean;
-}): Promise<TrainingPlanDraft> {
   const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
 
   if (
-    shouldReuseFreshDraft &&
     normalizedBlueprint.trainingPlanDraft &&
     normalizedBlueprint.trainingPlanDraft.isStale !== true
   ) {
     return normalizedBlueprint.trainingPlanDraft;
   }
 
-  const trainingPlanDraft: TrainingPlanDraft = {
-    content: generateTrainingPlanContentFromBlueprint({
-      blueprint: resolution.resolvedBlueprint,
-    }),
-    isStale: false,
-  };
-
-  await dependencies.savePlanBlueprint({
-    ...normalizedBlueprint,
-    trainingPlanDraft,
-    updatedAt: dependencies.getTimestamp(),
+  const trainingPlanDraft = buildTrainingPlanDraft({
+    blueprint: resolution.resolvedBlueprint,
   });
+
+  await saveTrainingPlanDraft({ dependencies, normalizedBlueprint, trainingPlanDraft });
+
+  return trainingPlanDraft;
+}
+
+export async function resetTrainingPlanDraftFromCurrentPlanBlueprint(
+  dependencies: TrainingPlanDraftGenerationDependencies = defaultTrainingPlanGenerationDependencies,
+): Promise<TrainingPlanDraft> {
+  const { normalizedBlueprint, resolution } = await getReadyResolvedPlanBlueprint(dependencies);
+  const trainingPlanDraft = buildTrainingPlanDraft({
+    blueprint: resolution.resolvedBlueprint,
+  });
+
+  await saveTrainingPlanDraft({ dependencies, normalizedBlueprint, trainingPlanDraft });
 
   return trainingPlanDraft;
 }
@@ -132,6 +115,10 @@ export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
     throw new Error(
       "Cannot accept Stale Builder Output. Reset Draft from current Plan Builder choices first.",
     );
+  }
+
+  if (trainingPlanDraft.validation.blockers.length > 0) {
+    throw new Error(trainingPlanDraft.validation.blockers[0]);
   }
 
   const timestamp = dependencies.getTimestamp();
@@ -178,4 +165,30 @@ async function getReadyResolvedPlanBlueprint(
   }
 
   return { normalizedBlueprint, resolution };
+}
+
+function buildTrainingPlanDraft({ blueprint }: { blueprint: PlanBlueprint }): TrainingPlanDraft {
+  const content = generateTrainingPlanContentFromBlueprint({ blueprint });
+
+  return {
+    content,
+    isStale: false,
+    validation: validateTrainingPlanDraftContent({ content }),
+  };
+}
+
+async function saveTrainingPlanDraft({
+  dependencies,
+  normalizedBlueprint,
+  trainingPlanDraft,
+}: {
+  dependencies: TrainingPlanDraftGenerationDependencies;
+  normalizedBlueprint: PlanBlueprint;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  await dependencies.savePlanBlueprint({
+    ...normalizedBlueprint,
+    trainingPlanDraft,
+    updatedAt: dependencies.getTimestamp(),
+  });
 }

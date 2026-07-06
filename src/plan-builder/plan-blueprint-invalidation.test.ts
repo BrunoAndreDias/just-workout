@@ -281,6 +281,10 @@ describe("plan blueprint invalidation and redirects", () => {
           weeklyRepTargets: createRecommendedTrainingVolumeConfiguration().weeklyRepTargets,
           workoutTemplates: [],
         },
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
       },
     });
 
@@ -481,6 +485,10 @@ describe("plan blueprint invalidation and redirects", () => {
           trainingGoal: "build-muscle",
           weeklyRepTargets: [],
           workoutTemplates: [],
+        },
+        validation: {
+          blockers: [],
+          warnings: [],
         },
       },
     });

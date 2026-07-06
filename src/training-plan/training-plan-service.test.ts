@@ -284,6 +284,10 @@ describe("trainingPlanService", () => {
           weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
           workoutTemplates: createTrainingPlan().workoutTemplates,
         },
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
       },
     });
     await seedTrainingPlanData({
@@ -309,7 +313,7 @@ describe("trainingPlanService", () => {
     });
   });
 
-  it("does not accept Stale Builder Output before Reset Draft regenerates it", async () => {
+  it("preserves custom-focus Workout Template edits when accepting a Training Plan Draft", async () => {
     const blueprint = createCompleteBlueprint();
 
     await savePlanBlueprint({
@@ -323,58 +327,39 @@ describe("trainingPlanService", () => {
           trainingFrequencyDaysPerWeek: 3,
           trainingGoal: "build-muscle",
           weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
-          workoutTemplates: createTrainingPlan().workoutTemplates,
+          workoutTemplates: [
+            {
+              id: "template-cardio",
+              label: "Cardio Focus",
+              purpose: "custom-focus",
+              supersetGroups: [],
+            },
+          ],
         },
-        isStale: true,
-      },
-    });
-
-    await expect(trainingPlanService.acceptTrainingPlanDraft()).rejects.toThrow(
-      "Cannot accept Stale Builder Output. Reset Draft from current Plan Builder choices first.",
-    );
-  });
-
-  it("resets Stale Builder Output from the current Plan Blueprint choices", async () => {
-    const blueprint = createCompleteBlueprint();
-
-    await savePlanBlueprint({
-      ...blueprint,
-      split: "upper-lower-4-day",
-      trainingFrequencyDaysPerWeek: 4,
-      trainingPlanDraft: {
-        content: {
-          mainCompoundRotationPools: [],
-          repRangeStyle: "balanced_hypertrophy",
-          split: "Alternating Full Body A/B",
-          trainingBlockWeeks: 6,
-          trainingFrequencyDaysPerWeek: 3,
-          trainingGoal: "build-muscle",
-          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
-          workoutTemplates: createTrainingPlan().workoutTemplates,
+        validation: {
+          blockers: [],
+          warnings: [
+            {
+              kind: "custom_focus_reduces_strength_coverage",
+              message:
+                "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
+              templateIds: ["template-cardio"],
+            },
+          ],
         },
-        isStale: true,
       },
     });
 
-    const resetDraft = await trainingPlanService.resetTrainingPlanDraft();
+    const acceptedTrainingPlan = await trainingPlanService.acceptTrainingPlanDraft();
 
-    expect(resetDraft).toMatchObject({
-      content: {
-        split: "4-Day Upper/Lower",
-        trainingFrequencyDaysPerWeek: 4,
+    expect(acceptedTrainingPlan.workoutTemplates).toEqual([
+      {
+        id: "template-cardio",
+        label: "Cardio Focus",
+        purpose: "custom-focus",
+        supersetGroups: [],
       },
-      isStale: false,
-    });
-    expect(await getCurrentPlanBlueprint()).toMatchObject({
-      id: blueprint.id,
-      trainingPlanDraft: {
-        content: {
-          split: "4-Day Upper/Lower",
-          trainingFrequencyDaysPerWeek: 4,
-        },
-        isStale: false,
-      },
-    });
+    ]);
   });
 });
 
