@@ -789,6 +789,32 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
+  it("hides Superset Group editing controls for custom-focus draft templates", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    const editableStrengthTemplateCount = screen.getAllByRole("button", {
+      name: /^add superset group$/i,
+    }).length;
+
+    const makeCustomFocusButton = screen.getAllByRole("button", {
+      name: /^make custom focus$/i,
+    })[0];
+
+    if (!makeCustomFocusButton) {
+      throw new Error("Expected a strength draft template.");
+    }
+
+    await user.click(makeCustomFocusButton);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /^add superset group$/i })).toHaveLength(
+        editableStrengthTemplateCount - 1,
+      );
+    });
+  });
+
   it("accepts draft-local starting loads and Baseline Bodyweight into the Active Training Plan", async () => {
     const user = userEvent.setup();
     renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });

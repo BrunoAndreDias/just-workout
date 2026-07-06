@@ -57,6 +57,7 @@ export type PlanBlueprintCommand =
       templateId: string;
     }
   | {
+      groupId: string;
       targetIndex: number;
       templateId: string;
       timestamp: string;
@@ -325,6 +326,7 @@ export function projectPlanBlueprintCommand({
     case "addTrainingPlanDraftSupersetGroup":
       return addTrainingPlanDraftSupersetGroup({
         blueprint,
+        groupId: command.groupId,
         targetIndex: command.targetIndex,
         templateId: command.templateId,
         timestamp: command.timestamp,
@@ -426,6 +428,7 @@ export const planBlueprintCommandBuilders = {
     timestamp,
   }: AddTrainingPlanDraftSupersetGroupCommandOptions) {
     return {
+      groupId: crypto.randomUUID(),
       targetIndex,
       templateId,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),

@@ -454,6 +454,8 @@ function TrainingPlanDraftTemplateCard({
   templatesLength: number;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
+  const canEditSupersetGroups = template.purpose === "strength";
+
   return (
     <StepPanel>
       <TrainingPlanDraftTemplateHeader
@@ -470,64 +472,66 @@ function TrainingPlanDraftTemplateCard({
             className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
             key={group.id}
           >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <label
-                  className="text-xs font-semibold uppercase text-stone-500"
-                  htmlFor={group.id}
-                >
-                  Superset Group title
-                </label>
-                <input
-                  aria-label={`Superset Group title ${groupIndex + 1}`}
-                  className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
-                  id={group.id}
-                  onChange={(event) => {
-                    draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
-                  }}
-                  type="text"
-                  value={group.title}
-                />
+            {canEditSupersetGroups ? (
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <label
+                    className="text-xs font-semibold uppercase text-stone-500"
+                    htmlFor={group.id}
+                  >
+                    Superset Group title
+                  </label>
+                  <input
+                    aria-label={`Superset Group title ${groupIndex + 1}`}
+                    className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+                    id={group.id}
+                    onChange={(event) => {
+                      draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
+                    }}
+                    type="text"
+                    value={group.title}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={groupIndex === 0}
+                    onClick={() => {
+                      draftActions.moveSupersetGroup(template.id, group.id, groupIndex - 1);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Move group up
+                  </Button>
+                  <Button
+                    disabled={groupIndex === template.supersetGroups.length - 1}
+                    onClick={() => {
+                      draftActions.moveSupersetGroup(template.id, group.id, groupIndex + 1);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Move group down
+                  </Button>
+                  <Button
+                    disabled={group.slots.length > 0 || template.supersetGroups.length === 1}
+                    onClick={() => {
+                      draftActions.deleteSupersetGroup(template.id, group.id);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  >
+                    Delete group
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={groupIndex === 0}
-                  onClick={() => {
-                    draftActions.moveSupersetGroup(template.id, group.id, groupIndex - 1);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  Move group up
-                </Button>
-                <Button
-                  disabled={groupIndex === template.supersetGroups.length - 1}
-                  onClick={() => {
-                    draftActions.moveSupersetGroup(template.id, group.id, groupIndex + 1);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  Move group down
-                </Button>
-                <Button
-                  disabled={
-                    group.slots.length > 0 ||
-                    (template.purpose === "strength" && template.supersetGroups.length === 1)
-                  }
-                  onClick={() => {
-                    draftActions.deleteSupersetGroup(template.id, group.id);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  Delete group
-                </Button>
-              </div>
-            </div>
+            ) : (
+              <h5 className="text-base font-black text-stone-950">{group.title}</h5>
+            )}
             <ul className="mt-3 space-y-3">
               {group.slots.map((slot, slotIndex) => (
                 <TrainingPlanDraftSlotItem
+                  canMoveSlot={canEditSupersetGroups}
                   currentGroupId={group.id}
                   draftActions={draftActions}
                   editableLoadValues={editableLoadValues}
@@ -540,22 +544,24 @@ function TrainingPlanDraftTemplateCard({
                 />
               ))}
             </ul>
-            {group.slots.length === 0 ? (
+            {canEditSupersetGroups && group.slots.length === 0 ? (
               <p className="mt-3 text-sm text-amber-800">
                 Empty group. Move a slot here or delete the group before accepting the draft.
               </p>
             ) : null}
           </section>
         ))}
-        <Button
-          onClick={() => {
-            draftActions.addSupersetGroup(template.id, template.supersetGroups.length);
-          }}
-          type="button"
-          variant="secondary"
-        >
-          Add Superset Group
-        </Button>
+        {canEditSupersetGroups ? (
+          <Button
+            onClick={() => {
+              draftActions.addSupersetGroup(template.id, template.supersetGroups.length);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Add Superset Group
+          </Button>
+        ) : null}
       </div>
     </StepPanel>
   );
@@ -649,6 +655,7 @@ function TrainingPlanDraftTemplateHeader({
 }
 
 function TrainingPlanDraftSlotItem({
+  canMoveSlot,
   currentGroupId,
   draftActions,
   editableLoadValues,
@@ -658,6 +665,7 @@ function TrainingPlanDraftSlotItem({
   template,
   trainingPlanDraft,
 }: {
+  canMoveSlot: boolean;
   currentGroupId: string;
   draftActions: TrainingPlanDraftActions;
   editableLoadValues: Record<string, string>;
@@ -667,7 +675,9 @@ function TrainingPlanDraftSlotItem({
   template: TrainingPlanDraft["content"]["workoutTemplates"][number];
   trainingPlanDraft: TrainingPlanDraft;
 }) {
-  const moveTargets = template.supersetGroups.filter((group) => group.id !== currentGroupId);
+  const moveTargets = canMoveSlot
+    ? template.supersetGroups.filter((group) => group.id !== currentGroupId)
+    : [];
 
   return (
     <li className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">

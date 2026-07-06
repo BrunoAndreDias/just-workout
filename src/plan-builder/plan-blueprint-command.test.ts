@@ -243,7 +243,134 @@ describe("plan blueprint command", () => {
       },
     });
   });
+
+  it("uses the command Superset Group id when adding a draft group", async () => {
+    const blueprint = await getOrCreatePlanBlueprint();
+    const draftBlueprint = createDraftBlueprint({
+      ...blueprint,
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          purpose: "strength",
+          supersetGroups: [
+            createSupersetGroup({ id: "template-1-group", exerciseId: "exercise-1" }),
+          ],
+        },
+      ],
+    });
+
+    await persistPlanBlueprintCommand(
+      planBlueprintCommandBuilders.applyResolvedPlanBlueprint({
+        blueprint: draftBlueprint,
+      }),
+    );
+
+    const command = planBlueprintCommandBuilders.addTrainingPlanDraftSupersetGroup({
+      targetIndex: 1,
+      templateId: "template-1",
+      timestamp: "2026-05-30T10:40:00.000Z",
+    });
+
+    const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
+    const persistedBlueprint = await persistPlanBlueprintCommand(command);
+
+    expect(projectedBlueprint).toEqual(persistedBlueprint);
+    expect(persistedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]).toMatchObject({
+      supersetGroups: [
+        expect.objectContaining({ id: "template-1-group" }),
+        {
+          id: command.groupId,
+          slots: [],
+          title: "Superset Group 2",
+          type: "superset",
+        },
+      ],
+    });
+  });
+
+  it("keeps the last required strength Superset Group when a delete command targets it", async () => {
+    const blueprint = await getOrCreatePlanBlueprint();
+    const draftBlueprint = createDraftBlueprint({
+      ...blueprint,
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          purpose: "strength",
+          supersetGroups: [
+            {
+              id: "empty-group",
+              slots: [],
+              title: "Empty group",
+              type: "superset" as const,
+            },
+          ],
+        },
+      ],
+    });
+
+    await persistPlanBlueprintCommand(
+      planBlueprintCommandBuilders.applyResolvedPlanBlueprint({
+        blueprint: draftBlueprint,
+      }),
+    );
+
+    const command = planBlueprintCommandBuilders.deleteTrainingPlanDraftSupersetGroup({
+      groupId: "empty-group",
+      templateId: "template-1",
+      timestamp: "2026-05-30T10:45:00.000Z",
+    });
+
+    const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
+    const persistedBlueprint = await persistPlanBlueprintCommand(command);
+
+    expect(projectedBlueprint).toEqual(persistedBlueprint);
+    expect(persistedBlueprint.trainingPlanDraft).toMatchObject({
+      content: {
+        workoutTemplates: [
+          {
+            id: "template-1",
+            supersetGroups: [
+              {
+                id: "empty-group",
+                slots: [],
+              },
+            ],
+          },
+        ],
+      },
+      validation: {
+        blockers: ["Strength-focused Workout Templates cannot contain empty Superset Groups."],
+        warnings: [],
+      },
+    });
+  });
 });
+
+function createDraftBlueprint({
+  workoutTemplates,
+  ...blueprint
+}: PlanBlueprint & {
+  workoutTemplates: NonNullable<PlanBlueprint["trainingPlanDraft"]>["content"]["workoutTemplates"];
+}): PlanBlueprint {
+  return {
+    ...blueprint,
+    trainingPlanDraft: {
+      content: {
+        mainCompoundRotationPools: [],
+        repRangeStyle: "balanced_hypertrophy",
+        split: "3-Day Full Body",
+        trainingBlockWeeks: 6,
+        trainingFrequencyDaysPerWeek: 3,
+        trainingGoal: "build-muscle",
+        weeklyRepTargets: [],
+        workoutTemplates,
+      },
+      validation: { blockers: [], warnings: [] },
+    },
+  };
+}
 
 function createSupersetGroup({ exerciseId, id }: { exerciseId: string; id: string }) {
   return {

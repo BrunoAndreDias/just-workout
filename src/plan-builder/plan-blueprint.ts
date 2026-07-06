@@ -87,7 +87,6 @@ import type {
   SetOptionalVolumeTargetEnabledOptions,
   StoredPlanBlueprint,
   TrainingFrequencyDaysPerWeek,
-  TrainingPlanDraftGroupMutationHelpers,
   UpdateExerciseSelectionPreferencesOptions,
   UpdateIsolationExercisePreferencesOptions,
   UpdateMainCompoundPreferencesOptions,
@@ -1100,10 +1099,14 @@ export function replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus({
   });
 }
 
-export function addTrainingPlanDraftSupersetGroup(
-  { blueprint, targetIndex, templateId, timestamp }: AddTrainingPlanDraftSupersetGroupOptions,
-  helpers: TrainingPlanDraftGroupMutationHelpers = {},
-): PlanBlueprint {
+/** Adds an empty Superset Group to a draft Workout Template. */
+export function addTrainingPlanDraftSupersetGroup({
+  blueprint,
+  groupId,
+  targetIndex,
+  templateId,
+  timestamp,
+}: AddTrainingPlanDraftSupersetGroupOptions): PlanBlueprint {
   return updateTrainingPlanDraftTemplate({
     blueprint,
     templateId,
@@ -1116,7 +1119,7 @@ export function addTrainingPlanDraftSupersetGroup(
       const nextGroupIndex = targetIndex + 1;
       const supersetGroups = [...template.supersetGroups];
       supersetGroups.splice(targetIndex, 0, {
-        id: helpers.createSupersetGroupId?.() ?? crypto.randomUUID(),
+        id: groupId,
         slots: [],
         title: `Superset Group ${nextGroupIndex}`,
         type: "superset",
@@ -1127,6 +1130,7 @@ export function addTrainingPlanDraftSupersetGroup(
   });
 }
 
+/** Renames a Superset Group in a draft Workout Template. */
 export function renameTrainingPlanDraftSupersetGroup({
   blueprint,
   groupId,
@@ -1147,6 +1151,7 @@ export function renameTrainingPlanDraftSupersetGroup({
   });
 }
 
+/** Deletes an empty Superset Group from a draft Workout Template when structure remains valid. */
 export function deleteTrainingPlanDraftSupersetGroup({
   blueprint,
   groupId,
@@ -1159,8 +1164,10 @@ export function deleteTrainingPlanDraftSupersetGroup({
     timestamp,
     updateTemplate: (template) => {
       const group = template.supersetGroups.find((candidate) => candidate.id === groupId);
+      const deletesLastRequiredStrengthGroup =
+        template.purpose === "strength" && template.supersetGroups.length === 1;
 
-      if (!group || group.slots.length > 0) {
+      if (!group || group.slots.length > 0 || deletesLastRequiredStrengthGroup) {
         return template;
       }
 
@@ -1172,6 +1179,7 @@ export function deleteTrainingPlanDraftSupersetGroup({
   });
 }
 
+/** Reorders Superset Groups within a draft Workout Template. */
 export function reorderTrainingPlanDraftSupersetGroup({
   blueprint,
   groupId,
@@ -1204,6 +1212,7 @@ export function reorderTrainingPlanDraftSupersetGroup({
   });
 }
 
+/** Moves an exercise slot between Superset Groups in a draft Workout Template. */
 export function moveTrainingPlanDraftSlotToSupersetGroup({
   blueprint,
   sourceGroupId,

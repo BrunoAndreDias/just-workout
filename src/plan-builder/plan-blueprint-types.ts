@@ -251,6 +251,7 @@ export type ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions = {
 
 export type AddTrainingPlanDraftSupersetGroupOptions = {
   blueprint: PlanBlueprint;
+  groupId: string;
   targetIndex: number;
   templateId: string;
   timestamp: string;
@@ -293,10 +294,6 @@ export type UpdateTrainingPlanDraftOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;
   workoutTemplates: ReadonlyArray<WorkoutTemplate> | undefined;
-};
-
-export type TrainingPlanDraftGroupMutationHelpers = {
-  createSupersetGroupId?: () => string;
 };
 
 export type PlanBlueprintTransition =
