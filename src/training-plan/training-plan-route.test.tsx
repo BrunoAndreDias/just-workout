@@ -347,25 +347,27 @@ describe("TrainingPlanRoute", () => {
 
     await user.click(within(benchRow).getByRole("button", { name: /swap exercise/i }));
 
+    const swapDialog = await screen.findByRole("dialog", {
+      name: "Training Block Exercise Swap for Flat Dumbbell Bench Press",
+    });
+
     expect(
-      within(benchRow).getByText(
+      within(swapDialog).getByText(
         "This updates the next visible session and 1 workout slot for the rest of Training Block 1.",
       ),
     ).toBeVisible();
 
     await user.selectOptions(
-      within(benchRow).getByRole("combobox", { name: "Compatible replacement" }),
+      within(swapDialog).getByRole("combobox", { name: "Compatible replacement" }),
       "incline-dumbbell-bench-press",
     );
-    await user.click(within(benchRow).getByRole("button", { name: "Apply swap" }));
+    await user.click(within(swapDialog).getByRole("button", { name: "Apply swap" }));
 
     expect(
-      within(workoutPanel).getByRole("heading", { name: "Incline Dumbbell Bench Press" }),
+      await screen.findByRole("heading", { name: "Incline Dumbbell Bench Press" }),
     ).toBeVisible();
 
-    await user.click(
-      within(workoutPanel).getByRole("button", { name: "Start Full Body A session" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Start Full Body A session" }));
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
 
@@ -418,17 +420,21 @@ describe("TrainingPlanRoute", () => {
 
     await user.click(within(benchRow).getByRole("button", { name: /swap exercise/i }));
 
+    const swapDialog = await screen.findByRole("dialog", {
+      name: "Training Block Exercise Swap for Flat Dumbbell Bench Press",
+    });
+
     expect(
-      within(benchRow).getByText(
+      within(swapDialog).getByText(
         "This updates 1 future workout slot in Training Block 1. Completed sessions stay in Training History.",
       ),
     ).toBeVisible();
 
     await user.selectOptions(
-      within(benchRow).getByRole("combobox", { name: "Compatible replacement" }),
+      within(swapDialog).getByRole("combobox", { name: "Compatible replacement" }),
       "decline-dumbbell-bench-press",
     );
-    await user.click(within(benchRow).getByRole("button", { name: "Apply swap" }));
+    await user.click(within(swapDialog).getByRole("button", { name: "Apply swap" }));
 
     const completedSessions = await getTrainingSessionsForPlan("training-plan-test");
 
@@ -766,20 +772,27 @@ describe("TrainingPlanRoute", () => {
       )[0] as HTMLElement,
     );
 
-    await user.click(within(benchProposalRow).getByRole("button", { name: /swap exercise/i }));
-
-    await user.selectOptions(
-      within(benchProposalRow).getByRole("combobox", { name: "Compatible replacement" }),
-      "decline-barbell-bench-press",
+    await user.click(
+      within(benchProposalRow).getByRole("button", {
+        name: "Swap exercise for Incline Dumbbell Bench Press",
+      }),
     );
 
+    const swapDialog = await screen.findByRole("dialog", {
+      name: "Training Block Exercise Swap for Incline Dumbbell Bench Press",
+    });
+
     expect(
-      within(benchProposalRow).getByText(
+      within(swapDialog).getByText(
         "This updates 1 next-block slot for the same Movement Pattern and Workout Exercise Role.",
       ),
     ).toBeVisible();
 
-    await user.click(within(benchProposalRow).getByRole("button", { name: "Apply swap" }));
+    await user.selectOptions(
+      within(swapDialog).getByRole("combobox", { name: "Compatible replacement" }),
+      "decline-barbell-bench-press",
+    );
+    await user.click(within(swapDialog).getByRole("button", { name: "Apply swap" }));
 
     expect(
       within(rotationProposal).getAllByText(/Decline Barbell Bench Press/).length,
