@@ -134,6 +134,46 @@ describe("Training Session load prefills", () => {
       }),
     ]);
   });
+
+  it("uses Extra Training Session history for the next block's exact-exercise prefill", () => {
+    const trainingPlan = createTrainingPlan({
+      workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
+    });
+
+    expect(
+      createTrainingSessionLoadPrefills({
+        previousTrainingSessions: [
+          createTrainingSession({
+            completedAt: "2026-07-12T10:00:00.000Z",
+            exerciseId: "incline-dumbbell-bench-press",
+            exerciseName: "Incline Dumbbell Bench Press",
+            trainingBlockId: "training-block-1",
+            trainingBlockWeekNumber: 6,
+            weight: 87.5,
+          }),
+          createTrainingSession({
+            completedAt: "2026-07-13T10:00:00.000Z",
+            exerciseId: "incline-dumbbell-bench-press",
+            exerciseName: "Incline Dumbbell Bench Press",
+            sessionIntent: "extra",
+            trainingBlockId: "training-block-1",
+            trainingBlockWeekNumber: 6,
+            weight: 95,
+          }),
+        ],
+        trainingPlan,
+        workoutTemplate: trainingPlan.workoutTemplates[0] as WorkoutTemplate,
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        effectiveLoad: 95,
+        exerciseId: "incline-dumbbell-bench-press",
+        kind: "exact_previous_exercise",
+        previousLoad: 95,
+        showPrefillExplanation: true,
+      }),
+    ]);
+  });
 });
 
 const inclineBenchPressSlot = createTrainingPlanSlot({
@@ -221,6 +261,7 @@ function createTrainingSession({
   completedAt,
   exerciseId,
   exerciseName,
+  sessionIntent,
   sets,
   trainingBlockId,
   trainingBlockWeekNumber,
@@ -229,6 +270,7 @@ function createTrainingSession({
   completedAt: string;
   exerciseId: string;
   exerciseName: string;
+  sessionIntent?: TrainingSession["sessionIntent"];
   sets?: TrainingSession["exercises"][number]["sets"];
   trainingBlockId: string;
   trainingBlockWeekNumber: number;
@@ -250,6 +292,7 @@ function createTrainingSession({
     ],
     id: `session-${completedAt}`,
     planId: "training-plan-1",
+    sessionIntent: sessionIntent ?? "planned",
     status: "completed",
     templateId: "template-1",
     templateLabel: "Full Body A",

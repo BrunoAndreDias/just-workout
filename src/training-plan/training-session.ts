@@ -30,6 +30,8 @@ export type TrainingSessionBodyweightSource =
   | "inherited_weekly"
   | "session_override";
 
+export type TrainingSessionIntent = "planned" | "extra";
+
 /** Bodyweight value and provenance captured for a completed Training Session. */
 export type TrainingSessionBodyweight = {
   bodyweight: number;
@@ -42,6 +44,8 @@ export type TrainingSession = {
   exercises: ReadonlyArray<TrainingSessionExerciseEntry>;
   id: string;
   planId: string;
+  /** Explicitly distinguishes planned sessions from Extra Training Sessions; absent on legacy history. */
+  sessionIntent?: TrainingSessionIntent | null;
   sessionBodyweight?: number | null;
   sessionBodyweightSource?: TrainingSessionBodyweightSource | null;
   status: "completed";
@@ -61,6 +65,7 @@ export type CompleteTrainingSessionInput = {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   id: string;
   plan: TrainingPlan;
+  sessionIntent?: TrainingSessionIntent;
   sessionBodyweight?: TrainingSessionBodyweight | null;
   template: WorkoutTemplate;
   timestamp: string;
@@ -70,6 +75,7 @@ export function createCompletedTrainingSession({
   entries,
   id,
   plan,
+  sessionIntent = "planned",
   sessionBodyweight = null,
   template,
   timestamp,
@@ -82,6 +88,7 @@ export function createCompletedTrainingSession({
     exercises: entries,
     id,
     planId: plan.id,
+    sessionIntent,
     sessionBodyweight: bodyweight?.bodyweight ?? null,
     sessionBodyweightSource: bodyweight?.source ?? null,
     status: "completed",

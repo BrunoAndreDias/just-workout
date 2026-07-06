@@ -4,6 +4,7 @@ import {
   type TrainingSessionHistoryRouteTarget,
 } from "../training-plan-paths";
 import type { TrainingSession } from "../training-session";
+import { getTrainingSessionSequenceState } from "../training-session-sequencing";
 import {
   getStartNextWorkoutRouteTarget,
   getStartWorkoutRouteTarget,
@@ -166,11 +167,22 @@ export function getActiveTrainingPlanPageReadModel({
   const resolvedActiveTabId = resolvedActiveTab?.id ?? "overview";
   const blockWeek = getCurrentBlockWeek(trainingPlan);
   const movementCoverage = getMovementCoverageTableReadModel(trainingPlan.workoutTemplates);
+  const sessionSequenceState = getTrainingSessionSequenceState({
+    now,
+    trainingPlan,
+    trainingSessions,
+  });
 
   return {
-    actions: getActionsReadModel(trainingPlan),
+    actions: getActionsReadModel({
+      now,
+      sessionSequenceState,
+      trainingPlan,
+      trainingSessions,
+    }),
     activeTab: getPageTabReadModel({
       activeTabId: resolvedActiveTabId,
+      isExtraSessionAvailable: sessionSequenceState.isExtraSessionAvailable,
       tab: resolvedActiveTab ?? { id: "overview", label: "Overview" },
       trainingPlan,
     }),
@@ -186,6 +198,7 @@ export function getActiveTrainingPlanPageReadModel({
     tabs: tabs.map((tab) =>
       getPageTabReadModel({
         activeTabId: resolvedActiveTabId,
+        isExtraSessionAvailable: sessionSequenceState.isExtraSessionAvailable,
         tab,
         trainingPlan,
       }),
@@ -193,11 +206,27 @@ export function getActiveTrainingPlanPageReadModel({
   };
 }
 
-function getActionsReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageActionsReadModel {
+function getActionsReadModel({
+  now,
+  sessionSequenceState,
+  trainingPlan,
+  trainingSessions,
+}: {
+  now: Date;
+  sessionSequenceState: ReturnType<typeof getTrainingSessionSequenceState>;
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}): ActiveTrainingPlanPageActionsReadModel {
   return {
     startNextWorkout: {
-      label: "Start next workout",
-      routeTarget: getStartNextWorkoutRouteTarget(trainingPlan),
+      label: sessionSequenceState.isExtraSessionAvailable
+        ? "Start Extra Training Session"
+        : "Start next workout",
+      routeTarget: getStartNextWorkoutRouteTarget({
+        ...trainingPlan,
+        now,
+        trainingSessions,
+      }),
     },
     trainingHistory: {
       label: "View training history",
@@ -267,24 +296,28 @@ function getProgressReadModel({
 
 function getPageTabReadModel({
   activeTabId,
+  isExtraSessionAvailable,
   tab,
   trainingPlan,
 }: {
   activeTabId: ActiveTrainingPlanTabId;
+  isExtraSessionAvailable: boolean;
   tab: ActiveTrainingPlanTab;
   trainingPlan: TrainingPlan;
 }): ActiveTrainingPlanPageTabReadModel {
   return {
     ...tab,
     isActive: tab.id === activeTabId,
-    panel: getTabPanelReadModel({ tab, trainingPlan }),
+    panel: getTabPanelReadModel({ isExtraSessionAvailable, tab, trainingPlan }),
   };
 }
 
 function getTabPanelReadModel({
+  isExtraSessionAvailable,
   tab,
   trainingPlan,
 }: {
+  isExtraSessionAvailable: boolean;
   tab: ActiveTrainingPlanTab;
   trainingPlan: TrainingPlan;
 }): ActiveTrainingPlanPageTabPanelReadModel {
@@ -319,8 +352,11 @@ function getTabPanelReadModel({
     kind: "workout",
     label: tab.label,
     startAction: {
-      label: `Start ${workoutTemplate.label} session`,
+      label: isExtraSessionAvailable
+        ? `Start ${workoutTemplate.label} extra session`
+        : `Start ${workoutTemplate.label} session`,
       routeTarget: getStartWorkoutRouteTarget({
+        ...(isExtraSessionAvailable ? { intent: "extra" as const } : {}),
         planId: trainingPlan.id,
         workoutTemplateId: workoutTemplate.id,
       }),

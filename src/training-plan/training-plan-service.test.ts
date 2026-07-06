@@ -6,6 +6,7 @@ import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { generateTrainingPlanFromBlueprint, type TrainingPlan } from "./training-plan";
 import { getTrainingSessionsForPlan, seedTrainingPlanData } from "./training-plan-repository";
 import { trainingPlanService } from "./training-plan-service";
+import { createCompletedTrainingSession } from "./training-session";
 
 describe("trainingPlanService", () => {
   beforeEach(async () => {
@@ -142,6 +143,126 @@ describe("trainingPlanService", () => {
 
     await expect(getTrainingSessionsForPlan(trainingPlan.id)).resolves.toEqual([]);
   });
+
+  it("stores explicit Extra Training Session intent after the current Training Week target is met", async () => {
+    const weekStart = createRelativeUtcDay(-3);
+
+    const trainingPlan = createTrainingPlan({
+      generatedAt: weekStart.toISOString(),
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: weekStart.toISOString().slice(0, 10),
+        status: "active",
+        weekNumber: 1,
+      },
+      trainingFrequencyDaysPerWeek: 3,
+    });
+    const [firstTemplate, secondTemplate] = trainingPlan.workoutTemplates;
+
+    if (!firstTemplate || !secondTemplate) {
+      throw new Error("Expected the generated Training Plan to include Workout Templates.");
+    }
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+      trainingSessions: [
+        createCompletedTrainingSession({
+          entries: [],
+          id: "session-1",
+          plan: trainingPlan,
+          template: firstTemplate,
+          timestamp: createRelativeUtcDay(-3).toISOString(),
+        }),
+        createCompletedTrainingSession({
+          entries: [],
+          id: "session-2",
+          plan: trainingPlan,
+          template: secondTemplate,
+          timestamp: createRelativeUtcDay(-2).toISOString(),
+        }),
+        createCompletedTrainingSession({
+          entries: [],
+          id: "session-3",
+          plan: trainingPlan,
+          template: firstTemplate,
+          timestamp: createRelativeUtcDay(-1).toISOString(),
+        }),
+      ],
+    });
+
+    await trainingPlanService.completeTrainingSession({
+      entries: [],
+      planId: trainingPlan.id,
+      sessionIntent: "extra",
+      templateId: secondTemplate.id,
+    });
+
+    expect(await getTrainingSessionsForPlan(trainingPlan.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sessionIntent: "extra",
+          templateId: secondTemplate.id,
+        }),
+      ]),
+    );
+  });
+
+  it("stores a requested repeat as planned until the current Training Week target is met", async () => {
+    const weekStart = createRelativeUtcDay(-2);
+
+    const trainingPlan = createTrainingPlan({
+      generatedAt: weekStart.toISOString(),
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: weekStart.toISOString().slice(0, 10),
+        status: "active",
+        weekNumber: 1,
+      },
+      trainingFrequencyDaysPerWeek: 3,
+    });
+    const firstTemplate = trainingPlan.workoutTemplates[0];
+
+    if (!firstTemplate) {
+      throw new Error("Expected the generated Training Plan to include a Workout Template.");
+    }
+
+    await seedTrainingPlanData({
+      trainingPlans: [trainingPlan],
+      trainingSessions: [
+        createCompletedTrainingSession({
+          entries: [],
+          id: "session-1",
+          plan: trainingPlan,
+          template: firstTemplate,
+          timestamp: createRelativeUtcDay(-2).toISOString(),
+        }),
+      ],
+    });
+
+    await trainingPlanService.completeTrainingSession({
+      entries: [],
+      planId: trainingPlan.id,
+      sessionIntent: "extra",
+      templateId: firstTemplate.id,
+    });
+
+    expect(await getTrainingSessionsForPlan(trainingPlan.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sessionIntent: "planned",
+          templateId: firstTemplate.id,
+        }),
+      ]),
+    );
+  });
 });
 
 function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan {
@@ -153,6 +274,14 @@ function createTrainingPlan(overrides: Partial<TrainingPlan> = {}): TrainingPlan
     }),
     ...overrides,
   };
+}
+
+function createRelativeUtcDay(dayOffset: number): Date {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset, 9, 0, 0),
+  );
 }
 
 function createCompleteBlueprint(): PlanBlueprint {

@@ -77,9 +77,7 @@ function CompletedSessionRow({
   onToggleSession: (sessionId: string) => void;
   session: TrainingHistorySessionReport;
 }) {
-  const actionLabel = isExpanded
-    ? `Hide session ${session.templateLabel}`
-    : `View session ${session.templateLabel}`;
+  const actionLabel = getCompletedSessionActionLabel({ isExpanded, session });
   const detailsId = `training-history-session-details-${session.id}`;
 
   return (
@@ -94,33 +92,14 @@ function CompletedSessionRow({
         onClick={() => onToggleSession(session.id)}
         type="button"
       >
-        <span className="training-history-session-row__identity">
-          <strong>{session.templateLabel}</strong>
-          {session.hasPartialVolume ? (
-            <small className="training-history-session-row__date">Partial volume</small>
-          ) : null}
-          <small className="training-history-session-row__progression">
-            {formatTrainingSessionVolumeProgression(session.volumeProgression)}
-          </small>
-          <small className="training-history-session-row__date">
-            {formatCompletedDate(session.completedAt)}
-          </small>
-        </span>
+        <CompletedSessionIdentity session={session} />
         <span className="training-history-session-row__metric" data-label="Completed Load Volume">
           {formatWeight(session.completedLoadVolume)} kg
         </span>
         <span className="training-history-session-row__metric" data-label="Loaded Sets">
           {formatLoadedSetCount(session.loadedSetCount)}
         </span>
-        <span className="training-history-session-row__action" aria-hidden="true">
-          <span>{isExpanded ? "Hide session" : "View session"}</span>
-          <ChevronDown
-            className={`training-history-session-row__chevron${
-              isExpanded ? " training-history-session-row__chevron--expanded" : ""
-            }`}
-            data-expanded={isExpanded}
-          />
-        </span>
+        <CompletedSessionActionIndicator isExpanded={isExpanded} />
       </button>
       {isExpanded ? (
         <CompletedSessionDetails
@@ -131,6 +110,52 @@ function CompletedSessionRow({
         />
       ) : null}
     </article>
+  );
+}
+
+function getCompletedSessionActionLabel({
+  isExpanded,
+  session,
+}: {
+  isExpanded: boolean;
+  session: TrainingHistorySessionReport;
+}) {
+  const prefix = session.sessionIntent === "extra" ? "extra " : "";
+
+  return `${isExpanded ? "Hide" : "View"} ${prefix}session ${session.templateLabel}`;
+}
+
+function CompletedSessionIdentity({ session }: { session: TrainingHistorySessionReport }) {
+  return (
+    <span className="training-history-session-row__identity">
+      <strong>{session.templateLabel}</strong>
+      {session.sessionIntent === "extra" ? (
+        <small className="training-history-session-row__date">Extra Training Session</small>
+      ) : null}
+      {session.hasPartialVolume ? (
+        <small className="training-history-session-row__date">Partial volume</small>
+      ) : null}
+      <small className="training-history-session-row__progression">
+        {formatTrainingSessionVolumeProgression(session.volumeProgression)}
+      </small>
+      <small className="training-history-session-row__date">
+        {formatCompletedDate(session.completedAt)}
+      </small>
+    </span>
+  );
+}
+
+function CompletedSessionActionIndicator({ isExpanded }: { isExpanded: boolean }) {
+  return (
+    <span className="training-history-session-row__action" aria-hidden="true">
+      <span>{isExpanded ? "Hide session" : "View session"}</span>
+      <ChevronDown
+        className={`training-history-session-row__chevron${
+          isExpanded ? " training-history-session-row__chevron--expanded" : ""
+        }`}
+        data-expanded={isExpanded}
+      />
+    </span>
   );
 }
 
@@ -147,7 +172,9 @@ function CompletedSessionDetails({
 }) {
   return (
     <section
-      aria-label={`${session.templateLabel} session details`}
+      aria-label={`${session.templateLabel} ${
+        session.sessionIntent === "extra" ? "extra " : ""
+      }session details`}
       className="training-history-session-details"
       id={detailsId}
     >

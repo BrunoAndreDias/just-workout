@@ -772,6 +772,76 @@ describe("TrainingPlanRoute", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("opens the explicit Extra Training Session chooser after the current Training Week target is met", async () => {
+    const user = userEvent.setup();
+    const weekStart = createRelativeUtcDay(-3);
+
+    await seedTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: weekStart.toISOString().slice(0, 10),
+        status: "active",
+        weekNumber: 1,
+      },
+      trainingFrequencyDaysPerWeek: 3,
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: createRelativeUtcDay(-3).toISOString(),
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 100,
+      },
+      {
+        completedAt: createRelativeUtcDay(-2).toISOString(),
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        weight: 120,
+      },
+      {
+        completedAt: createRelativeUtcDay(-1).toISOString(),
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 105,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test"] });
+
+    expect(await screen.findByRole("heading", { name: "Alternating Full Body A/B" })).toBeVisible();
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Start Extra Training Session" })[0] as HTMLElement,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Start Extra Training Session" }),
+    ).toBeVisible();
+
+    const fullBodyALink = screen.getByRole("link", { name: "Start Full Body A extra session" });
+    const fullBodyBLink = screen.getByRole("link", { name: "Start Full Body B extra session" });
+
+    expect(fullBodyALink).toBeVisible();
+    expect(fullBodyBLink).toBeVisible();
+
+    await user.click(fullBodyBLink);
+
+    expect(await screen.findByRole("heading", { name: "Full Body B extra session" })).toBeVisible();
+  });
+
   it("starts a workout session, records lifted weight, and stores completed movement volume", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
@@ -1526,6 +1596,82 @@ describe("TrainingPlanRoute", () => {
     ).toBeVisible();
   });
 
+  it("marks Extra Training Sessions explicitly in completed history", async () => {
+    const weekStart = createRelativeUtcDay(-3);
+
+    await seedTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-test",
+        previousBlockId: null,
+        startDate: weekStart.toISOString().slice(0, 10),
+        status: "active",
+        weekNumber: 1,
+      },
+      trainingFrequencyDaysPerWeek: 3,
+    });
+    await seedCompletedTrainingSessions([
+      {
+        completedAt: createRelativeUtcDay(-3).toISOString(),
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 100,
+      },
+      {
+        completedAt: createRelativeUtcDay(-2).toISOString(),
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        weight: 120,
+      },
+      {
+        completedAt: createRelativeUtcDay(-1).toISOString(),
+        exerciseId: "flat-dumbbell-bench-press",
+        exerciseName: "Flat Dumbbell Bench Press",
+        movementPattern: "horizontal_push",
+        templateId: "template-1",
+        templateLabel: "Full Body A",
+        weight: 105,
+      },
+      {
+        completedAt: new Date(
+          Date.UTC(
+            weekStart.getUTCFullYear(),
+            weekStart.getUTCMonth(),
+            weekStart.getUTCDate() + 3,
+            9,
+            0,
+            0,
+          ),
+        ).toISOString(),
+        exerciseId: "barbell-squats",
+        exerciseName: "Barbell Squats",
+        movementPattern: "quad_dominant",
+        sessionIntent: "extra",
+        templateId: "template-2",
+        templateLabel: "Full Body B",
+        weight: 125,
+      },
+    ]);
+
+    renderTrainingPlan({ initialEntries: ["/training-plans/training-plan-test/sessions"] });
+
+    expect(await screen.findByRole("heading", { name: "Training history" })).toBeVisible();
+
+    const selectedTrainingWeek = screen.getByRole("region", { name: "Selected Training Week" });
+    const completedSessionsSection = screen.getByRole("region", { name: "Completed sessions" });
+
+    expect(within(selectedTrainingWeek).getByText("1 extra session above target.")).toBeVisible();
+    expect(within(completedSessionsSection).getByText("Extra Training Session")).toBeVisible();
+  });
+
   it("saves a Historical Bodyweight Correction and recalculates the selected session", async () => {
     const user = userEvent.setup();
     await seedTrainingPlan();
@@ -1744,6 +1890,7 @@ async function seedCompletedTrainingSessions(
     exerciseId: string;
     exerciseName: string;
     movementPattern: TrainingSession["exercises"][number]["movementPattern"];
+    sessionIntent?: "extra" | "planned";
     templateId?: string;
     templateLabel?: string;
     weight: number;
@@ -1764,6 +1911,7 @@ async function seedCompletedTrainingSessions(
         ],
         id: `session-override-${index}`,
         planId: "training-plan-test",
+        sessionIntent: entry.sessionIntent ?? "planned",
         status: "completed" as const,
         templateId: entry.templateId ?? "template-1",
         templateLabel: entry.templateLabel ?? "Upper A",
@@ -2131,6 +2279,14 @@ function getFirstElement<T>(elements: Array<T>): T {
   }
 
   return firstElement;
+}
+
+function createRelativeUtcDay(dayOffset: number): Date {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset, 9, 0, 0),
+  );
 }
 
 function createCompleteBlueprint({

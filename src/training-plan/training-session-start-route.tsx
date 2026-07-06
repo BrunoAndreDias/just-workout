@@ -5,13 +5,19 @@ import { useEffect, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
 import { parsePositiveBodyweight } from "./bodyweight-input";
 import { hasBodyweightLoadExercise } from "./bodyweight-load";
-import type { WorkoutTemplate } from "./training-plan";
-import { parseTrainingSessionStartChoicePathname, trainingPlanPaths } from "./training-plan-paths";
+import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
+import {
+  parseTrainingSessionStartChoicePathname,
+  parseTrainingSessionStartIntentSearch,
+  trainingPlanPaths,
+} from "./training-plan-paths";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
 } from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
+import type { TrainingSession, TrainingSessionIntent } from "./training-session";
+import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
 import { resolveTrainingWeekBodyweight } from "./training-week-bodyweight";
 import "./training-plan-loading.css";
 import "./training-session-start-route.css";
@@ -19,62 +25,22 @@ import "./training-session-start-route.css";
 export function TrainingSessionStartRoute() {
   const routeParams = useTrainingSessionStartRouteParams();
   const queryClient = useQueryClient();
-  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
-  const trainingPlan = trainingPlanQuery.data;
-  const resolvedTrainingWeekBodyweight = trainingPlan
-    ? resolveTrainingWeekBodyweight({
-        referenceDate: new Date().toISOString(),
-        trainingPlan,
-      })
-    : null;
-  const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
-  const [trainingWeekBodyweightInput, setTrainingWeekBodyweightInput] = useState("");
-  const saveBaselineBodyweight = useMutation({
-    mutationFn: (bodyweight: number) => {
-      if (!trainingPlan) {
-        throw new Error("Cannot save Baseline Bodyweight without a Training Plan.");
-      }
-
-      return trainingPlanService.saveBaselineBodyweight({
-        bodyweight,
-        planId: trainingPlan.id,
-      });
-    },
-    onSuccess: (updatedTrainingPlan) => {
-      queryClient.setQueryData(
-        trainingPlanQueryOptions(updatedTrainingPlan.id).queryKey,
-        updatedTrainingPlan,
-      );
-    },
-  });
-  const saveTrainingWeekBodyweight = useMutation({
-    mutationFn: (bodyweight: number) => {
-      if (!trainingPlan) {
-        throw new Error("Cannot save Training Week Bodyweight without a Training Plan.");
-      }
-
-      return trainingPlanService.saveTrainingWeekBodyweight({
-        bodyweight,
-        planId: trainingPlan.id,
-      });
-    },
-    onSuccess: (updatedTrainingPlan) => {
-      queryClient.setQueryData(
-        trainingPlanQueryOptions(updatedTrainingPlan.id).queryKey,
-        updatedTrainingPlan,
-      );
-      void queryClient.invalidateQueries({
-        queryKey: trainingPlanSessionsQueryOptions(updatedTrainingPlan.id).queryKey,
-      });
-    },
+  const { isLoading, resolvedTrainingWeekBodyweight, sessionIntent, trainingPlan } =
+    useTrainingSessionStartData(routeParams);
+  const {
+    baselineBodyweightInput,
+    saveBaselineBodyweight,
+    saveTrainingWeekBodyweight,
+    setBaselineBodyweightInput,
+    setTrainingWeekBodyweightInput,
+    trainingWeekBodyweightInput,
+  } = useTrainingSurfaceBodyweightState({
+    queryClient,
+    resolvedTrainingWeekBodyweight,
+    trainingPlan,
   });
 
-  useEffect(() => {
-    setBaselineBodyweightInput(trainingPlan?.baselineBodyweight?.toString() ?? "");
-    setTrainingWeekBodyweightInput(resolvedTrainingWeekBodyweight?.bodyweight?.toString() ?? "");
-  }, [resolvedTrainingWeekBodyweight?.bodyweight, trainingPlan?.baselineBodyweight]);
-
-  if (trainingPlanQuery.isLoading) {
+  if (isLoading) {
     return <TrainingSessionStartShell>Loading Training Plan...</TrainingSessionStartShell>;
   }
 
@@ -86,7 +52,7 @@ export function TrainingSessionStartRoute() {
     <section className="training-session-start-page" aria-label="Start Training">
       <PageHeader
         description={`${trainingPlan.split} · ${trainingPlan.workoutTemplates.length} workout templates`}
-        title="Start training"
+        title={sessionIntent === "extra" ? "Start Extra Training Session" : "Start training"}
       />
       <PageMain>
         {hasTrainingPlanBodyweightExercises(trainingPlan.workoutTemplates) ? (
@@ -121,6 +87,7 @@ export function TrainingSessionStartRoute() {
           <div className="training-session-start-grid">
             {trainingPlan.workoutTemplates.map((workoutTemplate) => (
               <TrainingSessionStartCard
+                isExtraSession={sessionIntent === "extra"}
                 key={workoutTemplate.id}
                 planId={trainingPlan.id}
                 workoutTemplate={workoutTemplate}
@@ -135,10 +102,156 @@ export function TrainingSessionStartRoute() {
   );
 }
 
+function useTrainingSessionStartData(
+  routeParams: { planId: string; requestedIntent: "extra" | null } | null,
+): {
+  isLoading: boolean;
+  resolvedTrainingWeekBodyweight: ReturnType<typeof resolveTrainingWeekBodyweight> | null;
+  sessionIntent: TrainingSessionIntent;
+  trainingPlan: TrainingPlan | null | undefined;
+} {
+  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
+  const trainingSessionsQuery = useQuery(
+    trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
+  );
+  const trainingPlan = trainingPlanQuery.data;
+  const trainingSessions = trainingSessionsQuery.data ?? [];
+
+  return {
+    isLoading: trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading,
+    resolvedTrainingWeekBodyweight: trainingPlan
+      ? resolveTrainingWeekBodyweight({
+          referenceDate: new Date().toISOString(),
+          trainingPlan,
+        })
+      : null,
+    sessionIntent: resolveTrainingSessionStartIntent({
+      routeParams,
+      trainingPlan,
+      trainingSessions,
+    }),
+    trainingPlan,
+  };
+}
+
+function resolveTrainingSessionStartIntent({
+  routeParams,
+  trainingPlan,
+  trainingSessions,
+}: {
+  routeParams: { planId: string; requestedIntent: "extra" | null } | null;
+  trainingPlan: TrainingPlan | null | undefined;
+  trainingSessions: ReadonlyArray<TrainingSession> | undefined;
+}): TrainingSessionIntent {
+  if (!trainingPlan || !routeParams) {
+    return "planned";
+  }
+
+  return resolveRequestedTrainingSessionIntent({
+    requestedIntent: routeParams.requestedIntent ?? undefined,
+    trainingPlan,
+    trainingSessions: trainingSessions ?? [],
+  });
+}
+
+function useTrainingSurfaceBodyweightState({
+  queryClient,
+  resolvedTrainingWeekBodyweight,
+  trainingPlan,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  resolvedTrainingWeekBodyweight: ReturnType<typeof resolveTrainingWeekBodyweight> | null;
+  trainingPlan: TrainingPlan | null | undefined;
+}) {
+  const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
+  const [trainingWeekBodyweightInput, setTrainingWeekBodyweightInput] = useState("");
+  const saveBaselineBodyweight = useSaveBaselineBodyweightMutation({
+    queryClient,
+    trainingPlan,
+  });
+  const saveTrainingWeekBodyweight = useSaveTrainingWeekBodyweightMutation({
+    queryClient,
+    trainingPlan,
+  });
+
+  useEffect(() => {
+    setBaselineBodyweightInput(trainingPlan?.baselineBodyweight?.toString() ?? "");
+    setTrainingWeekBodyweightInput(resolvedTrainingWeekBodyweight?.bodyweight?.toString() ?? "");
+  }, [resolvedTrainingWeekBodyweight?.bodyweight, trainingPlan?.baselineBodyweight]);
+
+  return {
+    baselineBodyweightInput,
+    saveBaselineBodyweight,
+    saveTrainingWeekBodyweight,
+    setBaselineBodyweightInput,
+    setTrainingWeekBodyweightInput,
+    trainingWeekBodyweightInput,
+  };
+}
+
+function useSaveBaselineBodyweightMutation({
+  queryClient,
+  trainingPlan,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  trainingPlan: TrainingPlan | null | undefined;
+}) {
+  return useMutation({
+    mutationFn: (bodyweight: number) => {
+      if (!trainingPlan) {
+        throw new Error("Cannot save Baseline Bodyweight without a Training Plan.");
+      }
+
+      return trainingPlanService.saveBaselineBodyweight({
+        bodyweight,
+        planId: trainingPlan.id,
+      });
+    },
+    onSuccess: (updatedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(updatedTrainingPlan.id).queryKey,
+        updatedTrainingPlan,
+      );
+    },
+  });
+}
+
+function useSaveTrainingWeekBodyweightMutation({
+  queryClient,
+  trainingPlan,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  trainingPlan: TrainingPlan | null | undefined;
+}) {
+  return useMutation({
+    mutationFn: (bodyweight: number) => {
+      if (!trainingPlan) {
+        throw new Error("Cannot save Training Week Bodyweight without a Training Plan.");
+      }
+
+      return trainingPlanService.saveTrainingWeekBodyweight({
+        bodyweight,
+        planId: trainingPlan.id,
+      });
+    },
+    onSuccess: (updatedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(updatedTrainingPlan.id).queryKey,
+        updatedTrainingPlan,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: trainingPlanSessionsQueryOptions(updatedTrainingPlan.id).queryKey,
+      });
+    },
+  });
+}
+
 function TrainingSessionStartCard({
+  isExtraSession,
   planId,
   workoutTemplate,
 }: {
+  isExtraSession: boolean;
   planId: string;
   workoutTemplate: WorkoutTemplate;
 }) {
@@ -149,9 +262,10 @@ function TrainingSessionStartCard({
 
   return (
     <Link
-      aria-label={`Start ${workoutTemplate.label} session`}
+      aria-label={`Start ${workoutTemplate.label} ${isExtraSession ? "extra " : ""}session`}
       className="training-session-start-card"
       params={{ planId, templateId: workoutTemplate.id }}
+      search={isExtraSession ? { intent: "extra" } : undefined}
       to={trainingPlanPaths.sessionStart}
     >
       <span className="training-session-start-card__icon" aria-hidden="true">
@@ -175,10 +289,27 @@ function TrainingSessionStartShell({ children }: { children: string }) {
   );
 }
 
-function useTrainingSessionStartRouteParams(): { planId: string } | null {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+function useTrainingSessionStartRouteParams(): {
+  planId: string;
+  requestedIntent: "extra" | null;
+} | null {
+  const location = useRouterState({
+    select: (state) => ({
+      pathname: state.location.pathname,
+      searchStr: state.location.searchStr,
+    }),
+  });
 
-  return parseTrainingSessionStartChoicePathname(pathname);
+  const params = parseTrainingSessionStartChoicePathname(location.pathname);
+
+  if (!params) {
+    return null;
+  }
+
+  return {
+    ...params,
+    requestedIntent: parseTrainingSessionStartIntentSearch(location.searchStr),
+  };
 }
 
 function TrainingSurfaceBodyweightCard({

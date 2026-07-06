@@ -352,6 +352,57 @@ describe("getActiveTrainingPlanPageReadModel", () => {
     });
   });
 
+  it("keeps Workout Template start actions on explicit Extra Training Session intent once the weekly target is met", () => {
+    const readModel = getActiveTrainingPlanPageReadModel({
+      activeTabId: "workout-1",
+      now: new Date("2026-06-10T12:00:00.000Z"),
+      trainingPlan: createTrainingPlan(),
+      trainingSessions: [
+        createTrainingSession({
+          completedAt: "2026-06-07T09:00:00.000Z",
+          id: "session-1",
+          templateId: "template-1",
+          templateLabel: "Full Body A",
+          weight: 100,
+        }),
+        createTrainingSession({
+          completedAt: "2026-06-08T09:00:00.000Z",
+          id: "session-2",
+          templateId: "template-2",
+          templateLabel: "Full Body B",
+          weight: 105,
+        }),
+        createTrainingSession({
+          completedAt: "2026-06-09T09:00:00.000Z",
+          id: "session-3",
+          templateId: "template-1",
+          templateLabel: "Full Body A",
+          weight: 110,
+        }),
+      ],
+    });
+
+    expect(readModel.activeTab).toMatchObject({
+      id: "workout-1",
+      panel: {
+        kind: "workout",
+        startAction: {
+          label: "Start Full Body B extra session",
+          routeTarget: {
+            params: {
+              planId: "training-plan-test",
+              templateId: "template-2",
+            },
+            search: {
+              intent: "extra",
+            },
+            to: "/training-plans/$planId/sessions/new/$templateId",
+          },
+        },
+      },
+    });
+  });
+
   it("exposes fallback next-workout and history route targets", () => {
     const trainingPlan = {
       ...createTrainingPlan(),

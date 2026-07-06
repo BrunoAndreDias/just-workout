@@ -32,9 +32,11 @@ export function getTrainingWeekRangeForReferenceDate({
   trainingPlan,
 }: {
   referenceDate: string;
-  trainingPlan: TrainingPlan;
+  trainingPlan: Pick<TrainingPlan, "trainingBlock"> & Partial<Pick<TrainingPlan, "generatedAt">>;
 }): TrainingWeekRange {
-  const anchorDay = toUtcDay(trainingPlan.trainingBlock?.startDate ?? trainingPlan.generatedAt);
+  const anchorDay = toUtcDay(
+    trainingPlan.trainingBlock?.startDate ?? trainingPlan.generatedAt ?? referenceDate,
+  );
   const referenceDay = toUtcDay(referenceDate);
   const dayOffset = Math.max(
     0,

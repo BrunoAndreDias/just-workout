@@ -16,7 +16,9 @@ import {
   createCompletedTrainingSession,
   type TrainingSessionBodyweight,
   type TrainingSessionExerciseEntry,
+  type TrainingSessionIntent,
 } from "./training-session";
+import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
 
 async function generateTrainingPlan() {
   return generateActiveTrainingPlanFromCurrentPlanBlueprint();
@@ -25,11 +27,13 @@ async function generateTrainingPlan() {
 async function completeTrainingSession({
   entries,
   planId,
+  sessionIntent,
   sessionBodyweight,
   templateId,
 }: {
   entries: ReadonlyArray<TrainingSessionExerciseEntry>;
   planId: string;
+  sessionIntent?: TrainingSessionIntent;
   sessionBodyweight?: TrainingSessionBodyweight | null;
   templateId: string;
 }) {
@@ -48,10 +52,17 @@ async function completeTrainingSession({
   }
 
   const timestamp = new Date().toISOString();
+  const trainingSessions = await getTrainingSessionsForPlan(planId);
   const trainingSession = createCompletedTrainingSession({
     entries,
     id: crypto.randomUUID(),
     plan: trainingPlan,
+    sessionIntent: resolveRequestedTrainingSessionIntent({
+      now: new Date(timestamp),
+      requestedIntent: sessionIntent,
+      trainingPlan,
+      trainingSessions,
+    }),
     sessionBodyweight,
     template: workoutTemplate,
     timestamp,

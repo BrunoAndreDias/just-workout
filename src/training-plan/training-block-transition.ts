@@ -9,6 +9,7 @@ import {
 } from "./training-block";
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession } from "./training-session";
+import { getTrainingSessionIntent } from "./training-session-sequencing";
 
 const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 
@@ -251,6 +252,10 @@ function getCompletedTrainingBlockWeeks({
   const completedSessionCountsByWeek = new Map<number, number>();
 
   for (const trainingSession of trainingSessions) {
+    if (getTrainingSessionIntent(trainingSession) !== "planned") {
+      continue;
+    }
+
     const weekNumber = getTrainingBlockWeekNumberForSession({
       trainingBlock: trainingPlan.trainingBlock,
       trainingBlockWeeks: trainingPlan.trainingBlockWeeks,

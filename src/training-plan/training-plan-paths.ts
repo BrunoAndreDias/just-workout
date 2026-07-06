@@ -14,6 +14,10 @@ export type TrainingSessionRouteParams = TrainingPlanRouteParams & {
   templateId: string;
 };
 
+export type TrainingSessionStartSearch = {
+  intent?: "extra";
+};
+
 export type TrainingPlanRouteTarget = {
   params: TrainingPlanRouteParams;
   to: typeof trainingPlanPaths.plan;
@@ -24,8 +28,15 @@ export type TrainingSessionHistoryRouteTarget = {
   to: typeof trainingPlanPaths.sessionHistory;
 };
 
+export type TrainingSessionStartChoiceRouteTarget = {
+  params: TrainingPlanRouteParams;
+  search?: TrainingSessionStartSearch;
+  to: typeof trainingPlanPaths.sessionStartChoice;
+};
+
 export type TrainingSessionStartRouteTarget = {
   params: TrainingSessionRouteParams;
+  search?: TrainingSessionStartSearch;
   to: typeof trainingPlanPaths.sessionStart;
 };
 
@@ -45,12 +56,25 @@ export function getTrainingSessionHistoryRouteTarget(
   };
 }
 
+export function getTrainingSessionStartChoiceRouteTarget({
+  intent,
+  planId,
+}: TrainingPlanRouteParams & TrainingSessionStartSearch): TrainingSessionStartChoiceRouteTarget {
+  return {
+    params: { planId },
+    ...(intent ? { search: { intent } } : {}),
+    to: trainingPlanPaths.sessionStartChoice,
+  };
+}
+
 export function getTrainingSessionStartRouteTarget({
+  intent,
   planId,
   templateId,
-}: TrainingSessionRouteParams): TrainingSessionStartRouteTarget {
+}: TrainingSessionRouteParams & TrainingSessionStartSearch): TrainingSessionStartRouteTarget {
   return {
     params: { planId, templateId },
+    ...(intent ? { search: { intent } } : {}),
     to: trainingPlanPaths.sessionStart,
   };
 }
@@ -114,6 +138,12 @@ export function parseTrainingSessionStartPathname(
     planId: decodeURIComponent(planId),
     templateId: decodeURIComponent(templateId),
   };
+}
+
+export function parseTrainingSessionStartIntentSearch(search?: string): "extra" | null {
+  const value = new URLSearchParams(search ?? "").get("intent");
+
+  return value === "extra" ? "extra" : null;
 }
 
 export function isTrainingPlansNavigationPathname(pathname: string): boolean {

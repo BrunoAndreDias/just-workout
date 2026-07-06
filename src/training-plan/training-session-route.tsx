@@ -9,6 +9,7 @@ import type {
   TrainingPlanStartingLoadSuggestion,
   WorkoutTemplate,
 } from "./training-plan";
+import { parseTrainingSessionStartIntentSearch } from "./training-plan-paths";
 import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
@@ -20,6 +21,7 @@ import type {
   TrainingSessionBodyweight,
   TrainingSessionBodyweightSource,
   TrainingSessionExerciseEntry,
+  TrainingSessionIntent,
 } from "./training-session";
 import {
   applyTrainingSessionExecutionAction,
@@ -40,6 +42,7 @@ import {
   getWorkoutTemplateForTrainingSessionRoute,
   parseTrainingSessionRoutePathname,
 } from "./training-session-route-read-model";
+import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
 import { resolveTrainingWeekBodyweight } from "./training-week-bodyweight";
 import "./training-plan-loading.css";
 import "./training-session-route.css";
@@ -48,6 +51,7 @@ export function TrainingSessionRoute() {
   const routeParams = useTrainingSessionRouteParams();
   const {
     previousTrainingSessions,
+    sessionIntent,
     sessionHistoryReady,
     startingLoadPrefills,
     trainingPlan,
@@ -82,6 +86,7 @@ export function TrainingSessionRoute() {
   const completeSession = useCompleteTrainingSession({
     onCompletedSession: setCompletedSession,
     routeParams,
+    sessionIntent,
     workoutTemplate,
   });
 
@@ -153,6 +158,7 @@ export function TrainingSessionRoute() {
       onCompleteSession={handleCompleteSession}
       onExecutionAction={handleExecutionAction}
       bodyweightState={bodyweightState}
+      sessionIntent={sessionIntent}
       workoutTemplate={activeWorkoutTemplate}
     />
   );
@@ -166,6 +172,7 @@ function TrainingSessionPageContent({
   loadPrefills,
   onCompleteSession,
   onExecutionAction,
+  sessionIntent,
   workoutTemplate,
 }: {
   bodyweightState: TrainingSessionBodyweightState;
@@ -175,17 +182,25 @@ function TrainingSessionPageContent({
   loadPrefills: ReadonlyArray<TrainingSessionLoadPrefill>;
   onCompleteSession: () => Promise<void>;
   onExecutionAction: (action: TrainingSessionExecutionAction) => void;
+  sessionIntent: TrainingSessionIntent;
   workoutTemplate: WorkoutTemplate;
 }) {
   return (
     <section className="training-session-page" aria-label="Training Session">
-      <h1 className="training-session-sr">{workoutTemplate.label} session</h1>
+      <h1 className="training-session-sr">
+        {workoutTemplate.label} {sessionIntent === "extra" ? "extra session" : "session"}
+      </h1>
       {completedSession ? (
         <section className="training-session-complete" aria-labelledby="session-complete-title">
           <CheckCircle2 aria-hidden="true" />
           <div>
-            <h2 id="session-complete-title">Session completed</h2>
-            <p>The Training Session was stored with movement-pattern volume.</p>
+            <h2 id="session-complete-title">
+              {sessionIntent === "extra" ? "Extra Training Session completed" : "Session completed"}
+            </h2>
+            <p>
+              The {sessionIntent === "extra" ? "Extra Training Session" : "Training Session"} was
+              stored with movement-pattern volume.
+            </p>
           </div>
         </section>
       ) : null}
@@ -262,13 +277,33 @@ function TrainingSessionShell({ children }: { children: string }) {
   );
 }
 
-function useTrainingSessionRouteParams(): { planId: string; templateId: string } | null {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+function useTrainingSessionRouteParams(): {
+  planId: string;
+  requestedIntent: "extra" | null;
+  templateId: string;
+} | null {
+  const location = useRouterState({
+    select: (state) => ({
+      pathname: state.location.pathname,
+      searchStr: state.location.searchStr,
+    }),
+  });
 
-  return parseTrainingSessionRoutePathname(pathname);
+  const params = parseTrainingSessionRoutePathname(location.pathname);
+
+  if (!params) {
+    return null;
+  }
+
+  return {
+    ...params,
+    requestedIntent: parseTrainingSessionStartIntentSearch(location.searchStr),
+  };
 }
 
-function useTrainingSessionData(routeParams: { planId: string; templateId: string } | null) {
+function useTrainingSessionData(
+  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null,
+) {
   const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
   const trainingSessionsQuery = useQuery(
     trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
@@ -330,7 +365,7 @@ function useConsumeUndoableTrainingBlockTransition({
   trainingPlan,
   workoutTemplate,
 }: {
-  routeParams: { planId: string; templateId: string } | null;
+  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null;
   trainingPlan: TrainingPlan | null | undefined;
   workoutTemplate: WorkoutTemplate | null;
 }) {
@@ -373,10 +408,12 @@ function useConsumeUndoableTrainingBlockTransition({
 function useCompleteTrainingSession({
   onCompletedSession,
   routeParams,
+  sessionIntent,
   workoutTemplate,
 }: {
   onCompletedSession: (session: TrainingSession) => void;
-  routeParams: { planId: string; templateId: string } | null;
+  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null;
+  sessionIntent: TrainingSessionIntent;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   const queryClient = useQueryClient();
@@ -396,6 +433,7 @@ function useCompleteTrainingSession({
       return trainingPlanService.completeTrainingSession({
         entries,
         planId: routeParams.planId,
+        sessionIntent,
         sessionBodyweight,
         templateId: workoutTemplate.id,
       });
@@ -569,16 +607,25 @@ function buildTrainingSessionData({
   trainingPlanQuery,
   trainingSessions,
 }: {
-  routeParams: { planId: string; templateId: string } | null;
+  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null;
   sessionHistoryReady: boolean;
   trainingPlan: TrainingPlan | null | undefined;
   trainingPlanQuery: ReturnType<typeof useQuery<TrainingPlan | null>>;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }) {
   const workoutTemplate = getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan });
+  const sessionIntent =
+    trainingPlan && routeParams
+      ? resolveRequestedTrainingSessionIntent({
+          requestedIntent: routeParams.requestedIntent ?? undefined,
+          trainingPlan,
+          trainingSessions,
+        })
+      : "planned";
 
   return {
     previousTrainingSessions: trainingSessions,
+    sessionIntent,
     sessionHistoryReady,
     startingLoadPrefills:
       trainingPlan && workoutTemplate
@@ -609,7 +656,7 @@ function getTrainingSessionWorkoutTemplate({
   routeParams,
   trainingPlan,
 }: {
-  routeParams: { planId: string; templateId: string } | null;
+  routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null;
   trainingPlan: TrainingPlan | null | undefined;
 }) {
   if (!trainingPlan) {

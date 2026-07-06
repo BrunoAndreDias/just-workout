@@ -273,6 +273,31 @@ describe("Training Block transition", () => {
       weekNumber: 1,
     });
   });
+
+  it("does not count Extra Training Sessions toward completed Training Block weeks", () => {
+    const trainingPlan = createTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 1,
+        endDate: "2026-07-18",
+        id: "training-block-1",
+        planId: "training-plan-1",
+        previousBlockId: null,
+        startDate: "2026-06-07",
+        status: "completed",
+        weekNumber: 6,
+      },
+      trainingFrequencyDaysPerWeek: 2,
+    });
+
+    const preview = createNextTrainingBlockTransitionPreview({
+      trainingPlan,
+      trainingSessions: createCompletedTrainingBlockSessions().map((session, index) =>
+        index % 2 === 1 ? { ...session, sessionIntent: "extra" as const } : session,
+      ),
+    });
+
+    expect(preview).toBeNull();
+  });
 });
 
 describe("generateNextTrainingBlock", () => {
@@ -1324,6 +1349,7 @@ function createTrainingSession({
   exerciseId,
   exerciseName = "Flat Barbell Bench Press",
   movementPattern = "horizontal_push",
+  sessionIntent = "planned",
   trainingBlockCycleNumber = null,
   trainingBlockId = null,
   trainingBlockWeekNumber = null,
@@ -1333,6 +1359,7 @@ function createTrainingSession({
   exerciseId: string;
   exerciseName?: string;
   movementPattern?: TrainingSession["exercises"][number]["movementPattern"];
+  sessionIntent?: "extra" | "planned";
   trainingBlockCycleNumber?: number | null;
   trainingBlockId?: string | null;
   trainingBlockWeekNumber?: number | null;
@@ -1354,6 +1381,7 @@ function createTrainingSession({
     ],
     id: `session-${completedAt}`,
     planId: "training-plan-1",
+    sessionIntent,
     status: "completed",
     templateId: "template-1",
     templateLabel: "Upper A",

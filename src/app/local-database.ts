@@ -40,6 +40,12 @@ export class JustWorkoutDatabase extends Dexie {
       trainingPlans: "id, active, sourceBlueprintId, updatedAt",
       trainingSessions: "id, planId, templateId, status, completedAt, updatedAt",
     });
+
+    this.version(6).stores({
+      planBlueprints: "id, updatedAt",
+      trainingPlans: "id, active, sourceBlueprintId, updatedAt",
+      trainingSessions: "id, planId, templateId, status, completedAt, updatedAt, sessionIntent",
+    });
   }
 }
 

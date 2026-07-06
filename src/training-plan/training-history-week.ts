@@ -11,6 +11,7 @@ import {
   presentCompletedLoadVolumeSummary,
 } from "./training-plan-presentation";
 import type { TrainingSession } from "./training-session";
+import { getTrainingSessionIntent } from "./training-session-sequencing";
 import { addUtcDays, toDayKey, toUtcDay } from "./training-week-date";
 import { formatTrainingWeekRangeLabel } from "./training-week-range-label";
 
@@ -52,6 +53,7 @@ export type TrainingHistorySessionReport = {
   hasPartialVolume: boolean;
   id: string;
   loadedSetCount: number;
+  sessionIntent: "extra" | "planned";
   sessionBodyweight: number | null;
   templateId: string;
   templateLabel: string;
@@ -650,6 +652,7 @@ function createTrainingHistorySessionReport(
     hasPartialVolume: completedLoadVolume.hasPartialVolume,
     id: trainingSession.id,
     loadedSetCount: completedLoadVolume.loadedSetCount,
+    sessionIntent: getTrainingSessionIntent(trainingSession),
     sessionBodyweight: trainingSession.sessionBodyweight ?? null,
     templateId: trainingSession.templateId,
     templateLabel: trainingSession.templateLabel,
