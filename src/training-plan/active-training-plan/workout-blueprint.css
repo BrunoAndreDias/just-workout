@@ -190,12 +190,22 @@
   font-weight: 600;
 }
 
+.exercise-plan-row__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 920px) {
   .exercise-plan-row {
     grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
   }
 
   .exercise-plan-row__prescription {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .exercise-plan-row__actions {
     grid-column: 1 / -1;
     justify-content: flex-start;
   }
@@ -297,5 +307,9 @@
     min-height: 1.5rem;
     padding: 0 0.5rem;
     font-size: 0.75rem;
+  }
+
+  .exercise-plan-row__actions {
+    justify-content: flex-start;
   }
 }

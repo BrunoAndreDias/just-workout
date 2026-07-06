@@ -54,12 +54,20 @@ export type EditNextTrainingBlockTransitionLoadSuggestionInput = {
 /** Choice the user makes when creating the next Training Block from the review. */
 export type NextTrainingBlockTransitionReviewMode = "accept_proposal" | "skip_rotation";
 
+type AcceptNextTrainingBlockTransitionReviewInput =
+  | {
+      preview?: NextTrainingBlockPreview;
+      reviewMode: "accept_proposal";
+      suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+    }
+  | {
+      reviewMode: "skip_rotation";
+      suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+    };
+
 /** Review-state workflow shown when the current block can create its successor. */
 export type NextTrainingBlockTransitionReviewWorkflow = {
-  accept?: (input: {
-    reviewMode: NextTrainingBlockTransitionReviewMode;
-    suggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
-  }) => Promise<TrainingPlan>;
+  accept?: (input: AcceptNextTrainingBlockTransitionReviewInput) => Promise<TrainingPlan>;
   editLoadSuggestion: (
     input: EditNextTrainingBlockTransitionLoadSuggestionInput,
   ) => ReadonlyArray<NextTrainingBlockLoadSuggestion>;
@@ -146,11 +154,13 @@ export function createNextTrainingBlockTransitionWorkflow({
   }
 
   return {
-    accept: async ({ reviewMode, suggestions }) => {
+    accept: async (input) => {
+      const acceptedPreview =
+        input.reviewMode === "skip_rotation" ? skipRotationPreview : (input.preview ?? preview);
       const nextTrainingPlan = acceptNextTrainingBlockTransition({
         currentTrainingPlan: trainingPlan,
-        preview: reviewMode === "skip_rotation" ? skipRotationPreview : preview,
-        suggestions,
+        preview: acceptedPreview,
+        suggestions: input.suggestions,
       });
       const savedTrainingPlan = await saveAcceptedTrainingPlan(nextTrainingPlan);
 

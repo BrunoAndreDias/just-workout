@@ -19,6 +19,7 @@ describe("TrainingBlockProgress", () => {
         blockWeek={6}
         nextTrainingBlockTransition={createTransitionWithKeptExercise()}
         onOpenTrainingHistory={() => {}}
+        trainingSessions={[]}
         trainingWeekProgress={{
           caveat: null,
           detail: "1 of 1 workouts completed",
@@ -72,7 +73,7 @@ function createTransitionWithKeptExercise(): ReviewTrainingBlockTransitionWorkfl
           userEditedLoad: null,
         },
       ],
-      nextTrainingPlan: {} as ReviewTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"],
+      nextTrainingPlan: createNextTrainingPlanStub(),
       rotation: {
         kept: [
           {
@@ -119,7 +120,7 @@ function createTransitionWithKeptExercise(): ReviewTrainingBlockTransitionWorkfl
           userEditedLoad: null,
         },
       ],
-      nextTrainingPlan: {} as ReviewTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"],
+      nextTrainingPlan: createNextTrainingPlanStub(),
       rotation: {
         kept: [
           {
@@ -153,5 +154,63 @@ function createTransitionWithKeptExercise(): ReviewTrainingBlockTransitionWorkfl
       },
       weeklyIntensityTargets: [],
     },
+  };
+}
+
+function createNextTrainingPlanStub(): ReviewTrainingBlockTransitionWorkflow["preview"]["nextTrainingPlan"] {
+  return {
+    active: true,
+    exerciseSelectionPreferences: {
+      avoidedExercises: [],
+      equipmentPreset: "full_gym",
+      preferredExercises: [],
+      strategy: "balanced",
+    },
+    generatedAt: "2026-07-19T09:00:00.000Z",
+    id: "training-plan-1",
+    isolationExercisePreferences: [],
+    mainCompoundRotationPools: [],
+    repRangeStyle: "balanced_hypertrophy",
+    sourceBlueprintId: "plan-blueprint-1",
+    split: "Full Body A",
+    trainingBlock: {
+      cycleNumber: 2,
+      endDate: "2026-08-29",
+      id: "training-block-2",
+      planId: "training-plan-1",
+      previousBlockId: "training-block-1",
+      startDate: "2026-07-19",
+      status: "upcoming",
+      weekNumber: 1,
+    },
+    trainingBlockWeeks: 6,
+    trainingFrequencyDaysPerWeek: 2,
+    trainingGoal: "build-muscle",
+    updatedAt: "2026-07-19T09:00:00.000Z",
+    weeklyRepTargets: [],
+    workoutTemplates: [
+      {
+        id: "template-1",
+        label: "Full Body A",
+        supersetGroups: [
+          {
+            id: "group-1",
+            slots: [
+              {
+                exerciseId: "flat-dumbbell-bench-press",
+                exerciseName: "Flat Dumbbell Bench Press",
+                kind: "exercise",
+                movementPattern: "horizontal_push",
+                role: "main_compound",
+                slotLabel: "Horizontal push",
+                targetMuscles: ["chest"],
+              },
+            ],
+            title: "Superset 1",
+            type: "superset",
+          },
+        ],
+      },
+    ],
   };
 }

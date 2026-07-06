@@ -3,13 +3,34 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import type { WorkoutTemplate } from "../index";
 import {
+  getTrainingBlockExerciseSwapAffectedSlotCount,
+  getTrainingBlockExerciseSwapChoices,
+  type TrainingBlockExerciseSwapSlotLocator,
+} from "../training-block";
+import type { TrainingPlan } from "../training-plan";
+import { TrainingBlockExerciseSwap } from "./training-block-exercise-swap";
+import {
   getWorkoutBlueprintReadModel,
   type WorkoutBlueprintExerciseRowReadModel,
   type WorkoutBlueprintSectionReadModel,
 } from "./workout-blueprint-read-model";
 import "./workout-blueprint.css";
 
-export function WorkoutBlueprint({ workoutTemplate }: { workoutTemplate: WorkoutTemplate }) {
+export function WorkoutBlueprint({
+  hasCompletedSessionsInCurrentBlock = false,
+  onSwapExercise,
+  trainingBlockCycleNumber,
+  trainingPlan,
+  workoutTemplate,
+}: {
+  hasCompletedSessionsInCurrentBlock?: boolean;
+  onSwapExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
+  trainingBlockCycleNumber?: number;
+  trainingPlan: TrainingPlan;
+  workoutTemplate: WorkoutTemplate;
+}) {
   const blueprint = getWorkoutBlueprintReadModel(workoutTemplate);
 
   return (
@@ -17,10 +38,23 @@ export function WorkoutBlueprint({ workoutTemplate }: { workoutTemplate: Workout
       <WarmupBlueprintItem />
 
       {blueprint.supersets.map((section) => (
-        <SupersetBlueprintItem key={section.title} section={section} />
+        <SupersetBlueprintItem
+          hasCompletedSessionsInCurrentBlock={hasCompletedSessionsInCurrentBlock}
+          key={section.title}
+          onSwapExercise={onSwapExercise}
+          section={section}
+          trainingBlockCycleNumber={trainingBlockCycleNumber}
+          trainingPlan={trainingPlan}
+        />
       ))}
 
-      <IsolationFinisherBlueprintItem section={blueprint.isolationFinisher} />
+      <IsolationFinisherBlueprintItem
+        hasCompletedSessionsInCurrentBlock={hasCompletedSessionsInCurrentBlock}
+        onSwapExercise={onSwapExercise}
+        section={blueprint.isolationFinisher}
+        trainingBlockCycleNumber={trainingBlockCycleNumber}
+        trainingPlan={trainingPlan}
+      />
       <CooldownBlueprintItem />
     </div>
   );
@@ -43,7 +77,21 @@ function WarmupBlueprintItem() {
   );
 }
 
-function SupersetBlueprintItem({ section }: { section: WorkoutBlueprintSectionReadModel }) {
+function SupersetBlueprintItem({
+  hasCompletedSessionsInCurrentBlock,
+  onSwapExercise,
+  section,
+  trainingBlockCycleNumber,
+  trainingPlan,
+}: {
+  hasCompletedSessionsInCurrentBlock: boolean;
+  onSwapExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
+  section: WorkoutBlueprintSectionReadModel;
+  trainingBlockCycleNumber?: number;
+  trainingPlan: TrainingPlan;
+}) {
   return (
     <BlueprintTimelineItem
       icon={<Dumbbell aria-hidden="true" />}
@@ -51,7 +99,16 @@ function SupersetBlueprintItem({ section }: { section: WorkoutBlueprintSectionRe
       section={
         <WorkoutSection
           defaultExpandedOnMobile={section.defaultExpandedOnMobile}
-          rows={section.rows.map((row) => <ExercisePlanRow key={row.key} row={row} />)}
+          rows={section.rows.map((row) => (
+            <ExercisePlanRow
+              hasCompletedSessionsInCurrentBlock={hasCompletedSessionsInCurrentBlock}
+              key={row.key}
+              onSwapExercise={onSwapExercise}
+              row={row}
+              trainingBlockCycleNumber={trainingBlockCycleNumber}
+              trainingPlan={trainingPlan}
+            />
+          ))}
           title={section.title}
         />
       }
@@ -60,9 +117,19 @@ function SupersetBlueprintItem({ section }: { section: WorkoutBlueprintSectionRe
 }
 
 function IsolationFinisherBlueprintItem({
+  hasCompletedSessionsInCurrentBlock,
+  onSwapExercise,
   section,
+  trainingBlockCycleNumber,
+  trainingPlan,
 }: {
+  hasCompletedSessionsInCurrentBlock: boolean;
+  onSwapExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
   section: WorkoutBlueprintSectionReadModel;
+  trainingBlockCycleNumber?: number;
+  trainingPlan: TrainingPlan;
 }) {
   return (
     <BlueprintTimelineItem
@@ -71,7 +138,16 @@ function IsolationFinisherBlueprintItem({
       section={
         <WorkoutSection
           defaultExpandedOnMobile={section.defaultExpandedOnMobile}
-          rows={section.rows.map((row) => <ExercisePlanRow key={row.key} row={row} />)}
+          rows={section.rows.map((row) => (
+            <ExercisePlanRow
+              hasCompletedSessionsInCurrentBlock={hasCompletedSessionsInCurrentBlock}
+              key={row.key}
+              onSwapExercise={onSwapExercise}
+              row={row}
+              trainingBlockCycleNumber={trainingBlockCycleNumber}
+              trainingPlan={trainingPlan}
+            />
+          ))}
           title={section.title}
         />
       }
@@ -171,7 +247,38 @@ function OptionalActivityRow({ activity }: { activity: string }) {
   return <p className="optional-activity-row">{activity}</p>;
 }
 
-function ExercisePlanRow({ row }: { row: WorkoutBlueprintExerciseRowReadModel }) {
+function ExercisePlanRow({
+  hasCompletedSessionsInCurrentBlock,
+  onSwapExercise,
+  row,
+  trainingBlockCycleNumber,
+  trainingPlan,
+}: {
+  hasCompletedSessionsInCurrentBlock: boolean;
+  onSwapExercise?: (
+    input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string },
+  ) => Promise<TrainingPlan>;
+  row: WorkoutBlueprintExerciseRowReadModel;
+  trainingBlockCycleNumber?: number;
+  trainingPlan: TrainingPlan;
+}) {
+  const [isApplyingSwap, setIsApplyingSwap] = useState(false);
+  const swapChoices =
+    onSwapExercise && trainingPlan.trainingBlock
+      ? getTrainingBlockExerciseSwapChoices({
+          groupId: row.groupId,
+          slotIndex: row.slotIndex,
+          templateId: row.templateId,
+          trainingPlan,
+        })
+      : [];
+  const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount();
+  const slotLabel = affectedSlotCount === 1 ? "slot" : "slots";
+  const trainingBlockLabel = trainingBlockCycleNumber ?? 1;
+  const scopeCopy = hasCompletedSessionsInCurrentBlock
+    ? `This updates ${affectedSlotCount} future workout ${slotLabel} in Training Block ${trainingBlockLabel}. Completed sessions stay in Training History.`
+    : `This updates the next visible session and ${affectedSlotCount} workout ${slotLabel} for the rest of Training Block ${trainingBlockLabel}.`;
+
   return (
     <article className="exercise-plan-row">
       <div className="exercise-plan-row__identity">
@@ -187,6 +294,34 @@ function ExercisePlanRow({ row }: { row: WorkoutBlueprintExerciseRowReadModel })
         <span>{row.prescription}</span>
         <span className="exercise-plan-row__role-badge">{row.role}</span>
       </div>
+      {onSwapExercise && trainingPlan.trainingBlock ? (
+        <div className="exercise-plan-row__actions">
+          <TrainingBlockExerciseSwap
+            actionLabel={`Swap exercise for ${row.exerciseName}`}
+            affectedSlotCount={affectedSlotCount}
+            choices={swapChoices}
+            dialogTitle={`Training Block Exercise Swap for ${row.exerciseName}`}
+            isPending={isApplyingSwap}
+            movementPattern={row.movementPatternId}
+            onApply={async (nextExerciseId) => {
+              setIsApplyingSwap(true);
+
+              try {
+                await onSwapExercise({
+                  groupId: row.groupId,
+                  nextExerciseId,
+                  slotIndex: row.slotIndex,
+                  templateId: row.templateId,
+                });
+              } finally {
+                setIsApplyingSwap(false);
+              }
+            }}
+            role={row.roleId}
+            scopeCopy={scopeCopy}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

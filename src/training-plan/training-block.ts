@@ -66,6 +66,18 @@ export type TrainingBlockExerciseRotationPreview = {
   rotated: ReadonlyArray<TrainingBlockExerciseRotationPreviewItem>;
 };
 
+export type TrainingBlockExerciseSwapChoice = {
+  exerciseId: string;
+  exerciseName: string;
+  reason: string;
+};
+
+export type TrainingBlockExerciseSwapSlotLocator = {
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+};
+
 export type RequiredMovementCoverageResult = {
   isPreserved: boolean;
   missingPatterns: ReadonlyArray<MovementPatternId>;
@@ -132,6 +144,7 @@ export type NextTrainingBlockPreview = {
   weeklyIntensityTargets: ReadonlyArray<WeeklyIntensityTarget>;
 };
 
+const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 const DEFAULT_TRAINING_BLOCK_WEEKS = 6;
 const REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS: ReadonlyArray<MovementPatternId> = [
   "horizontal_push",
@@ -290,6 +303,193 @@ export function createSkippedTrainingBlockExerciseRotationPreview({
     requiredMovementCoverage: getRequiredMovementCoverageResult(proposedMovementPatterns),
     rotated: [],
   };
+}
+
+/** Lists compatible exercise choices for one generated slot, with the current slot first when allowed. */
+export function getTrainingBlockExerciseSwapChoices({
+  groupId,
+  slotIndex,
+  templateId,
+  trainingPlan,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  trainingPlan: Pick<
+    TrainingPlan,
+    | "exerciseSelectionPreferences"
+    | "isolationExercisePreferences"
+    | "mainCompoundRotationPools"
+    | "trainingBlock"
+    | "workoutTemplates"
+  >;
+}): ReadonlyArray<TrainingBlockExerciseSwapChoice> {
+  const resolvedSlot = resolveTrainingBlockExerciseSwapSlot({
+    groupId,
+    slotIndex,
+    templateId,
+    workoutTemplates: trainingPlan.workoutTemplates,
+  });
+  const avoidedExerciseIds = getAvoidedExerciseIds(trainingPlan.exerciseSelectionPreferences);
+  const isolationExercisePreferences = normalizeIsolationExercisePreferences(
+    trainingPlan.isolationExercisePreferences,
+  );
+  const poolsByMovementPattern = new Map(
+    trainingPlan.mainCompoundRotationPools.map((pool) => [pool.movementPattern, pool]),
+  );
+  const compatibleChoices = getRotationExerciseChoices({
+    avoidedExerciseIds,
+    isolationExercisePreferences,
+    performedExerciseIds: new Set<string>(),
+    poolsByMovementPattern,
+    previousBlockExerciseIds: new Set<string>(),
+    slot: resolvedSlot.slot,
+  }).filter(
+    (choice) =>
+      !wouldExerciseSwapCreateDuplicateInTemplate({
+        exerciseId: choice.id,
+        groupId,
+        slotIndex,
+        template: resolvedSlot.template,
+      }),
+  );
+
+  const currentSlotChoice = avoidedExerciseIds.has(resolvedSlot.slot.exerciseId)
+    ? []
+    : [
+        {
+          exerciseId: resolvedSlot.slot.exerciseId,
+          exerciseName: resolvedSlot.slot.exerciseName,
+          reason: "current exercise in this slot",
+        },
+      ];
+
+  return getUniqueTrainingBlockExerciseSwapChoices([
+    ...currentSlotChoice,
+    ...compatibleChoices.map((choice) => ({
+      exerciseId: choice.id,
+      exerciseName: choice.name,
+      reason: choice.reason,
+    })),
+  ]);
+}
+
+/** Returns the number of generated slots changed by a selected-slot swap. */
+export function getTrainingBlockExerciseSwapAffectedSlotCount(): number {
+  return 1;
+}
+
+/** Applies an edited proposal-row exercise choice and recalculates next-block load prefills. */
+export function applyTrainingBlockExerciseSwapToPreview({
+  availableLoadIncrement = DEFAULT_AVAILABLE_LOAD_INCREMENT,
+  groupId,
+  nextExerciseId,
+  preview,
+  sessions,
+  slotIndex,
+  templateId,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  availableLoadIncrement?: number;
+  nextExerciseId: string;
+  preview: NextTrainingBlockPreview;
+  sessions: ReadonlyArray<TrainingSession>;
+}): NextTrainingBlockPreview {
+  const swapChoice = resolveTrainingBlockExerciseSwapChoice({
+    groupId,
+    nextExerciseId,
+    slotIndex,
+    templateId,
+    trainingPlan: preview.nextTrainingPlan,
+  });
+  const nextExercise = getExerciseCatalogExercise(swapChoice.exerciseId);
+
+  if (!nextExercise) {
+    throw new Error("Expected a compatible exercise for the Training Block swap.");
+  }
+
+  const nextTrainingPlan = {
+    ...preview.nextTrainingPlan,
+    workoutTemplates: applyTrainingBlockExerciseSwapToWorkoutTemplates({
+      groupId,
+      nextExercise,
+      slotIndex,
+      templateId,
+      workoutTemplates: preview.nextTrainingPlan.workoutTemplates,
+    }),
+  };
+
+  return {
+    ...preview,
+    loadSuggestions: estimateNextTrainingBlockLoadSuggestions({
+      availableLoadIncrement,
+      sessions,
+      targets: getLoadSuggestionTargets(nextTrainingPlan),
+    }),
+    nextTrainingPlan,
+    rotation: applyTrainingBlockExerciseSwapToRotationPreview({
+      groupId,
+      nextExercise,
+      preview: preview.rotation,
+      slotIndex,
+      templateId,
+    }),
+  };
+}
+
+/** Applies a current-block exercise choice to the stored Training Plan slot. */
+export function applyTrainingBlockExerciseSwapToTrainingPlan({
+  groupId,
+  nextExerciseId,
+  slotIndex,
+  templateId,
+  timestamp,
+  trainingPlan,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  nextExerciseId: string;
+  timestamp: string;
+  trainingPlan: TrainingPlan;
+}): TrainingPlan {
+  const swapChoice = resolveTrainingBlockExerciseSwapChoice({
+    groupId,
+    nextExerciseId,
+    slotIndex,
+    templateId,
+    trainingPlan,
+  });
+  const nextExercise = getExerciseCatalogExercise(swapChoice.exerciseId);
+
+  if (!nextExercise) {
+    throw new Error("Expected a compatible exercise for the Training Block swap.");
+  }
+
+  return {
+    ...trainingPlan,
+    updatedAt: timestamp,
+    workoutTemplates: applyTrainingBlockExerciseSwapToWorkoutTemplates({
+      groupId,
+      nextExercise,
+      slotIndex,
+      templateId,
+      workoutTemplates: trainingPlan.workoutTemplates,
+    }),
+  };
+}
+
+/** Checks whether the current Training Block already has completed historical sessions. */
+export function hasCompletedTrainingBlockSessions({
+  trainingBlock,
+  trainingSessions,
+}: {
+  trainingBlock: TrainingBlock | null | undefined;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}): boolean {
+  if (!trainingBlock) {
+    return false;
+  }
+
+  return trainingSessions.some((trainingSession) =>
+    isSessionFromCurrentTrainingBlock({
+      session: trainingSession,
+      trainingBlock,
+    }),
+  );
 }
 
 export function applyConfirmedTrainingBlockExerciseRotations({
@@ -1235,4 +1435,237 @@ function getTemplateSlotKey({
   templateId: string;
 }): string {
   return `${templateId}:${groupId}:${slotIndex}`;
+}
+
+function resolveTrainingBlockExerciseSwapChoice({
+  groupId,
+  nextExerciseId,
+  slotIndex,
+  templateId,
+  trainingPlan,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  nextExerciseId: string;
+  trainingPlan: Pick<
+    TrainingPlan,
+    | "exerciseSelectionPreferences"
+    | "isolationExercisePreferences"
+    | "mainCompoundRotationPools"
+    | "trainingBlock"
+    | "workoutTemplates"
+  >;
+}): TrainingBlockExerciseSwapChoice {
+  const swapChoice = getTrainingBlockExerciseSwapChoices({
+    groupId,
+    slotIndex,
+    templateId,
+    trainingPlan,
+  }).find((choice) => choice.exerciseId === nextExerciseId);
+
+  if (!swapChoice) {
+    throw new Error("Cannot apply an incompatible Training Block swap.");
+  }
+
+  return swapChoice;
+}
+
+function resolveTrainingBlockExerciseSwapSlot({
+  groupId,
+  slotIndex,
+  templateId,
+  workoutTemplates,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  workoutTemplates: ReadonlyArray<TrainingPlan["workoutTemplates"][number]>;
+}): {
+  slot: TrainingPlan["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
+  template: TrainingPlan["workoutTemplates"][number];
+} {
+  const template = workoutTemplates.find((workoutTemplate) => workoutTemplate.id === templateId);
+  const group = template?.supersetGroups.find((supersetGroup) => supersetGroup.id === groupId);
+  const slot = group?.slots[slotIndex];
+
+  if (!template || !group || !slot) {
+    throw new Error("Cannot resolve the requested Training Block exercise swap slot.");
+  }
+
+  return {
+    slot,
+    template,
+  };
+}
+
+function wouldExerciseSwapCreateDuplicateInTemplate({
+  exerciseId,
+  groupId,
+  slotIndex,
+  template,
+}: {
+  exerciseId: string;
+  groupId: string;
+  slotIndex: number;
+  template: TrainingPlan["workoutTemplates"][number];
+}): boolean {
+  return template.supersetGroups.some((group) =>
+    group.slots.some(
+      (slot, currentSlotIndex) =>
+        slot.exerciseId === exerciseId && (group.id !== groupId || currentSlotIndex !== slotIndex),
+    ),
+  );
+}
+
+function getUniqueTrainingBlockExerciseSwapChoices(
+  choices: ReadonlyArray<TrainingBlockExerciseSwapChoice>,
+): ReadonlyArray<TrainingBlockExerciseSwapChoice> {
+  const choicesByExerciseId = new Map<string, TrainingBlockExerciseSwapChoice>();
+
+  for (const choice of choices) {
+    if (!choicesByExerciseId.has(choice.exerciseId)) {
+      choicesByExerciseId.set(choice.exerciseId, choice);
+    }
+  }
+
+  return [...choicesByExerciseId.values()];
+}
+
+function applyTrainingBlockExerciseSwapToWorkoutTemplates({
+  groupId,
+  nextExercise,
+  slotIndex,
+  templateId,
+  workoutTemplates,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  nextExercise: NonNullable<ReturnType<typeof getExerciseCatalogExercise>>;
+  workoutTemplates: ReadonlyArray<TrainingPlan["workoutTemplates"][number]>;
+}): ReadonlyArray<TrainingPlan["workoutTemplates"][number]> {
+  return workoutTemplates.map((template) =>
+    template.id !== templateId
+      ? template
+      : {
+          ...template,
+          supersetGroups: template.supersetGroups.map((group) =>
+            group.id !== groupId
+              ? group
+              : {
+                  ...group,
+                  slots: group.slots.map((slot, currentSlotIndex) =>
+                    currentSlotIndex !== slotIndex
+                      ? slot
+                      : {
+                          ...slot,
+                          exerciseId: nextExercise.id,
+                          exerciseName: nextExercise.name,
+                          movementPattern: nextExercise.movementPattern,
+                          targetMuscles: nextExercise.primaryMuscleGroups,
+                        },
+                  ),
+                },
+          ),
+        },
+  );
+}
+
+function applyTrainingBlockExerciseSwapToRotationPreview({
+  groupId,
+  nextExercise,
+  preview,
+  slotIndex,
+  templateId,
+}: TrainingBlockExerciseSwapSlotLocator & {
+  nextExercise: NonNullable<ReturnType<typeof getExerciseCatalogExercise>>;
+  preview: TrainingBlockExerciseRotationPreview;
+}): TrainingBlockExerciseRotationPreview {
+  const matchedRotation = preview.rotated.find(
+    (rotation) =>
+      rotation.groupId === groupId &&
+      rotation.slotIndex === slotIndex &&
+      rotation.templateId === templateId,
+  );
+
+  if (matchedRotation) {
+    if (nextExercise.id === matchedRotation.previousExerciseId) {
+      return {
+        ...preview,
+        kept: [
+          ...preview.kept,
+          {
+            exerciseId: matchedRotation.previousExerciseId,
+            exerciseName: matchedRotation.previousExerciseName,
+            groupId: matchedRotation.groupId,
+            movementPattern: matchedRotation.movementPattern,
+            reason: "kept current exercise after a user-selected swap",
+            role: matchedRotation.role,
+            slotIndex: matchedRotation.slotIndex,
+            slotLabel: matchedRotation.slotLabel,
+            templateId: matchedRotation.templateId,
+            templateLabel: matchedRotation.templateLabel,
+          },
+        ],
+        rotated: preview.rotated.filter(
+          (rotation) =>
+            !(
+              rotation.groupId === groupId &&
+              rotation.slotIndex === slotIndex &&
+              rotation.templateId === templateId
+            ),
+        ),
+      };
+    }
+
+    return {
+      ...preview,
+      rotated: preview.rotated.map((rotation) =>
+        rotation.groupId === groupId &&
+        rotation.slotIndex === slotIndex &&
+        rotation.templateId === templateId
+          ? {
+              ...rotation,
+              nextExerciseId: nextExercise.id,
+              nextExerciseName: nextExercise.name,
+              reason: "user-selected compatible exercise",
+            }
+          : rotation,
+      ),
+    };
+  }
+
+  const matchedKept = preview.kept.find(
+    (kept) =>
+      kept.groupId === groupId && kept.slotIndex === slotIndex && kept.templateId === templateId,
+  );
+
+  if (!matchedKept) {
+    throw new Error("Cannot resolve the requested Training Block rotation row for swapping.");
+  }
+
+  if (nextExercise.id === matchedKept.exerciseId) {
+    return preview;
+  }
+
+  return {
+    ...preview,
+    kept: preview.kept.filter(
+      (kept) =>
+        !(
+          kept.groupId === groupId &&
+          kept.slotIndex === slotIndex &&
+          kept.templateId === templateId
+        ),
+    ),
+    rotated: [
+      ...preview.rotated,
+      {
+        groupId: matchedKept.groupId,
+        movementPattern: matchedKept.movementPattern,
+        nextExerciseId: nextExercise.id,
+        nextExerciseName: nextExercise.name,
+        previousExerciseId: matchedKept.exerciseId,
+        previousExerciseName: matchedKept.exerciseName,
+        reason: "user-selected compatible exercise",
+        role: matchedKept.role,
+        slotIndex: matchedKept.slotIndex,
+        slotLabel: matchedKept.slotLabel,
+        templateId: matchedKept.templateId,
+        templateLabel: matchedKept.templateLabel,
+      },
+    ],
+  };
 }

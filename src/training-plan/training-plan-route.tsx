@@ -6,6 +6,7 @@ import {
   ActiveTrainingPlanLoading,
   ActiveTrainingPlanPage,
 } from "./active-training-plan/active-training-plan-page";
+import { applyTrainingBlockExerciseSwapToTrainingPlan } from "./training-block";
 import { createNextTrainingBlockTransitionWorkflow } from "./training-block-transition";
 import type { TrainingPlan } from "./training-plan";
 import {
@@ -82,6 +83,19 @@ export function TrainingPlanRoute() {
       });
     },
   });
+  const saveTrainingPlan = useMutation({
+    mutationFn: (nextTrainingPlan: TrainingPlan) =>
+      trainingPlanService.saveTrainingPlan(nextTrainingPlan),
+    onSuccess: (savedTrainingPlan) => {
+      queryClient.setQueryData(
+        trainingPlanQueryOptions(savedTrainingPlan.id).queryKey,
+        savedTrainingPlan,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: trainingPlansQueryOptions().queryKey,
+      });
+    },
+  });
   const undoAcceptedTrainingBlockTransition = useMutation({
     mutationFn: (acceptedPlanId: string) =>
       trainingPlanService.undoAcceptedTrainingBlockTransition({
@@ -119,6 +133,18 @@ export function TrainingPlanRoute() {
           trainingPlan,
           trainingSessions: trainingSessionsQuery.data ?? [],
         }) ?? undefined
+      }
+      onSwapCurrentBlockExercise={async ({ groupId, nextExerciseId, slotIndex, templateId }) =>
+        saveTrainingPlan.mutateAsync(
+          applyTrainingBlockExerciseSwapToTrainingPlan({
+            groupId,
+            nextExerciseId,
+            slotIndex,
+            templateId,
+            timestamp: new Date().toISOString(),
+            trainingPlan,
+          }),
+        )
       }
       trainingPlan={trainingPlan}
       trainingSessions={trainingSessionsQuery.data ?? []}

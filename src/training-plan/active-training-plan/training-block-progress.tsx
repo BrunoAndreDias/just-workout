@@ -5,10 +5,19 @@ import type {
   NextTrainingBlockTransitionWorkflow,
 } from "../index";
 import type {
+  NextTrainingBlockPreview,
   TrainingBlockExerciseRotationPreview,
   TrainingBlockExerciseRotationPreviewItem,
+  TrainingBlockExerciseSwapSlotLocator,
   TrainingBlockKeptExercisePreviewItem,
 } from "../training-block";
+import {
+  applyTrainingBlockExerciseSwapToPreview,
+  getTrainingBlockExerciseSwapAffectedSlotCount,
+  getTrainingBlockExerciseSwapChoices,
+} from "../training-block";
+import type { TrainingSession } from "../training-session";
+import { TrainingBlockExerciseSwap } from "./training-block-exercise-swap";
 import type { ActiveTrainingPlanWeekProgressReadModel } from "./training-week-progress-read-model";
 import "./training-block-progress.css";
 
@@ -28,6 +37,7 @@ export function TrainingBlockProgress({
   cycleNumber = 1,
   nextTrainingBlockTransition,
   onOpenTrainingHistory,
+  trainingSessions,
   trainingWeekProgress,
   trainingBlockWeeks,
 }: {
@@ -36,6 +46,7 @@ export function TrainingBlockProgress({
   cycleNumber?: number;
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
   onOpenTrainingHistory: () => void;
+  trainingSessions: ReadonlyArray<TrainingSession>;
   trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   trainingBlockWeeks: number;
 }) {
@@ -76,6 +87,7 @@ export function TrainingBlockProgress({
         isReady={isNextBlockReady}
         onOpenTrainingHistory={onOpenTrainingHistory}
         onExpandPreview={() => setIsPreviewExpanded(true)}
+        trainingSessions={trainingSessions}
         trainingWeekProgress={trainingWeekProgress}
         transition={nextTrainingBlockTransition}
       />
@@ -109,6 +121,7 @@ function TrainingBlockProgressActions({
   isReady,
   onOpenTrainingHistory,
   onExpandPreview,
+  trainingSessions,
   trainingWeekProgress,
   transition,
 }: {
@@ -116,6 +129,7 @@ function TrainingBlockProgressActions({
   isReady: boolean;
   onOpenTrainingHistory: () => void;
   onExpandPreview: () => void;
+  trainingSessions: ReadonlyArray<TrainingSession>;
   trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   transition?: NextTrainingBlockTransitionWorkflow;
 }) {
@@ -140,6 +154,7 @@ function TrainingBlockProgressActions({
       {isPreviewExpanded ? (
         <TrainingBlockPreviewDetails
           onOpenTrainingHistory={onOpenTrainingHistory}
+          trainingSessions={trainingSessions}
           trainingWeekProgress={trainingWeekProgress}
           transition={transition}
         />
@@ -172,14 +187,19 @@ function TrainingBlockPreviewSummary({
 
 function TrainingBlockPreviewDetails({
   onOpenTrainingHistory,
+  trainingSessions,
   trainingWeekProgress,
   transition,
 }: {
   onOpenTrainingHistory: () => void;
+  trainingSessions: ReadonlyArray<TrainingSession>;
   trainingWeekProgress: ActiveTrainingPlanWeekProgressReadModel;
   transition: ReviewTrainingBlockTransitionWorkflow;
 }) {
   const [reviewMode, setReviewMode] = useState<TrainingBlockReviewMode>("accept_proposal");
+  const [proposalPreview, setProposalPreview] = useState<NextTrainingBlockPreview>(
+    transition.preview,
+  );
   const [loadSuggestionsByMode, setLoadSuggestionsByMode] = useState<
     Record<TrainingBlockReviewMode, ReadonlyArray<NextTrainingBlockLoadSuggestion>>
   >({
@@ -193,7 +213,7 @@ function TrainingBlockPreviewDetails({
     accept_proposal: createEditableLoadValues(transition.preview.loadSuggestions),
     skip_rotation: createEditableLoadValues(transition.skipRotationPreview.loadSuggestions),
   });
-  const activePreview = getReviewModePreview({ reviewMode, transition });
+  const activePreview = getReviewModePreview({ preview: proposalPreview, reviewMode, transition });
   const activeLoadSuggestions = loadSuggestionsByMode[reviewMode];
   const activeLoadInputValues = loadInputValuesByMode[reviewMode];
   const acceptButtonLabel = getAcceptButtonLabel({ isAccepting, reviewMode });
@@ -264,7 +284,30 @@ function TrainingBlockPreviewDetails({
         onOpenTrainingHistory={onOpenTrainingHistory}
         trainingWeekProgress={trainingWeekProgress}
       />
-      <TrainingBlockRotationProposalSection preview={transition.preview.rotation} />
+      <TrainingBlockRotationProposalSection
+        onSwap={(input) => {
+          const nextPreview = applyTrainingBlockExerciseSwapToPreview({
+            ...input,
+            preview: proposalPreview,
+            sessions: trainingSessions,
+          });
+          const mergedLoadSuggestions = mergeEditedLoadSuggestions({
+            currentSuggestions: loadSuggestionsByMode.accept_proposal,
+            nextSuggestions: nextPreview.loadSuggestions,
+          });
+
+          setProposalPreview(nextPreview);
+          setLoadSuggestionsByMode((current) => ({
+            ...current,
+            accept_proposal: mergedLoadSuggestions,
+          }));
+          setLoadInputValuesByMode((current) => ({
+            ...current,
+            accept_proposal: createEditableLoadValues(mergedLoadSuggestions),
+          }));
+        }}
+        preview={proposalPreview}
+      />
       <TrainingBlockLoadPrefillSection
         loadPrefillCopy={loadPrefillCopy}
         loadSuggestions={activeLoadSuggestions}
@@ -280,7 +323,16 @@ function TrainingBlockPreviewDetails({
             setIsAccepting(true);
 
             try {
+              if (reviewMode === "skip_rotation") {
+                await transition.accept?.({
+                  reviewMode,
+                  suggestions: activeLoadSuggestions,
+                });
+                return;
+              }
+
               await transition.accept?.({
+                preview: proposalPreview,
                 reviewMode,
                 suggestions: activeLoadSuggestions,
               });
@@ -339,9 +391,11 @@ function TrainingBlockProgressReviewSection({
 }
 
 function TrainingBlockRotationProposalSection({
+  onSwap,
   preview,
 }: {
-  preview: TrainingBlockExerciseRotationPreview;
+  onSwap: (input: TrainingBlockExerciseSwapSlotLocator & { nextExerciseId: string }) => void;
+  preview: NextTrainingBlockPreview;
 }) {
   return (
     <section
@@ -351,7 +405,45 @@ function TrainingBlockRotationProposalSection({
       <p className="active-training-plan-progress__section-title">
         Training Block Exercise Rotation Proposal
       </p>
-      <TrainingBlockRotationList preview={preview} />
+      <TrainingBlockRotationList
+        preview={preview.rotation}
+        renderSwapControl={({
+          currentExerciseName,
+          groupId,
+          movementPattern,
+          role,
+          slotIndex,
+          templateId,
+        }) => {
+          const affectedSlotCount = getTrainingBlockExerciseSwapAffectedSlotCount();
+          const swapChoices = getTrainingBlockExerciseSwapChoices({
+            groupId,
+            slotIndex,
+            templateId,
+            trainingPlan: preview.nextTrainingPlan,
+          });
+
+          return (
+            <TrainingBlockExerciseSwap
+              actionLabel={`Swap exercise for ${currentExerciseName}`}
+              affectedSlotCount={affectedSlotCount}
+              choices={swapChoices}
+              dialogTitle={`Training Block Exercise Swap for ${currentExerciseName}`}
+              movementPattern={movementPattern}
+              onApply={(nextExerciseId) =>
+                onSwap({
+                  groupId,
+                  nextExerciseId,
+                  slotIndex,
+                  templateId,
+                })
+              }
+              role={role}
+              scopeCopy={`This updates ${affectedSlotCount} next-block ${affectedSlotCount === 1 ? "slot" : "slots"} for the same Movement Pattern and Workout Exercise Role.`}
+            />
+          );
+        }}
+      />
     </section>
   );
 }
@@ -452,10 +544,19 @@ function TrainingBlockReviewActions({
 function TrainingBlockRotationList({
   loadSuggestions,
   preview,
+  renderSwapControl,
   renderLoadSuggestionFields,
 }: {
   loadSuggestions?: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
   preview: TrainingBlockExerciseRotationPreview;
+  renderSwapControl?: (input: {
+    currentExerciseName: string;
+    groupId: string;
+    movementPattern: TrainingBlockExerciseRotationPreviewItem["movementPattern"];
+    role: TrainingBlockExerciseRotationPreviewItem["role"];
+    slotIndex: number;
+    templateId: string;
+  }) => ReactNode;
   renderLoadSuggestionFields?: (
     loadSuggestion: NextTrainingBlockLoadSuggestion,
     exerciseName: string,
@@ -478,6 +579,16 @@ function TrainingBlockRotationList({
               {rotation.previousExerciseName} → {rotation.nextExerciseName}
             </span>
             <span>{rotation.reason}</span>
+            {renderSwapControl
+              ? renderSwapControl({
+                  currentExerciseName: rotation.nextExerciseName,
+                  groupId: rotation.groupId,
+                  movementPattern: rotation.movementPattern,
+                  role: rotation.role,
+                  slotIndex: rotation.slotIndex,
+                  templateId: rotation.templateId,
+                })
+              : null}
             {loadSuggestion && renderLoadSuggestionFields
               ? renderLoadSuggestionFields(loadSuggestion, rotation.nextExerciseName)
               : null}
@@ -497,6 +608,16 @@ function TrainingBlockRotationList({
             </span>
             <span>{kept.exerciseName}</span>
             <span>{kept.reason}</span>
+            {renderSwapControl
+              ? renderSwapControl({
+                  currentExerciseName: kept.exerciseName,
+                  groupId: kept.groupId,
+                  movementPattern: kept.movementPattern,
+                  role: kept.role,
+                  slotIndex: kept.slotIndex,
+                  templateId: kept.templateId,
+                })
+              : null}
             {loadSuggestion && renderLoadSuggestionFields
               ? renderLoadSuggestionFields(loadSuggestion, kept.exerciseName)
               : null}
@@ -508,9 +629,11 @@ function TrainingBlockRotationList({
 }
 
 function getReviewModePreview({
+  preview,
   reviewMode,
   transition,
 }: {
+  preview: NextTrainingBlockPreview;
   reviewMode: TrainingBlockReviewMode;
   transition: ReviewTrainingBlockTransitionWorkflow;
 }): ReviewTrainingBlockTransitionWorkflow["preview"] {
@@ -518,7 +641,7 @@ function getReviewModePreview({
     return transition.skipRotationPreview;
   }
 
-  return transition.preview;
+  return preview;
 }
 
 function getLoadPrefillCopy(reviewMode: TrainingBlockReviewMode): string {
@@ -668,6 +791,30 @@ function createEditableLoadValues(
       formatEditableLoad(suggestion.userEditedLoad ?? suggestion.suggestedLoad),
     ]),
   );
+}
+
+function mergeEditedLoadSuggestions({
+  currentSuggestions,
+  nextSuggestions,
+}: {
+  currentSuggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+  nextSuggestions: ReadonlyArray<NextTrainingBlockLoadSuggestion>;
+}): ReadonlyArray<NextTrainingBlockLoadSuggestion> {
+  const currentSuggestionsByExerciseId = new Map(
+    currentSuggestions.map((suggestion) => [suggestion.exerciseId, suggestion]),
+  );
+
+  return nextSuggestions.map((suggestion) => {
+    const currentSuggestion = currentSuggestionsByExerciseId.get(suggestion.exerciseId);
+
+    return currentSuggestion?.userEditedLoad === null ||
+      currentSuggestion?.userEditedLoad === undefined
+      ? suggestion
+      : {
+          ...suggestion,
+          userEditedLoad: currentSuggestion.userEditedLoad,
+        };
+  });
 }
 
 function formatWeeklyTargetRir(minTargetRir: number, maxTargetRir: number): string {

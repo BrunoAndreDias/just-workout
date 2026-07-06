@@ -9,6 +9,7 @@ import {
   saveCompletedTrainingSession,
   saveHistoricalTrainingSessionBodyweight,
   saveTrainingPlanBaselineBodyweight,
+  saveTrainingPlan as saveTrainingPlanRecord,
   saveTrainingWeekBodyweight as saveTrainingWeekBodyweightRecord,
   undoAcceptedTrainingBlockTransition as undoAcceptedTrainingBlockTransitionRecord,
 } from "./training-plan-repository";
@@ -73,6 +74,10 @@ async function completeTrainingSession({
 
 async function saveAcceptedTrainingPlan(trainingPlan: TrainingPlan) {
   return saveAcceptedTrainingPlanRecord(trainingPlan);
+}
+
+async function saveTrainingPlan(trainingPlan: TrainingPlan) {
+  return saveTrainingPlanRecord(trainingPlan);
 }
 
 async function undoAcceptedTrainingBlockTransition({ planId }: { planId: string }) {
@@ -143,6 +148,7 @@ export const trainingPlanService = {
   clearUndoableTrainingBlockTransition,
   saveBaselineBodyweight,
   saveAcceptedTrainingPlan,
+  saveTrainingPlan,
   saveHistoricalBodyweightCorrection,
   saveTrainingWeekBodyweight,
   undoAcceptedTrainingBlockTransition,
