@@ -890,6 +890,183 @@ describe("Plan Builder canonical route", () => {
       );
     });
   });
+
+  it("edits draft slots with catalog-aware replacement, add/delete/reorder controls, and allows duplicates across Workout Templates", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: {
+          exerciseSelectionPreferences: {
+            avoidedExercises: [{ id: "avoid-1", rawText: "Decline Dumbbell Bench Press" }],
+            equipmentPreset: "full_gym",
+            preferredExercises: [],
+            strategy: "balanced",
+          },
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "3-Day Full Body",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+          workoutTemplates: [
+            {
+              id: "template-1",
+              label: "Upper A",
+              purpose: "strength",
+              supersetGroups: [
+                {
+                  id: "group-1",
+                  slots: [
+                    {
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
+                      kind: "exercise",
+                      movementPattern: "horizontal_push",
+                      role: "main_compound",
+                      slotLabel: "A1",
+                      targetMuscles: ["chest"],
+                    },
+                  ],
+                  title: "Upper Superset Group",
+                  type: "superset",
+                },
+              ],
+            },
+            {
+              id: "template-2",
+              label: "Upper B",
+              purpose: "strength",
+              supersetGroups: [
+                {
+                  id: "group-2",
+                  slots: [
+                    {
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
+                      kind: "exercise",
+                      movementPattern: "horizontal_push",
+                      role: "main_compound",
+                      slotLabel: "A1",
+                      targetMuscles: ["chest"],
+                    },
+                  ],
+                  title: "Upper Superset Group 2",
+                  type: "superset",
+                },
+              ],
+            },
+          ],
+        },
+        isStale: false,
+        validation: { blockers: [], warnings: [] },
+      },
+    });
+    firstRender.unmount();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await user.click(await getOnePageSectionButton("Generate"));
+
+    const upperATemplate = screen.getByDisplayValue("Upper A").closest("section");
+
+    if (!upperATemplate) {
+      throw new Error("Expected the Upper A draft template.");
+    }
+
+    const initialChoice = (await within(upperATemplate).findByLabelText(
+      /exercise choice for flat barbell bench press/i,
+    )) as HTMLSelectElement;
+    expect(
+      within(initialChoice).queryByRole("option", { name: "Decline Dumbbell Bench Press" }),
+    ).toBeNull();
+
+    await user.selectOptions(initialChoice, "incline-dumbbell-bench-press");
+
+    await waitFor(() => {
+      expect(within(upperATemplate).getAllByLabelText(/exercise choice for /i)[0]).toHaveValue(
+        "incline-dumbbell-bench-press",
+      );
+    });
+
+    await user.click(within(upperATemplate).getByRole("button", { name: /^add slot$/i }));
+
+    await waitFor(() => {
+      expect(within(upperATemplate).getAllByLabelText(/exercise choice for /i)).toHaveLength(2);
+      expect(within(upperATemplate).getByRole("button", { name: /^add slot$/i })).toBeVisible();
+    });
+
+    await user.click(within(upperATemplate).getByRole("button", { name: /^add slot$/i }));
+
+    await waitFor(() => {
+      expect(
+        within(upperATemplate).getAllByRole("button", { name: /^delete slot$/i })[0],
+      ).toBeEnabled();
+    });
+
+    const moveSlotUpButtons = within(upperATemplate).getAllByRole("button", {
+      name: /^move slot up$/i,
+    });
+    await user.click(moveSlotUpButtons[1]!);
+
+    await waitFor(() => {
+      const slotNames = within(upperATemplate)
+        .getAllByLabelText(/exercise choice for /i)
+        .map((select) => (select as HTMLSelectElement).selectedOptions[0]?.textContent);
+
+      expect(slotNames.slice(0, 2)).toEqual([
+        "Flat Barbell Bench Press",
+        "Incline Dumbbell Bench Press",
+      ]);
+    });
+
+    const deleteSlotButtons = within(upperATemplate).getAllByRole("button", {
+      name: /^delete slot$/i,
+    });
+    await user.click(deleteSlotButtons.at(-1)!);
+
+    await waitFor(() => {
+      const slotChoices = within(upperATemplate).getAllByLabelText(/exercise choice for /i);
+      expect(slotChoices).toHaveLength(2);
+    });
+
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    await waitFor(async () => {
+      expect(await getActiveTrainingPlans()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            workoutTemplates: expect.arrayContaining([
+              expect.objectContaining({
+                id: "template-1",
+                supersetGroups: [
+                  expect.objectContaining({
+                    slots: [
+                      expect.objectContaining({ exerciseId: "flat-barbell-bench-press" }),
+                      expect.objectContaining({ exerciseId: "incline-dumbbell-bench-press" }),
+                    ],
+                  }),
+                ],
+              }),
+              expect.objectContaining({
+                id: "template-2",
+                supersetGroups: [
+                  expect.objectContaining({
+                    slots: [expect.objectContaining({ exerciseId: "flat-barbell-bench-press" })],
+                  }),
+                ],
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+  });
 });
 
 async function openGeneratedTrainingPlanDraft(user: ReturnType<typeof userEvent.setup>) {

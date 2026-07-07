@@ -1,21 +1,32 @@
 import {
   type TrainingPlanContent,
+  type TrainingPlanSlot,
+  type TrainingPlanStartingLoadSuggestion,
   validateTrainingPlanDraftContent,
   type WorkoutTemplate,
   type WorkoutTemplatePurpose,
 } from "../training-plan/training-plan";
-import { normalizeExerciseSelectionPreferences } from "./exercise-selection-preferences";
+import { getExerciseCatalogExercise } from "../training-taxonomy";
+import { getExerciseCatalogExercisesByMovementPattern } from "./exercise-catalog";
+import {
+  getAvoidedExerciseIds,
+  normalizeExerciseSelectionPreferences,
+} from "./exercise-selection-preferences";
 import { normalizeIsolationExercisePreferences } from "./isolation-exercise-preferences";
 import { isRepRangeStyleId, isTrainingFrequencyDaysPerWeek } from "./plan-blueprint-options";
 import type {
+  AddTrainingPlanDraftSlotOptions,
   AddTrainingPlanDraftSupersetGroupOptions,
+  DeleteTrainingPlanDraftSlotOptions,
   DeleteTrainingPlanDraftSupersetGroupOptions,
   MoveTrainingPlanDraftSlotToSupersetGroupOptions,
   PlanBlueprint,
   RenameTrainingPlanDraftSupersetGroupOptions,
   RenameTrainingPlanDraftWorkoutTemplateOptions,
+  ReorderTrainingPlanDraftSlotOptions,
   ReorderTrainingPlanDraftSupersetGroupOptions,
   ReorderTrainingPlanDraftWorkoutTemplateOptions,
+  ReplaceTrainingPlanDraftSlotExerciseOptions,
   ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions,
   UpdateTrainingPlanDraftOptions,
   UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions,
@@ -456,6 +467,187 @@ export function moveTrainingPlanDraftSlotToSupersetGroup({
   });
 }
 
+/** Replaces one draft slot exercise with a compatible catalog exercise. */
+export function replaceTrainingPlanDraftSlotExercise({
+  blueprint,
+  exerciseId,
+  groupId,
+  slotIndex,
+  templateId,
+  timestamp,
+}: ReplaceTrainingPlanDraftSlotExerciseOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const avoidedExerciseIds = getAvoidedExerciseIds(
+        blueprint.trainingPlanDraft?.content.exerciseSelectionPreferences,
+      );
+      const slotContext = resolveDraftSlotContext({ groupId, slotIndex, template });
+
+      if (!slotContext) {
+        return template;
+      }
+
+      const nextExercise = getExerciseCatalogExercise(exerciseId);
+
+      if (
+        !nextExercise ||
+        avoidedExerciseIds.has(exerciseId) ||
+        wouldDraftTemplateContainDuplicateExercise({
+          exerciseId,
+          groupId,
+          slotIndex,
+          template,
+        }) ||
+        !isCompatibleDraftSlotReplacement({
+          exerciseId,
+          avoidedExerciseIds,
+          slot: slotContext.slot,
+        })
+      ) {
+        return template;
+      }
+
+      const supersetGroups = cloneDraftSupersetGroups(template);
+      const existingGroup = supersetGroups[slotContext.groupIndex];
+      const existingSlot = existingGroup?.slots[slotIndex];
+
+      if (!existingGroup || !existingSlot) {
+        return template;
+      }
+
+      existingGroup.slots[slotIndex] = {
+        ...existingSlot,
+        exerciseId: nextExercise.id,
+        exerciseName: nextExercise.name,
+      };
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
+/** Adds one compatible exercise slot to a draft Superset Group without a fixed max slot count. */
+export function addTrainingPlanDraftSlot({
+  blueprint,
+  groupId,
+  templateId,
+  timestamp,
+}: AddTrainingPlanDraftSlotOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const groupIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
+      const group = template.supersetGroups[groupIndex];
+      const baseSlot = group?.slots.at(-1);
+
+      if (!group || !baseSlot) {
+        return template;
+      }
+
+      const nextExercise = getNextDraftSlotExerciseCandidate({ baseSlot, groupId, template });
+
+      if (!nextExercise) {
+        return template;
+      }
+
+      const supersetGroups = cloneDraftSupersetGroups(template);
+      const nextGroup = supersetGroups[groupIndex];
+
+      if (!nextGroup) {
+        return template;
+      }
+
+      nextGroup.slots.push({
+        ...baseSlot,
+        exerciseId: nextExercise.id,
+        exerciseName: nextExercise.name,
+      });
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
+/** Deletes one draft slot when doing so does not leave the group empty. */
+export function deleteTrainingPlanDraftSlot({
+  blueprint,
+  groupId,
+  slotIndex,
+  templateId,
+  timestamp,
+}: DeleteTrainingPlanDraftSlotOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const groupIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
+      const group = template.supersetGroups[groupIndex];
+
+      if (!group || slotIndex < 0 || slotIndex >= group.slots.length || group.slots.length <= 1) {
+        return template;
+      }
+
+      const supersetGroups = cloneDraftSupersetGroups(template);
+      supersetGroups[groupIndex]?.slots.splice(slotIndex, 1);
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
+/** Reorders slots inside one draft Superset Group. */
+export function reorderTrainingPlanDraftSlot({
+  blueprint,
+  groupId,
+  slotIndex,
+  targetSlotIndex,
+  templateId,
+  timestamp,
+}: ReorderTrainingPlanDraftSlotOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => {
+      const groupIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
+      const group = template.supersetGroups[groupIndex];
+
+      if (
+        !group ||
+        slotIndex < 0 ||
+        slotIndex >= group.slots.length ||
+        targetSlotIndex < 0 ||
+        targetSlotIndex >= group.slots.length
+      ) {
+        return template;
+      }
+
+      const supersetGroups = cloneDraftSupersetGroups(template);
+      const nextGroup = supersetGroups[groupIndex];
+
+      if (!nextGroup) {
+        return template;
+      }
+
+      const [movedSlot] = nextGroup.slots.splice(slotIndex, 1);
+
+      if (!movedSlot) {
+        return template;
+      }
+
+      nextGroup.slots.splice(targetSlotIndex, 0, movedSlot);
+
+      return { ...template, supersetGroups };
+    },
+  });
+}
+
 function moveSlotBetweenDraftSupersetGroups({
   sourceGroupId,
   slotIndex,
@@ -556,6 +748,102 @@ function cloneDraftSupersetGroups(template: WorkoutTemplate) {
   }));
 }
 
+function resolveDraftSlotContext({
+  groupId,
+  slotIndex,
+  template,
+}: {
+  groupId: string;
+  slotIndex: number;
+  template: WorkoutTemplate;
+}) {
+  const groupIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
+  const group = template.supersetGroups[groupIndex];
+  const slot = group?.slots[slotIndex];
+
+  return group && slot ? { group, groupIndex, slot } : null;
+}
+
+function wouldDraftTemplateContainDuplicateExercise({
+  exerciseId,
+  groupId,
+  slotIndex,
+  template,
+}: {
+  exerciseId: string;
+  groupId: string;
+  slotIndex: number;
+  template: WorkoutTemplate;
+}) {
+  return template.supersetGroups.some((group) =>
+    group.slots.some(
+      (slot, currentSlotIndex) =>
+        slot.exerciseId === exerciseId && (group.id !== groupId || currentSlotIndex !== slotIndex),
+    ),
+  );
+}
+
+function isCompatibleDraftSlotReplacement({
+  exerciseId,
+  avoidedExerciseIds,
+  slot,
+}: {
+  exerciseId: string;
+  avoidedExerciseIds: ReadonlySet<string>;
+  slot: TrainingPlanSlot;
+}) {
+  const exercise = getExerciseCatalogExercise(exerciseId);
+
+  if (!exercise || avoidedExerciseIds.has(exerciseId)) {
+    return false;
+  }
+
+  const catalogRole =
+    slot.role === "main_compound" || slot.role === "secondary_compound" ? "compound" : "isolation";
+
+  return (
+    exercise.movementPattern === slot.movementPattern &&
+    exercise.role === catalogRole &&
+    slot.targetMuscles.every((targetMuscle) => exercise.primaryMuscleGroups.includes(targetMuscle))
+  );
+}
+
+function getNextDraftSlotExerciseCandidate({
+  baseSlot,
+  groupId,
+  template,
+}: {
+  baseSlot: TrainingPlanSlot;
+  groupId: string;
+  template: WorkoutTemplate;
+}) {
+  const catalogRole =
+    baseSlot.role === "main_compound" || baseSlot.role === "secondary_compound"
+      ? "compound"
+      : "isolation";
+
+  return getCatalogExercisesByMovementPattern(baseSlot.movementPattern).find(
+    (exercise) =>
+      exercise.id !== baseSlot.exerciseId &&
+      exercise.role === catalogRole &&
+      baseSlot.targetMuscles.every((targetMuscle) =>
+        exercise.primaryMuscleGroups.includes(targetMuscle),
+      ) &&
+      !wouldDraftTemplateContainDuplicateExercise({
+        exerciseId: exercise.id,
+        groupId,
+        slotIndex: -1,
+        template,
+      }),
+  );
+}
+
+function getCatalogExercisesByMovementPattern(
+  movementPattern: TrainingPlanSlot["movementPattern"],
+) {
+  return getExerciseCatalogExercisesByMovementPattern(movementPattern);
+}
+
 function getAdjustedTargetSlotIndex({
   sourceGroupId,
   slotIndex,
@@ -585,14 +873,15 @@ function updateTrainingPlanDraft({
     ...blueprint.trainingPlanDraft.content,
     workoutTemplates,
   };
+  const synchronizedContent = synchronizeDraftSupportingContent(content);
 
   return {
     ...blueprint,
     trainingPlanDraft: {
       ...blueprint.trainingPlanDraft,
-      content,
+      content: synchronizedContent,
       isStale: blueprint.trainingPlanDraft.isStale === true,
-      validation: validateTrainingPlanDraftContent({ content }),
+      validation: validateTrainingPlanDraftContent({ content: synchronizedContent }),
     },
     updatedAt: timestamp,
   };
@@ -628,4 +917,57 @@ function normalizeWorkoutTemplatePurpose(purpose: unknown): WorkoutTemplatePurpo
 
 function isPositiveInteger(candidate: unknown): candidate is number {
   return typeof candidate === "number" && Number.isInteger(candidate) && candidate > 0;
+}
+
+function synchronizeDraftSupportingContent(content: TrainingPlanContent): TrainingPlanContent {
+  if (!content.startingLoadSuggestions) {
+    return content;
+  }
+
+  return {
+    ...content,
+    startingLoadSuggestions: synchronizeStartingLoadSuggestions({
+      slots: content.workoutTemplates.flatMap((template) =>
+        template.supersetGroups.flatMap((group) => group.slots),
+      ),
+      startingLoadSuggestions: content.startingLoadSuggestions,
+    }),
+  };
+}
+
+function synchronizeStartingLoadSuggestions({
+  slots,
+  startingLoadSuggestions,
+}: {
+  slots: ReadonlyArray<TrainingPlanSlot>;
+  startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+}): ReadonlyArray<TrainingPlanStartingLoadSuggestion> {
+  const suggestionsByExerciseId = new Map(
+    startingLoadSuggestions.map((suggestion) => [suggestion.exerciseId, suggestion]),
+  );
+  const uniqueSlots = new Map<string, TrainingPlanSlot>();
+
+  for (const slot of slots) {
+    if (!uniqueSlots.has(slot.exerciseId)) {
+      uniqueSlots.set(slot.exerciseId, slot);
+    }
+  }
+
+  return [...uniqueSlots.values()].map((slot) => {
+    const existingSuggestion = suggestionsByExerciseId.get(slot.exerciseId);
+
+    return (
+      existingSuggestion ?? {
+        effectiveLoad: null,
+        exerciseId: slot.exerciseId,
+        exerciseName: slot.exerciseName,
+        kind: "first_time",
+        movementPattern: slot.movementPattern,
+        previousLoad: null,
+        reason: "first-time exercise, start empty",
+        suggestedLoad: null,
+        userEditedLoad: null,
+      }
+    );
+  });
 }

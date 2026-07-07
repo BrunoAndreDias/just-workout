@@ -2,9 +2,11 @@ import type { WorkoutTemplatePurpose } from "../training-plan";
 import type { ExerciseCatalogMuscleGroupId } from "./exercise-catalog";
 import type { ExerciseSelectionPreferences } from "./exercise-selection-preferences";
 import {
+  addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
   applyPlanBlueprintTransition,
   createDefaultPlanBlueprint,
+  deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
   moveTrainingPlanDraftSlotToSupersetGroup,
   normalizePlanBlueprint,
@@ -13,8 +15,10 @@ import {
   type RepRangeStyleId,
   renameTrainingPlanDraftSupersetGroup,
   renameTrainingPlanDraftWorkoutTemplate,
+  reorderTrainingPlanDraftSlot,
   reorderTrainingPlanDraftSupersetGroup,
   reorderTrainingPlanDraftWorkoutTemplate,
+  replaceTrainingPlanDraftSlotExercise,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   type TrainingFrequencyDaysPerWeek,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
@@ -91,6 +95,35 @@ export type PlanBlueprintCommand =
       templateId: string;
       timestamp: string;
       type: "moveTrainingPlanDraftSlotToSupersetGroup";
+    }
+  | {
+      exerciseId: string;
+      groupId: string;
+      slotIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "replaceTrainingPlanDraftSlotExercise";
+    }
+  | {
+      groupId: string;
+      templateId: string;
+      timestamp: string;
+      type: "addTrainingPlanDraftSlot";
+    }
+  | {
+      groupId: string;
+      slotIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "deleteTrainingPlanDraftSlot";
+    }
+  | {
+      groupId: string;
+      slotIndex: number;
+      targetSlotIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "reorderTrainingPlanDraftSlot";
     }
   | {
       blueprint: PlanBlueprint;
@@ -261,6 +294,35 @@ type MoveTrainingPlanDraftSlotToSupersetGroupCommandOptions = {
   timestamp?: string;
 };
 
+type ReplaceTrainingPlanDraftSlotExerciseCommandOptions = {
+  exerciseId: string;
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
+type AddTrainingPlanDraftSlotCommandOptions = {
+  groupId: string;
+  templateId: string;
+  timestamp?: string;
+};
+
+type DeleteTrainingPlanDraftSlotCommandOptions = {
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
+type ReorderTrainingPlanDraftSlotCommandOptions = {
+  groupId: string;
+  slotIndex: number;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
 export async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
 
@@ -360,6 +422,39 @@ export function projectPlanBlueprintCommand({
         sourceGroupId: command.sourceGroupId,
         slotIndex: command.slotIndex,
         targetGroupId: command.targetGroupId,
+        targetSlotIndex: command.targetSlotIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "replaceTrainingPlanDraftSlotExercise":
+      return replaceTrainingPlanDraftSlotExercise({
+        blueprint,
+        exerciseId: command.exerciseId,
+        groupId: command.groupId,
+        slotIndex: command.slotIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "addTrainingPlanDraftSlot":
+      return addTrainingPlanDraftSlot({
+        blueprint,
+        groupId: command.groupId,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "deleteTrainingPlanDraftSlot":
+      return deleteTrainingPlanDraftSlot({
+        blueprint,
+        groupId: command.groupId,
+        slotIndex: command.slotIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "reorderTrainingPlanDraftSlot":
+      return reorderTrainingPlanDraftSlot({
+        blueprint,
+        groupId: command.groupId,
+        slotIndex: command.slotIndex,
         targetSlotIndex: command.targetSlotIndex,
         templateId: command.templateId,
         timestamp: command.timestamp,
@@ -491,6 +586,64 @@ export const planBlueprintCommandBuilders = {
       templateId,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),
       type: "moveTrainingPlanDraftSlotToSupersetGroup",
+    } satisfies PlanBlueprintCommand;
+  },
+  replaceTrainingPlanDraftSlotExercise({
+    exerciseId,
+    groupId,
+    slotIndex,
+    templateId,
+    timestamp,
+  }: ReplaceTrainingPlanDraftSlotExerciseCommandOptions) {
+    return {
+      exerciseId,
+      groupId,
+      slotIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "replaceTrainingPlanDraftSlotExercise",
+    } satisfies PlanBlueprintCommand;
+  },
+  addTrainingPlanDraftSlot({
+    groupId,
+    templateId,
+    timestamp,
+  }: AddTrainingPlanDraftSlotCommandOptions) {
+    return {
+      groupId,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "addTrainingPlanDraftSlot",
+    } satisfies PlanBlueprintCommand;
+  },
+  deleteTrainingPlanDraftSlot({
+    groupId,
+    slotIndex,
+    templateId,
+    timestamp,
+  }: DeleteTrainingPlanDraftSlotCommandOptions) {
+    return {
+      groupId,
+      slotIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "deleteTrainingPlanDraftSlot",
+    } satisfies PlanBlueprintCommand;
+  },
+  reorderTrainingPlanDraftSlot({
+    groupId,
+    slotIndex,
+    targetSlotIndex,
+    templateId,
+    timestamp,
+  }: ReorderTrainingPlanDraftSlotCommandOptions) {
+    return {
+      groupId,
+      slotIndex,
+      targetSlotIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "reorderTrainingPlanDraftSlot",
     } satisfies PlanBlueprintCommand;
   },
   confirmExerciseSelectionPreferences({

@@ -61,13 +61,17 @@ import {
 } from "./training-plan-draft-lifecycle";
 
 export {
+  addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
+  deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
   moveTrainingPlanDraftSlotToSupersetGroup,
   renameTrainingPlanDraftSupersetGroup,
   renameTrainingPlanDraftWorkoutTemplate,
+  reorderTrainingPlanDraftSlot,
   reorderTrainingPlanDraftSupersetGroup,
   reorderTrainingPlanDraftWorkoutTemplate,
+  replaceTrainingPlanDraftSlotExercise,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
 } from "./training-plan-draft-lifecycle";

@@ -8,13 +8,17 @@ import {
 } from "../../training-plan";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
+  useAddTrainingPlanDraftSlotMutation,
   useAddTrainingPlanDraftSupersetGroupMutation,
+  useDeleteTrainingPlanDraftSlotMutation,
   useDeleteTrainingPlanDraftSupersetGroupMutation,
   useMoveTrainingPlanDraftSlotToSupersetGroupMutation,
   useRenameTrainingPlanDraftSupersetGroupMutation,
   useRenameTrainingPlanDraftWorkoutTemplateMutation,
+  useReorderTrainingPlanDraftSlotMutation,
   useReorderTrainingPlanDraftSupersetGroupMutation,
   useReorderTrainingPlanDraftWorkoutTemplateMutation,
+  useReplaceTrainingPlanDraftSlotExerciseMutation,
   useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation,
   useUpdateIsolationExercisePreferencesMutation,
   useUpdateMainCompoundPreferencesMutation,
@@ -208,11 +212,15 @@ export function useOnePageGenerateStep({
   const { mutate: replaceDraftWorkoutTemplateWithCustomFocus } =
     useReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusMutation();
   const { mutate: addDraftSupersetGroup } = useAddTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: addDraftSlot } = useAddTrainingPlanDraftSlotMutation();
   const { mutate: renameDraftSupersetGroup } = useRenameTrainingPlanDraftSupersetGroupMutation();
   const { mutate: deleteDraftSupersetGroup } = useDeleteTrainingPlanDraftSupersetGroupMutation();
+  const { mutate: deleteDraftSlot } = useDeleteTrainingPlanDraftSlotMutation();
   const { mutate: reorderDraftSupersetGroup } = useReorderTrainingPlanDraftSupersetGroupMutation();
   const { mutate: moveDraftSlotToSupersetGroup } =
     useMoveTrainingPlanDraftSlotToSupersetGroupMutation();
+  const { mutate: replaceDraftSlotExercise } = useReplaceTrainingPlanDraftSlotExerciseMutation();
+  const { mutate: reorderDraftSlot } = useReorderTrainingPlanDraftSlotMutation();
 
   function updateCachedTrainingPlanDraft(
     savedDraft: NonNullable<PlanBlueprint["trainingPlanDraft"]>,
@@ -295,6 +303,9 @@ export function useOnePageGenerateStep({
     onAddSupersetGroup: (templateId: string, targetIndex: number) => {
       addDraftSupersetGroup({ targetIndex, templateId, timestamp: new Date().toISOString() });
     },
+    onAddDraftSlot: (templateId: string, groupId: string) => {
+      addDraftSlot({ groupId, templateId, timestamp: new Date().toISOString() });
+    },
     onRenameWorkoutTemplate: (templateId: string, label: string) => {
       renameDraftWorkoutTemplate({ label, templateId, timestamp: new Date().toISOString() });
     },
@@ -328,6 +339,42 @@ export function useOnePageGenerateStep({
         sourceGroupId,
         slotIndex,
         targetGroupId,
+        targetSlotIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onReplaceDraftSlotExercise: (
+      templateId: string,
+      groupId: string,
+      slotIndex: number,
+      exerciseId: string,
+    ) => {
+      replaceDraftSlotExercise({
+        exerciseId,
+        groupId,
+        slotIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onDeleteDraftSlot: (templateId: string, groupId: string, slotIndex: number) => {
+      deleteDraftSlot({
+        groupId,
+        slotIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onReorderDraftSlot: (
+      templateId: string,
+      groupId: string,
+      slotIndex: number,
+      targetSlotIndex: number,
+    ) => {
+      reorderDraftSlot({
+        groupId,
+        slotIndex,
         targetSlotIndex,
         templateId,
         timestamp: new Date().toISOString(),

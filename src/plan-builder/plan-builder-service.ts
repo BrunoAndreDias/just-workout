@@ -218,7 +218,40 @@ async function moveTrainingPlanDraftSlotToSupersetGroup(
   );
 }
 
+async function replaceTrainingPlanDraftSlotExercise(
+  options: Parameters<typeof planBlueprintCommandBuilders.replaceTrainingPlanDraftSlotExercise>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.replaceTrainingPlanDraftSlotExercise(options),
+  );
+}
+
+async function addTrainingPlanDraftSlot(
+  options: Parameters<typeof planBlueprintCommandBuilders.addTrainingPlanDraftSlot>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.addTrainingPlanDraftSlot(options),
+  );
+}
+
+async function deleteTrainingPlanDraftSlot(
+  options: Parameters<typeof planBlueprintCommandBuilders.deleteTrainingPlanDraftSlot>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.deleteTrainingPlanDraftSlot(options),
+  );
+}
+
+async function reorderTrainingPlanDraftSlot(
+  options: Parameters<typeof planBlueprintCommandBuilders.reorderTrainingPlanDraftSlot>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.reorderTrainingPlanDraftSlot(options),
+  );
+}
+
 export const planBuilderService = {
+  addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
   applyResolvedPlanBlueprint,
   confirmSelectedExerciseSelectionPreferences,
@@ -226,12 +259,15 @@ export const planBuilderService = {
   confirmSelectedTrainingFrequency,
   confirmSelectedTrainingSplit,
   confirmSelectedTrainingVolume,
+  deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
   moveTrainingPlanDraftSlotToSupersetGroup,
+  replaceTrainingPlanDraftSlotExercise,
   renameTrainingPlanDraftWorkoutTemplate,
   renameTrainingPlanDraftSupersetGroup,
+  reorderTrainingPlanDraftSlot,
   reorderTrainingPlanDraftSupersetGroup,
   reorderTrainingPlanDraftWorkoutTemplate,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,

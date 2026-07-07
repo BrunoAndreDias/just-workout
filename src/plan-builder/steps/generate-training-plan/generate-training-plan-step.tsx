@@ -12,6 +12,7 @@ import {
   hasBodyweightLoadExercise,
   isBodyweightLoadExercise,
 } from "../../../training-plan/bodyweight-load";
+import { getTrainingBlockExerciseSwapChoices } from "../../../training-plan/training-block";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -75,8 +76,10 @@ type DraftGenerationInputProps = {
 };
 
 type TrainingPlanDraftActions = {
+  addDraftSlot: (templateId: string, groupId: string) => void;
   acceptDraft: () => Promise<void>;
   addSupersetGroup: (templateId: string, targetIndex: number) => void;
+  deleteDraftSlot: (templateId: string, groupId: string, slotIndex: number) => void;
   deleteSupersetGroup: (templateId: string, groupId: string) => void;
   moveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
   moveDraftSlotToSupersetGroup: (
@@ -86,9 +89,21 @@ type TrainingPlanDraftActions = {
     targetGroupId: string,
     targetSlotIndex: number,
   ) => void;
+  reorderDraftSlot: (
+    templateId: string,
+    groupId: string,
+    slotIndex: number,
+    targetSlotIndex: number,
+  ) => void;
   moveSupersetGroup: (templateId: string, groupId: string, targetIndex: number) => void;
   renameWorkoutTemplate: (templateId: string, label: string) => void;
   renameSupersetGroup: (templateId: string, groupId: string, title: string) => void;
+  replaceDraftSlotExercise: (
+    templateId: string,
+    groupId: string,
+    slotIndex: number,
+    exerciseId: string,
+  ) => void;
   replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
   resetDraft: () => Promise<void>;
   saveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
@@ -587,6 +602,19 @@ function TrainingPlanDraftTemplateCard({
                 />
               ))}
             </ul>
+            {canEditSupersetGroups && group.slots.length > 0 ? (
+              <div className="mt-3">
+                <Button
+                  onClick={() => {
+                    draftActions.addDraftSlot(template.id, group.id);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Add slot
+                </Button>
+              </div>
+            ) : null}
             {canEditSupersetGroups && group.slots.length === 0 ? (
               <p className="mt-3 text-sm text-amber-800">
                 Empty group. Move a slot here or delete the group before accepting the draft.
@@ -721,6 +749,20 @@ function TrainingPlanDraftSlotItem({
   const moveTargets = canMoveSlot
     ? template.supersetGroups.filter((group) => group.id !== currentGroupId)
     : [];
+  const replacementChoices = canMoveSlot
+    ? getTrainingBlockExerciseSwapChoices({
+        groupId: currentGroupId,
+        slotIndex,
+        templateId: template.id,
+        trainingPlan: {
+          exerciseSelectionPreferences: trainingPlanDraft.content.exerciseSelectionPreferences,
+          isolationExercisePreferences: trainingPlanDraft.content.isolationExercisePreferences,
+          mainCompoundRotationPools: trainingPlanDraft.content.mainCompoundRotationPools,
+          trainingBlock: trainingPlanDraft.content.trainingBlock,
+          workoutTemplates: trainingPlanDraft.content.workoutTemplates,
+        },
+      })
+    : [];
 
   return (
     <li className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
@@ -737,6 +779,64 @@ function TrainingPlanDraftSlotItem({
             : "Prescription pending"}
         </span>
       </div>
+      {replacementChoices.length > 0 ? (
+        <label className="mt-3 block text-sm font-medium text-stone-700">
+          <span>Exercise choice</span>
+          <select
+            aria-label={`Exercise choice for ${slot.exerciseName}`}
+            className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+            onChange={(event) => {
+              draftActions.replaceDraftSlotExercise(
+                template.id,
+                currentGroupId,
+                slotIndex,
+                event.currentTarget.value,
+              );
+            }}
+            value={slot.exerciseId}
+          >
+            {replacementChoices.map((choice) => (
+              <option key={choice.exerciseId} value={choice.exerciseId}>
+                {choice.exerciseName}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {canMoveSlot ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            disabled={slotIndex === 0}
+            onClick={() => {
+              draftActions.reorderDraftSlot(template.id, currentGroupId, slotIndex, slotIndex - 1);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Move slot up
+          </Button>
+          <Button
+            disabled={slotIndex === groupSlotsLength(template, currentGroupId) - 1}
+            onClick={() => {
+              draftActions.reorderDraftSlot(template.id, currentGroupId, slotIndex, slotIndex + 1);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Move slot down
+          </Button>
+          <Button
+            disabled={groupSlotsLength(template, currentGroupId) <= 1}
+            onClick={() => {
+              draftActions.deleteDraftSlot(template.id, currentGroupId, slotIndex);
+            }}
+            type="button"
+            variant="secondary"
+          >
+            Delete slot
+          </Button>
+        </div>
+      ) : null}
       {moveTargets.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {moveTargets.map((group) => (
@@ -835,6 +935,13 @@ function DraftStartingLoadEditor({
 
 function formatLoad(load: number | null): string {
   return load === null ? "No previous load" : `${load} kg`;
+}
+
+function groupSlotsLength(
+  template: TrainingPlanDraft["content"]["workoutTemplates"][number],
+  groupId: string,
+) {
+  return template.supersetGroups.find((group) => group.id === groupId)?.slots.length ?? 0;
 }
 
 function formatEditableLoad(load: number | null): string {

@@ -290,6 +290,39 @@ export type MoveTrainingPlanDraftSlotToSupersetGroupOptions = {
   timestamp: string;
 };
 
+export type ReplaceTrainingPlanDraftSlotExerciseOptions = {
+  blueprint: PlanBlueprint;
+  exerciseId: string;
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+export type AddTrainingPlanDraftSlotOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+};
+
+export type DeleteTrainingPlanDraftSlotOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+export type ReorderTrainingPlanDraftSlotOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  slotIndex: number;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export type UpdateTrainingPlanDraftOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;

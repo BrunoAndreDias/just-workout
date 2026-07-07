@@ -170,14 +170,18 @@ function renderOnePageActiveStep({
         <GenerateTrainingPlanStep
           blockingIssues={workflow.generation.defaultResolution?.blockingIssues}
           draftActions={{
+            addDraftSlot: generateStep.onAddDraftSlot,
             acceptDraft: generateStep.onAcceptDraft,
             addSupersetGroup: generateStep.onAddSupersetGroup,
+            deleteDraftSlot: generateStep.onDeleteDraftSlot,
             deleteSupersetGroup: generateStep.onDeleteSupersetGroup,
             moveWorkoutTemplate: generateStep.onMoveWorkoutTemplate,
             moveDraftSlotToSupersetGroup: generateStep.onMoveDraftSlotToSupersetGroup,
             moveSupersetGroup: generateStep.onMoveSupersetGroup,
             renameWorkoutTemplate: generateStep.onRenameWorkoutTemplate,
             renameSupersetGroup: generateStep.onRenameSupersetGroup,
+            reorderDraftSlot: generateStep.onReorderDraftSlot,
+            replaceDraftSlotExercise: generateStep.onReplaceDraftSlotExercise,
             replaceWorkoutTemplateWithCustomFocus:
               generateStep.onReplaceWorkoutTemplateWithCustomFocus,
             resetDraft: generateStep.onResetDraft,

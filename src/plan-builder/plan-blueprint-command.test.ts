@@ -73,7 +73,10 @@ describe("plan blueprint command", () => {
               label: "Upper A",
               purpose: "strength",
               supersetGroups: [
-                createSupersetGroup({ id: "template-1-group", exerciseId: "exercise-1" }),
+                createSupersetGroup({
+                  id: "template-1-group",
+                  exerciseId: "flat-barbell-bench-press",
+                }),
               ],
             },
             {
@@ -81,7 +84,7 @@ describe("plan blueprint command", () => {
               label: "Lower A",
               purpose: "strength",
               supersetGroups: [
-                createSupersetGroup({ id: "template-2-group", exerciseId: "exercise-2" }),
+                createSupersetGroup({ id: "template-2-group", exerciseId: "lat-pull-downs" }),
               ],
             },
           ],
@@ -161,8 +164,8 @@ describe("plan blueprint command", () => {
                   id: "group-1",
                   slots: [
                     {
-                      exerciseId: "exercise-1",
-                      exerciseName: "Bench Press",
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
                       kind: "exercise" as const,
                       movementPattern: "horizontal_push",
                       role: "main_compound",
@@ -177,8 +180,8 @@ describe("plan blueprint command", () => {
                   id: "group-2",
                   slots: [
                     {
-                      exerciseId: "exercise-2",
-                      exerciseName: "Row",
+                      exerciseId: "lat-pull-downs",
+                      exerciseName: "Lat Pull-Downs",
                       kind: "exercise" as const,
                       movementPattern: "horizontal_pull",
                       role: "secondary_compound",
@@ -229,8 +232,8 @@ describe("plan blueprint command", () => {
               {
                 id: "group-2",
                 slots: [
-                  expect.objectContaining({ exerciseId: "exercise-2" }),
-                  expect.objectContaining({ exerciseId: "exercise-1" }),
+                  expect.objectContaining({ exerciseId: "lat-pull-downs" }),
+                  expect.objectContaining({ exerciseId: "flat-barbell-bench-press" }),
                 ],
               },
             ],
@@ -244,6 +247,70 @@ describe("plan blueprint command", () => {
     });
   });
 
+  it("uses the same slot replacement draft command for projection and persistence", async () => {
+    const blueprint = await getOrCreatePlanBlueprint();
+    const draftBlueprint = createDraftBlueprint({
+      ...blueprint,
+      exerciseSelectionPreferences: {
+        avoidedExercises: [],
+        equipmentPreset: "full_gym",
+        preferredExercises: [],
+        strategy: "balanced",
+      },
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          purpose: "strength",
+          supersetGroups: [
+            {
+              id: "group-1",
+              slots: [
+                {
+                  exerciseId: "flat-barbell-bench-press",
+                  exerciseName: "Flat Barbell Bench Press",
+                  kind: "exercise" as const,
+                  movementPattern: "horizontal_push",
+                  role: "main_compound",
+                  slotLabel: "A1",
+                  targetMuscles: ["chest"],
+                },
+              ],
+              title: "Upper superset 1",
+              type: "superset",
+            },
+          ],
+        },
+      ],
+    });
+
+    await persistPlanBlueprintCommand(
+      planBlueprintCommandBuilders.applyResolvedPlanBlueprint({
+        blueprint: draftBlueprint,
+      }),
+    );
+
+    const command = planBlueprintCommandBuilders.replaceTrainingPlanDraftSlotExercise({
+      exerciseId: "incline-dumbbell-bench-press",
+      groupId: "group-1",
+      slotIndex: 0,
+      templateId: "template-1",
+      timestamp: "2026-05-30T10:36:00.000Z",
+    });
+
+    const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
+    const persistedBlueprint = await persistPlanBlueprintCommand(command);
+
+    expect(projectedBlueprint).toEqual(persistedBlueprint);
+    expect(
+      persistedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]
+        ?.slots[0],
+    ).toMatchObject({
+      exerciseId: "incline-dumbbell-bench-press",
+      exerciseName: "Incline Dumbbell Bench Press",
+    });
+  });
+
   it("uses the command Superset Group id when adding a draft group", async () => {
     const blueprint = await getOrCreatePlanBlueprint();
     const draftBlueprint = createDraftBlueprint({
@@ -254,7 +321,10 @@ describe("plan blueprint command", () => {
           label: "Upper A",
           purpose: "strength",
           supersetGroups: [
-            createSupersetGroup({ id: "template-1-group", exerciseId: "exercise-1" }),
+            createSupersetGroup({
+              id: "template-1-group",
+              exerciseId: "flat-barbell-bench-press",
+            }),
           ],
         },
       ],

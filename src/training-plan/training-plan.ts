@@ -1,4 +1,5 @@
 import type { ExerciseSelectionPreferences } from "../plan-builder/exercise-selection-preferences";
+import { getAvoidedExerciseIds } from "../plan-builder/exercise-selection-preferences";
 import type { IsolationExercisePreferenceBucket } from "../plan-builder/isolation-exercise-preferences";
 import { deriveMainCompoundRotationPools } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
@@ -8,6 +9,7 @@ import type {
   MovementPatternId,
   WeeklyRepTarget,
 } from "../training-taxonomy";
+import { getExerciseCatalogExercise } from "../training-taxonomy";
 import type { TrainingBlock } from "./training-block";
 import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-template-generation";
 import {
@@ -274,6 +276,7 @@ export function validateTrainingPlanDraftContent({
   content: TrainingPlanContent;
 }): TrainingPlanDraftValidation {
   const blockers: string[] = [];
+  const avoidedExerciseIds = getAvoidedExerciseIds(content.exerciseSelectionPreferences);
   const customFocusTemplateIds = content.workoutTemplates
     .filter((template) => template.purpose === "custom-focus")
     .map((template) => template.id);
@@ -291,6 +294,46 @@ export function validateTrainingPlanDraftContent({
     )
   ) {
     blockers.push("Strength-focused Workout Templates cannot contain empty Superset Groups.");
+  }
+
+  if (
+    content.workoutTemplates.some((template) =>
+      template.supersetGroups.some((group) =>
+        group.slots.some((slot) => getExerciseCatalogExercise(slot.exerciseId) === undefined),
+      ),
+    )
+  ) {
+    blockers.push("Training Plan Draft slots must use available catalog exercises.");
+  }
+
+  if (
+    content.workoutTemplates.some((template) =>
+      template.supersetGroups.some((group) =>
+        group.slots.some((slot) => avoidedExerciseIds.has(slot.exerciseId)),
+      ),
+    )
+  ) {
+    blockers.push("Avoided exercises cannot remain in the Training Plan Draft.");
+  }
+
+  if (
+    content.workoutTemplates.some((template) => {
+      const seenSlotKeys = new Set<string>();
+
+      for (const slot of template.supersetGroups.flatMap((group) => group.slots)) {
+        const slotKey = `${slot.exerciseId}:${slot.role}`;
+
+        if (seenSlotKeys.has(slotKey)) {
+          return true;
+        }
+
+        seenSlotKeys.add(slotKey);
+      }
+
+      return false;
+    })
+  ) {
+    blockers.push("Workout Templates cannot repeat the same exercise in more than one slot.");
   }
 
   return {

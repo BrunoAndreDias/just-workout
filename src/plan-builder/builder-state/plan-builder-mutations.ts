@@ -133,6 +133,35 @@ type MoveTrainingPlanDraftSlotToSupersetGroupMutationVariables = {
   timestamp: string;
 };
 
+type ReplaceTrainingPlanDraftSlotExerciseMutationVariables = {
+  exerciseId: string;
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+type AddTrainingPlanDraftSlotMutationVariables = {
+  groupId: string;
+  templateId: string;
+  timestamp: string;
+};
+
+type DeleteTrainingPlanDraftSlotMutationVariables = {
+  groupId: string;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
+type ReorderTrainingPlanDraftSlotMutationVariables = {
+  groupId: string;
+  slotIndex: number;
+  targetSlotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
     queryKey: planBuilderBlueprintQueryKey,
@@ -256,6 +285,30 @@ export function useReorderTrainingPlanDraftSupersetGroupMutation() {
 export function useMoveTrainingPlanDraftSlotToSupersetGroupMutation() {
   return usePlanBlueprintMutation<MoveTrainingPlanDraftSlotToSupersetGroupMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.moveTrainingPlanDraftSlotToSupersetGroup,
+  });
+}
+
+export function useReplaceTrainingPlanDraftSlotExerciseMutation() {
+  return usePlanBlueprintMutation<ReplaceTrainingPlanDraftSlotExerciseMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.replaceTrainingPlanDraftSlotExercise,
+  });
+}
+
+export function useAddTrainingPlanDraftSlotMutation() {
+  return usePlanBlueprintMutation<AddTrainingPlanDraftSlotMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.addTrainingPlanDraftSlot,
+  });
+}
+
+export function useDeleteTrainingPlanDraftSlotMutation() {
+  return usePlanBlueprintMutation<DeleteTrainingPlanDraftSlotMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.deleteTrainingPlanDraftSlot,
+  });
+}
+
+export function useReorderTrainingPlanDraftSlotMutation() {
+  return usePlanBlueprintMutation<ReorderTrainingPlanDraftSlotMutationVariables>({
+    buildCommand: planBlueprintCommandBuilders.reorderTrainingPlanDraftSlot,
   });
 }
 
