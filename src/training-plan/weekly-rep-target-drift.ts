@@ -24,6 +24,7 @@ const volumeTargetMuscleByPrimaryTargetMuscle = {
   triceps: "triceps",
 } as const satisfies Partial<Record<PrimaryTargetMuscle, VolumeTargetMuscleGroup>>;
 
+/** Returns enabled Weekly Rep Targets whose prescribed top-end reps fall below target. */
 export function getWeeklyRepTargetDriftNotices(
   content: Pick<TrainingPlanContent, "weeklyRepTargets" | "workoutTemplates">,
 ): WeeklyRepTargetDriftNotice[] {

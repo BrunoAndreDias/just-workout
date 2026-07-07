@@ -383,14 +383,21 @@ export function useOnePageGenerateStep({
         timestamp: new Date().toISOString(),
       });
     },
-    onUpdateDraftSlotTrainingPrescription: (
-      templateId: string,
-      groupId: string,
-      slotIndex: number,
-      setCount: number,
-      repTargetMin: number,
-      repTargetMax: number,
-    ) => {
+    onUpdateDraftSlotTrainingPrescription: ({
+      groupId,
+      repTargetMax,
+      repTargetMin,
+      setCount,
+      slotIndex,
+      templateId,
+    }: {
+      groupId: string;
+      repTargetMax: number;
+      repTargetMin: number;
+      setCount: number;
+      slotIndex: number;
+      templateId: string;
+    }) => {
       updateDraftSlotTrainingPrescription({
         groupId,
         repTargetMax,

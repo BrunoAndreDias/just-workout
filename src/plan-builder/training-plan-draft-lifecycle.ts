@@ -674,27 +674,31 @@ export function updateTrainingPlanDraftSlotTrainingPrescription({
     timestamp,
     updateTemplate: (template) => ({
       ...template,
-      supersetGroups: template.supersetGroups.map((group) =>
-        group.id !== groupId
-          ? group
-          : {
-              ...group,
-              slots: group.slots.map((slot, currentSlotIndex) =>
-                currentSlotIndex !== slotIndex
-                  ? slot
-                  : {
-                      ...slot,
-                      trainingPrescription: {
-                        repRange: {
-                          max: repTargetMax,
-                          min: repTargetMin,
-                        },
-                        setCount,
-                      },
-                    },
-              ),
-            },
-      ),
+      supersetGroups: template.supersetGroups.map((group) => {
+        if (group.id !== groupId) {
+          return group;
+        }
+
+        return {
+          ...group,
+          slots: group.slots.map((slot, currentSlotIndex) => {
+            if (currentSlotIndex !== slotIndex) {
+              return slot;
+            }
+
+            return {
+              ...slot,
+              trainingPrescription: {
+                repRange: {
+                  max: repTargetMax,
+                  min: repTargetMin,
+                },
+                setCount,
+              },
+            };
+          }),
+        };
+      }),
     }),
   });
 }

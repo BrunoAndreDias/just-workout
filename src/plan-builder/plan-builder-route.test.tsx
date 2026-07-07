@@ -797,9 +797,7 @@ describe("Plan Builder canonical route", () => {
     await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
 
     await waitFor(() => {
-      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).not.toHaveValue(
-        replacementExerciseId,
-      );
+      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).toHaveValue(originalExerciseId);
       expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
     });
   }, 10000);

@@ -344,57 +344,60 @@ export function validateTrainingPlanDraftContent({
     blockers.push("Workout Templates cannot repeat the same exercise in more than one slot.");
   }
 
-  if (
-    content.workoutTemplates.some((template) =>
-      template.supersetGroups.some((group) =>
-        group.slots.some((slot) => {
-          const trainingPrescription = slot.trainingPrescription;
-
-          if (!trainingPrescription) {
-            return false;
-          }
-
-          return (
-            !Number.isInteger(trainingPrescription.setCount) ||
-            !Number.isInteger(trainingPrescription.repRange.min) ||
-            !Number.isInteger(trainingPrescription.repRange.max) ||
-            trainingPrescription.setCount <= 0 ||
-            trainingPrescription.repRange.min <= 0 ||
-            trainingPrescription.repRange.max <= 0 ||
-            trainingPrescription.repRange.min > trainingPrescription.repRange.max
-          );
-        }),
-      ),
-    )
-  ) {
+  if (hasInvalidTrainingPrescription(content)) {
     blockers.push(
       "Training Prescriptions must use positive integer set counts and rep targets, with the minimum less than or equal to the maximum.",
     );
   }
 
-  const weeklyRepTargetDriftWarnings = getWeeklyRepTargetDriftNotices(content).map((notice) => ({
-    kind: "weekly_rep_target_drift" as const,
-    message: `${notice.muscleGroup} is ${notice.shortfallReps} reps below your Weekly Rep Target.`,
-    muscleGroup: notice.muscleGroup,
-    prescribedTopEndReps: notice.prescribedTopEndReps,
-    shortfallReps: notice.shortfallReps,
-    targetReps: notice.targetReps,
-  }));
+  const warnings: TrainingPlanDraftWarning[] = [];
+
+  if (customFocusTemplateIds.length > 0) {
+    warnings.push({
+      kind: "custom_focus_reduces_strength_coverage",
+      message:
+        "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
+      templateIds: customFocusTemplateIds,
+    });
+  }
+
+  for (const notice of getWeeklyRepTargetDriftNotices(content)) {
+    warnings.push({
+      kind: "weekly_rep_target_drift",
+      message: `${notice.muscleGroup} is ${notice.shortfallReps} reps below your Weekly Rep Target.`,
+      muscleGroup: notice.muscleGroup,
+      prescribedTopEndReps: notice.prescribedTopEndReps,
+      shortfallReps: notice.shortfallReps,
+      targetReps: notice.targetReps,
+    });
+  }
 
   return {
     blockers,
-    warnings: [
-      ...(customFocusTemplateIds.length > 0
-        ? [
-            {
-              kind: "custom_focus_reduces_strength_coverage" as const,
-              message:
-                "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
-              templateIds: customFocusTemplateIds,
-            },
-          ]
-        : []),
-      ...weeklyRepTargetDriftWarnings,
-    ],
+    warnings,
   };
+}
+
+function hasInvalidTrainingPrescription(content: TrainingPlanContent): boolean {
+  return content.workoutTemplates.some((template) =>
+    template.supersetGroups.some((group) =>
+      group.slots.some(
+        (slot) =>
+          slot.trainingPrescription !== undefined &&
+          isInvalidTrainingPrescription(slot.trainingPrescription),
+      ),
+    ),
+  );
+}
+
+function isInvalidTrainingPrescription(trainingPrescription: TrainingPrescription): boolean {
+  return (
+    !Number.isInteger(trainingPrescription.setCount) ||
+    !Number.isInteger(trainingPrescription.repRange.min) ||
+    !Number.isInteger(trainingPrescription.repRange.max) ||
+    trainingPrescription.setCount <= 0 ||
+    trainingPrescription.repRange.min <= 0 ||
+    trainingPrescription.repRange.max <= 0 ||
+    trainingPrescription.repRange.min > trainingPrescription.repRange.max
+  );
 }

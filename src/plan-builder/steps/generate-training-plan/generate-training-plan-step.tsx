@@ -107,15 +107,17 @@ type TrainingPlanDraftActions = {
   replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
   resetDraft: () => Promise<void>;
   saveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
-  updateDraftSlotTrainingPrescription: (
-    templateId: string,
-    groupId: string,
-    slotIndex: number,
-    setCount: number,
-    repTargetMin: number,
-    repTargetMax: number,
-  ) => void;
+  updateDraftSlotTrainingPrescription: (update: TrainingPlanDraftSlotPrescriptionUpdate) => void;
   setWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
+};
+
+type TrainingPlanDraftSlotPrescriptionUpdate = {
+  groupId: string;
+  repTargetMax: number;
+  repTargetMin: number;
+  setCount: number;
+  slotIndex: number;
+  templateId: string;
 };
 
 type TrainingPlanDraftSlot =
@@ -936,14 +938,14 @@ function DraftTrainingPrescriptionEditor({
   }
 
   function persistTrainingPrescription() {
-    draftActions.updateDraftSlotTrainingPrescription(
-      templateId,
+    draftActions.updateDraftSlotTrainingPrescription({
       groupId,
+      repTargetMax: parseTrainingPrescriptionInteger(editableRepTargetMax),
+      repTargetMin: parseTrainingPrescriptionInteger(editableRepTargetMin),
+      setCount: parseTrainingPrescriptionInteger(editableSetCount),
       slotIndex,
-      parseTrainingPrescriptionInteger(editableSetCount),
-      parseTrainingPrescriptionInteger(editableRepTargetMin),
-      parseTrainingPrescriptionInteger(editableRepTargetMax),
-    );
+      templateId,
+    });
   }
 
   return (
