@@ -1,3 +1,4 @@
+import type { DefaultExerciseSlotKey } from "./default-exercise-slots";
 import type { SupersetGroup } from "./training-plan";
 import {
   createAbsFinisher,
@@ -48,8 +49,16 @@ export function createFullBodySupersetGroups({
     createWorkoutBlock({
       id: `${templateId}-full-body-superset-2`,
       slots: [
-        createSelectionSlot(selections.secondaryUpperPull, "upper_pull_2", "main_compound"),
-        createSelectionSlot(selections.secondaryUpperPush, "vertical_push", "secondary_compound"),
+        createSelectionSlot(
+          selections.secondaryUpperPull,
+          getSecondaryUpperPullDefaultSlotKey(selections),
+          "main_compound",
+        ),
+        createSelectionSlot(
+          selections.secondaryUpperPush,
+          getSecondaryUpperPushDefaultSlotKey(selections),
+          "secondary_compound",
+        ),
         createSelectionSlot(
           selections.hipHamstringDominant,
           "hip_hamstring_dominant",
@@ -67,6 +76,22 @@ export function createFullBodySupersetGroups({
   }
 
   return groups;
+}
+
+function getSecondaryUpperPullDefaultSlotKey(
+  selections: WorkoutTemplateSelections,
+): DefaultExerciseSlotKey {
+  return selections.primaryUpperPull?.movementPattern === "horizontal_pull"
+    ? "upper_pull_1"
+    : "upper_pull_2";
+}
+
+function getSecondaryUpperPushDefaultSlotKey(
+  selections: WorkoutTemplateSelections,
+): DefaultExerciseSlotKey {
+  return selections.primaryUpperPush?.movementPattern === "vertical_push"
+    ? "horizontal_push"
+    : "vertical_push";
 }
 
 function createAlternatingFullBodySupersetGroups(

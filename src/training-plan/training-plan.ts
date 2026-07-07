@@ -318,16 +318,14 @@ export function validateTrainingPlanDraftContent({
 
   if (
     content.workoutTemplates.some((template) => {
-      const seenSlotKeys = new Set<string>();
+      const seenExerciseIds = new Set<string>();
 
       for (const slot of template.supersetGroups.flatMap((group) => group.slots)) {
-        const slotKey = `${slot.exerciseId}:${slot.role}`;
-
-        if (seenSlotKeys.has(slotKey)) {
+        if (seenExerciseIds.has(slot.exerciseId)) {
           return true;
         }
 
-        seenSlotKeys.add(slotKey);
+        seenExerciseIds.add(slot.exerciseId);
       }
 
       return false;

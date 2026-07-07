@@ -762,6 +762,45 @@ describe("Plan Builder canonical route", () => {
     });
   });
 
+  it("keeps draft-local slot edits accept-ready and resets them from current builder choices", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    const initialChoice = (await screen.findAllByLabelText(/exercise choice for /i))[0] as
+      | HTMLSelectElement
+      | undefined;
+
+    if (!initialChoice) {
+      throw new Error("Expected a draft slot exercise choice.");
+    }
+
+    const originalExerciseId = initialChoice.value;
+    const replacementExerciseId = Array.from(initialChoice.options).find(
+      (option) => option.value !== originalExerciseId,
+    )?.value;
+
+    if (!replacementExerciseId) {
+      throw new Error("Expected a replacement draft slot exercise choice.");
+    }
+
+    await user.selectOptions(initialChoice, replacementExerciseId);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+      expect(screen.queryByText(/Stale Builder Output/i)).toBeNull();
+      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).toHaveValue(
+        replacementExerciseId,
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).toHaveValue(originalExerciseId);
+    });
+  });
+
   it("blocks empty Superset Groups and resets draft-local group edits from current builder choices", async () => {
     const user = userEvent.setup();
     const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
@@ -1012,7 +1051,13 @@ describe("Plan Builder canonical route", () => {
     const moveSlotUpButtons = within(upperATemplate).getAllByRole("button", {
       name: /^move slot up$/i,
     });
-    await user.click(moveSlotUpButtons[1]!);
+    const secondMoveSlotUpButton = moveSlotUpButtons[1];
+
+    if (!secondMoveSlotUpButton) {
+      throw new Error("Expected a second move slot up button.");
+    }
+
+    await user.click(secondMoveSlotUpButton);
 
     await waitFor(() => {
       const slotNames = within(upperATemplate)
@@ -1028,7 +1073,13 @@ describe("Plan Builder canonical route", () => {
     const deleteSlotButtons = within(upperATemplate).getAllByRole("button", {
       name: /^delete slot$/i,
     });
-    await user.click(deleteSlotButtons.at(-1)!);
+    const lastDeleteSlotButton = deleteSlotButtons.at(-1);
+
+    if (!lastDeleteSlotButton) {
+      throw new Error("Expected a delete slot button.");
+    }
+
+    await user.click(lastDeleteSlotButton);
 
     await waitFor(() => {
       const slotChoices = within(upperATemplate).getAllByLabelText(/exercise choice for /i);

@@ -541,6 +541,9 @@ export function addTrainingPlanDraftSlot({
     templateId,
     timestamp,
     updateTemplate: (template) => {
+      const avoidedExerciseIds = getAvoidedExerciseIds(
+        blueprint.trainingPlanDraft?.content.exerciseSelectionPreferences,
+      );
       const groupIndex = template.supersetGroups.findIndex((group) => group.id === groupId);
       const group = template.supersetGroups[groupIndex];
       const baseSlot = group?.slots.at(-1);
@@ -549,7 +552,12 @@ export function addTrainingPlanDraftSlot({
         return template;
       }
 
-      const nextExercise = getNextDraftSlotExerciseCandidate({ baseSlot, groupId, template });
+      const nextExercise = getNextDraftSlotExerciseCandidate({
+        avoidedExerciseIds,
+        baseSlot,
+        groupId,
+        template,
+      });
 
       if (!nextExercise) {
         return template;
@@ -809,10 +817,12 @@ function isCompatibleDraftSlotReplacement({
 }
 
 function getNextDraftSlotExerciseCandidate({
+  avoidedExerciseIds,
   baseSlot,
   groupId,
   template,
 }: {
+  avoidedExerciseIds: ReadonlySet<string>;
   baseSlot: TrainingPlanSlot;
   groupId: string;
   template: WorkoutTemplate;
@@ -825,6 +835,7 @@ function getNextDraftSlotExerciseCandidate({
   return getCatalogExercisesByMovementPattern(baseSlot.movementPattern).find(
     (exercise) =>
       exercise.id !== baseSlot.exerciseId &&
+      !avoidedExerciseIds.has(exercise.id) &&
       exercise.role === catalogRole &&
       baseSlot.targetMuscles.every((targetMuscle) =>
         exercise.primaryMuscleGroups.includes(targetMuscle),

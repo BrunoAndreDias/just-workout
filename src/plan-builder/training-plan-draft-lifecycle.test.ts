@@ -5,7 +5,6 @@ import {
   addTrainingPlanDraftSupersetGroup,
   deleteTrainingPlanDraftSlot,
   markTrainingPlanDraftStale,
-  moveTrainingPlanDraftSlotToSupersetGroup,
   normalizeTrainingPlanDraft,
   reorderTrainingPlanDraftSlot,
   replaceTrainingPlanDraftSlotExercise,
@@ -117,7 +116,7 @@ describe("Training Plan Draft lifecycle", () => {
     });
   });
 
-  it("replaces, adds, deletes, and reorders draft slots while blocking duplicates and unavailable exercises", () => {
+  it("replaces a draft slot with compatible catalog exercise data", () => {
     const blueprint = createTestPlanBlueprint({
       trainingPlanDraft: {
         content: {
@@ -136,7 +135,7 @@ describe("Training Plan Draft lifecycle", () => {
       },
     });
 
-    const replacedBlueprint = replaceTrainingPlanDraftSlotExercise({
+    const updatedBlueprint = replaceTrainingPlanDraftSlotExercise({
       blueprint,
       exerciseId: "incline-dumbbell-bench-press",
       groupId: "group-1",
@@ -146,7 +145,7 @@ describe("Training Plan Draft lifecycle", () => {
     });
 
     expect(
-      replacedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots,
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots,
     ).toEqual([
       expect.objectContaining({
         exerciseId: "incline-dumbbell-bench-press",
@@ -156,66 +155,81 @@ describe("Training Plan Draft lifecycle", () => {
         targetMuscles: ["chest"],
       }),
     ]);
+  });
 
-    const addedBlueprint = addTrainingPlanDraftSlot({
-      blueprint: replacedBlueprint,
+  it("adds a compatible draft slot while skipping avoided candidates", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: {
+          ...createTestTrainingPlanDraftContent(),
+          exerciseSelectionPreferences: {
+            avoidedExercises: [{ id: "avoid-1", rawText: "Flat Dumbbell Bench Press" }],
+            equipmentPreset: "full_gym",
+            preferredExercises: [],
+            strategy: "balanced",
+          },
+        },
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
+    });
+
+    const updatedBlueprint = addTrainingPlanDraftSlot({
+      blueprint,
       groupId: "group-1",
       templateId: "template-1",
       timestamp: "2026-07-07T08:25:00.000Z",
     });
 
     expect(
-      addedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots.map(
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots.map(
         (slot) => slot.exerciseId,
       ),
-    ).toEqual(["incline-dumbbell-bench-press", "flat-barbell-bench-press"]);
+    ).toEqual(["flat-barbell-bench-press", "incline-barbell-bench-press"]);
+  });
 
-    const movedBlueprint = moveTrainingPlanDraftSlotToSupersetGroup({
-      blueprint: {
-        ...addedBlueprint,
-        trainingPlanDraft: {
-          ...addedBlueprint.trainingPlanDraft!,
-          content: {
-            ...addedBlueprint.trainingPlanDraft!.content,
-            workoutTemplates: [
-              {
-                ...addedBlueprint.trainingPlanDraft!.content.workoutTemplates[0]!,
-                supersetGroups: [
-                  addedBlueprint.trainingPlanDraft!.content.workoutTemplates[0]!.supersetGroups[0]!,
-                  {
-                    id: "group-2",
-                    slots: [
-                      {
-                        exerciseId: "lat-pull-downs",
-                        exerciseName: "Lat Pull-Downs",
-                        kind: "exercise",
-                        movementPattern: "vertical_pull",
-                        role: "secondary_compound",
-                        slotLabel: "B1",
-                        targetMuscles: ["back"],
-                      },
-                    ],
-                    title: "Upper Superset Group 2",
-                    type: "superset",
-                  },
-                ],
-              },
-            ],
-          },
-          validation: { blockers: [], warnings: [] },
+  it("deletes a draft slot when the group remains non-empty", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: createTwoSlotDraftContent(),
+        validation: {
+          blockers: [],
+          warnings: [],
         },
       },
-      sourceGroupId: "group-1",
-      slotIndex: 1,
-      targetGroupId: "group-2",
-      targetSlotIndex: 1,
-      templateId: "template-1",
-      timestamp: "2026-07-07T08:26:00.000Z",
     });
 
-    const reorderedBlueprint = reorderTrainingPlanDraftSlot({
-      blueprint: movedBlueprint,
-      groupId: "group-2",
+    const updatedBlueprint = deleteTrainingPlanDraftSlot({
+      blueprint,
+      groupId: "group-1",
+      slotIndex: 1,
+      templateId: "template-1",
+      timestamp: "2026-07-07T08:28:00.000Z",
+    });
+
+    expect(
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots.map(
+        (slot) => slot.exerciseId,
+      ),
+    ).toEqual(["flat-barbell-bench-press"]);
+  });
+
+  it("reorders draft slots inside one Superset Group", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: createTwoSlotDraftContent(),
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
+    });
+
+    const updatedBlueprint = reorderTrainingPlanDraftSlot({
+      blueprint,
+      groupId: "group-1",
       slotIndex: 1,
       targetSlotIndex: 0,
       templateId: "template-1",
@@ -223,98 +237,93 @@ describe("Training Plan Draft lifecycle", () => {
     });
 
     expect(
-      reorderedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[1]?.slots.map(
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots.map(
         (slot) => slot.exerciseId,
       ),
-    ).toEqual(["flat-barbell-bench-press", "lat-pull-downs"]);
+    ).toEqual(["incline-dumbbell-bench-press", "flat-barbell-bench-press"]);
+  });
 
-    const deletedBlueprint = deleteTrainingPlanDraftSlot({
-      blueprint: reorderedBlueprint,
-      groupId: "group-2",
-      slotIndex: 1,
-      templateId: "template-1",
-      timestamp: "2026-07-07T08:28:00.000Z",
+  it("keeps the existing slot when replacement would duplicate another slot in the template", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: createTwoGroupDraftContent(),
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
     });
 
-    expect(
-      deletedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[1]?.slots.map(
-        (slot) => slot.exerciseId,
-      ),
-    ).toEqual(["flat-barbell-bench-press"]);
-
-    const duplicateBlueprint = replaceTrainingPlanDraftSlotExercise({
-      blueprint: deletedBlueprint,
+    const updatedBlueprint = replaceTrainingPlanDraftSlotExercise({
+      blueprint,
       exerciseId: "flat-barbell-bench-press",
       groupId: "group-1",
       slotIndex: 0,
       templateId: "template-1",
       timestamp: "2026-07-07T08:29:00.000Z",
     });
-    const deletedTemplate = deletedBlueprint.trainingPlanDraft!.content.workoutTemplates[0]!;
-    const deletedFirstGroup = deletedTemplate.supersetGroups[0]!;
-    const deletedSecondGroup = deletedTemplate.supersetGroups[1]!;
-    const deletedFirstSlot = deletedFirstGroup.slots[0]!;
-    const duplicateDraft = normalizeTrainingPlanDraft({
+
+    expect(
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots[0],
+    ).toMatchObject({
+      exerciseId: "incline-dumbbell-bench-press",
+      exerciseName: "Incline Dumbbell Bench Press",
+    });
+  });
+
+  it("validates duplicate draft exercises within a Workout Template regardless of slot role", () => {
+    const { content: draftContent, group, slot, template } = getFirstDraftSlotFixture();
+
+    const draft = normalizeTrainingPlanDraft({
       content: {
-        ...deletedBlueprint.trainingPlanDraft!.content,
+        ...draftContent,
         workoutTemplates: [
           {
-            ...deletedTemplate,
+            ...template,
             supersetGroups: [
               {
-                ...deletedFirstGroup,
-                slots: [
-                  {
-                    ...deletedFirstSlot,
-                    exerciseId: "flat-barbell-bench-press",
-                    exerciseName: "Flat Barbell Bench Press",
-                  },
-                ],
+                ...group,
+                slots: [slot, { ...slot, role: "secondary_compound", slotLabel: "A2" }],
               },
-              deletedSecondGroup,
             ],
           },
         ],
       },
     });
 
-    const unavailableDraft = normalizeTrainingPlanDraft({
+    expect(draft?.validation.blockers).toContain(
+      "Workout Templates cannot repeat the same exercise in more than one slot.",
+    );
+  });
+
+  it("validates unavailable draft slot exercises", () => {
+    const { content: draftContent, group, slot, template } = getFirstDraftSlotFixture();
+
+    const draft = normalizeTrainingPlanDraft({
       content: {
-        ...deletedBlueprint.trainingPlanDraft!.content,
+        ...draftContent,
         workoutTemplates: [
           {
-            ...deletedTemplate,
+            ...template,
             supersetGroups: [
               {
-                ...deletedFirstGroup,
+                ...group,
                 slots: [
                   {
-                    ...deletedFirstSlot,
+                    ...slot,
                     exerciseId: "retired-exercise",
                     exerciseName: "Retired Exercise",
                   },
                 ],
               },
-              deletedSecondGroup,
             ],
           },
         ],
       },
     });
 
-    expect(
-      duplicateBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots,
-    ).toEqual(
-      deletedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots,
-    );
-    expect(duplicateDraft?.validation.blockers).toContain(
-      "Workout Templates cannot repeat the same exercise in more than one slot.",
-    );
-    expect(unavailableDraft?.validation.blockers).toContain(
+    expect(draft?.validation.blockers).toContain(
       "Training Plan Draft slots must use available catalog exercises.",
-    );
-    expect(duplicateDraft?.validation.blockers).not.toContain(
-      "Avoided exercises cannot remain in the Training Plan Draft.",
     );
   });
 });
@@ -370,4 +379,75 @@ function createTestTrainingPlanDraftContent(): NonNullable<
       },
     ],
   };
+}
+
+function createTwoSlotDraftContent(): NonNullable<PlanBlueprint["trainingPlanDraft"]>["content"] {
+  const { content, group, slot, template } = getFirstDraftSlotFixture();
+
+  return {
+    ...content,
+    workoutTemplates: [
+      {
+        ...template,
+        supersetGroups: [
+          {
+            ...group,
+            slots: [
+              slot,
+              {
+                ...slot,
+                exerciseId: "incline-dumbbell-bench-press",
+                exerciseName: "Incline Dumbbell Bench Press",
+                slotLabel: "A2",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createTwoGroupDraftContent(): NonNullable<PlanBlueprint["trainingPlanDraft"]>["content"] {
+  const { content, group, slot, template } = getFirstDraftSlotFixture();
+
+  return {
+    ...content,
+    workoutTemplates: [
+      {
+        ...template,
+        supersetGroups: [
+          {
+            ...group,
+            slots: [
+              {
+                ...slot,
+                exerciseId: "incline-dumbbell-bench-press",
+                exerciseName: "Incline Dumbbell Bench Press",
+              },
+            ],
+          },
+          {
+            id: "group-2",
+            slots: [slot],
+            title: "Upper Superset Group 2",
+            type: "superset",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function getFirstDraftSlotFixture() {
+  const content = createTestTrainingPlanDraftContent();
+  const template = content.workoutTemplates[0];
+  const group = template?.supersetGroups[0];
+  const slot = group?.slots[0];
+
+  if (!template || !group || !slot) {
+    throw new Error("Expected the test draft fixture to contain one template, group, and slot.");
+  }
+
+  return { content, group, slot, template };
 }

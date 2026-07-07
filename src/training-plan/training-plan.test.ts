@@ -102,6 +102,25 @@ describe("generateTrainingPlanFromBlueprint", () => {
     );
   });
 
+  it("generates Full Body templates without duplicate exercises inside a Workout Template", () => {
+    const content = generateTrainingPlanContentFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        split: "full-body-3-day",
+        trainingFrequencyDaysPerWeek: 3,
+      }),
+    });
+
+    expect(
+      content.workoutTemplates.every((template) => {
+        const exerciseIds = template.supersetGroups.flatMap((group) =>
+          group.slots.map((slot) => slot.exerciseId),
+        );
+
+        return new Set(exerciseIds).size === exerciseIds.length;
+      }),
+    ).toBe(true);
+  });
+
   it("keeps generated Training Prescriptions independent between workout slots and generations", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint(),
