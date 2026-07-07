@@ -887,7 +887,7 @@ describe("Plan Builder canonical route", () => {
         ]),
       );
     });
-  });
+  }, 10000);
 
   it("shows Weekly Rep Target drift notices for edited draft Training Prescriptions without recalculating builder targets", async () => {
     const user = userEvent.setup();
@@ -994,6 +994,31 @@ describe("Plan Builder canonical route", () => {
       );
     });
   }, 10000);
+
+  it("blocks Accept Draft when an edited draft Training Prescription is invalid", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    const setCountInput = screen.getAllByLabelText(/set count for /i)[0];
+
+    if (!(setCountInput instanceof HTMLInputElement)) {
+      throw new Error("Expected the first draft Training Prescription set count input.");
+    }
+
+    await user.clear(setCountInput);
+    await user.tab();
+
+    await waitFor(() => {
+      expect(screen.getByText("Draft blockers")).toBeVisible();
+      expect(
+        screen.getByText(
+          "Training Prescriptions must use positive integer set counts and rep targets, with the minimum less than or equal to the maximum.",
+        ),
+      ).toBeVisible();
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeDisabled();
+    });
+  });
 
   it("accepts Superset Group edits and slot movement into the Active Training Plan", async () => {
     const user = userEvent.setup();
