@@ -24,6 +24,12 @@ export type PlanBuilderGenerationState =
   | "needs-default-generation-confirmation"
   | "ready-to-generate";
 
+export type PlanBuilderStaleBuilderOutputState = {
+  hasTrainingPlanDraft: boolean;
+  isStaleBuilderOutput: boolean;
+  shouldBlockDraftAcceptance: boolean;
+};
+
 export type PlanBuilderChoiceLifecycle = {
   configuredSections: Record<PlanBuilderStep, PlanBuilderConfiguredSectionStatus>;
   defaultEntryActions: {
@@ -40,6 +46,7 @@ export type PlanBuilderChoiceLifecycle = {
     defaultResolution: PlanBlueprintDefaultResolution;
     requiresDefaultGenerationConfirmation: boolean;
     state: PlanBuilderGenerationState;
+    staleBuilderOutput: PlanBuilderStaleBuilderOutputState;
   };
   nextUnconfiguredStep: PlanBuilderStep | null;
   selectedDefaults: {
@@ -92,6 +99,7 @@ export function getPlanBuilderChoiceLifecycle({
       defaultResolution,
       requiresDefaultGenerationConfirmation: defaultResolution.recommendedDefaults.length > 0,
       state: getGenerationState(defaultResolution),
+      staleBuilderOutput: getStaleBuilderOutputState(blueprint),
     },
     nextUnconfiguredStep,
     selectedDefaults: {
@@ -199,4 +207,16 @@ function getGenerationState({
   }
 
   return "ready-to-generate";
+}
+
+function getStaleBuilderOutputState({
+  trainingPlanDraft,
+}: PlanBlueprint): PlanBuilderStaleBuilderOutputState {
+  const isStaleBuilderOutput = trainingPlanDraft?.isStale === true;
+
+  return {
+    hasTrainingPlanDraft: trainingPlanDraft !== null,
+    isStaleBuilderOutput,
+    shouldBlockDraftAcceptance: isStaleBuilderOutput,
+  };
 }

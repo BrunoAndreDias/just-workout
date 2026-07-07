@@ -1,16 +1,15 @@
 import type { PlanBuilderStep } from "./builder-state/plan-builder-config";
 import {
   defaultRepRangeStyleId,
-  getValidRepRangeStyleId,
-  hasConfiguredExercises,
-  hasConfiguredTrainingVolume,
   type PlanBlueprint,
   type PlanBlueprintDefaultResolution,
   type RepRangeStyleId,
-  resolvePlanBlueprintRecommendedDefaults,
 } from "./plan-blueprint";
-import { getRecommendedTrainingSplitId, isTrainingSplitCompatible } from "./training-split";
-import { isTrainingVolumeConfiguration, type TrainingVolumeConfiguration } from "./training-volume";
+import {
+  getPlanBuilderChoiceLifecycle,
+  type PlanBuilderChoiceLifecycle,
+} from "./plan-builder-choice-lifecycle";
+import type { TrainingVolumeConfiguration } from "./training-volume";
 
 export type PlanBuilderWorkflowSectionStatus = {
   isComplete: boolean;
@@ -31,6 +30,7 @@ export type PlanBuilderWorkflow = {
   };
   generation: {
     defaultResolution: PlanBlueprintDefaultResolution | null;
+    staleBuilderOutput: PlanBuilderChoiceLifecycle["generation"]["staleBuilderOutput"] | null;
   };
   nextStep: PlanBuilderStep | null;
   savedRepRangeStyleId: RepRangeStyleId | null;
@@ -55,135 +55,69 @@ export function getPlanBuilderWorkflow({
   activeStep?: PlanBuilderStep | null;
   blueprint: PlanBlueprint | undefined;
 }): PlanBuilderWorkflow {
-  const nextStep = getNextPlanBuilderStep(blueprint);
-  const savedRepRangeStyleId = blueprint ? getValidRepRangeStyleId(blueprint.repRanges) : null;
-  const selectedRepRangeStyleId = savedRepRangeStyleId ?? defaultRepRangeStyleId;
-  const trainingVolumeConfiguration =
-    blueprint && isTrainingVolumeConfiguration(blueprint) ? blueprint : null;
-  const configuredBlueprint = blueprint ?? null;
-  const visibleTrainingSplitId = blueprint
-    ? getVisibleTrainingSplitId(blueprint)
-    : "full-body-3-day";
-  const defaultResolution = blueprint ? resolvePlanBlueprintRecommendedDefaults(blueprint) : null;
+  if (!blueprint) {
+    return getLoadingPlanBuilderWorkflow(activeStep);
+  }
+
+  const lifecycle = getPlanBuilderChoiceLifecycle({ activeStep, blueprint });
 
   return {
+    defaultEntryActions: lifecycle.defaultEntryActions,
+    exerciseSetup: lifecycle.exercisesStep,
+    generation: {
+      defaultResolution: lifecycle.generation.defaultResolution,
+      staleBuilderOutput: lifecycle.generation.staleBuilderOutput,
+    },
+    nextStep: lifecycle.nextUnconfiguredStep,
+    savedRepRangeStyleId: lifecycle.selectedDefaults.savedRepRangeStyleId,
+    sectionStatuses: mapConfiguredSectionsToWorkflowStatuses(lifecycle.configuredSections),
+    selectedRepRangeStyleId: lifecycle.selectedDefaults.selectedRepRangeStyleId,
+    trainingVolumeConfiguration: lifecycle.selectedDefaults.trainingVolumeConfiguration,
+    visibleTrainingSplitId: lifecycle.selectedDefaults.visibleTrainingSplitId,
+  };
+}
+
+function getLoadingPlanBuilderWorkflow(activeStep: PlanBuilderStep | null): PlanBuilderWorkflow {
+  return {
     defaultEntryActions: {
-      shouldInitializeTrainingVolume:
-        activeStep === "volume" && trainingVolumeConfiguration === null,
-      shouldSelectDefaultRepRangeStyle:
-        activeStep === "rep-ranges" && savedRepRangeStyleId === null,
+      shouldInitializeTrainingVolume: activeStep === "volume",
+      shouldSelectDefaultRepRangeStyle: activeStep === "rep-ranges",
     },
     exerciseSetup: {
-      configuredBlueprint,
-      isReady: configuredBlueprint !== null,
+      configuredBlueprint: null,
+      isReady: false,
       requiresTrainingSchedule: false,
       requiresVolume: false,
     },
     generation: {
-      defaultResolution,
+      defaultResolution: null,
+      staleBuilderOutput: null,
     },
-    nextStep,
-    savedRepRangeStyleId,
-    sectionStatuses: getSectionStatuses({
-      activeStep,
-      blueprint,
-      nextStep,
-    }),
-    selectedRepRangeStyleId,
-    trainingVolumeConfiguration,
-    visibleTrainingSplitId,
+    nextStep: null,
+    savedRepRangeStyleId: null,
+    sectionStatuses: Object.fromEntries(
+      planBuilderWorkflowStepOrder.map((step) => [
+        step,
+        { isComplete: false, label: "Loading", tone: "ready" },
+      ]),
+    ) as PlanBuilderWorkflow["sectionStatuses"],
+    selectedRepRangeStyleId: defaultRepRangeStyleId,
+    trainingVolumeConfiguration: null,
+    visibleTrainingSplitId: "full-body-3-day",
   };
 }
 
-function getSectionStatuses({
-  activeStep,
-  blueprint,
-  nextStep,
-}: {
-  activeStep: PlanBuilderStep | null;
-  blueprint: PlanBlueprint | undefined;
-  nextStep: PlanBuilderStep | null;
-}): PlanBuilderWorkflow["sectionStatuses"] {
+function mapConfiguredSectionsToWorkflowStatuses(
+  configuredSections: PlanBuilderChoiceLifecycle["configuredSections"],
+): PlanBuilderWorkflow["sectionStatuses"] {
   return Object.fromEntries(
-    planBuilderWorkflowStepOrder.map((step) => [
+    Object.entries(configuredSections).map(([step, status]) => [
       step,
-      getSectionStatus({
-        activeStep,
-        blueprint,
-        nextStep,
-        sectionId: step,
-      }),
+      {
+        isComplete: status.isConfigured,
+        label: status.label,
+        tone: status.tone,
+      },
     ]),
   ) as PlanBuilderWorkflow["sectionStatuses"];
-}
-
-function getNextPlanBuilderStep(blueprint: PlanBlueprint | undefined): PlanBuilderStep | null {
-  if (!blueprint) {
-    return null;
-  }
-
-  return planBuilderWorkflowStepOrder.find((step) => !isSectionComplete(step, blueprint)) ?? null;
-}
-
-function getSectionStatus({
-  activeStep,
-  blueprint,
-  nextStep,
-  sectionId,
-}: {
-  activeStep: PlanBuilderStep | null;
-  blueprint: PlanBlueprint | undefined;
-  nextStep: PlanBuilderStep | null;
-  sectionId: PlanBuilderStep;
-}): PlanBuilderWorkflowSectionStatus {
-  if (!blueprint) {
-    return { isComplete: false, label: "Loading", tone: "ready" };
-  }
-
-  const isComplete = isSectionComplete(sectionId, blueprint);
-
-  if (isComplete) {
-    return { isComplete, label: "Done", tone: "complete" };
-  }
-
-  if (sectionId === activeStep) {
-    return { isComplete, label: "Open", tone: "current" };
-  }
-
-  if (sectionId === nextStep) {
-    return { isComplete, label: "Next", tone: "next" };
-  }
-
-  return { isComplete, label: "Ready", tone: "ready" };
-}
-
-function isSectionComplete(sectionId: PlanBuilderStep, blueprint: PlanBlueprint): boolean {
-  switch (sectionId) {
-    case "frequency":
-      return hasCompatibleSelectedTrainingSplit(blueprint);
-    case "rep-ranges":
-      return getValidRepRangeStyleId(blueprint.repRanges) !== null;
-    case "volume":
-      return hasConfiguredTrainingVolume(blueprint);
-    case "exercises":
-      return hasConfiguredExercises(blueprint);
-    case "generate":
-      return false;
-  }
-
-  return false;
-}
-
-function hasCompatibleSelectedTrainingSplit(
-  blueprint: PlanBlueprint,
-): blueprint is PlanBlueprint & { split: NonNullable<PlanBlueprint["split"]> } {
-  return isTrainingSplitCompatible(blueprint.split, blueprint.trainingFrequencyDaysPerWeek);
-}
-
-function getVisibleTrainingSplitId(blueprint: PlanBlueprint): NonNullable<PlanBlueprint["split"]> {
-  if (hasCompatibleSelectedTrainingSplit(blueprint)) {
-    return blueprint.split;
-  }
-
-  return getRecommendedTrainingSplitId(blueprint.trainingFrequencyDaysPerWeek);
 }

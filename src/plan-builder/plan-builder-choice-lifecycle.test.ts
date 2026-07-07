@@ -180,6 +180,36 @@ describe("Plan Builder choice lifecycle", () => {
     });
   });
 
+  it("owns the Stale Builder Output read decision for a Training Plan Draft", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "3-Day Full Body",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: [],
+          workoutTemplates: [],
+        },
+        isStale: true,
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
+    });
+
+    const lifecycle = getPlanBuilderChoiceLifecycle({ blueprint });
+
+    expect(lifecycle.generation.staleBuilderOutput).toEqual({
+      hasTrainingPlanDraft: true,
+      isStaleBuilderOutput: true,
+      shouldBlockDraftAcceptance: true,
+    });
+  });
+
   it("hides legacy confirmed builder steps behind Configured Builder Section terms", () => {
     const blueprint = createTestPlanBlueprint({
       ...createRecommendedTrainingVolumeConfiguration(),
@@ -227,6 +257,7 @@ function expectLifecycleToPreserveWorkflow({
   expect(lifecycle.defaultEntryActions).toEqual(workflow.defaultEntryActions);
   expect(lifecycle.exercisesStep).toEqual(workflow.exerciseSetup);
   expect(lifecycle.generation.defaultResolution).toEqual(workflow.generation.defaultResolution);
+  expect(lifecycle.generation.staleBuilderOutput).toEqual(workflow.generation.staleBuilderOutput);
   expect(lifecycle.nextUnconfiguredStep).toBe(workflow.nextStep);
   expect(lifecycle.selectedDefaults).toEqual({
     savedRepRangeStyleId: workflow.savedRepRangeStyleId,

@@ -95,6 +95,58 @@ describe("Plan Builder workflow", () => {
     });
   });
 
+  it("preserves default-entry decisions while the Plan Blueprint is loading", () => {
+    expect(
+      getPlanBuilderWorkflow({
+        activeStep: "rep-ranges",
+        blueprint: undefined,
+      }).defaultEntryActions,
+    ).toEqual({
+      shouldInitializeTrainingVolume: false,
+      shouldSelectDefaultRepRangeStyle: true,
+    });
+
+    expect(
+      getPlanBuilderWorkflow({
+        activeStep: "volume",
+        blueprint: undefined,
+      }).defaultEntryActions,
+    ).toEqual({
+      shouldInitializeTrainingVolume: true,
+      shouldSelectDefaultRepRangeStyle: false,
+    });
+  });
+
+  it("exposes Stale Builder Output through the lifecycle adapter", () => {
+    const workflow = getPlanBuilderWorkflow({
+      blueprint: createTestPlanBlueprint({
+        trainingPlanDraft: {
+          content: {
+            mainCompoundRotationPools: [],
+            repRangeStyle: "balanced_hypertrophy",
+            split: "3-Day Full Body",
+            trainingBlockWeeks: 6,
+            trainingFrequencyDaysPerWeek: 3,
+            trainingGoal: "build-muscle",
+            weeklyRepTargets: [],
+            workoutTemplates: [],
+          },
+          isStale: true,
+          validation: {
+            blockers: [],
+            warnings: [],
+          },
+        },
+      }),
+    });
+
+    expect(workflow.generation.staleBuilderOutput).toEqual({
+      hasTrainingPlanDraft: true,
+      isStaleBuilderOutput: true,
+      shouldBlockDraftAcceptance: true,
+    });
+  });
+
   it("keeps Exercises immediately ready from the current Plan Blueprint", () => {
     const immediateWorkflow = getPlanBuilderWorkflow({
       activeStep: "exercises",
