@@ -196,6 +196,35 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
     });
   });
 
+  it("revalidates draft warnings after saving Baseline Bodyweight setup", async () => {
+    const { dependencies } = createDraftGenerationTestContext();
+    const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
+
+    expect(generatedDraft.validation.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "missing_baseline_bodyweight",
+        }),
+      ]),
+    );
+
+    const savedDraft = await saveTrainingPlanDraftSetupFromCurrentPlanBlueprint({
+      dependencies,
+      update: {
+        baselineBodyweight: 82,
+        kind: "baseline_bodyweight",
+      },
+    });
+
+    expect(savedDraft.validation.warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "missing_baseline_bodyweight",
+        }),
+      ]),
+    );
+  });
+
   it("accepts draft-local setup values into the Active Training Plan", async () => {
     const { dependencies } = createDraftGenerationTestContext();
     const generatedDraft = await generateTrainingPlanDraftFromCurrentPlanBlueprint(dependencies);
@@ -272,10 +301,68 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
       ]),
     });
   });
+
+  it("revalidates draft blockers before accepting the current Training Plan Draft", async () => {
+    const { dependencies } = createDraftGenerationTestContext({
+      trainingPlanDraft: {
+        content: {
+          ...createTrainingPlanDraftContent(),
+          workoutTemplates: [
+            {
+              id: "template-1",
+              label: "Upper A",
+              purpose: "strength",
+              supersetGroups: [
+                {
+                  id: "group-1",
+                  slots: [
+                    {
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
+                      kind: "exercise",
+                      movementPattern: "horizontal_push",
+                      role: "main_compound",
+                      slotLabel: "A1",
+                      targetMuscles: ["chest"],
+                    },
+                    {
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
+                      kind: "exercise",
+                      movementPattern: "horizontal_push",
+                      role: "secondary_compound",
+                      slotLabel: "A2",
+                      targetMuscles: ["chest"],
+                    },
+                  ],
+                  title: "Upper Superset Group",
+                  type: "superset",
+                },
+              ],
+            },
+          ],
+        },
+        isStale: false,
+        validation: {
+          blockers: [],
+          warnings: [],
+        },
+      },
+    });
+
+    await expect(acceptTrainingPlanDraftFromCurrentPlanBlueprint(dependencies)).rejects.toThrow(
+      "Workout Templates cannot repeat the same exercise in more than one slot.",
+    );
+  });
 });
 
-function createDraftGenerationTestContext() {
-  let currentBlueprint = createCompleteBlueprint();
+function createDraftGenerationTestContext(overrides: Partial<PlanBlueprint> = {}) {
+  let currentBlueprint = {
+    ...createCompleteBlueprint(),
+    split: "alternating-full-body-a-b" as const,
+    trainingFrequencyDaysPerWeek: 3 as const,
+    ...overrides,
+  };
 
   const dependencies = {
     createTrainingPlanId: () => "training-plan-test",
@@ -372,5 +459,45 @@ function createCompleteBlueprint(): PlanBlueprint {
     volumePreset: "balanced",
     volumePresetSource: "user_selected",
     weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+  };
+}
+
+function createTrainingPlanDraftContent(): NonNullable<
+  PlanBlueprint["trainingPlanDraft"]
+>["content"] {
+  return {
+    baselineBodyweight: undefined,
+    mainCompoundRotationPools: [],
+    repRangeStyle: "balanced_hypertrophy",
+    split: "Alternating Full Body A/B",
+    trainingBlockWeeks: 6,
+    trainingFrequencyDaysPerWeek: 3,
+    trainingGoal: "build-muscle",
+    weeklyRepTargets: createPresetWeeklyRepTargets("balanced"),
+    workoutTemplates: [
+      {
+        id: "template-1",
+        label: "Full Body A",
+        purpose: "strength",
+        supersetGroups: [
+          {
+            id: "group-1",
+            slots: [
+              {
+                exerciseId: "flat-barbell-bench-press",
+                exerciseName: "Flat Barbell Bench Press",
+                kind: "exercise",
+                movementPattern: "horizontal_push",
+                role: "main_compound",
+                slotLabel: "A1",
+                targetMuscles: ["chest"],
+              },
+            ],
+            title: "Upper Superset Group",
+            type: "superset",
+          },
+        ],
+      },
+    ],
   };
 }

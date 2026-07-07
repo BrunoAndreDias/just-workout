@@ -150,24 +150,22 @@ function applyTrainingPlanDraftSetupUpdate({
   trainingPlanDraft: TrainingPlanDraft;
   update: TrainingPlanDraftSetupUpdate;
 }): TrainingPlanDraft {
-  switch (update.kind) {
-    case "baseline_bodyweight":
-      return {
-        ...trainingPlanDraft,
-        content: {
+  const content =
+    update.kind === "baseline_bodyweight"
+      ? {
           ...trainingPlanDraft.content,
           baselineBodyweight: update.baselineBodyweight,
-        },
-      };
-    case "starting_load_suggestions":
-      return {
-        ...trainingPlanDraft,
-        content: {
+        }
+      : {
           ...trainingPlanDraft.content,
           startingLoadSuggestions: update.startingLoadSuggestions,
-        },
-      };
-  }
+        };
+
+  return {
+    ...trainingPlanDraft,
+    content,
+    validation: validateTrainingPlanDraftContent({ content }),
+  };
 }
 
 export async function generateActiveTrainingPlanFromCurrentPlanBlueprint(
@@ -202,13 +200,20 @@ export async function acceptTrainingPlanDraftFromCurrentPlanBlueprint(
     );
   }
 
-  if (trainingPlanDraft.validation.blockers.length > 0) {
-    throw new Error(trainingPlanDraft.validation.blockers[0]);
+  const validation = validateTrainingPlanDraftContent({
+    content: trainingPlanDraft.content,
+  });
+
+  if (validation.blockers.length > 0) {
+    throw new Error(validation.blockers[0]);
   }
 
   const timestamp = dependencies.getTimestamp();
   const trainingPlan = createTrainingPlanFromDraft({
-    draft: trainingPlanDraft,
+    draft: {
+      ...trainingPlanDraft,
+      validation,
+    },
     id: dependencies.createTrainingPlanId(),
     sourceBlueprintId: normalizedBlueprint.id,
     timestamp,

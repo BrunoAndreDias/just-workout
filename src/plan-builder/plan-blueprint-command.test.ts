@@ -241,7 +241,9 @@ describe("plan blueprint command", () => {
         ],
       },
       validation: {
-        blockers: ["Strength-focused Workout Templates cannot contain empty Superset Groups."],
+        blockers: expect.arrayContaining([
+          "Strength-focused Workout Templates cannot contain empty Superset Groups.",
+        ]),
         warnings: [],
       },
     });
@@ -579,7 +581,9 @@ describe("plan blueprint command", () => {
         ],
       },
       validation: {
-        blockers: ["Strength-focused Workout Templates cannot contain empty Superset Groups."],
+        blockers: expect.arrayContaining([
+          "Strength-focused Workout Templates cannot contain empty Superset Groups.",
+        ]),
         warnings: [],
       },
     });

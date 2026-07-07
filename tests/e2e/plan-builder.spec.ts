@@ -59,8 +59,50 @@ test("confirms Recommended Defaults before generation and creates a Training Pla
   await generateTrainingPlanButton(page).click();
   await confirmation.getByRole("button", { name: /^generate with recommended defaults$/i }).click();
 
+  await expect(page).toHaveURL(planBuilderPath);
+  await expect(page.getByRole("heading", { name: /^training plan draft$/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^reset draft$/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^accept draft$/i })).toBeVisible();
+
+  const firstExerciseChoice = page.getByLabel(/exercise choice for /i).first();
+  const originalExerciseId = await firstExerciseChoice.inputValue();
+  const replacementExerciseId = await firstExerciseChoice
+    .locator("option")
+    .evaluateAll((options, currentValue) => {
+      const replacement = options.find(
+        (option) => (option as HTMLOptionElement).value !== currentValue,
+      ) as HTMLOptionElement | undefined;
+
+      return replacement?.value ?? null;
+    }, originalExerciseId);
+
+  expect(replacementExerciseId).not.toBeNull();
+  await firstExerciseChoice.selectOption(replacementExerciseId as string);
+  await expect(firstExerciseChoice).toHaveValue(replacementExerciseId as string);
+
+  await page.getByRole("button", { name: /^reset draft$/i }).click();
+  await expect(firstExerciseChoice).toHaveValue(originalExerciseId);
+
+  await page.getByRole("button", { name: /^accept draft$/i }).click();
   await expect(page).toHaveURL(/\/training-plans\/[^/]+$/);
   await expect(page.getByRole("heading", { name: "3-Day Full Body" })).toBeVisible();
+});
+
+test("keeps the production Generate Step review usable on a mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await page.goto("/plan-builder");
+
+  await openBuilderSection(page, /^generate/i);
+  await generateTrainingPlanButton(page).click();
+  await defaultGenerationConfirmation(page)
+    .getByRole("button", { name: /^generate with recommended defaults$/i })
+    .click();
+
+  await expect(page.getByRole("heading", { name: /^training plan draft$/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^generation inputs$/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^reset draft$/i })).toBeInViewport();
+  await expect(page.getByRole("button", { name: /^accept draft$/i })).toBeInViewport();
+  await expect(page.getByLabel(/^baseline bodyweight$/i)).toBeVisible();
 });
 
 async function openBuilderSection(page: Page, sectionName: RegExp) {

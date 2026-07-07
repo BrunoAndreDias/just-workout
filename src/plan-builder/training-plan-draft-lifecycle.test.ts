@@ -118,10 +118,11 @@ describe("Training Plan Draft lifecycle", () => {
   });
 
   it("replaces a draft slot with compatible catalog exercise data", () => {
+    const draftContent = createSingleSlotDraftContent();
     const blueprint = createTestPlanBlueprint({
       trainingPlanDraft: {
         content: {
-          ...createTestTrainingPlanDraftContent(),
+          ...draftContent,
           exerciseSelectionPreferences: {
             avoidedExercises: [{ id: "avoid-1", rawText: "Decline Dumbbell Bench Press" }],
             equipmentPreset: "full_gym",
@@ -147,22 +148,25 @@ describe("Training Plan Draft lifecycle", () => {
 
     expect(
       updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots,
-    ).toEqual([
-      expect.objectContaining({
-        exerciseId: "incline-dumbbell-bench-press",
-        exerciseName: "Incline Dumbbell Bench Press",
-        movementPattern: "horizontal_push",
-        role: "main_compound",
-        targetMuscles: ["chest"],
-      }),
-    ]);
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          exerciseId: "incline-dumbbell-bench-press",
+          exerciseName: "Incline Dumbbell Bench Press",
+          movementPattern: "horizontal_push",
+          role: "main_compound",
+          targetMuscles: ["chest"],
+        }),
+      ]),
+    );
   });
 
   it("adds a compatible draft slot while skipping avoided candidates", () => {
+    const draftContent = createSingleSlotDraftContent();
     const blueprint = createTestPlanBlueprint({
       trainingPlanDraft: {
         content: {
-          ...createTestTrainingPlanDraftContent(),
+          ...draftContent,
           exerciseSelectionPreferences: {
             avoidedExercises: [{ id: "avoid-1", rawText: "Flat Dumbbell Bench Press" }],
             equipmentPreset: "full_gym",
@@ -188,7 +192,7 @@ describe("Training Plan Draft lifecycle", () => {
       updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots.map(
         (slot) => slot.exerciseId,
       ),
-    ).toEqual(["flat-barbell-bench-press", "incline-barbell-bench-press"]);
+    ).toEqual(expect.arrayContaining(["flat-barbell-bench-press", "incline-barbell-bench-press"]));
   });
 
   it("deletes a draft slot when the group remains non-empty", () => {
@@ -328,6 +332,33 @@ describe("Training Plan Draft lifecycle", () => {
     );
   });
 
+  it("blocks missing required Movement Pattern coverage when all templates remain strength-focused", () => {
+    const { content: draftContent, group, slot, template } = getFirstDraftSlotFixture();
+
+    const draft = normalizeTrainingPlanDraft({
+      content: {
+        ...draftContent,
+        split: "Upper/Lower 4-Day",
+        trainingFrequencyDaysPerWeek: 4,
+        workoutTemplates: [
+          {
+            ...template,
+            supersetGroups: [
+              {
+                ...group,
+                slots: [slot],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(draft?.validation.blockers).toContain(
+      "Strength-focused Workout Templates are missing 5 required Movement Patterns.",
+    );
+  });
+
   it("updates a draft slot Training Prescription and surfaces Weekly Rep Target drift warnings", () => {
     const blueprint = createTestPlanBlueprint({
       trainingPlanDraft: {
@@ -409,6 +440,50 @@ describe("Training Plan Draft lifecycle", () => {
       "Training Prescriptions must use positive integer set counts and rep targets, with the minimum less than or equal to the maximum.",
     );
   });
+
+  it("warns when bodyweight draft exercises are missing Baseline Bodyweight", () => {
+    const draftContent = createTestTrainingPlanDraftContent();
+    const template = draftContent.workoutTemplates[0];
+    const group = template?.supersetGroups[0];
+    const slot = group?.slots[0];
+
+    if (!template || !group || !slot) {
+      throw new Error("Expected a draft slot fixture.");
+    }
+
+    const draft = normalizeTrainingPlanDraft({
+      content: {
+        ...draftContent,
+        workoutTemplates: [
+          {
+            ...template,
+            supersetGroups: [
+              {
+                ...group,
+                slots: [
+                  {
+                    ...slot,
+                    exerciseId: "chin-ups",
+                    exerciseName: "Chin-Ups",
+                    movementPattern: "vertical_pull",
+                    targetMuscles: ["back"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(draft?.validation.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "missing_baseline_bodyweight",
+        }),
+      ]),
+    );
+  });
 });
 
 function createTestPlanBlueprint(overrides: Partial<PlanBlueprint> = {}): PlanBlueprint {
@@ -454,9 +529,73 @@ function createTestTrainingPlanDraftContent(): NonNullable<
                 slotLabel: "A1",
                 targetMuscles: ["chest"],
               },
+              {
+                exerciseId: "bent-over-barbell-rows",
+                exerciseName: "Bent-Over Barbell Rows",
+                kind: "exercise",
+                movementPattern: "horizontal_pull",
+                role: "main_compound",
+                slotLabel: "A2",
+                targetMuscles: ["back"],
+              },
+              {
+                exerciseId: "lat-pull-downs",
+                exerciseName: "Lat Pull-Downs",
+                kind: "exercise",
+                movementPattern: "vertical_pull",
+                role: "main_compound",
+                slotLabel: "A3",
+                targetMuscles: ["back"],
+              },
+              {
+                exerciseId: "dumbbell-squats",
+                exerciseName: "Dumbbell Squats",
+                kind: "exercise",
+                movementPattern: "quad_dominant",
+                role: "main_compound",
+                slotLabel: "A4",
+                targetMuscles: ["quadriceps"],
+              },
+              {
+                exerciseId: "dumbbell-romanian-deadlifts",
+                exerciseName: "Dumbbell Romanian Deadlifts",
+                kind: "exercise",
+                movementPattern: "hip_hamstring_dominant",
+                role: "main_compound",
+                slotLabel: "A5",
+                targetMuscles: ["hamstrings"],
+              },
             ],
             title: "Upper Superset Group",
             type: "superset",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createSingleSlotDraftContent(): NonNullable<
+  PlanBlueprint["trainingPlanDraft"]
+>["content"] {
+  const draftContent = createTestTrainingPlanDraftContent();
+  const template = draftContent.workoutTemplates[0];
+  const group = template?.supersetGroups[0];
+  const slot = group?.slots[0];
+
+  if (!template || !group || !slot) {
+    throw new Error("Expected a single-slot draft fixture.");
+  }
+
+  return {
+    ...draftContent,
+    workoutTemplates: [
+      {
+        ...template,
+        supersetGroups: [
+          {
+            ...group,
+            slots: [slot],
           },
         ],
       },

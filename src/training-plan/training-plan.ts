@@ -3,13 +3,20 @@ import { getAvoidedExerciseIds } from "../plan-builder/exercise-selection-prefer
 import type { IsolationExercisePreferenceBucket } from "../plan-builder/isolation-exercise-preferences";
 import { deriveMainCompoundRotationPools } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
+import { formatMovementPatternLabel } from "../plan-builder/weekly-movement-coverage";
 import type {
   ExerciseCatalogMuscleGroupId,
   MainCompoundRotationPool,
   MovementPatternId,
   WeeklyRepTarget,
 } from "../training-taxonomy";
-import { getExerciseCatalogExercise } from "../training-taxonomy";
+import {
+  getExerciseCatalogExercise,
+  getWeeklyMovementCoverage,
+  isCompoundCapableMovementPattern,
+  type MainCompoundSelection,
+} from "../training-taxonomy";
+import { hasBodyweightLoadExercise } from "./bodyweight-load";
 import type { TrainingBlock } from "./training-block";
 import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-template-generation";
 import {
@@ -66,6 +73,10 @@ export type TrainingPlanDraftWarning =
       kind: "custom_focus_reduces_strength_coverage";
       message: string;
       templateIds: ReadonlyArray<string>;
+    }
+  | {
+      kind: "missing_baseline_bodyweight";
+      message: string;
     }
   | {
       kind: "weekly_rep_target_drift";
@@ -350,6 +361,12 @@ export function validateTrainingPlanDraftContent({
     );
   }
 
+  const missingRequiredStrengthCoverage = getMissingRequiredStrengthCoverage(content);
+
+  if (customFocusTemplateIds.length === 0 && missingRequiredStrengthCoverage.length > 0) {
+    blockers.push(getMissingRequiredStrengthCoverageMessage(missingRequiredStrengthCoverage));
+  }
+
   const warnings: TrainingPlanDraftWarning[] = [];
 
   if (customFocusTemplateIds.length > 0) {
@@ -358,6 +375,17 @@ export function validateTrainingPlanDraftContent({
       message:
         "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
       templateIds: customFocusTemplateIds,
+    });
+  }
+
+  if (
+    content.baselineBodyweight == null &&
+    hasBodyweightLoadExercise(getTrainingPlanDraftExercises(content))
+  ) {
+    warnings.push({
+      kind: "missing_baseline_bodyweight",
+      message:
+        "Missing Baseline Bodyweight: bodyweight exercise volume will stay partial until you set it here or later on the Training surface.",
     });
   }
 
@@ -387,6 +415,86 @@ function hasInvalidTrainingPrescription(content: TrainingPlanContent): boolean {
           isInvalidTrainingPrescription(slot.trainingPrescription),
       ),
     ),
+  );
+}
+
+function getMissingRequiredStrengthCoverage(
+  content: TrainingPlanContent,
+): ReadonlyArray<MainCompoundSelection["movementPattern"]> {
+  const coverage = getWeeklyMovementCoverage({
+    mainCompoundSelections: getDraftMainCompoundSelections(content),
+    split: getTrainingSplitIdForDraftContent(content),
+    trainingFrequencyDaysPerWeek: content.trainingFrequencyDaysPerWeek,
+  });
+
+  return coverage.missingRequiredPatterns;
+}
+
+function getDraftMainCompoundSelections(
+  content: TrainingPlanContent,
+): ReadonlyArray<MainCompoundSelection> {
+  return content.workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) =>
+      group.slots.flatMap((slot) =>
+        slot.role === "main_compound" && isCompoundCapableMovementPattern(slot.movementPattern)
+          ? [
+              {
+                exerciseId: slot.exerciseId,
+                movementPattern: slot.movementPattern,
+              },
+            ]
+          : [],
+      ),
+    ),
+  );
+}
+
+function getTrainingSplitIdForDraftContent(
+  content: TrainingPlanContent,
+): PlanBlueprint["split"] & string {
+  const normalizedLabel = content.split.trim().toLowerCase();
+
+  switch (normalizedLabel) {
+    case "alternating full body a/b":
+      return "alternating-full-body-a-b";
+    case "2-day full body":
+      return "full-body-2-day";
+    case "3-day full body":
+      return "full-body-3-day";
+    case "rotating push/pull/legs":
+      return "rotating-push-pull-legs";
+    case "upper/lower 4-day":
+    case "4-day upper/lower":
+      return "upper-lower-4-day";
+    case "upper/lower + full body":
+    case "upper/lower + full body 3-day":
+      return "upper-lower-full-body";
+    default:
+      throw new Error(`Unknown Training Split label "${content.split}" in Training Plan Draft.`);
+  }
+}
+
+function getMissingRequiredStrengthCoverageMessage(
+  missingRequiredPatterns: ReadonlyArray<MainCompoundSelection["movementPattern"]>,
+): string {
+  if (missingRequiredPatterns.length === 1) {
+    const [missingRequiredPattern] = missingRequiredPatterns;
+
+    if (!missingRequiredPattern) {
+      return "Strength-focused Workout Templates are missing required Movement Pattern coverage.";
+    }
+
+    return `Strength-focused Workout Templates are missing required Movement Pattern coverage for ${formatMovementPatternLabel(
+      missingRequiredPattern,
+    )}.`;
+  }
+
+  return `Strength-focused Workout Templates are missing ${missingRequiredPatterns.length} required Movement Patterns.`;
+}
+
+function getTrainingPlanDraftExercises(content: TrainingPlanContent) {
+  return content.workoutTemplates.flatMap((template) =>
+    template.supersetGroups.flatMap((group) => group.slots),
   );
 }
 
