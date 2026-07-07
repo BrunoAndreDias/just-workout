@@ -543,17 +543,38 @@ function calculateCompletion(state: RampState): WeekCompletion {
 }
 
 function getCompletionEffectiveLoad(slot: RampSlotState): number | null {
-  const loadKg = slot.loadKg ?? slot.firstCompletionLoadKg ?? null;
-
   if (slot.loadKind === "external") {
-    return loadKg;
+    return getCompletionLoadKg(slot);
   }
 
-  if (slot.bodyweightKnown === false || slot.bodyweightKg === undefined || loadKg === null) {
+  return getBodyweightCompletionEffectiveLoad(slot);
+}
+
+function getBodyweightCompletionEffectiveLoad(slot: RampSlotState): number | null {
+  const bodyweightKg = getKnownBodyweightKg(slot);
+  const loadKg = getCompletionLoadKg(slot);
+
+  if (bodyweightKg === null || loadKg === null) {
     return null;
   }
 
-  return Math.max(slot.bodyweightKg + loadKg, 0);
+  return Math.max(bodyweightKg + loadKg, 0);
+}
+
+function getCompletionLoadKg(slot: RampSlotState): number | null {
+  if (slot.loadKg !== null) {
+    return slot.loadKg;
+  }
+
+  return slot.firstCompletionLoadKg ?? null;
+}
+
+function getKnownBodyweightKg(slot: RampSlotState): number | null {
+  if (slot.bodyweightKnown === false) {
+    return null;
+  }
+
+  return slot.bodyweightKg ?? null;
 }
 
 function completionToReference(completion: WeekCompletion): VolumeReference {
@@ -578,54 +599,65 @@ function progressSlotAfterCompletion(
   resultMode: RampResultMode,
 ): RampSlotState {
   if (slot.loadKg === null) {
-    return {
-      ...slot,
-      loadKg: slot.firstCompletionLoadKg ?? null,
-      origin: slot.firstCompletionLoadKg
-        ? "First completed Training Session supplied the exercise load"
-        : slot.origin,
-    };
+    return progressSlotWithoutRecordedLoad(slot);
   }
 
-  if (resultMode === "top-range") {
-    return {
-      ...slot,
-      loadKg: increaseLoad(slot),
-      origin: "Double progression from completed set data",
-    };
-  }
+  return progressLoadedSlotAfterCompletion(slot, resultMode);
+}
 
-  if (resultMode === "missed-range") {
-    return {
-      ...slot,
-      loadKg: reduceLoad(slot),
-      origin: "Load reduced after missing the lower end of the rep range",
-    };
-  }
-
+function progressSlotWithoutRecordedLoad(slot: RampSlotState): RampSlotState {
   return {
     ...slot,
-    origin: "Load kept after steady completion",
+    loadKg: slot.firstCompletionLoadKg ?? null,
+    origin: slot.firstCompletionLoadKg
+      ? "First completed Training Session supplied the exercise load"
+      : slot.origin,
   };
 }
 
+function progressLoadedSlotAfterCompletion(
+  slot: RampSlotState,
+  resultMode: RampResultMode,
+): RampSlotState {
+  return slotProgressors[resultMode](slot);
+}
+
+const slotProgressors: Record<RampResultMode, (slot: RampSlotState) => RampSlotState> = {
+  "missed-range": (slot) => ({
+    ...slot,
+    loadKg: reduceLoad(slot),
+    origin: "Load reduced after missing the lower end of the rep range",
+  }),
+  steady: (slot) => ({
+    ...slot,
+    origin: "Load kept after steady completion",
+  }),
+  "top-range": (slot) => ({
+    ...slot,
+    loadKg: increaseLoad(slot),
+    origin: "Double progression from completed set data",
+  }),
+};
+
 function describeProgressionAction(slot: RampSlotState, resultMode: RampResultMode): string {
   if (slot.loadKg === null) {
-    return slot.firstCompletionLoadKg === undefined
-      ? "keep empty until the user records a load"
-      : `seed next week from the user's first completed load (${formatKg(slot.firstCompletionLoadKg)})`;
+    return describeFirstCompletionAction(slot);
   }
 
-  if (resultMode === "top-range") {
-    return `increase to ${formatKg(increaseLoad(slot))}`;
-  }
-
-  if (resultMode === "missed-range") {
-    return `reduce to ${formatKg(reduceLoad(slot))}`;
-  }
-
-  return `keep at ${formatKg(slot.loadKg)}`;
+  return loadedSlotActionFormatters[resultMode](slot);
 }
+
+function describeFirstCompletionAction(slot: RampSlotState): string {
+  return slot.firstCompletionLoadKg === undefined
+    ? "keep empty until the user records a load"
+    : `seed next week from the user's first completed load (${formatKg(slot.firstCompletionLoadKg)})`;
+}
+
+const loadedSlotActionFormatters: Record<RampResultMode, (slot: RampSlotState) => string> = {
+  "missed-range": (slot) => `reduce to ${formatKg(reduceLoad(slot))}`,
+  steady: (slot) => `keep at ${formatKg(slot.loadKg ?? 0)}`,
+  "top-range": (slot) => `increase to ${formatKg(increaseLoad(slot))}`,
+};
 
 function increaseLoad(slot: RampSlotState): number {
   const loadKg = slot.loadKg ?? 0;
@@ -671,16 +703,24 @@ function getExerciseTargetRir({
   const weeklyTarget = getWeeklyTarget(weekNumber);
   const targetRir = weeklyTarget.minTargetRir;
 
-  if (role === "main_compound" || role === "secondary_compound") {
-    return Math.max(targetRir, 1);
-  }
-
-  if (role === "isolation" && setIndex < 3) {
+  if (requiresAtLeastOneRir({ role, setIndex })) {
     return Math.max(targetRir, 1);
   }
 
   return targetRir;
 }
+
+function requiresAtLeastOneRir({
+  role,
+  setIndex,
+}: {
+  role: RampExerciseRole;
+  setIndex: number;
+}): boolean {
+  return compoundRampRoles.has(role) || (role === "isolation" && setIndex < 3);
+}
+
+const compoundRampRoles = new Set<RampExerciseRole>(["main_compound", "secondary_compound"]);
 
 function formatKg(value: number): string {
   return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)} kg`;

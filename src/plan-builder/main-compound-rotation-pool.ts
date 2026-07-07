@@ -55,19 +55,14 @@ export function normalizeMainCompoundRotationPools({
     const startingExercise = startingExerciseByPattern.get(pool.movementPattern);
     const startingPrimaryMuscleGroups =
       startingExercise === undefined ? undefined : new Set(startingExercise.primaryMuscleGroups);
-    const exerciseIds = Array.from(
-      new Set(
-        pool.exerciseIds.map((exerciseId) => getConcreteExerciseCatalogExerciseId(exerciseId)),
-      ),
-    ).filter((exerciseId) => {
-      const exercise = getExerciseCatalogExercise(exerciseId);
+    const exerciseIds = getConcreteUniqueExerciseIds(pool.exerciseIds).filter((exerciseId) => {
+      const exercise = getEligibleRotationExercise({
+        excludedExerciseIds: selectedMainExerciseIds,
+        exerciseId,
+        movementPattern: pool.movementPattern,
+      });
 
-      if (
-        !exercise ||
-        !isMainCompoundEligible(exercise) ||
-        exercise.movementPattern !== pool.movementPattern ||
-        selectedMainExerciseIds.has(exercise.id)
-      ) {
+      if (!exercise) {
         return false;
       }
 
@@ -210,6 +205,11 @@ function getCompatibleRotationExerciseIds({
   const selectedMainExerciseIds = new Set(
     mainCompoundSelections.map((selection) => selection.exerciseId),
   );
+  const excludedExerciseIds = new Set([
+    ...avoidedExerciseIds,
+    ...selectedMainExerciseIds,
+    startingExerciseId,
+  ]);
   const startingExercise = getExerciseCatalogExercise(startingExerciseId);
 
   if (!startingExercise) {
@@ -218,21 +218,14 @@ function getCompatibleRotationExerciseIds({
 
   const startingPrimaryMuscleGroups = new Set(startingExercise.primaryMuscleGroups);
 
-  return Array.from(
-    new Set(
-      candidateExerciseIds.map((exerciseId) => getConcreteExerciseCatalogExerciseId(exerciseId)),
-    ),
-  ).filter((exerciseId) => {
-    const exercise = getExerciseCatalogExercise(exerciseId);
+  return getConcreteUniqueExerciseIds(candidateExerciseIds).filter((exerciseId) => {
+    const exercise = getEligibleRotationExercise({
+      excludedExerciseIds,
+      exerciseId,
+      movementPattern,
+    });
 
-    if (
-      !exercise ||
-      !isMainCompoundEligible(exercise) ||
-      exercise.movementPattern !== movementPattern ||
-      avoidedExerciseIds.has(exercise.id) ||
-      selectedMainExerciseIds.has(exercise.id) ||
-      exercise.id === startingExerciseId
-    ) {
+    if (!exercise) {
       return false;
     }
 
@@ -240,6 +233,34 @@ function getCompatibleRotationExerciseIds({
       startingPrimaryMuscleGroups.has(muscleGroup),
     );
   });
+}
+
+function getConcreteUniqueExerciseIds(exerciseIds: ReadonlyArray<string>): Array<string> {
+  return Array.from(
+    new Set(exerciseIds.map((exerciseId) => getConcreteExerciseCatalogExerciseId(exerciseId))),
+  );
+}
+
+function getEligibleRotationExercise({
+  excludedExerciseIds,
+  exerciseId,
+  movementPattern,
+}: {
+  excludedExerciseIds: ReadonlySet<string>;
+  exerciseId: string;
+  movementPattern: CompoundCapableMovementPatternId;
+}) {
+  const exercise = getExerciseCatalogExercise(exerciseId);
+
+  if (!exercise || !isMainCompoundEligible(exercise)) {
+    return null;
+  }
+
+  if (exercise.movementPattern !== movementPattern || excludedExerciseIds.has(exercise.id)) {
+    return null;
+  }
+
+  return exercise;
 }
 
 function getSuggestedRotationExerciseIds({

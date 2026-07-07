@@ -12,6 +12,7 @@ import {
 import { isBodyweightLoadExercise } from "./bodyweight-load";
 import type { TrainingPlan, TrainingPlanStartingLoadSuggestion } from "./training-plan";
 import type { TrainingSession } from "./training-session";
+import { getCompletedTrainingSessionsNewestFirst } from "./training-session-history";
 
 export type TrainingBlock = {
   cycleNumber: number;
@@ -887,11 +888,7 @@ function getLatestCompletedExerciseEntry({
   movementPattern?: MovementPatternId;
   sessions: ReadonlyArray<TrainingSession>;
 }): TrainingSession["exercises"][number] | undefined {
-  return [...sessions]
-    .filter((session) => session.completedAt !== null)
-    .sort((firstSession, secondSession) =>
-      (secondSession.completedAt ?? "").localeCompare(firstSession.completedAt ?? ""),
-    )
+  return getCompletedTrainingSessionsNewestFirst(sessions)
     .flatMap((session) => session.exercises)
     .find(
       (entry) =>

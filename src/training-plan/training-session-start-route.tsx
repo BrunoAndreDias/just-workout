@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ import {
   trainingPlanSessionsQueryOptions,
 } from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
+import { useTrainingPlanAndSessions } from "./training-plan-session-queries";
 import type { TrainingSession, TrainingSessionIntent } from "./training-session";
 import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
 import { resolveTrainingWeekBodyweight } from "./training-week-bodyweight";
@@ -110,12 +111,8 @@ function useTrainingSessionStartData(
   sessionIntent: TrainingSessionIntent;
   trainingPlan: TrainingPlan | null | undefined;
 } {
-  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
-  const trainingSessionsQuery = useQuery(
-    trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
-  );
-  const trainingPlan = trainingPlanQuery.data;
-  const trainingSessions = trainingSessionsQuery.data ?? [];
+  const { trainingPlan, trainingPlanQuery, trainingSessions, trainingSessionsQuery } =
+    useTrainingPlanAndSessions(routeParams?.planId ?? null);
 
   return {
     isLoading: trainingPlanQuery.isLoading || trainingSessionsQuery.isLoading,

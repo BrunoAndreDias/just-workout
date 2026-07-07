@@ -11,6 +11,7 @@ import type {
 } from "./training-plan";
 import { createLegacyDefaultTrainingPrescription } from "./training-prescription";
 import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
+import { getCompletedTrainingSessionsNewestFirst } from "./training-session-history";
 
 const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 
@@ -120,13 +121,7 @@ function getLatestCompletedExerciseHistory({
   sessions: ReadonlyArray<TrainingSession>;
   trainingBlockId: string | null;
 }): { entry: TrainingSessionExerciseEntry; session: TrainingSession } | null {
-  const completedSessions = [...sessions]
-    .filter((session) => session.completedAt !== null)
-    .sort((firstSession, secondSession) =>
-      (secondSession.completedAt ?? "").localeCompare(firstSession.completedAt ?? ""),
-    );
-
-  for (const session of completedSessions) {
+  for (const session of getCompletedTrainingSessionsNewestFirst(sessions)) {
     if (trainingBlockId && session.trainingBlockId !== trainingBlockId) {
       continue;
     }

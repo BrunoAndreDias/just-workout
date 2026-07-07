@@ -8,7 +8,11 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import {
+  createPrototypeActionButton,
+  setPrototypeUrlVariantSearchParam,
+} from "../../../dev/prototype-ui";
 import type { PlanBlueprintSummary } from "../../plan-blueprint";
 import "./prototype-training-plan-draft-review.css";
 
@@ -20,6 +24,8 @@ const prototypeVariants = [
   { id: "B", name: "Dense editor" },
   { id: "C", name: "Template board" },
 ] as const;
+
+const PrototypeAction = createPrototypeActionButton("tp-draft-prototype");
 
 type PrototypeVariantId = (typeof prototypeVariants)[number]["id"];
 type TemplatePurpose = "strength" | "custom-focus";
@@ -238,14 +244,7 @@ export function TrainingPlanDraftReviewPrototype({
 
   const setUrlVariant = (nextVariant: PrototypeVariantId) => {
     setVariant(nextVariant);
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set("variant", nextVariant);
-    window.history.replaceState(window.history.state, "", nextUrl);
+    setPrototypeUrlVariantSearchParam(nextVariant);
   };
 
   const toggleSelectedTemplatePurpose = () => {
@@ -474,20 +473,15 @@ function TemplateBoardVariant({
       <BuilderChoiceStrip summary={summary} />
       <div className="tp-draft-prototype__board">
         {draftTemplates.map((template) => (
-          <button
-            className={
-              "tp-draft-prototype__board-card" +
-              (template.id === selectedTemplateId ? " tp-draft-prototype__board-card--active" : "")
-            }
+          <TemplateSelectionCard
+            activeClassName="tp-draft-prototype__board-card--active"
+            baseClassName="tp-draft-prototype__board-card"
             key={template.id}
-            onClick={() => onSelectTemplate(template.id)}
-            type="button"
-          >
-            <span>{getTemplatePurposeLabel(template.purpose)}</span>
-            <strong>{template.label}</strong>
-            <small>{template.subtitle}</small>
-            <em>{template.slots.length} slots</em>
-          </button>
+            onSelectTemplate={onSelectTemplate}
+            selectedTemplateId={selectedTemplateId}
+            showSlotCount
+            template={template}
+          />
         ))}
       </div>
     </div>
@@ -545,21 +539,44 @@ function TemplateOverview({
   return (
     <aside className="tp-draft-prototype__template-overview" aria-label="Draft templates">
       {templates.map((template) => (
-        <button
-          className={
-            "tp-draft-prototype__template-card" +
-            (template.id === selectedTemplateId ? " tp-draft-prototype__template-card--active" : "")
-          }
+        <TemplateSelectionCard
+          activeClassName="tp-draft-prototype__template-card--active"
+          baseClassName="tp-draft-prototype__template-card"
           key={template.id}
-          onClick={() => onSelectTemplate(template.id)}
-          type="button"
-        >
-          <span>{getTemplatePurposeLabel(template.purpose)}</span>
-          <strong>{template.label}</strong>
-          <small>{template.subtitle}</small>
-        </button>
+          onSelectTemplate={onSelectTemplate}
+          selectedTemplateId={selectedTemplateId}
+          template={template}
+        />
       ))}
     </aside>
+  );
+}
+
+function TemplateSelectionCard({
+  activeClassName,
+  baseClassName,
+  onSelectTemplate,
+  selectedTemplateId,
+  showSlotCount = false,
+  template,
+}: {
+  activeClassName: string;
+  baseClassName: string;
+  onSelectTemplate: (templateId: string) => void;
+  selectedTemplateId: string;
+  showSlotCount?: boolean;
+  template: DraftTemplate;
+}) {
+  const className =
+    template.id === selectedTemplateId ? `${baseClassName} ${activeClassName}` : baseClassName;
+
+  return (
+    <button className={className} onClick={() => onSelectTemplate(template.id)} type="button">
+      <span>{getTemplatePurposeLabel(template.purpose)}</span>
+      <strong>{template.label}</strong>
+      <small>{template.subtitle}</small>
+      {showSlotCount ? <em>{template.slots.length} slots</em> : null}
+    </button>
   );
 }
 
@@ -716,29 +733,6 @@ function PrototypeSwitcher({
         </button>
       ))}
     </fieldset>
-  );
-}
-
-function PrototypeAction({
-  icon,
-  label,
-  onClick,
-  variant,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  variant: "outline" | "primary" | "secondary";
-}) {
-  return (
-    <button
-      className={`tp-draft-prototype__button tp-draft-prototype__button--${variant}`}
-      onClick={onClick}
-      type="button"
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   );
 }
 

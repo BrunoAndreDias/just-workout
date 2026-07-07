@@ -1226,53 +1226,131 @@ export function moveTrainingPlanDraftSlotToSupersetGroup({
     blueprint,
     templateId,
     timestamp,
-    updateTemplate: (template) => {
-      const sourceGroupIndex = template.supersetGroups.findIndex(
-        (group) => group.id === sourceGroupId,
-      );
-      const targetGroupIndex = template.supersetGroups.findIndex(
-        (group) => group.id === targetGroupId,
-      );
-
-      if (sourceGroupIndex === -1 || targetGroupIndex === -1) {
-        return template;
-      }
-
-      const sourceGroup = template.supersetGroups[sourceGroupIndex];
-      const targetGroup = template.supersetGroups[targetGroupIndex];
-
-      if (
-        !sourceGroup ||
-        !targetGroup ||
-        slotIndex < 0 ||
-        slotIndex >= sourceGroup.slots.length ||
-        targetSlotIndex < 0 ||
-        targetSlotIndex > targetGroup.slots.length
-      ) {
-        return template;
-      }
-
-      const movedSlot = sourceGroup.slots[slotIndex];
-
-      if (!movedSlot) {
-        return template;
-      }
-
-      const supersetGroups = template.supersetGroups.map((group) => ({
-        ...group,
-        slots: [...group.slots],
-      }));
-
-      supersetGroups[sourceGroupIndex]?.slots.splice(slotIndex, 1);
-      const adjustedTargetIndex =
-        sourceGroupId === targetGroupId && slotIndex < targetSlotIndex
-          ? targetSlotIndex - 1
-          : targetSlotIndex;
-      supersetGroups[targetGroupIndex]?.slots.splice(adjustedTargetIndex, 0, movedSlot);
-
-      return { ...template, supersetGroups };
-    },
+    updateTemplate: (template) =>
+      moveSlotBetweenDraftSupersetGroups({
+        sourceGroupId,
+        slotIndex,
+        targetGroupId,
+        targetSlotIndex,
+        template,
+      }),
   });
+}
+
+function moveSlotBetweenDraftSupersetGroups({
+  sourceGroupId,
+  slotIndex,
+  targetGroupId,
+  targetSlotIndex,
+  template,
+}: {
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+  template: WorkoutTemplate;
+}): WorkoutTemplate {
+  const moveContext = getDraftSlotMoveContext({
+    sourceGroupId,
+    slotIndex,
+    targetGroupId,
+    targetSlotIndex,
+    template,
+  });
+
+  if (!moveContext) {
+    return template;
+  }
+
+  const supersetGroups = cloneDraftSupersetGroups(template);
+  const adjustedTargetIndex = getAdjustedTargetSlotIndex({
+    sourceGroupId,
+    slotIndex,
+    targetGroupId,
+    targetSlotIndex,
+  });
+
+  supersetGroups[moveContext.sourceGroupIndex]?.slots.splice(slotIndex, 1);
+  supersetGroups[moveContext.targetGroupIndex]?.slots.splice(
+    adjustedTargetIndex,
+    0,
+    moveContext.movedSlot,
+  );
+
+  return { ...template, supersetGroups };
+}
+
+function getDraftSlotMoveContext({
+  sourceGroupId,
+  slotIndex,
+  targetGroupId,
+  targetSlotIndex,
+  template,
+}: {
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+  template: WorkoutTemplate;
+}) {
+  const sourceGroupIndex = template.supersetGroups.findIndex((group) => group.id === sourceGroupId);
+  const targetGroupIndex = template.supersetGroups.findIndex((group) => group.id === targetGroupId);
+  const sourceGroup = template.supersetGroups[sourceGroupIndex];
+  const targetGroup = template.supersetGroups[targetGroupIndex];
+
+  if (!sourceGroup || !targetGroup) {
+    return null;
+  }
+
+  if (!hasValidDraftSlotMoveIndexes({ slotIndex, sourceGroup, targetGroup, targetSlotIndex })) {
+    return null;
+  }
+
+  const movedSlot = sourceGroup.slots[slotIndex];
+
+  return movedSlot ? { movedSlot, sourceGroupIndex, targetGroupIndex } : null;
+}
+
+function hasValidDraftSlotMoveIndexes({
+  slotIndex,
+  sourceGroup,
+  targetGroup,
+  targetSlotIndex,
+}: {
+  slotIndex: number;
+  sourceGroup: WorkoutTemplate["supersetGroups"][number];
+  targetGroup: WorkoutTemplate["supersetGroups"][number];
+  targetSlotIndex: number;
+}) {
+  return (
+    slotIndex >= 0 &&
+    slotIndex < sourceGroup.slots.length &&
+    targetSlotIndex >= 0 &&
+    targetSlotIndex <= targetGroup.slots.length
+  );
+}
+
+function cloneDraftSupersetGroups(template: WorkoutTemplate) {
+  return template.supersetGroups.map((group) => ({
+    ...group,
+    slots: [...group.slots],
+  }));
+}
+
+function getAdjustedTargetSlotIndex({
+  sourceGroupId,
+  slotIndex,
+  targetGroupId,
+  targetSlotIndex,
+}: {
+  sourceGroupId: string;
+  slotIndex: number;
+  targetGroupId: string;
+  targetSlotIndex: number;
+}) {
+  return sourceGroupId === targetGroupId && slotIndex < targetSlotIndex
+    ? targetSlotIndex - 1
+    : targetSlotIndex;
 }
 
 function updateTrainingPlanDraft({

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { CheckCircle2, Save } from "lucide-react";
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from "react";
@@ -16,6 +16,7 @@ import {
   trainingPlansQueryOptions,
 } from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
+import { useTrainingPlanAndSessions } from "./training-plan-session-queries";
 import type {
   TrainingSession,
   TrainingSessionBodyweight,
@@ -304,12 +305,8 @@ function useTrainingSessionRouteParams(): {
 function useTrainingSessionData(
   routeParams: { planId: string; requestedIntent: "extra" | null; templateId: string } | null,
 ) {
-  const trainingPlanQuery = useQuery(trainingPlanQueryOptions(routeParams?.planId ?? null));
-  const trainingSessionsQuery = useQuery(
-    trainingPlanSessionsQueryOptions(routeParams?.planId ?? null),
-  );
-  const trainingPlan = trainingPlanQuery.data;
-  const trainingSessions = trainingSessionsQuery.data ?? [];
+  const { trainingPlan, trainingPlanQuery, trainingSessions, trainingSessionsQuery } =
+    useTrainingPlanAndSessions(routeParams?.planId ?? null);
   const sessionHistoryReady = routeParams === null || !trainingSessionsQuery.isPending;
   const workoutTemplate = useMemo(
     () => getTrainingSessionWorkoutTemplate({ routeParams, trainingPlan }),

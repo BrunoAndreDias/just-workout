@@ -11,6 +11,10 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  createPrototypeActionButton,
+  setPrototypeUrlVariantSearchParam,
+} from "../../dev/prototype-ui";
 import type { NextTrainingBlockLoadSuggestion, NextTrainingBlockPreview } from "../training-block";
 import type { NextTrainingBlockTransitionWorkflow } from "../training-block-transition";
 import "./prototype-training-block-transition.css";
@@ -23,6 +27,8 @@ const prototypeVariants = [
   { id: "B", name: "Transition workspace" },
   { id: "C", name: "Auto with undo" },
 ] as const;
+
+const PrototypeAction = createPrototypeActionButton("tb-transition-prototype");
 
 type PrototypeVariantId = (typeof prototypeVariants)[number]["id"];
 type PrototypeOutcome = "accepted" | "editing" | "pending" | "skipped" | "undone";
@@ -59,14 +65,7 @@ export function TrainingBlockTransitionPrototype({
   const setUrlVariant = (nextVariant: PrototypeVariantId) => {
     setVariant(nextVariant);
     setOutcome("pending");
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set("variant", nextVariant);
-    window.history.replaceState(window.history.state, "", nextUrl);
+    setPrototypeUrlVariantSearchParam(nextVariant);
   };
 
   return (
@@ -482,29 +481,6 @@ function LoadPrefillSummary({
         ))}
       </div>
     </section>
-  );
-}
-
-function PrototypeAction({
-  icon,
-  label,
-  onClick,
-  variant,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  variant: "outline" | "primary" | "secondary";
-}) {
-  return (
-    <button
-      className={`tb-transition-prototype__button tb-transition-prototype__button--${variant}`}
-      onClick={onClick}
-      type="button"
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   );
 }
 

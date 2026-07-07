@@ -60,6 +60,10 @@ type SelectableExercise = {
   name: string;
 };
 
+type ExercisePreferenceWithId = {
+  exerciseId: string;
+};
+
 const defaultMainExerciseByPattern: Partial<Record<CompoundCapableMovementPatternId, string>> = {
   hip_hamstring_dominant: "barbell-romanian-deadlifts",
   horizontal_pull: "chest-supported-barbell-rows",
@@ -411,98 +415,19 @@ function MovementPatternBucket({
   onToggleRanker: () => void;
   row: MainCompoundPreferenceRowReadModel;
 }) {
-  const defaultExerciseId = defaultMainExerciseByPattern[row.movementPattern];
-  const selectedExerciseIds = useMemo(
-    () => row.preferences.map((preference) => preference.exerciseId),
-    [row.preferences],
-  );
-  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
-  const [draftExerciseId, setDraftExerciseId] = useState(() =>
-    getInitialDraftExerciseId({
-      defaultExerciseId,
-      options: row.mainCompoundOptions,
-      selectedExerciseIds: selectedExerciseIdSet,
-    }),
-  );
-  const canAddExercise = draftExerciseId ? !selectedExerciseIdSet.has(draftExerciseId) : false;
-
-  useEffect(() => {
-    setDraftExerciseId((currentExerciseId) => {
-      if (currentExerciseId && !selectedExerciseIdSet.has(currentExerciseId)) {
-        return currentExerciseId;
-      }
-
-      return getNextAvailableExerciseId({
-        options: row.mainCompoundOptions,
-        previousExerciseId: currentExerciseId ?? defaultExerciseId,
-        selectedExerciseIds: selectedExerciseIdSet,
-      });
-    });
-  }, [defaultExerciseId, row.mainCompoundOptions, selectedExerciseIdSet]);
-
-  function handleAddExercise() {
-    if (!draftExerciseId) {
-      return;
-    }
-
-    onAddExercise(draftExerciseId);
-    setDraftExerciseId(
-      getNextAvailableExerciseId({
-        options: row.mainCompoundOptions,
-        previousExerciseId: draftExerciseId,
-        selectedExerciseIds: new Set([...selectedExerciseIdSet, draftExerciseId]),
-      }),
-    );
-  }
-
   return (
-    <li
-      aria-label={`${row.movementPatternLabel} main compound`}
-      className="movement-pattern-bucket"
-    >
-      <div className="movement-pattern-bucket__heading">
-        <span
-          aria-hidden="true"
-          className={`movement-pattern-bucket__icon ${getFoundationIconClassName(row.movementPattern)}`}
-        >
-          <FoundationPatternIcon movementPattern={row.movementPattern} />
-        </span>
-        <div>
-          <h4>{row.movementPatternLabel}</h4>
-          <p>{row.preferences.length > 0 ? row.metadata : "1 selected"}</p>
-        </div>
-      </div>
-
-      <div className="exercise-selection-picker-row">
-        <ExerciseDropdown
-          ariaLabel={`Choose ${row.movementPatternLabel} exercise`}
-          isAttachedToAddButton
-          onChange={setDraftExerciseId}
-          options={row.mainCompoundOptions}
-          selectedExerciseId={draftExerciseId}
-          selectedExerciseIds={selectedExerciseIds}
-        />
-        <button
-          aria-label={`Add another ${row.movementPatternLabel} exercise`}
-          className="exercise-selection-add-button"
-          disabled={!canAddExercise}
-          onClick={handleAddExercise}
-          title="Add exercise"
-          type="button"
-        >
-          <CirclePlus aria-hidden="true" size={15} strokeWidth={2.2} />
-        </button>
-      </div>
-
-      <MainCompoundPickerToggleButton
-        className="exercise-rank-preferences-button"
-        isOpen={false}
-        label="Rank preferences"
-        onToggle={onToggleRanker}
-        pickerId={`main-compound-preferences-picker-${row.movementPattern}`}
-      />
-      <PreferenceSummary preferences={row.preferences} />
-    </li>
+    <MainCompoundExerciseBucket
+      addButtonAriaLabel={`Add another ${row.movementPatternLabel} exercise`}
+      bucketAriaLabel={`${row.movementPatternLabel} main compound`}
+      defaultExerciseId={defaultMainExerciseByPattern[row.movementPattern]}
+      dropdownAriaLabel={`Choose ${row.movementPatternLabel} exercise`}
+      emptySummary="1 selected"
+      onAddExercise={onAddExercise}
+      onToggleRanker={onToggleRanker}
+      rankButtonLabel="Rank preferences"
+      rankButtonPickerId={`main-compound-preferences-picker-${row.movementPattern}`}
+      row={row}
+    />
   );
 }
 
@@ -515,12 +440,52 @@ function RotationMovementPatternBucket({
   onToggleRanker: () => void;
   row: MainCompoundPreferenceRowReadModel;
 }) {
-  const defaultExerciseId = defaultRotationExerciseByPattern[row.movementPattern];
-  const selectedExerciseIds = useMemo(
-    () => row.preferences.map((preference) => preference.exerciseId),
-    [row.preferences],
+  return (
+    <MainCompoundExerciseBucket
+      addButtonAriaLabel={`Add another ${row.movementPatternLabel} rotation exercise`}
+      bucketAriaLabel={`${row.movementPatternLabel} rotation backups`}
+      bucketClassName="movement-pattern-bucket--rotation"
+      defaultExerciseId={defaultRotationExerciseByPattern[row.movementPattern]}
+      dropdownAriaLabel={`Choose ${row.movementPatternLabel} rotation exercise`}
+      emptySummary="Add 2-4 backups"
+      onAddExercise={onAddExercise}
+      onToggleRanker={onToggleRanker}
+      rankButtonAccessibleLabel="Rank rotation preferences"
+      rankButtonLabel="Rank rotation"
+      rankButtonPickerId={`main-compound-rotation-preferences-picker-${row.movementPattern}`}
+      row={row}
+    />
   );
-  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+}
+
+function MainCompoundExerciseBucket({
+  addButtonAriaLabel,
+  bucketAriaLabel,
+  bucketClassName,
+  defaultExerciseId,
+  dropdownAriaLabel,
+  emptySummary,
+  onAddExercise,
+  onToggleRanker,
+  rankButtonAccessibleLabel,
+  rankButtonLabel,
+  rankButtonPickerId,
+  row,
+}: {
+  addButtonAriaLabel: string;
+  bucketAriaLabel: string;
+  bucketClassName?: string;
+  defaultExerciseId: string | undefined;
+  dropdownAriaLabel: string;
+  emptySummary: string;
+  onAddExercise: (exerciseId: string) => void;
+  onToggleRanker: () => void;
+  rankButtonAccessibleLabel?: string;
+  rankButtonLabel: string;
+  rankButtonPickerId: string;
+  row: MainCompoundPreferenceRowReadModel;
+}) {
+  const { selectedExerciseIds, selectedExerciseIdSet } = useSelectedExerciseIds(row.preferences);
   const [draftExerciseId, setDraftExerciseId] = useState(() =>
     getInitialDraftExerciseId({
       defaultExerciseId,
@@ -561,8 +526,8 @@ function RotationMovementPatternBucket({
 
   return (
     <li
-      aria-label={`${row.movementPatternLabel} rotation backups`}
-      className="movement-pattern-bucket movement-pattern-bucket--rotation"
+      aria-label={bucketAriaLabel}
+      className={`movement-pattern-bucket${bucketClassName ? ` ${bucketClassName}` : ""}`}
     >
       <div className="movement-pattern-bucket__heading">
         <span
@@ -573,13 +538,13 @@ function RotationMovementPatternBucket({
         </span>
         <div>
           <h4>{row.movementPatternLabel}</h4>
-          <p>{row.preferences.length > 0 ? row.metadata : "Add 2-4 backups"}</p>
+          <p>{row.preferences.length > 0 ? row.metadata : emptySummary}</p>
         </div>
       </div>
 
       <div className="exercise-selection-picker-row">
         <ExerciseDropdown
-          ariaLabel={`Choose ${row.movementPatternLabel} rotation exercise`}
+          ariaLabel={dropdownAriaLabel}
           isAttachedToAddButton
           onChange={setDraftExerciseId}
           options={row.mainCompoundOptions}
@@ -587,7 +552,7 @@ function RotationMovementPatternBucket({
           selectedExerciseIds={selectedExerciseIds}
         />
         <button
-          aria-label={`Add another ${row.movementPatternLabel} rotation exercise`}
+          aria-label={addButtonAriaLabel}
           className="exercise-selection-add-button"
           disabled={!canAddExercise}
           onClick={handleAddExercise}
@@ -599,16 +564,26 @@ function RotationMovementPatternBucket({
       </div>
 
       <MainCompoundPickerToggleButton
-        accessibleLabel="Rank rotation preferences"
+        accessibleLabel={rankButtonAccessibleLabel}
         className="exercise-rank-preferences-button"
         isOpen={false}
-        label="Rank rotation"
+        label={rankButtonLabel}
         onToggle={onToggleRanker}
-        pickerId={`main-compound-rotation-preferences-picker-${row.movementPattern}`}
+        pickerId={rankButtonPickerId}
       />
       <PreferenceSummary preferences={row.preferences} />
     </li>
   );
+}
+
+function useSelectedExerciseIds(preferences: ReadonlyArray<ExercisePreferenceWithId>) {
+  const selectedExerciseIds = useMemo(
+    () => preferences.map((preference) => preference.exerciseId),
+    [preferences],
+  );
+  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+
+  return { selectedExerciseIds, selectedExerciseIdSet };
 }
 
 function ExerciseDropdown({
@@ -731,7 +706,13 @@ function ExerciseDropdown({
   }
 
   function handleButtonKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    const intent = getExerciseDropdownKeyIntent(event.key);
+
+    if (intent === "ignore") {
+      return;
+    }
+
+    if (intent === "move-next" || intent === "move-previous") {
       event.preventDefault();
 
       if (!isOpen) {
@@ -739,16 +720,17 @@ function ExerciseDropdown({
         return;
       }
 
-      const nextIndex =
-        event.key === "ArrowDown"
-          ? Math.min(activeOptionIndex + 1, availableOptions.length - 1)
-          : Math.max(activeOptionIndex - 1, 0);
-
-      setActiveOptionIndex(nextIndex);
+      setActiveOptionIndex(
+        getNextExerciseDropdownOptionIndex({
+          direction: intent,
+          optionCount: availableOptions.length,
+          selectedIndex: activeOptionIndex,
+        }),
+      );
       return;
     }
 
-    if (event.key === "Enter" || event.key === " ") {
+    if (intent === "commit") {
       event.preventDefault();
 
       if (isOpen && activeOption) {
@@ -760,9 +742,7 @@ function ExerciseDropdown({
       return;
     }
 
-    if (event.key === "Escape") {
-      setIsOpen(false);
-    }
+    setIsOpen(false);
   }
 
   return (
@@ -836,6 +816,40 @@ function ExerciseDropdown({
   );
 }
 
+type ExerciseDropdownKeyIntent = "close" | "commit" | "ignore" | "move-next" | "move-previous";
+
+function getExerciseDropdownKeyIntent(key: string): ExerciseDropdownKeyIntent {
+  switch (key) {
+    case "ArrowDown":
+      return "move-next";
+    case "ArrowUp":
+      return "move-previous";
+    case "Enter":
+    case " ":
+      return "commit";
+    case "Escape":
+      return "close";
+    default:
+      return "ignore";
+  }
+}
+
+function getNextExerciseDropdownOptionIndex({
+  direction,
+  optionCount,
+  selectedIndex,
+}: {
+  direction: "move-next" | "move-previous";
+  optionCount: number;
+  selectedIndex: number;
+}) {
+  if (direction === "move-next") {
+    return Math.min(selectedIndex + 1, optionCount - 1);
+  }
+
+  return Math.max(selectedIndex - 1, 0);
+}
+
 function IsolationGroup({
   onAddExercise,
   onToggleRanker,
@@ -846,11 +860,7 @@ function IsolationGroup({
   row: IsolationExercisePreferenceRowReadModel;
 }) {
   const defaultExerciseId = defaultIsolationExerciseByMuscleGroup[row.primaryMuscleGroup];
-  const selectedExerciseIds = useMemo(
-    () => row.preferences.map((preference) => preference.exerciseId),
-    [row.preferences],
-  );
-  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+  const { selectedExerciseIds, selectedExerciseIdSet } = useSelectedExerciseIds(row.preferences);
   const [draftExerciseId, setDraftExerciseId] = useState(() =>
     getInitialDraftExerciseId({
       defaultExerciseId,

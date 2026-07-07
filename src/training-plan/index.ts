@@ -10,11 +10,9 @@ export type {
   WorkoutTemplatePurpose,
 } from "./training-plan";
 export {
-  getTrainingPlanRouteTarget,
   getTrainingSessionHistoryHref,
   getTrainingSessionStartChoiceHref,
   isTrainingPlansNavigationPathname,
-  type TrainingPlanRouteTarget,
   trainingPlanPaths,
 } from "./training-plan-paths";
 export { trainingPlansQueryOptions } from "./training-plan-query-options";

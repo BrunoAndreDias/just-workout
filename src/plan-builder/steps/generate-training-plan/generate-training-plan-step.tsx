@@ -326,55 +326,16 @@ function TrainingPlanDraftHeader({
   return (
     <StepPanel>
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
-          <p className="mt-3 max-w-3xl text-sm text-stone-600">
-            Review the generated Workout Templates, Superset Groups, exercise slots, and Training
-            Prescriptions before creating the Active Training Plan.
-          </p>
-          {isStale ? (
-            <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-              Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices
-              before accepting it.
-            </p>
-          ) : null}
-        </div>
-        <StepActions>
-          <Button
-            disabled={isAccepting}
-            onClick={() => {
-              void draftActions.resetDraft();
-            }}
-            type="button"
-            variant="outline"
-          >
-            Reset Draft
-          </Button>
-          <Button
-            disabled={isAccepting || isStale || hasBlockers}
-            onClick={() => {
-              void draftActions.acceptDraft();
-            }}
-            type="button"
-            variant="builderPrimary"
-          >
-            {isAccepting ? "Accepting..." : "Accept Draft"}
-          </Button>
-        </StepActions>
+        <TrainingPlanDraftIntro isStale={isStale} />
+        <TrainingPlanDraftActions
+          draftActions={draftActions}
+          hasBlockers={hasBlockers}
+          isAccepting={isAccepting}
+          isStale={isStale}
+        />
       </div>
 
-      <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-        <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
-        <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
-        <GenerateSummaryField
-          label="Rep ranges"
-          value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
-        />
-        <GenerateSummaryField
-          label="Templates"
-          value={String(trainingPlanDraft.content.workoutTemplates.length)}
-        />
-      </dl>
+      <TrainingPlanDraftSummaryFields summary={summary} trainingPlanDraft={trainingPlanDraft} />
 
       {requiresBodyweight ? (
         <BaselineBodyweightDraftSetup
@@ -385,6 +346,88 @@ function TrainingPlanDraftHeader({
         />
       ) : null}
     </StepPanel>
+  );
+}
+
+function TrainingPlanDraftIntro({ isStale }: { isStale: boolean }) {
+  return (
+    <div>
+      <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
+      <p className="mt-3 max-w-3xl text-sm text-stone-600">
+        Review the generated Workout Templates, Superset Groups, exercise slots, and Training
+        Prescriptions before creating the Active Training Plan.
+      </p>
+      {isStale ? <TrainingPlanDraftStaleNotice /> : null}
+    </div>
+  );
+}
+
+function TrainingPlanDraftStaleNotice() {
+  return (
+    <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+      Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices before
+      accepting it.
+    </p>
+  );
+}
+
+function TrainingPlanDraftActions({
+  draftActions,
+  hasBlockers,
+  isAccepting,
+  isStale,
+}: {
+  draftActions: TrainingPlanDraftActions;
+  hasBlockers: boolean;
+  isAccepting: boolean;
+  isStale: boolean;
+}) {
+  return (
+    <StepActions>
+      <Button
+        disabled={isAccepting}
+        onClick={() => {
+          void draftActions.resetDraft();
+        }}
+        type="button"
+        variant="outline"
+      >
+        Reset Draft
+      </Button>
+      <Button
+        disabled={isAccepting || isStale || hasBlockers}
+        onClick={() => {
+          void draftActions.acceptDraft();
+        }}
+        type="button"
+        variant="builderPrimary"
+      >
+        {isAccepting ? "Accepting..." : "Accept Draft"}
+      </Button>
+    </StepActions>
+  );
+}
+
+function TrainingPlanDraftSummaryFields({
+  summary,
+  trainingPlanDraft,
+}: {
+  summary: PlanBlueprintSummary | null;
+  trainingPlanDraft: TrainingPlanDraft;
+}) {
+  return (
+    <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+      <GenerateSummaryField label="Frequency" value={summary?.trainingFrequency ?? "Ready"} />
+      <GenerateSummaryField label="Split" value={trainingPlanDraft.content.split} />
+      <GenerateSummaryField
+        label="Rep ranges"
+        value={summary?.repRanges ?? trainingPlanDraft.content.repRangeStyle}
+      />
+      <GenerateSummaryField
+        label="Templates"
+        value={String(trainingPlanDraft.content.workoutTemplates.length)}
+      />
+    </dl>
   );
 }
 
