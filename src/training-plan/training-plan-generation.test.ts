@@ -305,43 +305,7 @@ describe("generateActiveTrainingPlanFromCurrentPlanBlueprint", () => {
   it("revalidates draft blockers before accepting the current Training Plan Draft", async () => {
     const { dependencies } = createDraftGenerationTestContext({
       trainingPlanDraft: {
-        content: {
-          ...createTrainingPlanDraftContent(),
-          workoutTemplates: [
-            {
-              id: "template-1",
-              label: "Upper A",
-              purpose: "strength",
-              supersetGroups: [
-                {
-                  id: "group-1",
-                  slots: [
-                    {
-                      exerciseId: "flat-barbell-bench-press",
-                      exerciseName: "Flat Barbell Bench Press",
-                      kind: "exercise",
-                      movementPattern: "horizontal_push",
-                      role: "main_compound",
-                      slotLabel: "A1",
-                      targetMuscles: ["chest"],
-                    },
-                    {
-                      exerciseId: "flat-barbell-bench-press",
-                      exerciseName: "Flat Barbell Bench Press",
-                      kind: "exercise",
-                      movementPattern: "horizontal_push",
-                      role: "secondary_compound",
-                      slotLabel: "A2",
-                      targetMuscles: ["chest"],
-                    },
-                  ],
-                  title: "Upper Superset Group",
-                  type: "superset",
-                },
-              ],
-            },
-          ],
-        },
+        content: createDuplicateExerciseDraftContent(),
         isStale: false,
         validation: {
           blockers: [],
@@ -495,6 +459,42 @@ function createTrainingPlanDraftContent(): NonNullable<
             ],
             title: "Upper Superset Group",
             type: "superset",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createDuplicateExerciseDraftContent(): NonNullable<
+  PlanBlueprint["trainingPlanDraft"]
+>["content"] {
+  const content = createTrainingPlanDraftContent();
+  const template = content.workoutTemplates[0];
+  const group = template?.supersetGroups[0];
+  const slot = group?.slots[0];
+
+  if (!template || !group || !slot) {
+    throw new Error("Expected the draft fixture to contain one template, group, and slot.");
+  }
+
+  return {
+    ...content,
+    workoutTemplates: [
+      {
+        ...template,
+        label: "Upper A",
+        supersetGroups: [
+          {
+            ...group,
+            slots: [
+              slot,
+              {
+                ...slot,
+                role: "secondary_compound",
+                slotLabel: "A2",
+              },
+            ],
           },
         ],
       },

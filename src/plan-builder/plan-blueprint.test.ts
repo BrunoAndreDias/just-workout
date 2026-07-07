@@ -30,7 +30,10 @@ import {
   updateMainCompoundPreferences,
   updateMainCompoundRotationPool,
 } from "./plan-blueprint";
-import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
+import {
+  completeMainCompoundSelections,
+  createStrengthCoverageDraftSlots,
+} from "./plan-builder-test-fixtures";
 import { createRecommendedTrainingVolumeConfiguration } from "./training-volume";
 
 const testBlueprintOptions = {
@@ -102,51 +105,7 @@ function createTestTrainingPlanContent(
                 slotLabel: "A1",
                 targetMuscles: ["chest"],
               },
-              {
-                exerciseId: "bent-over-barbell-rows",
-                exerciseName: "Bent-Over Barbell Rows",
-                kind: "exercise",
-                movementPattern: "horizontal_pull",
-                role: "main_compound",
-                slotLabel: "A2",
-                targetMuscles: ["back"],
-              },
-              {
-                exerciseId: "seated-overhead-barbell-press",
-                exerciseName: "Seated Overhead Barbell Press",
-                kind: "exercise",
-                movementPattern: "vertical_push",
-                role: "main_compound",
-                slotLabel: "A3",
-                targetMuscles: ["shoulders"],
-              },
-              {
-                exerciseId: "lat-pull-downs",
-                exerciseName: "Lat Pull-Downs",
-                kind: "exercise",
-                movementPattern: "vertical_pull",
-                role: "main_compound",
-                slotLabel: "A4",
-                targetMuscles: ["back"],
-              },
-              {
-                exerciseId: "dumbbell-squats",
-                exerciseName: "Dumbbell Squats",
-                kind: "exercise",
-                movementPattern: "quad_dominant",
-                role: "main_compound",
-                slotLabel: "A5",
-                targetMuscles: ["quadriceps"],
-              },
-              {
-                exerciseId: "dumbbell-romanian-deadlifts",
-                exerciseName: "Dumbbell Romanian Deadlifts",
-                kind: "exercise",
-                movementPattern: "hip_hamstring_dominant",
-                role: "main_compound",
-                slotLabel: "A6",
-                targetMuscles: ["hamstrings"],
-              },
+              ...createStrengthCoverageDraftSlots(),
             ],
             title: "Upper superset 1",
             type: "superset",

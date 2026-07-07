@@ -3,6 +3,7 @@ import { getAvoidedExerciseIds } from "../plan-builder/exercise-selection-prefer
 import type { IsolationExercisePreferenceBucket } from "../plan-builder/isolation-exercise-preferences";
 import { deriveMainCompoundRotationPools } from "../plan-builder/main-compound-rotation-pool";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
+import type { TrainingSplitId } from "../plan-builder/training-split";
 import { formatMovementPatternLabel } from "../plan-builder/weekly-movement-coverage";
 import type {
   ExerciseCatalogMuscleGroupId,
@@ -433,45 +434,70 @@ function getMissingRequiredStrengthCoverage(
 function getDraftMainCompoundSelections(
   content: TrainingPlanContent,
 ): ReadonlyArray<MainCompoundSelection> {
-  return content.workoutTemplates.flatMap((template) =>
-    template.supersetGroups.flatMap((group) =>
-      group.slots.flatMap((slot) =>
-        slot.role === "main_compound" && isCompoundCapableMovementPattern(slot.movementPattern)
-          ? [
-              {
-                exerciseId: slot.exerciseId,
-                movementPattern: slot.movementPattern,
-              },
-            ]
-          : [],
-      ),
-    ),
-  );
+  const selections: MainCompoundSelection[] = [];
+
+  for (const template of content.workoutTemplates) {
+    for (const group of template.supersetGroups) {
+      for (const slot of group.slots) {
+        if (slot.role !== "main_compound") {
+          continue;
+        }
+
+        if (!isCompoundCapableMovementPattern(slot.movementPattern)) {
+          continue;
+        }
+
+        selections.push({
+          exerciseId: slot.exerciseId,
+          movementPattern: slot.movementPattern,
+        });
+      }
+    }
+  }
+
+  return selections;
 }
 
-function getTrainingSplitIdForDraftContent(
-  content: TrainingPlanContent,
-): PlanBlueprint["split"] & string {
+const draftTrainingSplitAliases = [
+  {
+    labels: ["Alternating Full Body A/B"],
+    split: "alternating-full-body-a-b",
+  },
+  {
+    labels: ["2-Day Full Body"],
+    split: "full-body-2-day",
+  },
+  {
+    labels: ["3-Day Full Body"],
+    split: "full-body-3-day",
+  },
+  {
+    labels: ["Rotating Push/Pull/Legs"],
+    split: "rotating-push-pull-legs",
+  },
+  {
+    labels: ["4-Day Upper/Lower", "Upper/Lower 4-Day"],
+    split: "upper-lower-4-day",
+  },
+  {
+    labels: ["Upper/Lower + Full Body", "Upper/Lower + Full Body 3-Day"],
+    split: "upper-lower-full-body",
+  },
+] as const satisfies ReadonlyArray<{
+  labels: ReadonlyArray<string>;
+  split: TrainingSplitId;
+}>;
+
+function getTrainingSplitIdForDraftContent(content: TrainingPlanContent): TrainingSplitId {
   const normalizedLabel = content.split.trim().toLowerCase();
 
-  switch (normalizedLabel) {
-    case "alternating full body a/b":
-      return "alternating-full-body-a-b";
-    case "2-day full body":
-      return "full-body-2-day";
-    case "3-day full body":
-      return "full-body-3-day";
-    case "rotating push/pull/legs":
-      return "rotating-push-pull-legs";
-    case "upper/lower 4-day":
-    case "4-day upper/lower":
-      return "upper-lower-4-day";
-    case "upper/lower + full body":
-    case "upper/lower + full body 3-day":
-      return "upper-lower-full-body";
-    default:
-      throw new Error(`Unknown Training Split label "${content.split}" in Training Plan Draft.`);
+  for (const { labels, split } of draftTrainingSplitAliases) {
+    if (labels.some((label) => label.toLowerCase() === normalizedLabel)) {
+      return split;
+    }
   }
+
+  throw new Error(`Unknown Training Split label "${content.split}" in Training Plan Draft.`);
 }
 
 function getMissingRequiredStrengthCoverageMessage(

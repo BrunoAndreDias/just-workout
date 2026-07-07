@@ -10,7 +10,10 @@ import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { planBuilderPaths } from "./plan-builder-paths";
 import { savePlanBlueprint } from "./plan-builder-repository";
 import { planBuilderService } from "./plan-builder-service";
-import { completeMainCompoundSelections } from "./plan-builder-test-fixtures";
+import {
+  completeMainCompoundSelections,
+  createStrengthCoverageDraftSlots,
+} from "./plan-builder-test-fixtures";
 
 type PlanBuilderTestUser = ReturnType<typeof userEvent.setup>;
 
@@ -931,34 +934,7 @@ describe("Plan Builder canonical route", () => {
                         setCount: 3,
                       },
                     },
-                    createCoverageDraftSlot({
-                      exerciseId: "bent-over-barbell-rows",
-                      exerciseName: "Bent-Over Barbell Rows",
-                      movementPattern: "horizontal_pull",
-                      slotLabel: "A2",
-                      targetMuscles: ["back"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "lat-pull-downs",
-                      exerciseName: "Lat Pull-Downs",
-                      movementPattern: "vertical_pull",
-                      slotLabel: "A3",
-                      targetMuscles: ["back"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "dumbbell-squats",
-                      exerciseName: "Dumbbell Squats",
-                      movementPattern: "quad_dominant",
-                      slotLabel: "A4",
-                      targetMuscles: ["quadriceps"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "dumbbell-romanian-deadlifts",
-                      exerciseName: "Dumbbell Romanian Deadlifts",
-                      movementPattern: "hip_hamstring_dominant",
-                      slotLabel: "A5",
-                      targetMuscles: ["hamstrings"],
-                    }),
+                    ...createDraftCoverageSlots(),
                   ],
                   title: "Upper Superset Group",
                   type: "superset",
@@ -1132,34 +1108,7 @@ describe("Plan Builder canonical route", () => {
                       slotLabel: "A1",
                       targetMuscles: ["chest"],
                     },
-                    createCoverageDraftSlot({
-                      exerciseId: "bent-over-barbell-rows",
-                      exerciseName: "Bent-Over Barbell Rows",
-                      movementPattern: "horizontal_pull",
-                      slotLabel: "A2",
-                      targetMuscles: ["back"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "lat-pull-downs",
-                      exerciseName: "Lat Pull-Downs",
-                      movementPattern: "vertical_pull",
-                      slotLabel: "A3",
-                      targetMuscles: ["back"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "dumbbell-squats",
-                      exerciseName: "Dumbbell Squats",
-                      movementPattern: "quad_dominant",
-                      slotLabel: "A4",
-                      targetMuscles: ["quadriceps"],
-                    }),
-                    createCoverageDraftSlot({
-                      exerciseId: "dumbbell-romanian-deadlifts",
-                      exerciseName: "Dumbbell Romanian Deadlifts",
-                      movementPattern: "hip_hamstring_dominant",
-                      slotLabel: "A5",
-                      targetMuscles: ["hamstrings"],
-                    }),
+                    ...createDraftCoverageSlots(),
                   ],
                   title: "Upper Superset Group",
                   type: "superset",
@@ -1378,28 +1327,15 @@ async function seedEditedTrainingPlanDraft({
   });
 }
 
-function createCoverageDraftSlot({
-  exerciseId,
-  exerciseName,
-  movementPattern,
-  slotLabel,
-  targetMuscles,
-}: {
-  exerciseId: string;
-  exerciseName: string;
-  movementPattern: "hip_hamstring_dominant" | "horizontal_pull" | "quad_dominant" | "vertical_pull";
-  slotLabel: string;
-  targetMuscles: ReadonlyArray<"back" | "hamstrings" | "quadriceps">;
-}) {
-  return {
-    exerciseId,
-    exerciseName,
-    kind: "exercise" as const,
-    movementPattern,
-    role: "main_compound" as const,
-    slotLabel,
-    targetMuscles,
-  };
+function createDraftCoverageSlots() {
+  return createStrengthCoverageDraftSlots({
+    movementPatterns: [
+      "horizontal_pull",
+      "vertical_pull",
+      "quad_dominant",
+      "hip_hamstring_dominant",
+    ],
+  });
 }
 
 function renderPlanBuilder({

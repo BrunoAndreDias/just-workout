@@ -150,16 +150,22 @@ function applyTrainingPlanDraftSetupUpdate({
   trainingPlanDraft: TrainingPlanDraft;
   update: TrainingPlanDraftSetupUpdate;
 }): TrainingPlanDraft {
-  const content =
-    update.kind === "baseline_bodyweight"
-      ? {
-          ...trainingPlanDraft.content,
-          baselineBodyweight: update.baselineBodyweight,
-        }
-      : {
-          ...trainingPlanDraft.content,
-          startingLoadSuggestions: update.startingLoadSuggestions,
-        };
+  let content: TrainingPlanDraft["content"];
+
+  switch (update.kind) {
+    case "baseline_bodyweight":
+      content = {
+        ...trainingPlanDraft.content,
+        baselineBodyweight: update.baselineBodyweight,
+      };
+      break;
+    case "starting_load_suggestions":
+      content = {
+        ...trainingPlanDraft.content,
+        startingLoadSuggestions: update.startingLoadSuggestions,
+      };
+      break;
+  }
 
   return {
     ...trainingPlanDraft,

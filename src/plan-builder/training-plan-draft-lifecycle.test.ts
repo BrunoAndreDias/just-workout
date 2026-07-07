@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDefaultPlanBlueprint, type PlanBlueprint } from "./plan-blueprint";
+import { createStrengthCoverageDraftSlots } from "./plan-builder-test-fixtures";
 import {
   addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
@@ -529,42 +530,7 @@ function createTestTrainingPlanDraftContent(): NonNullable<
                 slotLabel: "A1",
                 targetMuscles: ["chest"],
               },
-              {
-                exerciseId: "bent-over-barbell-rows",
-                exerciseName: "Bent-Over Barbell Rows",
-                kind: "exercise",
-                movementPattern: "horizontal_pull",
-                role: "main_compound",
-                slotLabel: "A2",
-                targetMuscles: ["back"],
-              },
-              {
-                exerciseId: "lat-pull-downs",
-                exerciseName: "Lat Pull-Downs",
-                kind: "exercise",
-                movementPattern: "vertical_pull",
-                role: "main_compound",
-                slotLabel: "A3",
-                targetMuscles: ["back"],
-              },
-              {
-                exerciseId: "dumbbell-squats",
-                exerciseName: "Dumbbell Squats",
-                kind: "exercise",
-                movementPattern: "quad_dominant",
-                role: "main_compound",
-                slotLabel: "A4",
-                targetMuscles: ["quadriceps"],
-              },
-              {
-                exerciseId: "dumbbell-romanian-deadlifts",
-                exerciseName: "Dumbbell Romanian Deadlifts",
-                kind: "exercise",
-                movementPattern: "hip_hamstring_dominant",
-                role: "main_compound",
-                slotLabel: "A5",
-                targetMuscles: ["hamstrings"],
-              },
+              ...createDraftCoverageSlots(),
             ],
             title: "Upper Superset Group",
             type: "superset",
@@ -573,6 +539,17 @@ function createTestTrainingPlanDraftContent(): NonNullable<
       },
     ],
   };
+}
+
+function createDraftCoverageSlots() {
+  return createStrengthCoverageDraftSlots({
+    movementPatterns: [
+      "horizontal_pull",
+      "vertical_pull",
+      "quad_dominant",
+      "hip_hamstring_dominant",
+    ],
+  });
 }
 
 function createSingleSlotDraftContent(): NonNullable<
