@@ -107,6 +107,14 @@ type TrainingPlanDraftActions = {
   replaceWorkoutTemplateWithCustomFocus: (templateId: string) => void;
   resetDraft: () => Promise<void>;
   saveDraftSetup: (update: TrainingPlanDraftSetupUpdate) => Promise<void>;
+  updateDraftSlotTrainingPrescription: (
+    templateId: string,
+    groupId: string,
+    slotIndex: number,
+    setCount: number,
+    repTargetMin: number,
+    repTargetMax: number,
+  ) => void;
   setWorkoutTemplatePurpose: (templateId: string, purpose: WorkoutTemplatePurpose) => void;
 };
 
@@ -282,7 +290,7 @@ function TrainingPlanDraftReview({
           <h4 className="text-base font-black text-amber-950">Draft warnings</h4>
           <ul className="mt-3 space-y-2 text-sm text-amber-900">
             {trainingPlanDraft.validation.warnings.map((warning) => (
-              <li key={warning.kind}>{warning.message}</li>
+              <li key={`${warning.kind}-${warning.message}`}>{warning.message}</li>
             ))}
           </ul>
         </StepPanel>
@@ -803,6 +811,13 @@ function TrainingPlanDraftSlotItem({
           </select>
         </label>
       ) : null}
+      <DraftTrainingPrescriptionEditor
+        draftActions={draftActions}
+        groupId={currentGroupId}
+        slot={slot}
+        slotIndex={slotIndex}
+        templateId={template.id}
+      />
       {canMoveSlot ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
@@ -888,6 +903,97 @@ function TrainingPlanDraftSlotItem({
   );
 }
 
+function DraftTrainingPrescriptionEditor({
+  draftActions,
+  groupId,
+  slot,
+  slotIndex,
+  templateId,
+}: {
+  draftActions: TrainingPlanDraftActions;
+  groupId: string;
+  slot: TrainingPlanDraftSlot;
+  slotIndex: number;
+  templateId: string;
+}) {
+  const trainingPrescription = slot.trainingPrescription;
+  const [editableSetCount, setEditableSetCount] = useState("");
+  const [editableRepTargetMin, setEditableRepTargetMin] = useState("");
+  const [editableRepTargetMax, setEditableRepTargetMax] = useState("");
+
+  useEffect(() => {
+    if (!trainingPrescription) {
+      return;
+    }
+
+    setEditableSetCount(String(trainingPrescription.setCount));
+    setEditableRepTargetMin(String(trainingPrescription.repRange.min));
+    setEditableRepTargetMax(String(trainingPrescription.repRange.max));
+  }, [trainingPrescription]);
+
+  if (!trainingPrescription) {
+    return null;
+  }
+
+  function persistTrainingPrescription() {
+    draftActions.updateDraftSlotTrainingPrescription(
+      templateId,
+      groupId,
+      slotIndex,
+      parseTrainingPrescriptionInteger(editableSetCount),
+      parseTrainingPrescriptionInteger(editableRepTargetMin),
+      parseTrainingPrescriptionInteger(editableRepTargetMax),
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <label className="block text-sm font-medium text-stone-700">
+        <span>Set count for {slot.exerciseName}</span>
+        <input
+          aria-label={`Set count for ${slot.exerciseName}`}
+          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          min={1}
+          onBlur={persistTrainingPrescription}
+          onChange={(event) => {
+            setEditableSetCount(event.currentTarget.value);
+          }}
+          type="number"
+          value={editableSetCount}
+        />
+      </label>
+      <label className="block text-sm font-medium text-stone-700">
+        <span>Rep target minimum for {slot.exerciseName}</span>
+        <input
+          aria-label={`Rep target minimum for ${slot.exerciseName}`}
+          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          min={1}
+          onBlur={persistTrainingPrescription}
+          onChange={(event) => {
+            setEditableRepTargetMin(event.currentTarget.value);
+          }}
+          type="number"
+          value={editableRepTargetMin}
+        />
+      </label>
+      <label className="block text-sm font-medium text-stone-700">
+        <span>Rep target maximum for {slot.exerciseName}</span>
+        <input
+          aria-label={`Rep target maximum for ${slot.exerciseName}`}
+          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          min={1}
+          onBlur={persistTrainingPrescription}
+          onChange={(event) => {
+            setEditableRepTargetMax(event.currentTarget.value);
+          }}
+          type="number"
+          value={editableRepTargetMax}
+        />
+      </label>
+    </div>
+  );
+}
+
 function DraftStartingLoadEditor({
   loadInputValue,
   onInputChange,
@@ -970,6 +1076,12 @@ function parseEditableLoad({
   }
 
   return parsedValue;
+}
+
+function parseTrainingPrescriptionInteger(value: string): number {
+  const parsedValue = Number(value);
+
+  return Number.isInteger(parsedValue) ? parsedValue : 0;
 }
 
 function updateStartingLoadSuggestions({

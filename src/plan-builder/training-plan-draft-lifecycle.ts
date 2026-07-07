@@ -29,6 +29,7 @@ import type {
   ReplaceTrainingPlanDraftSlotExerciseOptions,
   ReplaceTrainingPlanDraftWorkoutTemplateWithCustomFocusOptions,
   UpdateTrainingPlanDraftOptions,
+  UpdateTrainingPlanDraftSlotTrainingPrescriptionOptions,
   UpdateTrainingPlanDraftWorkoutTemplatePurposeOptions,
 } from "./plan-blueprint-types";
 
@@ -653,6 +654,48 @@ export function reorderTrainingPlanDraftSlot({
 
       return { ...template, supersetGroups };
     },
+  });
+}
+
+/** Updates the Training Prescription inside one saved draft slot. */
+export function updateTrainingPlanDraftSlotTrainingPrescription({
+  blueprint,
+  groupId,
+  repTargetMax,
+  repTargetMin,
+  setCount,
+  slotIndex,
+  templateId,
+  timestamp,
+}: UpdateTrainingPlanDraftSlotTrainingPrescriptionOptions): PlanBlueprint {
+  return updateTrainingPlanDraftTemplate({
+    blueprint,
+    templateId,
+    timestamp,
+    updateTemplate: (template) => ({
+      ...template,
+      supersetGroups: template.supersetGroups.map((group) =>
+        group.id !== groupId
+          ? group
+          : {
+              ...group,
+              slots: group.slots.map((slot, currentSlotIndex) =>
+                currentSlotIndex !== slotIndex
+                  ? slot
+                  : {
+                      ...slot,
+                      trainingPrescription: {
+                        repRange: {
+                          max: repTargetMax,
+                          min: repTargetMin,
+                        },
+                        setCount,
+                      },
+                    },
+              ),
+            },
+      ),
+    }),
   });
 }
 

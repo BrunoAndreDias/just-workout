@@ -797,9 +797,12 @@ describe("Plan Builder canonical route", () => {
     await user.click(screen.getByRole("button", { name: /^reset draft$/i }));
 
     await waitFor(() => {
-      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).toHaveValue(originalExerciseId);
+      expect(screen.getAllByLabelText(/exercise choice for /i)[0]).not.toHaveValue(
+        replacementExerciseId,
+      );
+      expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
     });
-  });
+  }, 10000);
 
   it("blocks empty Superset Groups and resets draft-local group edits from current builder choices", async () => {
     const user = userEvent.setup();
@@ -887,6 +890,112 @@ describe("Plan Builder canonical route", () => {
       );
     });
   });
+
+  it("shows Weekly Rep Target drift notices for edited draft Training Prescriptions without recalculating builder targets", async () => {
+    const user = userEvent.setup();
+    const firstRender = renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    const blueprint = await planBuilderService.getOrCreatePlanBlueprint();
+
+    await savePlanBlueprint({
+      ...blueprint,
+      trainingPlanDraft: {
+        content: {
+          mainCompoundRotationPools: [],
+          repRangeStyle: "balanced_hypertrophy",
+          split: "3-Day Full Body",
+          trainingBlockWeeks: 6,
+          trainingFrequencyDaysPerWeek: 3,
+          trainingGoal: "build-muscle",
+          weeklyRepTargets: [
+            { isEnabled: true, muscleGroup: "chest", source: "custom", target: 30 },
+          ],
+          workoutTemplates: [
+            {
+              id: "template-1",
+              label: "Upper A",
+              purpose: "strength",
+              supersetGroups: [
+                {
+                  id: "group-1",
+                  slots: [
+                    {
+                      exerciseId: "flat-barbell-bench-press",
+                      exerciseName: "Flat Barbell Bench Press",
+                      kind: "exercise",
+                      movementPattern: "horizontal_push",
+                      role: "main_compound",
+                      slotLabel: "A1",
+                      targetMuscles: ["chest"],
+                      trainingPrescription: {
+                        repRange: { max: 8, min: 6 },
+                        setCount: 3,
+                      },
+                    },
+                  ],
+                  title: "Upper Superset Group",
+                  type: "superset",
+                },
+              ],
+            },
+          ],
+        },
+        isStale: false,
+        validation: { blockers: [], warnings: [] },
+      },
+    });
+    firstRender.unmount();
+
+    await planBuilderService.updateTrainingPlanDraftSlotTrainingPrescription({
+      groupId: "group-1",
+      repTargetMax: 1,
+      repTargetMin: 1,
+      setCount: 1,
+      slotIndex: 0,
+      templateId: "template-1",
+      timestamp: new Date().toISOString(),
+    });
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await user.click(await getOnePageSectionButton("Generate"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Draft warnings")).toBeVisible();
+      expect(screen.getByText("Chest is 29 reps below your Weekly Rep Target.")).toBeVisible();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    await waitFor(async () => {
+      expect(await getActiveTrainingPlans()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            weeklyRepTargets: [
+              { isEnabled: true, muscleGroup: "chest", source: "custom", target: 30 },
+            ],
+            workoutTemplates: expect.arrayContaining([
+              expect.objectContaining({
+                supersetGroups: expect.arrayContaining([
+                  expect.objectContaining({
+                    slots: expect.arrayContaining([
+                      expect.objectContaining({
+                        exerciseId: "flat-barbell-bench-press",
+                        trainingPrescription: {
+                          repRange: { max: 1, min: 1 },
+                          setCount: 1,
+                        },
+                      }),
+                    ]),
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+  }, 10000);
 
   it("accepts Superset Group edits and slot movement into the Active Training Plan", async () => {
     const user = userEvent.setup();

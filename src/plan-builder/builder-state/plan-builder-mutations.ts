@@ -162,6 +162,16 @@ type ReorderTrainingPlanDraftSlotMutationVariables = {
   timestamp: string;
 };
 
+type UpdateTrainingPlanDraftSlotTrainingPrescriptionMutationVariables = {
+  groupId: string;
+  repTargetMax: number;
+  repTargetMin: number;
+  setCount: number;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export function usePlanBuilderBlueprint() {
   const blueprintQuery = useQuery({
     queryKey: planBuilderBlueprintQueryKey,
@@ -310,6 +320,14 @@ export function useReorderTrainingPlanDraftSlotMutation() {
   return usePlanBlueprintMutation<ReorderTrainingPlanDraftSlotMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.reorderTrainingPlanDraftSlot,
   });
+}
+
+export function useUpdateTrainingPlanDraftSlotTrainingPrescriptionMutation() {
+  return usePlanBlueprintMutation<UpdateTrainingPlanDraftSlotTrainingPrescriptionMutationVariables>(
+    {
+      buildCommand: planBlueprintCommandBuilders.updateTrainingPlanDraftSlotTrainingPrescription,
+    },
+  );
 }
 
 function usePlanBlueprintMutation<TVariables>({

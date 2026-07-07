@@ -250,6 +250,16 @@ async function reorderTrainingPlanDraftSlot(
   );
 }
 
+async function updateTrainingPlanDraftSlotTrainingPrescription(
+  options: Parameters<
+    typeof planBlueprintCommandBuilders.updateTrainingPlanDraftSlotTrainingPrescription
+  >[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.updateTrainingPlanDraftSlotTrainingPrescription(options),
+  );
+}
+
 export const planBuilderService = {
   addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
@@ -279,6 +289,7 @@ export const planBuilderService = {
   updateMainCompoundSelection,
   updateOptionalVolumeTarget,
   updateRepRangeStyle,
+  updateTrainingPlanDraftSlotTrainingPrescription,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
   updateTrainingSplit,
   updateTrainingFrequency,

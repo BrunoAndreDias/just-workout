@@ -186,6 +186,7 @@ function renderOnePageActiveStep({
               generateStep.onReplaceWorkoutTemplateWithCustomFocus,
             resetDraft: generateStep.onResetDraft,
             saveDraftSetup: generateStep.onSaveDraftSetup,
+            updateDraftSlotTrainingPrescription: generateStep.onUpdateDraftSlotTrainingPrescription,
             setWorkoutTemplatePurpose: generateStep.onSetWorkoutTemplatePurpose,
           }}
           generationInputs={{

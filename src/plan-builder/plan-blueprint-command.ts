@@ -21,6 +21,7 @@ import {
   replaceTrainingPlanDraftSlotExercise,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
   type TrainingFrequencyDaysPerWeek,
+  updateTrainingPlanDraftSlotTrainingPrescription,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
 } from "./plan-blueprint";
 import { getCurrentPlanBlueprint, savePlanBlueprint } from "./plan-builder-repository";
@@ -124,6 +125,16 @@ export type PlanBlueprintCommand =
       templateId: string;
       timestamp: string;
       type: "reorderTrainingPlanDraftSlot";
+    }
+  | {
+      groupId: string;
+      repTargetMax: number;
+      repTargetMin: number;
+      setCount: number;
+      slotIndex: number;
+      templateId: string;
+      timestamp: string;
+      type: "updateTrainingPlanDraftSlotTrainingPrescription";
     }
   | {
       blueprint: PlanBlueprint;
@@ -323,6 +334,16 @@ type ReorderTrainingPlanDraftSlotCommandOptions = {
   timestamp?: string;
 };
 
+type UpdateTrainingPlanDraftSlotTrainingPrescriptionCommandOptions = {
+  groupId: string;
+  repTargetMax: number;
+  repTargetMin: number;
+  setCount: number;
+  slotIndex: number;
+  templateId: string;
+  timestamp?: string;
+};
+
 export async function getOrCreatePlanBlueprint() {
   const existingBlueprint = await getCurrentPlanBlueprint();
 
@@ -456,6 +477,17 @@ export function projectPlanBlueprintCommand({
         groupId: command.groupId,
         slotIndex: command.slotIndex,
         targetSlotIndex: command.targetSlotIndex,
+        templateId: command.templateId,
+        timestamp: command.timestamp,
+      });
+    case "updateTrainingPlanDraftSlotTrainingPrescription":
+      return updateTrainingPlanDraftSlotTrainingPrescription({
+        blueprint,
+        groupId: command.groupId,
+        repTargetMax: command.repTargetMax,
+        repTargetMin: command.repTargetMin,
+        setCount: command.setCount,
+        slotIndex: command.slotIndex,
         templateId: command.templateId,
         timestamp: command.timestamp,
       });
@@ -644,6 +676,26 @@ export const planBlueprintCommandBuilders = {
       templateId,
       timestamp: getPlanBlueprintCommandTimestamp(timestamp),
       type: "reorderTrainingPlanDraftSlot",
+    } satisfies PlanBlueprintCommand;
+  },
+  updateTrainingPlanDraftSlotTrainingPrescription({
+    groupId,
+    repTargetMax,
+    repTargetMin,
+    setCount,
+    slotIndex,
+    templateId,
+    timestamp,
+  }: UpdateTrainingPlanDraftSlotTrainingPrescriptionCommandOptions) {
+    return {
+      groupId,
+      repTargetMax,
+      repTargetMin,
+      setCount,
+      slotIndex,
+      templateId,
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "updateTrainingPlanDraftSlotTrainingPrescription",
     } satisfies PlanBlueprintCommand;
   },
   confirmExerciseSelectionPreferences({

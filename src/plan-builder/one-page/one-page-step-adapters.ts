@@ -26,6 +26,7 @@ import {
   useUpdateOptionalVolumeTargetMutation,
   useUpdateRepRangeStyleMutation,
   useUpdateTrainingFrequencyMutation,
+  useUpdateTrainingPlanDraftSlotTrainingPrescriptionMutation,
   useUpdateTrainingPlanDraftWorkoutTemplatePurposeMutation,
   useUpdateTrainingSplitMutation,
   useUpdateTrainingVolumePresetMutation,
@@ -221,6 +222,8 @@ export function useOnePageGenerateStep({
     useMoveTrainingPlanDraftSlotToSupersetGroupMutation();
   const { mutate: replaceDraftSlotExercise } = useReplaceTrainingPlanDraftSlotExerciseMutation();
   const { mutate: reorderDraftSlot } = useReorderTrainingPlanDraftSlotMutation();
+  const { mutate: updateDraftSlotTrainingPrescription } =
+    useUpdateTrainingPlanDraftSlotTrainingPrescriptionMutation();
 
   function updateCachedTrainingPlanDraft(
     savedDraft: NonNullable<PlanBlueprint["trainingPlanDraft"]>,
@@ -376,6 +379,24 @@ export function useOnePageGenerateStep({
         groupId,
         slotIndex,
         targetSlotIndex,
+        templateId,
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onUpdateDraftSlotTrainingPrescription: (
+      templateId: string,
+      groupId: string,
+      slotIndex: number,
+      setCount: number,
+      repTargetMin: number,
+      repTargetMax: number,
+    ) => {
+      updateDraftSlotTrainingPrescription({
+        groupId,
+        repTargetMax,
+        repTargetMin,
+        setCount,
+        slotIndex,
         templateId,
         timestamp: new Date().toISOString(),
       });

@@ -73,6 +73,7 @@ export {
   reorderTrainingPlanDraftWorkoutTemplate,
   replaceTrainingPlanDraftSlotExercise,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
+  updateTrainingPlanDraftSlotTrainingPrescription,
   updateTrainingPlanDraftWorkoutTemplatePurpose,
 } from "./training-plan-draft-lifecycle";
 

@@ -18,6 +18,7 @@ import {
   type WorkoutExerciseRole,
 } from "./training-prescription";
 import type { TrainingWeekBodyweightUpdate } from "./training-week-bodyweight";
+import { getWeeklyRepTargetDriftNotices } from "./weekly-rep-target-drift";
 
 export type TrainingPlanSlot = {
   exerciseId: string;
@@ -60,11 +61,20 @@ export type WorkoutTemplate = {
   supersetGroups: ReadonlyArray<SupersetGroup>;
 };
 
-export type TrainingPlanDraftWarning = {
-  kind: "custom_focus_reduces_strength_coverage";
-  message: string;
-  templateIds: ReadonlyArray<string>;
-};
+export type TrainingPlanDraftWarning =
+  | {
+      kind: "custom_focus_reduces_strength_coverage";
+      message: string;
+      templateIds: ReadonlyArray<string>;
+    }
+  | {
+      kind: "weekly_rep_target_drift";
+      message: string;
+      muscleGroup: string;
+      prescribedTopEndReps: number;
+      shortfallReps: number;
+      targetReps: number;
+    };
 
 export type TrainingPlanDraftValidation = {
   blockers: ReadonlyArray<string>;
@@ -334,18 +344,57 @@ export function validateTrainingPlanDraftContent({
     blockers.push("Workout Templates cannot repeat the same exercise in more than one slot.");
   }
 
+  if (
+    content.workoutTemplates.some((template) =>
+      template.supersetGroups.some((group) =>
+        group.slots.some((slot) => {
+          const trainingPrescription = slot.trainingPrescription;
+
+          if (!trainingPrescription) {
+            return false;
+          }
+
+          return (
+            !Number.isInteger(trainingPrescription.setCount) ||
+            !Number.isInteger(trainingPrescription.repRange.min) ||
+            !Number.isInteger(trainingPrescription.repRange.max) ||
+            trainingPrescription.setCount <= 0 ||
+            trainingPrescription.repRange.min <= 0 ||
+            trainingPrescription.repRange.max <= 0 ||
+            trainingPrescription.repRange.min > trainingPrescription.repRange.max
+          );
+        }),
+      ),
+    )
+  ) {
+    blockers.push(
+      "Training Prescriptions must use positive integer set counts and rep targets, with the minimum less than or equal to the maximum.",
+    );
+  }
+
+  const weeklyRepTargetDriftWarnings = getWeeklyRepTargetDriftNotices(content).map((notice) => ({
+    kind: "weekly_rep_target_drift" as const,
+    message: `${notice.muscleGroup} is ${notice.shortfallReps} reps below your Weekly Rep Target.`,
+    muscleGroup: notice.muscleGroup,
+    prescribedTopEndReps: notice.prescribedTopEndReps,
+    shortfallReps: notice.shortfallReps,
+    targetReps: notice.targetReps,
+  }));
+
   return {
     blockers,
-    warnings:
-      customFocusTemplateIds.length > 0
+    warnings: [
+      ...(customFocusTemplateIds.length > 0
         ? [
             {
-              kind: "custom_focus_reduces_strength_coverage",
+              kind: "custom_focus_reduces_strength_coverage" as const,
               message:
                 "Custom-focus templates intentionally reduce strength coverage. You can still accept this Training Plan Draft.",
               templateIds: customFocusTemplateIds,
             },
           ]
-        : [],
+        : []),
+      ...weeklyRepTargetDriftWarnings,
+    ],
   };
 }

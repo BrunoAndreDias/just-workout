@@ -323,6 +323,17 @@ export type ReorderTrainingPlanDraftSlotOptions = {
   timestamp: string;
 };
 
+export type UpdateTrainingPlanDraftSlotTrainingPrescriptionOptions = {
+  blueprint: PlanBlueprint;
+  groupId: string;
+  repTargetMax: number;
+  repTargetMin: number;
+  setCount: number;
+  slotIndex: number;
+  templateId: string;
+  timestamp: string;
+};
+
 export type UpdateTrainingPlanDraftOptions = {
   blueprint: PlanBlueprint;
   timestamp: string;

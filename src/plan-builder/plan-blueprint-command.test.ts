@@ -315,6 +315,7 @@ describe("plan blueprint command", () => {
     const blueprint = await getOrCreatePlanBlueprint();
     const draftBlueprint = createDraftBlueprint({
       ...blueprint,
+      weeklyRepTargets: [{ isEnabled: true, muscleGroup: "chest", source: "custom", target: 30 }],
       workoutTemplates: [
         {
           id: "template-1",
@@ -351,6 +352,54 @@ describe("plan blueprint command", () => {
         (slot) => slot.exerciseId,
       ),
     ).toEqual(["flat-barbell-bench-press", "flat-dumbbell-bench-press"]);
+  });
+
+  it("uses the same Training Prescription draft command for projection and persistence", async () => {
+    const blueprint = await getOrCreatePlanBlueprint();
+    const draftBlueprint = createDraftBlueprint({
+      ...blueprint,
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          purpose: "strength",
+          supersetGroups: [
+            createSupersetGroup({
+              id: "group-1",
+              exerciseId: "flat-barbell-bench-press",
+            }),
+          ],
+        },
+      ],
+    });
+
+    await persistPlanBlueprintCommand(
+      planBlueprintCommandBuilders.applyResolvedPlanBlueprint({
+        blueprint: draftBlueprint,
+      }),
+    );
+
+    const command = planBlueprintCommandBuilders.updateTrainingPlanDraftSlotTrainingPrescription({
+      groupId: "group-1",
+      repTargetMax: 1,
+      repTargetMin: 1,
+      setCount: 1,
+      slotIndex: 0,
+      templateId: "template-1",
+      timestamp: "2026-05-30T10:38:00.000Z",
+    });
+
+    const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
+    const persistedBlueprint = await persistPlanBlueprintCommand(command);
+
+    expect(projectedBlueprint).toEqual(persistedBlueprint);
+    expect(
+      persistedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots[0]
+        ?.trainingPrescription,
+    ).toEqual({
+      repRange: { max: 1, min: 1 },
+      setCount: 1,
+    });
   });
 
   it("uses the same slot delete draft command for projection and persistence", async () => {
@@ -553,7 +602,7 @@ function createDraftBlueprint({
         trainingBlockWeeks: 6,
         trainingFrequencyDaysPerWeek: 3,
         trainingGoal: "build-muscle",
-        weeklyRepTargets: [],
+        weeklyRepTargets: blueprint.weeklyRepTargets ?? [],
         workoutTemplates,
       },
       validation: { blockers: [], warnings: [] },

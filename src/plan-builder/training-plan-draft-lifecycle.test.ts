@@ -9,6 +9,7 @@ import {
   reorderTrainingPlanDraftSlot,
   replaceTrainingPlanDraftSlotExercise,
   replaceTrainingPlanDraftWorkoutTemplateWithCustomFocus,
+  updateTrainingPlanDraftSlotTrainingPrescription,
 } from "./training-plan-draft-lifecycle";
 
 const testBlueprintOptions = {
@@ -324,6 +325,88 @@ describe("Training Plan Draft lifecycle", () => {
 
     expect(draft?.validation.blockers).toContain(
       "Training Plan Draft slots must use available catalog exercises.",
+    );
+  });
+
+  it("updates a draft slot Training Prescription and surfaces Weekly Rep Target drift warnings", () => {
+    const blueprint = createTestPlanBlueprint({
+      trainingPlanDraft: {
+        content: {
+          ...createTestTrainingPlanDraftContent(),
+          weeklyRepTargets: [
+            { isEnabled: true, muscleGroup: "chest", source: "custom", target: 30 },
+          ],
+        },
+        isStale: false,
+        validation: { blockers: [], warnings: [] },
+      },
+    });
+
+    const updatedBlueprint = updateTrainingPlanDraftSlotTrainingPrescription({
+      blueprint,
+      groupId: "group-1",
+      repTargetMax: 1,
+      repTargetMin: 1,
+      setCount: 1,
+      slotIndex: 0,
+      templateId: "template-1",
+      timestamp: "2026-07-07T08:30:00.000Z",
+    });
+
+    expect(
+      updatedBlueprint.trainingPlanDraft?.content.workoutTemplates[0]?.supersetGroups[0]?.slots[0]
+        ?.trainingPrescription,
+    ).toEqual({
+      repRange: { max: 1, min: 1 },
+      setCount: 1,
+    });
+    expect(updatedBlueprint.trainingPlanDraft?.validation.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "weekly_rep_target_drift",
+          message: expect.stringMatching(/Chest is .* reps below your Weekly Rep Target\./),
+        }),
+      ]),
+    );
+  });
+
+  it("blocks invalid draft Training Prescriptions", () => {
+    const draftContent = createTestTrainingPlanDraftContent();
+    const template = draftContent.workoutTemplates[0];
+    const group = template?.supersetGroups[0];
+    const slot = group?.slots[0];
+
+    if (!template || !group || !slot) {
+      throw new Error("Expected a draft slot fixture.");
+    }
+
+    const draft = normalizeTrainingPlanDraft({
+      content: {
+        ...draftContent,
+        workoutTemplates: [
+          {
+            ...template,
+            supersetGroups: [
+              {
+                ...group,
+                slots: [
+                  {
+                    ...slot,
+                    trainingPrescription: {
+                      repRange: { max: 7, min: 8 },
+                      setCount: 0,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(draft?.validation.blockers).toContain(
+      "Training Prescriptions must use positive integer set counts and rep targets, with the minimum less than or equal to the maximum.",
     );
   });
 });
