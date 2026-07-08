@@ -36,10 +36,6 @@ import {
   type VolumePresetId,
 } from "../../training-volume";
 import { formatMovementPatternLabel } from "../../weekly-movement-coverage";
-import {
-  shouldShowTrainingPlanDraftReviewPrototype,
-  TrainingPlanDraftReviewPrototype,
-} from "./prototype-training-plan-draft-review";
 
 type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
@@ -140,10 +136,6 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     summary,
     trainingPlanDraft,
   } = props;
-
-  if (shouldShowTrainingPlanDraftReviewPrototype()) {
-    return <TrainingPlanDraftReviewPrototype summary={summary} />;
-  }
 
   if (trainingPlanDraft) {
     return (
@@ -1135,11 +1127,13 @@ function DraftGenerationInputs({
             onTrainingFrequencyChange={onTrainingFrequencyChange}
             onTrainingSplitChange={onTrainingSplitChange}
             selectedTrainingSplitId={visibleTrainingSplitId}
+            showWeeklyPreview={false}
           />
           <OnePageRepRangeStep
             onRepRangeStyleChange={onRepRangeStyleChange}
             savedRepRangeStyleId={savedRepRangeStyleId}
             selectedRepRangeStyle={repRangeStyle}
+            showEffectsPanel={false}
           />
           <OnePageVolumeStep
             blueprint={blueprint}
@@ -1173,7 +1167,7 @@ function DefaultGenerationConfirmation({
       <div
         aria-labelledby="default-generation-confirmation-title"
         aria-modal="true"
-        className="w-full max-w-xl rounded-3xl border border-stone-900/10 bg-[#fcfaf6] p-6 shadow-[0_24px_80px_rgba(28,25,23,0.26)]"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-3xl border border-stone-900/10 bg-[#fcfaf6] p-6 shadow-[0_24px_80px_rgba(28,25,23,0.26)]"
         role="dialog"
       >
         <StepPanel>
@@ -1199,7 +1193,7 @@ function DefaultGenerationConfirmation({
             ))}
           </ul>
 
-          <StepActions className="mt-6">
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               disabled={isGenerating}
               onClick={onCancelRecommendedDefaults}
@@ -1219,7 +1213,7 @@ function DefaultGenerationConfirmation({
               <Wand2 aria-hidden="true" size={18} strokeWidth={2} />
               {isGenerating ? "Generating..." : "Generate with Recommended Defaults"}
             </Button>
-          </StepActions>
+          </div>
         </StepPanel>
       </div>
     </div>

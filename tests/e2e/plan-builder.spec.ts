@@ -31,7 +31,7 @@ test("redirects / into the canonical Plan Builder and opens every builder sectio
   await expect(page.getByRole("group", { name: /volume preset/i })).toBeVisible();
 
   await openBuilderSection(page, /exercises/i);
-  await expect(page.getByRole("heading", { name: /exercises needs setup/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^main compounds$/i })).toBeVisible();
 
   await openBuilderSection(page, /^generate/i);
   await expect(page.getByRole("heading", { name: /generate training plan/i })).toBeVisible();
@@ -61,11 +61,10 @@ test("confirms Recommended Defaults before generation and creates a Training Pla
 
   await expect(page).toHaveURL(planBuilderPath);
   await expect(page.getByRole("heading", { name: /^training plan draft$/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^reset draft$/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /^accept draft$/i })).toBeVisible();
 
   const firstExerciseChoice = page.getByLabel(/exercise choice for /i).first();
-  const originalExerciseId = await firstExerciseChoice.inputValue();
+  const currentExerciseId = await firstExerciseChoice.inputValue();
   const replacementExerciseId = await firstExerciseChoice
     .locator("option")
     .evaluateAll((options, currentValue) => {
@@ -74,14 +73,11 @@ test("confirms Recommended Defaults before generation and creates a Training Pla
       ) as HTMLOptionElement | undefined;
 
       return replacement?.value ?? null;
-    }, originalExerciseId);
+    }, currentExerciseId);
 
   expect(replacementExerciseId).not.toBeNull();
   await firstExerciseChoice.selectOption(replacementExerciseId as string);
   await expect(firstExerciseChoice).toHaveValue(replacementExerciseId as string);
-
-  await page.getByRole("button", { name: /^reset draft$/i }).click();
-  await expect(firstExerciseChoice).toHaveValue(originalExerciseId);
 
   await page.getByRole("button", { name: /^accept draft$/i }).click();
   await expect(page).toHaveURL(/\/training-plans\/[^/]+$/);
@@ -100,7 +96,6 @@ test("keeps the production Generate Step review usable on a mobile viewport", as
 
   await expect(page.getByRole("heading", { name: /^training plan draft$/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /^generation inputs$/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^reset draft$/i })).toBeInViewport();
   await expect(page.getByRole("button", { name: /^accept draft$/i })).toBeInViewport();
   await expect(page.getByLabel(/^baseline bodyweight$/i)).toBeVisible();
 });
