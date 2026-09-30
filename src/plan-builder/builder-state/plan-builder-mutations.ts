@@ -241,6 +241,12 @@ export function useUpdateIsolationExercisePreferencesMutation() {
   });
 }
 
+export function useDiscardTrainingPlanDraftMutation() {
+  return usePlanBlueprintMutation<{ timestamp: string }>({
+    buildCommand: planBlueprintCommandBuilders.discardTrainingPlanDraft,
+  });
+}
+
 export function useRenameTrainingPlanDraftWorkoutTemplateMutation() {
   return usePlanBlueprintMutation<RenameTrainingPlanDraftWorkoutTemplateMutationVariables>({
     buildCommand: planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate,
@@ -330,6 +336,8 @@ export function useUpdateTrainingPlanDraftSlotTrainingPrescriptionMutation() {
   );
 }
 
+const planBlueprintCommandMutationKey = ["plan-blueprint-command"] as const;
+
 function usePlanBlueprintMutation<TVariables>({
   buildCommand,
 }: PlanBlueprintMutationConfig<TVariables>) {
@@ -337,6 +345,7 @@ function usePlanBlueprintMutation<TVariables>({
 
   return useMutation<PlanBlueprint, Error, TVariables, PlanBlueprintMutationContext>({
     mutationFn: (variables) => persistPlanBlueprintCommand(buildCommand(variables)),
+    mutationKey: planBlueprintCommandMutationKey,
     onError: (_error, _variables, context) => {
       if (context?.previousBlueprint) {
         queryClient.setQueryData(planBuilderBlueprintQueryKey, context.previousBlueprint);
@@ -362,7 +371,16 @@ function usePlanBlueprintMutation<TVariables>({
       return { previousBlueprint };
     },
     onSuccess: (updatedBlueprint) => {
+      // While later commands are queued (e.g. typing a title), their optimistic projection is
+      // newer than this result; let the last command in the queue write the persisted blueprint.
+      if (queryClient.isMutating({ mutationKey: planBlueprintCommandMutationKey }) > 1) {
+        return;
+      }
+
       queryClient.setQueryData(planBuilderBlueprintQueryKey, updatedBlueprint);
     },
+    // Each command reads, projects, and rewrites the stored blueprint; run them one at a time so
+    // rapid edits can't overwrite each other.
+    scope: { id: "plan-blueprint-command" },
   });
 }

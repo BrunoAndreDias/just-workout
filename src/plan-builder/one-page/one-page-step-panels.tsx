@@ -16,6 +16,7 @@ export function OnePageTrainingScheduleStep({
   onTrainingFrequencyChange,
   onTrainingSplitChange,
   selectedTrainingSplitId,
+  showWeeklyPreview,
 }: {
   blueprint: PlanBlueprint;
   onTrainingFrequencyChange: (
@@ -23,6 +24,7 @@ export function OnePageTrainingScheduleStep({
   ) => void;
   onTrainingSplitChange: (split: TrainingSplitId) => void;
   selectedTrainingSplitId: TrainingSplitId;
+  showWeeklyPreview?: Parameters<typeof TrainingFrequencyStep>[0]["showWeeklyPreview"];
 }) {
   return (
     <TrainingFrequencyStep
@@ -30,6 +32,7 @@ export function OnePageTrainingScheduleStep({
       onTrainingSplitChange={onTrainingSplitChange}
       selectedTrainingSplitId={selectedTrainingSplitId}
       selectedTrainingFrequencyDaysPerWeek={blueprint.trainingFrequencyDaysPerWeek}
+      showWeeklyPreview={showWeeklyPreview}
     />
   );
 }
@@ -38,16 +41,19 @@ export function OnePageRepRangeStep({
   onRepRangeStyleChange,
   savedRepRangeStyleId,
   selectedRepRangeStyle,
+  showEffectsPanel,
 }: {
   onRepRangeStyleChange: Parameters<typeof RepRangeStyleStep>[0]["onRepRangeStyleChange"];
   savedRepRangeStyleId: Parameters<typeof RepRangeStyleStep>[0]["savedRepRangeStyleId"];
   selectedRepRangeStyle: ReturnType<typeof getRepRangeStyle>;
+  showEffectsPanel?: Parameters<typeof RepRangeStyleStep>[0]["showEffectsPanel"];
 }) {
   return (
     <RepRangeStyleStep
       onRepRangeStyleChange={onRepRangeStyleChange}
       savedRepRangeStyleId={savedRepRangeStyleId}
       selectedRepRangeStyle={selectedRepRangeStyle}
+      showEffectsPanel={showEffectsPanel}
     />
   );
 }

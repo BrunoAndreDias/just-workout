@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import {
   getTrainingPlan,
   getTrainingSessionsForPlan,
@@ -7,6 +7,12 @@ import { seedTrainingCycleDevPlans } from "./training-cycle-dev-seeds";
 
 describe("seedTrainingCycleDevPlans", () => {
   it("creates plans that are already in the cycle test conditions", async () => {
+    // Seeds describe a July 2026 cycle; Training Block weeks follow the calendar.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-20T10:00:00.000Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const result = await seedTrainingCycleDevPlans();
 
     const readyWeekSixPlan = await getTrainingPlan(result.readyWeekSixPlanId);

@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import { createAppRouter } from "../app/router";
+import { trainingPlanService } from "../training-plan";
 import { getActiveTrainingPlans } from "../training-plan/training-plan-repository";
 import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import { planBuilderPaths } from "./plan-builder-paths";
@@ -642,6 +643,8 @@ describe("Plan Builder canonical route", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
     expect(await screen.findByRole("heading", { name: "Training Plan Draft" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: /weekly preview/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /how this affects your plan/i })).toBeNull();
     expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeVisible();
     expect(await getActiveTrainingPlans()).toHaveLength(0);
     expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
@@ -830,6 +833,45 @@ describe("Plan Builder canonical route", () => {
       expect(screen.queryByText("Draft blockers")).toBeNull();
       expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
     });
+  });
+
+  it("discards the Training Plan Draft after an inline confirmation and returns to generation", async () => {
+    const user = userEvent.setup();
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    await user.click(screen.getByRole("button", { name: /^discard draft$/i }));
+    await user.click(screen.getByRole("button", { name: /^keep draft$/i }));
+
+    expect(screen.getByRole("heading", { name: "Training Plan Draft" })).toBeVisible();
+    expect((await planBuilderService.getOrCreatePlanBlueprint()).trainingPlanDraft).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^discard draft$/i }));
+    await user.click(screen.getByRole("button", { name: /^yes, discard draft$/i }));
+
+    expect(await screen.findByRole("button", { name: /^generate training plan$/i })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Training Plan Draft" })).toBeNull();
+    expect(await getActiveTrainingPlans()).toHaveLength(0);
+    await waitFor(async () => {
+      expect((await planBuilderService.getOrCreatePlanBlueprint()).trainingPlanDraft).toBeNull();
+    });
+  });
+
+  it("shows an alert when accepting the Training Plan Draft fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(trainingPlanService, "acceptTrainingPlanDraft").mockRejectedValue(
+      new Error("Storage is unavailable."),
+    );
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+    await openGeneratedTrainingPlanDraft(user);
+
+    await user.click(screen.getByRole("button", { name: /^accept draft$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not accept the Training Plan Draft. Storage is unavailable.",
+    );
+    expect(screen.getByRole("button", { name: /^accept draft$/i })).toBeEnabled();
+    expect(await getActiveTrainingPlans()).toHaveLength(0);
   });
 
   it("hides Superset Group editing controls for custom-focus draft templates", async () => {

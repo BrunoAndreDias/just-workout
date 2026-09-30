@@ -65,6 +65,7 @@ export {
   addTrainingPlanDraftSupersetGroup,
   deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
+  discardTrainingPlanDraft,
   moveTrainingPlanDraftSlotToSupersetGroup,
   renameTrainingPlanDraftSupersetGroup,
   renameTrainingPlanDraftWorkoutTemplate,

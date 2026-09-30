@@ -1,5 +1,6 @@
 import type { MovementPatternId } from "../training-taxonomy";
 import { isBodyweightLoadExercise } from "./bodyweight-load";
+import { isCompletedSet } from "./exercise-load-history";
 import type { TrainingSessionExerciseEntry, TrainingSessionSetEntry } from "./training-session";
 
 export type CompletedLoadVolumeMovementRow = {
@@ -144,10 +145,6 @@ function isMissingBodyweightVolume({
     isCompletedSet(set) &&
     set.reps > 0
   );
-}
-
-function isCompletedSet(set: TrainingSessionSetEntry): boolean {
-  return set.done !== false;
 }
 
 function addExerciseVolumeToMovementPattern(

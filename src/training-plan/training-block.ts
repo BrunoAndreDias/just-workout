@@ -9,10 +9,11 @@ import {
   isCompoundCapableMovementPattern,
   type MovementPatternId,
 } from "../training-taxonomy";
-import { isBodyweightLoadExercise } from "./bodyweight-load";
+import { createExerciseLoadHistory } from "./exercise-load-history";
+import { roundToNearestIncrement } from "./exercise-progression";
+import { getCurrentTrainingWeek, isSessionInTrainingBlock } from "./training-block-calendar";
 import type { TrainingPlan, TrainingPlanStartingLoadSuggestion } from "./training-plan";
 import type { TrainingSession } from "./training-session";
-import { getCompletedTrainingSessionsNewestFirst } from "./training-session-history";
 
 export type TrainingBlock = {
   cycleNumber: number;
@@ -154,12 +155,16 @@ const REQUIRED_TRAINING_BLOCK_MOVEMENT_PATTERNS: ReadonlyArray<MovementPatternId
   "quad_dominant",
   "hip_hamstring_dominant",
 ];
+/**
+ * Week 1 is an easy re-entry week at 4-5 RIR, then effort builds every week until week 6
+ * reaches 1 RIR on compounds and 0 RIR on isolation and abs work.
+ */
 const DEFAULT_WEEKLY_INTENSITY_TARGETS: ReadonlyArray<WeeklyIntensityTarget> = [
-  { maxTargetRir: 3, minTargetRir: 3, weekNumber: 1 },
-  { maxTargetRir: 3, minTargetRir: 2, weekNumber: 2 },
-  { maxTargetRir: 2, minTargetRir: 2, weekNumber: 3 },
-  { maxTargetRir: 2, minTargetRir: 1, weekNumber: 4 },
-  { maxTargetRir: 1, minTargetRir: 1, weekNumber: 5 },
+  { maxTargetRir: 5, minTargetRir: 4, weekNumber: 1 },
+  { maxTargetRir: 3, minTargetRir: 3, weekNumber: 2 },
+  { maxTargetRir: 3, minTargetRir: 2, weekNumber: 3 },
+  { maxTargetRir: 2, minTargetRir: 2, weekNumber: 4 },
+  { maxTargetRir: 2, minTargetRir: 1, weekNumber: 5 },
   { maxTargetRir: 1, minTargetRir: 0, weekNumber: 6 },
 ];
 
@@ -171,7 +176,7 @@ export function generateNextTrainingBlock({
   startDate,
 }: GenerateNextTrainingBlockInput): TrainingBlock {
   if (!hasCompletedTrainingBlock(completedWeeks)) {
-    throw new Error("Cannot generate the next Training Block before six weeks are completed.");
+    throw new Error("Cannot generate the next Training Block before its final week is completed.");
   }
 
   return {
@@ -186,10 +191,58 @@ export function generateNextTrainingBlock({
   };
 }
 
+/** Creates cycle 1 of a Training Plan, starting on the day the plan was accepted. */
+export function createFirstTrainingBlock({
+  planId,
+  startDate,
+}: {
+  planId: string;
+  startDate: string;
+}): TrainingBlock {
+  return {
+    cycleNumber: 1,
+    endDate: addInclusiveWeeks(startDate, DEFAULT_TRAINING_BLOCK_WEEKS),
+    id: `${planId}-block-1`,
+    planId,
+    previousBlockId: null,
+    startDate,
+    status: "active",
+    weekNumber: 1,
+  };
+}
+
+/**
+ * Keeps the stored Training Block week in step with the calendar. Plans accepted before
+ * Training Blocks were created on acceptance get cycle 1 anchored to their generation date.
+ */
+export function withCurrentTrainingBlockWeek<
+  T extends Pick<TrainingPlan, "generatedAt" | "id" | "trainingBlock" | "trainingBlockWeeks">,
+>(trainingPlan: T, now: Date = new Date()): T {
+  const trainingBlock =
+    trainingPlan.trainingBlock ??
+    (trainingPlan.generatedAt
+      ? createFirstTrainingBlock({
+          planId: trainingPlan.id,
+          startDate: trainingPlan.generatedAt.slice(0, 10),
+        })
+      : undefined);
+
+  if (!trainingBlock) {
+    return trainingPlan;
+  }
+
+  return {
+    ...trainingPlan,
+    trainingBlock: {
+      ...trainingBlock,
+      weekNumber: getCurrentTrainingWeek({ ...trainingPlan, trainingBlock }, now).weekNumber,
+    },
+  };
+}
+
+/** A missed session earlier in the block should not trap the user in it forever. */
 function hasCompletedTrainingBlock(completedWeeks: ReadonlyArray<number>): boolean {
-  return Array.from({ length: DEFAULT_TRAINING_BLOCK_WEEKS }, (_, index) => index + 1).every(
-    (weekNumber) => completedWeeks.includes(weekNumber),
-  );
+  return completedWeeks.includes(DEFAULT_TRAINING_BLOCK_WEEKS);
 }
 
 export function previewTrainingBlockExerciseRotations({
@@ -486,10 +539,7 @@ export function hasCompletedTrainingBlockSessions({
   }
 
   return trainingSessions.some((trainingSession) =>
-    isSessionFromCurrentTrainingBlock({
-      session: trainingSession,
-      trainingBlock,
-    }),
+    isSessionInTrainingBlock(trainingBlock, trainingSession),
   );
 }
 
@@ -639,21 +689,12 @@ export function estimateNextTrainingBlockLoadSuggestions({
   sessions: ReadonlyArray<TrainingSession>;
   targets: ReadonlyArray<NextTrainingBlockLoadTarget>;
 }): ReadonlyArray<NextTrainingBlockLoadSuggestion> {
+  const exerciseLoadHistory = createExerciseLoadHistory(sessions);
+
   return targets.map((target): NextTrainingBlockLoadSuggestion => {
-    if (isBodyweightLoadTarget(target)) {
-      return estimateBodyweightLoadSuggestion({
-        availableLoadIncrement,
-        sessions,
-        target,
-      });
-    }
+    const previousLoad = exerciseLoadHistory.latestLoad(target.exerciseId);
 
-    const exactExerciseLoad = getLatestCompletedWorkingLoad({
-      exerciseId: target.exerciseId,
-      sessions,
-    });
-
-    if (exactExerciseLoad === null) {
+    if (previousLoad === null) {
       return {
         ...target,
         kind: "first_time",
@@ -667,58 +708,12 @@ export function estimateNextTrainingBlockLoadSuggestions({
     return {
       ...target,
       kind: "exact_previous_exercise",
-      previousLoad: exactExerciseLoad,
+      previousLoad,
       reason: "previous exact exercise load prefill",
-      suggestedLoad: roundToNearestIncrement(exactExerciseLoad, availableLoadIncrement),
+      suggestedLoad: roundToNearestIncrement(previousLoad, availableLoadIncrement),
       userEditedLoad: null,
     };
   });
-}
-
-function estimateBodyweightLoadSuggestion({
-  availableLoadIncrement,
-  sessions,
-  target,
-}: {
-  availableLoadIncrement: number;
-  sessions: ReadonlyArray<TrainingSession>;
-  target: NextTrainingBlockLoadTarget;
-}): NextTrainingBlockLoadSuggestion {
-  const exactExerciseLoad = getLatestCompletedBodyweightLoadAdjustment({
-    exerciseId: target.exerciseId,
-    sessions,
-  });
-
-  if (exactExerciseLoad === null) {
-    return {
-      ...target,
-      kind: "first_time",
-      previousLoad: null,
-      reason: "first-time exercise, start empty",
-      suggestedLoad: null,
-      userEditedLoad: null,
-    };
-  }
-
-  if (exactExerciseLoad === 0) {
-    return {
-      ...target,
-      kind: "exact_previous_exercise",
-      previousLoad: exactExerciseLoad,
-      reason: "previous exact exercise load prefill",
-      suggestedLoad: 0,
-      userEditedLoad: null,
-    };
-  }
-
-  return {
-    ...target,
-    kind: "exact_previous_exercise",
-    previousLoad: exactExerciseLoad,
-    reason: "previous exact exercise load prefill",
-    suggestedLoad: roundToNearestIncrement(exactExerciseLoad, availableLoadIncrement),
-    userEditedLoad: null,
-  };
 }
 
 export function applyNextTrainingBlockLoadSuggestionEdit({
@@ -743,14 +738,15 @@ export function generateWeeklyIntensityTargets({
   return DEFAULT_WEEKLY_INTENSITY_TARGETS.slice(0, trainingBlockWeeks);
 }
 
+/** Compounds stay at least 1 RIR from failure; isolation and abs follow the weekly ramp to 0. */
 export function getTrainingBlockExerciseTargetRir({
   role,
-  setIndex,
   weekNumber,
   weeklyIntensityTargets,
 }: {
   role: TrainingBlockExerciseRole;
-  setIndex: number;
+  /** Kept for callers that resolve targets per set; every set shares the weekly target. */
+  setIndex?: number;
   weekNumber: number;
   weeklyIntensityTargets: ReadonlyArray<WeeklyIntensityTarget>;
 }): number {
@@ -758,10 +754,6 @@ export function getTrainingBlockExerciseTargetRir({
   const targetRir = weeklyTarget?.minTargetRir ?? 2;
 
   if (role === "main_compound" || role === "secondary_compound") {
-    return Math.max(targetRir, 1);
-  }
-
-  if (role === "isolation" && setIndex < 3) {
     return Math.max(targetRir, 1);
   }
 
@@ -834,74 +826,6 @@ function getLoadSuggestionTargets(
   return [...targetsByExerciseId.values()];
 }
 
-function getLatestCompletedWorkingLoad({
-  exerciseId,
-  movementPattern,
-  sessions,
-}: {
-  exerciseId?: string;
-  movementPattern?: MovementPatternId;
-  sessions: ReadonlyArray<TrainingSession>;
-}): number | null {
-  const latestEntry = getLatestCompletedExerciseEntry({
-    exerciseId,
-    movementPattern,
-    sessions,
-  });
-  const latestWorkingSet = latestEntry?.sets
-    .filter((set) => set.weight > 0 && set.reps > 0)
-    .sort((firstSet, secondSet) => secondSet.setIndex - firstSet.setIndex)[0];
-
-  return latestWorkingSet?.weight ?? null;
-}
-
-function getLatestCompletedBodyweightLoadAdjustment({
-  exerciseId,
-  movementPattern,
-  sessions,
-}: {
-  exerciseId?: string;
-  movementPattern?: MovementPatternId;
-  sessions: ReadonlyArray<TrainingSession>;
-}): number | null {
-  const latestEntry = getLatestCompletedExerciseEntry({
-    exerciseId,
-    entryMatches: isBodyweightLoadTarget,
-    movementPattern,
-    sessions,
-  });
-  const latestSet = latestEntry?.sets
-    .filter((set) => set.reps > 0)
-    .sort((firstSet, secondSet) => secondSet.setIndex - firstSet.setIndex)[0];
-
-  return latestSet?.weight ?? null;
-}
-
-function getLatestCompletedExerciseEntry({
-  entryMatches = () => true,
-  exerciseId,
-  movementPattern,
-  sessions,
-}: {
-  entryMatches?: (entry: TrainingSession["exercises"][number]) => boolean;
-  exerciseId?: string;
-  movementPattern?: MovementPatternId;
-  sessions: ReadonlyArray<TrainingSession>;
-}): TrainingSession["exercises"][number] | undefined {
-  return getCompletedTrainingSessionsNewestFirst(sessions)
-    .flatMap((session) => session.exercises)
-    .find(
-      (entry) =>
-        entryMatches(entry) &&
-        (exerciseId ? entry.exerciseId === exerciseId : true) &&
-        (movementPattern ? entry.movementPattern === movementPattern : true),
-    );
-}
-
-function roundToNearestIncrement(value: number, increment: number): number {
-  return Math.round(value / increment) * increment;
-}
-
 function getRequiredMovementCoverageResult(
   proposedMovementPatterns: ReadonlySet<MovementPatternId>,
 ): RequiredMovementCoverageResult {
@@ -913,13 +837,6 @@ function getRequiredMovementCoverageResult(
     isPreserved: missingPatterns.length === 0,
     missingPatterns,
   };
-}
-
-function isBodyweightLoadTarget({
-  exerciseId,
-  exerciseName,
-}: Pick<NextTrainingBlockLoadTarget, "exerciseId" | "exerciseName">): boolean {
-  return isBodyweightLoadExercise({ exerciseId, exerciseName });
 }
 
 function assignTemplateRotationOptions({
@@ -1288,7 +1205,7 @@ function getPreviousBlockExerciseIds({
   const previousBlockExerciseIds = new Set<string>();
 
   for (const session of sessions) {
-    if (!isSessionFromCurrentTrainingBlock({ session, trainingBlock: currentTrainingBlock })) {
+    if (!isSessionInTrainingBlock(currentTrainingBlock, session)) {
       continue;
     }
 
@@ -1298,30 +1215,6 @@ function getPreviousBlockExerciseIds({
   }
 
   return previousBlockExerciseIds;
-}
-
-function isSessionFromCurrentTrainingBlock({
-  session,
-  trainingBlock,
-}: {
-  session: TrainingSession;
-  trainingBlock: TrainingBlock;
-}): boolean {
-  if (
-    session.planId !== trainingBlock.planId ||
-    session.completedAt === null ||
-    session.completedAt.length < 10
-  ) {
-    return false;
-  }
-
-  if (session.trainingBlockId) {
-    return session.trainingBlockId === trainingBlock.id;
-  }
-
-  const completedDate = session.completedAt.slice(0, 10);
-
-  return completedDate >= trainingBlock.startDate && completedDate <= trainingBlock.endDate;
 }
 
 function getCompatibleRotationPoolExerciseIds({

@@ -1,5 +1,12 @@
 import { Wand2 } from "lucide-react";
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Button } from "../../../design-system/button";
 import { StepActions, StepPanel } from "../../../design-system/step-screen";
 import type {
@@ -8,10 +15,8 @@ import type {
   WorkoutTemplatePurpose,
 } from "../../../training-plan";
 import { parsePositiveBodyweight } from "../../../training-plan/bodyweight-input";
-import {
-  hasBodyweightLoadExercise,
-  isBodyweightLoadExercise,
-} from "../../../training-plan/bodyweight-load";
+import { isBodyweightLoadExercise } from "../../../training-plan/bodyweight-load";
+import { requiresSessionBodyweight } from "../../../training-plan/session-bodyweight";
 import { getTrainingBlockExerciseSwapChoices } from "../../../training-plan/training-block";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
@@ -49,6 +54,7 @@ type GenerateTrainingPlanStepProps = {
   generationInputs: DraftGenerationInputProps;
   isGenerating: boolean;
   onGenerateTrainingPlan: () => Promise<void>;
+  pendingDraftAction?: PendingTrainingPlanDraftAction;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft | null;
@@ -71,12 +77,15 @@ type DraftGenerationInputProps = {
   visibleTrainingSplitId: TrainingSplitId;
 };
 
+export type PendingTrainingPlanDraftAction = "accept" | "discard" | "reset" | "save-setup" | null;
+
 type TrainingPlanDraftActions = {
   addDraftSlot: (templateId: string, groupId: string) => void;
   acceptDraft: () => Promise<void>;
   addSupersetGroup: (templateId: string, targetIndex: number) => void;
   deleteDraftSlot: (templateId: string, groupId: string, slotIndex: number) => void;
   deleteSupersetGroup: (templateId: string, groupId: string) => void;
+  discardDraft: () => Promise<void>;
   moveWorkoutTemplate: (templateId: string, targetIndex: number) => void;
   moveDraftSlotToSupersetGroup: (
     templateId: string,
@@ -122,6 +131,9 @@ type TrainingPlanDraftSlot =
 const generateStepPreferenceMappingCopy =
   "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
 
+const trainingBlockProgressionCopy =
+  "Each Training Block runs 6 weeks: week 1 starts easy at 4-5 Reps In Reserve, then effort builds each week until week 6 reaches 1 RIR on compound lifts and 0 RIR on isolation exercises.";
+
 const defaultGenerationPreferenceMappingCopy =
   "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
 
@@ -132,17 +144,46 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     generationInputs,
     isGenerating,
     onGenerateTrainingPlan,
+    pendingDraftAction = null,
     recommendedDefaultsConfirmation,
     summary,
     trainingPlanDraft,
   } = props;
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function runAction(action: () => Promise<void>, failureMessage: string) {
+    setActionError(null);
+
+    try {
+      await action();
+    } catch (error) {
+      setActionError(formatActionError(failureMessage, error));
+    }
+  }
+
+  const safeDraftActions: TrainingPlanDraftActions = {
+    ...draftActions,
+    acceptDraft: () =>
+      runAction(draftActions.acceptDraft, "Could not accept the Training Plan Draft."),
+    discardDraft: () =>
+      runAction(draftActions.discardDraft, "Could not discard the Training Plan Draft."),
+    resetDraft: () =>
+      runAction(draftActions.resetDraft, "Could not reset the Training Plan Draft."),
+    saveDraftSetup: (update) =>
+      runAction(
+        () => draftActions.saveDraftSetup(update),
+        "Could not save the Training Plan Draft setup.",
+      ),
+  };
+  const errorAlert = actionError ? <GenerateStepErrorAlert message={actionError} /> : null;
 
   if (trainingPlanDraft) {
     return (
       <TrainingPlanDraftReview
-        draftActions={draftActions}
+        draftActions={safeDraftActions}
+        errorAlert={errorAlert}
         generationInputs={generationInputs}
-        isAccepting={isGenerating}
+        pendingDraftAction={pendingDraftAction}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
       />
@@ -158,10 +199,12 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
               Generate Training Plan
             </h3>
             <p className="mt-3 max-w-2xl text-sm text-stone-600">
-              {generateStepPreferenceMappingCopy} Just Workout will create an active Training Plan
-              from this completed Plan Blueprint using split-derived Workout Templates, weekly
-              volume targets, rep range style, and Superset Groups.
+              {generateStepPreferenceMappingCopy} Just Workout will create a Training Plan Draft
+              from your Plan Builder choices, with split-derived Workout Templates, Superset Groups,
+              and Training Prescriptions from your Rep Range Style. You can review, edit, accept, or
+              discard the draft. Nothing becomes your Active Training Plan until you accept it.
             </p>
+            <p className="mt-3 max-w-2xl text-sm text-stone-600">{trainingBlockProgressionCopy}</p>
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
               <GenerateSummaryField
@@ -177,7 +220,10 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
               <Button
                 disabled={isGenerating || blockingIssues.length > 0}
                 onClick={() => {
-                  void onGenerateTrainingPlan();
+                  void runAction(
+                    onGenerateTrainingPlan,
+                    "Could not generate the Training Plan Draft.",
+                  );
                 }}
                 type="button"
                 variant="builderPrimary"
@@ -186,6 +232,8 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
                 {isGenerating ? "Generating..." : "Generate Training Plan"}
               </Button>
             </StepActions>
+
+            {errorAlert}
 
             {blockingIssues.length > 0 ? (
               <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
@@ -206,7 +254,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <PlanBuilderStepStatusCard
-            body="Generation creates a new Active Training Plan. The Plan Blueprint stays available for later edits."
+            body="Generation creates a Training Plan Draft. Accepting it makes it your Active Training Plan; discarding it takes you back to the Plan Builder."
             title="Generation"
             titleDisplay="visible"
           />
@@ -221,7 +269,12 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
       {recommendedDefaultsConfirmation ? (
         <DefaultGenerationConfirmation
           isGenerating={isGenerating}
-          onAcceptRecommendedDefaults={recommendedDefaultsConfirmation.onAcceptRecommendedDefaults}
+          onAcceptRecommendedDefaults={(resolution) =>
+            runAction(
+              () => recommendedDefaultsConfirmation.onAcceptRecommendedDefaults(resolution),
+              "Could not generate the Training Plan Draft.",
+            )
+          }
           onCancelRecommendedDefaults={recommendedDefaultsConfirmation.onCancelRecommendedDefaults}
           resolution={recommendedDefaultsConfirmation.resolution}
         />
@@ -232,24 +285,23 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
 
 function TrainingPlanDraftReview({
   draftActions,
+  errorAlert,
   generationInputs,
-  isAccepting,
+  pendingDraftAction,
   summary,
   trainingPlanDraft,
 }: {
   draftActions: TrainingPlanDraftActions;
+  errorAlert: ReactNode;
   generationInputs: DraftGenerationInputProps;
-  isAccepting: boolean;
+  pendingDraftAction: PendingTrainingPlanDraftAction;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
 }) {
   const isStale = trainingPlanDraft.isStale === true;
   const [editableLoadValues, setEditableLoadValues] = useState<Record<string, string>>({});
   const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
-  const draftExercises = trainingPlanDraft.content.workoutTemplates.flatMap((template) =>
-    template.supersetGroups.flatMap((group) => group.slots),
-  );
-  const requiresBodyweight = hasBodyweightLoadExercise(draftExercises);
+  const requiresBodyweight = requiresSessionBodyweight(trainingPlanDraft.content.workoutTemplates);
   const hasBlockers = trainingPlanDraft.validation.blockers.length > 0;
 
   useEffect(() => {
@@ -269,9 +321,10 @@ function TrainingPlanDraftReview({
       <TrainingPlanDraftHeader
         baselineBodyweightInput={baselineBodyweightInput}
         draftActions={draftActions}
-        isAccepting={isAccepting}
+        errorAlert={errorAlert}
         isStale={isStale}
         onBaselineBodyweightInputChange={setBaselineBodyweightInput}
+        pendingDraftAction={pendingDraftAction}
         requiresBodyweight={requiresBodyweight}
         summary={summary}
         trainingPlanDraft={trainingPlanDraft}
@@ -322,18 +375,20 @@ function TrainingPlanDraftReview({
 function TrainingPlanDraftHeader({
   baselineBodyweightInput,
   draftActions,
-  isAccepting,
+  errorAlert,
   isStale,
   onBaselineBodyweightInputChange,
+  pendingDraftAction,
   requiresBodyweight,
   summary,
   trainingPlanDraft,
 }: {
   baselineBodyweightInput: string;
   draftActions: TrainingPlanDraftActions;
-  isAccepting: boolean;
+  errorAlert: ReactNode;
   isStale: boolean;
   onBaselineBodyweightInputChange: (value: string) => void;
+  pendingDraftAction: PendingTrainingPlanDraftAction;
   requiresBodyweight: boolean;
   summary: PlanBlueprintSummary | null;
   trainingPlanDraft: TrainingPlanDraft;
@@ -347,10 +402,12 @@ function TrainingPlanDraftHeader({
         <TrainingPlanDraftActions
           draftActions={draftActions}
           hasBlockers={hasBlockers}
-          isAccepting={isAccepting}
           isStale={isStale}
+          pendingDraftAction={pendingDraftAction}
         />
       </div>
+
+      {errorAlert}
 
       <TrainingPlanDraftSummaryFields summary={summary} trainingPlanDraft={trainingPlanDraft} />
 
@@ -371,9 +428,11 @@ function TrainingPlanDraftIntro({ isStale }: { isStale: boolean }) {
     <div>
       <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
       <p className="mt-3 max-w-3xl text-sm text-stone-600">
-        Review the generated Workout Templates, Superset Groups, exercise slots, and Training
-        Prescriptions before creating the Active Training Plan.
+        Review and edit the generated Workout Templates, Superset Groups, exercise slots, and
+        Training Prescriptions. Accept the draft to make it your Active Training Plan, or discard it
+        to change your setup and generate again.
       </p>
+      <p className="mt-2 max-w-3xl text-sm text-stone-600">{trainingBlockProgressionCopy}</p>
       {isStale ? <TrainingPlanDraftStaleNotice /> : null}
     </div>
   );
@@ -391,38 +450,117 @@ function TrainingPlanDraftStaleNotice() {
 function TrainingPlanDraftActions({
   draftActions,
   hasBlockers,
-  isAccepting,
   isStale,
+  pendingDraftAction,
 }: {
   draftActions: TrainingPlanDraftActions;
   hasBlockers: boolean;
-  isAccepting: boolean;
   isStale: boolean;
+  pendingDraftAction: PendingTrainingPlanDraftAction;
 }) {
+  const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
+  const isBusy = pendingDraftAction !== null;
+
+  if (isConfirmingDiscard) {
+    return (
+      <fieldset
+        aria-label="Confirm discard Training Plan Draft"
+        className="m-0 grid w-full min-w-0 max-w-md gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+      >
+        <p className="font-semibold">
+          Discard this draft? Your Plan Builder choices stay, and you can generate a new draft.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={isBusy}
+            onClick={() => {
+              void draftActions.discardDraft().finally(() => {
+                setIsConfirmingDiscard(false);
+              });
+            }}
+            type="button"
+            variant="builderPrimary"
+          >
+            {pendingDraftAction === "discard" ? "Discarding..." : "Yes, discard draft"}
+          </Button>
+          <Button
+            disabled={isBusy}
+            onClick={() => {
+              setIsConfirmingDiscard(false);
+            }}
+            type="button"
+            variant="outline"
+          >
+            Keep draft
+          </Button>
+        </div>
+      </fieldset>
+    );
+  }
+
   return (
-    <StepActions>
+    <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none">
       <Button
-        disabled={isAccepting}
+        disabled={isBusy}
+        onClick={() => {
+          setIsConfirmingDiscard(true);
+        }}
+        type="button"
+        variant="outline"
+      >
+        Discard Draft
+      </Button>
+      <Button
+        disabled={isBusy}
         onClick={() => {
           void draftActions.resetDraft();
         }}
         type="button"
         variant="outline"
       >
-        Reset Draft
+        {pendingDraftAction === "reset" ? "Resetting..." : "Reset Draft"}
       </Button>
       <Button
-        disabled={isAccepting || isStale || hasBlockers}
+        disabled={isBusy || isStale || hasBlockers}
         onClick={() => {
           void draftActions.acceptDraft();
         }}
         type="button"
         variant="builderPrimary"
       >
-        {isAccepting ? "Accepting..." : "Accept Draft"}
+        {getAcceptDraftButtonLabel(pendingDraftAction)}
       </Button>
-    </StepActions>
+    </div>
   );
+}
+
+function getAcceptDraftButtonLabel(pendingDraftAction: PendingTrainingPlanDraftAction): string {
+  if (pendingDraftAction === "accept") {
+    return "Accepting...";
+  }
+
+  if (pendingDraftAction === "save-setup") {
+    return "Saving draft...";
+  }
+
+  return "Accept Draft";
+}
+
+function GenerateStepErrorAlert({ message }: { message: string }) {
+  return (
+    <p
+      className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900"
+      role="alert"
+    >
+      {message}
+    </p>
+  );
+}
+
+function formatActionError(failureMessage: string, error: unknown): string {
+  const detail = error instanceof Error && error.message.trim() !== "" ? error.message : null;
+
+  return detail ? `${failureMessage} ${detail}` : `${failureMessage} Please try again.`;
 }
 
 function TrainingPlanDraftSummaryFields({
@@ -553,26 +691,6 @@ function TrainingPlanDraftTemplateCard({
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={groupIndex === 0}
-                    onClick={() => {
-                      draftActions.moveSupersetGroup(template.id, group.id, groupIndex - 1);
-                    }}
-                    type="button"
-                    variant="secondary"
-                  >
-                    Move group up
-                  </Button>
-                  <Button
-                    disabled={groupIndex === template.supersetGroups.length - 1}
-                    onClick={() => {
-                      draftActions.moveSupersetGroup(template.id, group.id, groupIndex + 1);
-                    }}
-                    type="button"
-                    variant="secondary"
-                  >
-                    Move group down
-                  </Button>
                   <Button
                     disabled={group.slots.length > 0 || template.supersetGroups.length === 1}
                     onClick={() => {
@@ -751,25 +869,34 @@ function TrainingPlanDraftSlotItem({
   const moveTargets = canMoveSlot
     ? template.supersetGroups.filter((group) => group.id !== currentGroupId)
     : [];
-  const replacementChoices = canMoveSlot
-    ? getTrainingBlockExerciseSwapChoices({
-        groupId: currentGroupId,
-        slotIndex,
-        templateId: template.id,
-        trainingPlan: {
-          exerciseSelectionPreferences: trainingPlanDraft.content.exerciseSelectionPreferences,
-          isolationExercisePreferences: trainingPlanDraft.content.isolationExercisePreferences,
-          mainCompoundRotationPools: trainingPlanDraft.content.mainCompoundRotationPools,
-          trainingBlock: trainingPlanDraft.content.trainingBlock,
-          workoutTemplates: trainingPlanDraft.content.workoutTemplates,
-        },
-      })
-    : [];
+  const draftContent = trainingPlanDraft.content;
+  // Swap choices scan the exercise catalog; only recompute when the draft itself changes,
+  // not on every load-input keystroke that re-renders the review.
+  const replacementChoices = useMemo(
+    () =>
+      canMoveSlot
+        ? getTrainingBlockExerciseSwapChoices({
+            groupId: currentGroupId,
+            slotIndex,
+            templateId: template.id,
+            trainingPlan: {
+              exerciseSelectionPreferences: draftContent.exerciseSelectionPreferences,
+              isolationExercisePreferences: draftContent.isolationExercisePreferences,
+              mainCompoundRotationPools: draftContent.mainCompoundRotationPools,
+              trainingBlock: draftContent.trainingBlock,
+              workoutTemplates: draftContent.workoutTemplates,
+            },
+          })
+        : [],
+    [canMoveSlot, currentGroupId, draftContent, slotIndex, template.id],
+  );
 
   return (
-    <li className="rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
+    <li className="min-w-0 rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <strong className="text-sm text-stone-950">{slot.exerciseName}</strong>
+        <strong className="min-w-0 text-sm text-stone-950 [overflow-wrap:anywhere]">
+          {slot.exerciseName}
+        </strong>
         <span className="text-xs font-semibold uppercase text-stone-500">{slot.slotLabel}</span>
       </div>
       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
@@ -850,6 +977,7 @@ function TrainingPlanDraftSlotItem({
         <div className="mt-3 flex flex-wrap gap-2">
           {moveTargets.map((group) => (
             <Button
+              className="h-auto max-w-full whitespace-normal text-left"
               key={group.id}
               onClick={() => {
                 draftActions.moveDraftSlotToSupersetGroup(
@@ -941,12 +1069,12 @@ function DraftTrainingPrescriptionEditor({
   }
 
   return (
-    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-      <label className="block text-sm font-medium text-stone-700">
-        <span>Set count for {slot.exerciseName}</span>
+    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+        <span className="whitespace-nowrap">Sets</span>
         <input
           aria-label={`Set count for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -956,11 +1084,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableSetCount}
         />
       </label>
-      <label className="block text-sm font-medium text-stone-700">
-        <span>Rep target minimum for {slot.exerciseName}</span>
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+        <span className="whitespace-nowrap">Rep min</span>
         <input
           aria-label={`Rep target minimum for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -970,11 +1098,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableRepTargetMin}
         />
       </label>
-      <label className="block text-sm font-medium text-stone-700">
-        <span>Rep target maximum for {slot.exerciseName}</span>
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+        <span className="whitespace-nowrap">Rep max</span>
         <input
           aria-label={`Rep target maximum for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {

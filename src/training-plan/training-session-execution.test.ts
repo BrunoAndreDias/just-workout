@@ -6,6 +6,7 @@ import {
   applyTrainingSessionExecutionAction,
   changeTrainingSessionExecutionSetDone,
   changeTrainingSessionExecutionSetReps,
+  changeTrainingSessionExecutionSetRir,
   changeTrainingSessionExecutionSetWeight,
   countCompletedTrainingSessionGroupSets,
   countCompletedTrainingSessionSets,
@@ -387,11 +388,15 @@ describe("Training Session Execution", () => {
       exerciseId: "bench-press",
       exerciseName: "Flat Dumbbell Bench Press",
       movementPattern: "horizontal_push",
-      sets: [
-        { done: true, reps: 10, rir: null, setIndex: 1, weight: 40 },
-        { done: false, reps: 8, rir: null, setIndex: 2, weight: 40 },
-        { done: false, reps: 8, rir: null, setIndex: 3, weight: 40 },
-      ],
+      sets: [1, 2, 3].map((setIndex) => ({
+        done: setIndex === 1,
+        reps: setIndex === 1 ? 10 : 8,
+        rir: null,
+        setIndex,
+        // Week 1 of the Weekly Effort Ramp; no progression prefill was supplied.
+        target: { reps: null, rir: 4, weight: null },
+        weight: 40,
+      })),
     });
     expect(readModel.groups[0]).toMatchObject({
       accessibleTitle: "Superset 1",
@@ -427,6 +432,38 @@ describe("Training Session Execution", () => {
       weightInputMin: "0",
     });
     expect(readModel.groups[0]?.rounds[0]?.rows[0]).not.toHaveProperty("exerciseKey");
+  });
+
+  it("stamps each completed set entry with the Session Target it was shown", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+
+    const readModel = createTrainingSessionExecutionReadModel({
+      completedSession: null,
+      loadPrefills: [
+        {
+          effectiveLoad: 42.5,
+          exerciseId: "bench-press",
+          exerciseName: "Flat Dumbbell Bench Press",
+          kind: "exact_previous_exercise",
+          movementPattern: "horizontal_push",
+          previousLoad: 40,
+          reason: "progression",
+          suggestedLoad: 42.5,
+          targetReps: 9,
+          userEditedLoad: null,
+        },
+      ],
+      previousTrainingSessions: [],
+      state,
+      trainingBlockWeekNumber: 3,
+      workoutTemplate,
+    });
+
+    // Week 3 of the Weekly Effort Ramp targets 2 RIR.
+    expect(readModel.entries[0]?.sets[0]?.target).toEqual({ reps: 9, rir: 2, weight: 42.5 });
+    // Without a progression prefill only the week's effort target is known.
+    expect(readModel.entries[1]?.sets[0]?.target).toEqual({ reps: null, rir: 2, weight: null });
   });
 
   it("applies Training Session set actions from read-model rows", () => {
@@ -471,8 +508,86 @@ describe("Training Session Execution", () => {
       reps: 9,
       rir: null,
       setIndex: 2,
+      target: { reps: null, rir: 4, weight: null },
       weight: 42.5,
     });
+  });
+
+  it("copies a chosen RIR forward into the next empty, not-done set of the same exercise", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+    const pullKey = getTrainingSessionExerciseKey("group-1", pullUpsSlot);
+    const rowsFor = (state: ReturnType<typeof createInitialTrainingSessionExecutionState>) =>
+      createTrainingSessionExecutionReadModel({
+        completedSession: null,
+        previousTrainingSessions: [],
+        state,
+        workoutTemplate,
+      }).groups[0]?.rounds.map((round) => round.rows[0]) ?? [];
+    let state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const [firstBenchSet, secondBenchSet] = rowsFor(state);
+
+    if (!firstBenchSet || !secondBenchSet) {
+      throw new Error("Expected bench set rows.");
+    }
+
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetRir(firstBenchSet, "3"),
+      state,
+      workoutTemplate,
+    });
+
+    // Only the next set is seeded; later sets and other exercises stay empty.
+    expect(state.drafts[benchKey]?.map((draft) => draft.rir)).toEqual(["3", "3", ""]);
+    expect(state.drafts[pullKey]?.map((draft) => draft.rir)).toEqual(["", "", ""]);
+
+    // A set that already has a RIR keeps it.
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetRir(firstBenchSet, "1"),
+      state,
+      workoutTemplate,
+    });
+    expect(state.drafts[benchKey]?.map((draft) => draft.rir)).toEqual(["1", "3", ""]);
+
+    // Clearing never propagates.
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetRir(secondBenchSet, ""),
+      state,
+      workoutTemplate,
+    });
+    expect(state.drafts[benchKey]?.map((draft) => draft.rir)).toEqual(["1", "", ""]);
+  });
+
+  it("does not copy RIR forward into a set that is already done", () => {
+    const workoutTemplate = createWorkoutTemplate();
+    const benchKey = getTrainingSessionExerciseKey("group-1", benchPressSlot);
+    let state = createInitialTrainingSessionExecutionState({ workoutTemplate });
+    const rounds =
+      createTrainingSessionExecutionReadModel({
+        completedSession: null,
+        previousTrainingSessions: [],
+        state,
+        workoutTemplate,
+      }).groups[0]?.rounds ?? [];
+    const firstBenchSet = rounds[0]?.rows[0];
+    const secondBenchSet = rounds[1]?.rows[0];
+
+    if (!firstBenchSet || !secondBenchSet) {
+      throw new Error("Expected bench set rows.");
+    }
+
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetDone(secondBenchSet, true),
+      state,
+      workoutTemplate,
+    });
+    state = applyTrainingSessionExecutionAction({
+      action: changeTrainingSessionExecutionSetRir(firstBenchSet, "2"),
+      state,
+      workoutTemplate,
+    });
+
+    expect(state.drafts[benchKey]?.map((draft) => draft.rir)).toEqual(["2", "", ""]);
   });
 
   it("does not count unchecked bodyweight sets in the live Completed Load Volume preview", () => {

@@ -6,7 +6,7 @@ import {
   getTrainingSessionStartChoiceHref,
   isTrainingPlansNavigationPathname,
   trainingPlanPaths,
-} from "../training-plan";
+} from "../training-plan/training-plan-paths";
 import { cn } from "./cn";
 import "./app-shell.css";
 

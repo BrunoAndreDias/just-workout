@@ -175,6 +175,7 @@ function renderOnePageActiveStep({
             addSupersetGroup: generateStep.onAddSupersetGroup,
             deleteDraftSlot: generateStep.onDeleteDraftSlot,
             deleteSupersetGroup: generateStep.onDeleteSupersetGroup,
+            discardDraft: generateStep.onDiscardDraft,
             moveWorkoutTemplate: generateStep.onMoveWorkoutTemplate,
             moveDraftSlotToSupersetGroup: generateStep.onMoveDraftSlotToSupersetGroup,
             moveSupersetGroup: generateStep.onMoveSupersetGroup,
@@ -202,6 +203,7 @@ function renderOnePageActiveStep({
           }}
           isGenerating={generateStep.isGenerating}
           onGenerateTrainingPlan={generateStep.onGenerateTrainingPlan}
+          pendingDraftAction={generateStep.pendingDraftAction}
           recommendedDefaultsConfirmation={
             pendingDefaultResolution
               ? {

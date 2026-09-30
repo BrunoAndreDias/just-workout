@@ -6,6 +6,7 @@ export type TrainingSplitId =
   | "upper-lower-full-body"
   | "alternating-full-body-a-b"
   | "upper-lower-4-day"
+  | "rotating-upper-lower"
   | "rotating-push-pull-legs";
 
 type FixedWeekTrainingSplitSchedule = {
@@ -174,6 +175,32 @@ const trainingSplitDefinitions = [
   },
   {
     cardDescription:
+      "Upper A, Lower A, Upper B and Lower B rotate so every session is the next one in the cycle.",
+    id: "rotating-upper-lower",
+    label: "Rotating Upper/Lower",
+    muscleFrequency:
+      "Each major muscle group is trained every 3-5 days as the upper and lower sessions keep rotating.",
+    recovery:
+      "Upper and lower sessions alternate, so each region recovers while the other one trains.",
+    schedule: {
+      cadence:
+        "The four-session cycle continues across weeks: 3 days/week trains Upper-Lower-Upper, then Lower-Upper-Lower; 5 days/week repeats Upper and Lower back to back.",
+      description:
+        "You always continue with the next Upper or Lower session, so A and B workouts stay balanced over the Training Block.",
+      cycle: [
+        { id: "upper-a", sessionLabel: "Upper A" },
+        { id: "lower-a", sessionLabel: "Lower A" },
+        { id: "upper-b", sessionLabel: "Upper B" },
+        { id: "lower-b", sessionLabel: "Lower B" },
+      ],
+      kind: "rotating-cycle",
+    },
+    supportedTrainingFrequencies: [3, 5],
+    weeklyRhythm:
+      "Upper and lower sessions alternate through an A/B cycle that carries over from week to week.",
+  },
+  {
+    cardDescription:
       "A rotating Push/Pull/Legs cycle stays flexible when your available weekdays move around.",
     id: "rotating-push-pull-legs",
     label: "Rotating Push/Pull/Legs",
@@ -187,11 +214,12 @@ const trainingSplitDefinitions = [
       description:
         "This option does not lock to fixed weekdays. You continue the next Push, Pull, or Legs session each time you train.",
       cycle: [
-        { id: "push-1", sessionLabel: "Push" },
-        { id: "pull-1", sessionLabel: "Pull" },
-        { id: "legs-1", sessionLabel: "Legs" },
-        { id: "push-2", sessionLabel: "Push" },
-        { id: "pull-2", sessionLabel: "Pull" },
+        { id: "push-a", sessionLabel: "Push A" },
+        { id: "pull-a", sessionLabel: "Pull A" },
+        { id: "legs-a", sessionLabel: "Legs A" },
+        { id: "push-b", sessionLabel: "Push B" },
+        { id: "pull-b", sessionLabel: "Pull B" },
+        { id: "legs-b", sessionLabel: "Legs B" },
       ],
       kind: "rotating-cycle",
     },
@@ -205,7 +233,7 @@ const recommendedTrainingSplitByFrequency = {
   2: "full-body-2-day",
   3: "full-body-3-day",
   4: "upper-lower-4-day",
-  5: "rotating-push-pull-legs",
+  5: "rotating-upper-lower",
 } as const satisfies Record<TrainingFrequencyDaysPerWeek, TrainingSplitId>;
 
 export function getRecommendedTrainingSplitId(

@@ -3,6 +3,10 @@ import {
   trainingPlanQueryOptions,
   trainingPlanSessionsQueryOptions,
 } from "./training-plan-query-options";
+import type { TrainingSession } from "./training-session";
+
+// Shared empty list keeps a stable identity while sessions load, so dependent memos hold.
+const noTrainingSessions: ReadonlyArray<TrainingSession> = [];
 
 export function useTrainingPlanAndSessions(planId: string | null) {
   const trainingPlanQuery = useQuery(trainingPlanQueryOptions(planId));
@@ -11,7 +15,7 @@ export function useTrainingPlanAndSessions(planId: string | null) {
   return {
     trainingPlan: trainingPlanQuery.data,
     trainingPlanQuery,
-    trainingSessions: trainingSessionsQuery.data ?? [],
+    trainingSessions: trainingSessionsQuery.data ?? noTrainingSessions,
     trainingSessionsQuery,
   };
 }

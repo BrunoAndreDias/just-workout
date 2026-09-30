@@ -29,8 +29,16 @@ The **Active Training Plan** surface where the user chooses the current week's W
 _Avoid_: Start training section, Training History, analytics workspace
 
 **Training Block**:
-A defined span of time within a **Training Plan** before selected exercises are reviewed or rotated for a different training stimulus. The default **Training Block** length is 6 weeks.
+A defined span of time within a **Training Plan** before selected exercises are reviewed or rotated for a different training stimulus. The default **Training Block** length is 6 weeks. Cycle 1 starts when a **Training Plan Draft** is accepted, and the current block week follows the calendar from the block start, staying in the final week until the next block is accepted. The next block can be reviewed once the final week is completed, even if an earlier week was missed.
 _Avoid_: Mesocycle, phase, cycle
+
+**Weekly Effort Ramp**:
+The per-week **Reps In Reserve** target across a **Training Block**: week 1 is an easy 4-5 RIR week, then 3, 2-3, 2, 1-2, and 0-1 RIR in week 6. Main and secondary compounds never target below 1 RIR; isolation and abs work can reach 0 RIR in the final week.
+_Avoid_: Deload percentage, load reset
+
+**Session Target**:
+The suggested load and rep target for each exercise when a Training Session starts. It estimates rep capacity from the last completed sets (reps plus logged **Reps In Reserve**, or the planned RIR when none was logged), subtracts this week's **Weekly Effort Ramp** target, and applies double progression: past the top of the rep range the load goes up one increment, below the bottom it goes down. A set that was harder than its RIR target lowers the next rep target. Session Targets are editable suggestions, not locked prescriptions. Each completed set stores the Session Target it was shown (load, reps and the week's RIR), so **Training History** can compare target versus actual; a set counts as hitting its target when it reached the target load and reps.
+_Avoid_: Automatic load change, locked target, AI coach
 
 **Workout Template**:
 A reusable workout structure inside a **Training Plan** that represents one session the user can perform. In the first generated **Training Plan**, **Workout Templates** are split-derived structures with concrete exercise slots, while exact sets, reps, progression, and future user configurability can be added later.
@@ -53,7 +61,7 @@ The final **Superset Group** in a generated **Workout Template** for smaller or 
 _Avoid_: Accessory block, burnout
 
 **Default Abs Exposure**:
-The current generated-plan default of exactly two abs exercise slots per **Workout Template**. Abs appear in the main compound **Superset Groups** by default, not as an unbounded filler exercise in every group, and each abs slot should use a different abs exercise from the other abs slot in that **Workout Template**.
+The current generated-plan default of exactly two abs exercise slots per Upper, Lower, Push, Pull, or Legs **Workout Template**; Full Body templates carry no abs slots. Abs appear in the main compound **Superset Groups** by default, not as an unbounded filler exercise in every group, and each abs slot should use a different abs exercise from the other abs slot in that **Workout Template**.
 _Avoid_: Core placeholder, optional abs slot
 
 **Lower Superset Template**:
@@ -109,8 +117,8 @@ The intensity bias a user chooses in the **Plan Builder** before **Training Volu
 _Avoid_: Intensity setting, rep scheme, programming controls
 
 **Reps In Reserve**:
-The number of additional good reps the user believes they could have completed at the end of a set. **Reps In Reserve** is diagnostic context for training difficulty, fatigue, recovery, sleep, meals, or load suitability; it does not decide **Training Week Progress Verdicts**.
-_Avoid_: Progress score, volume metric, automatic progression trigger
+The number of additional good reps the user believes they could have completed at the end of a set. **Reps In Reserve** shapes the next **Session Target** and gives context for training difficulty, fatigue, recovery, sleep, meals, or load suitability; it does not decide **Training Week Progress Verdicts**.
+_Avoid_: Progress score, volume metric
 
 **Training Volume**:
 The planned amount of training work per muscle group across workouts and weeks. **Training Volume** is canonically expressed as **Weekly Rep Targets** and works with **Rep Range Style** when a later **Training Plan** translates that work into set and rep targets.

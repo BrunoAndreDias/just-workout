@@ -352,6 +352,111 @@ describe("getActiveTrainingPlanPageReadModel", () => {
     });
   });
 
+  it("measures Training Block progress by planned Training Sessions completed, not calendar weeks", () => {
+    const trainingPlan = createTrainingPlan({
+      trainingBlock: {
+        cycleNumber: 2,
+        endDate: "2100-02-11",
+        id: "training-block-2",
+        planId: "training-plan-test",
+        previousBlockId: "training-block-1",
+        startDate: "2100-01-01",
+        status: "active",
+        weekNumber: 2,
+      },
+    });
+    const inBlock = { trainingBlockCycleNumber: 2, trainingBlockId: "training-block-2" };
+
+    const readModel = getActiveTrainingPlanPageReadModel({
+      now: new Date("2100-01-10T12:00:00.000Z"),
+      trainingPlan,
+      trainingSessions: [
+        {
+          ...createTrainingSession({
+            completedAt: "2100-01-02T09:00:00.000Z",
+            id: "session-1",
+            templateId: "template-1",
+            templateLabel: "Full Body A",
+            weight: 100,
+          }),
+          ...inBlock,
+        },
+        {
+          ...createTrainingSession({
+            completedAt: "2100-01-09T09:00:00.000Z",
+            id: "session-2",
+            templateId: "template-2",
+            templateLabel: "Full Body B",
+            weight: 100,
+          }),
+          ...inBlock,
+        },
+        // Legacy session without block metadata, dated inside the block.
+        createTrainingSession({
+          completedAt: "2100-01-10T09:00:00.000Z",
+          id: "session-legacy",
+          templateId: "template-1",
+          templateLabel: "Full Body A",
+          weight: 100,
+        }),
+        {
+          ...createTrainingSession({
+            completedAt: "2100-01-10T18:00:00.000Z",
+            id: "session-extra",
+            templateId: "template-1",
+            templateLabel: "Full Body A",
+            weight: 100,
+          }),
+          ...inBlock,
+          sessionIntent: "extra",
+        },
+        {
+          ...createTrainingSession({
+            completedAt: "2099-12-20T09:00:00.000Z",
+            id: "session-previous-block",
+            templateId: "template-1",
+            templateLabel: "Full Body A",
+            weight: 100,
+          }),
+          trainingBlockCycleNumber: 1,
+          trainingBlockId: "training-block-1",
+        },
+      ],
+    });
+
+    expect(readModel.progress).toMatchObject({
+      blockCompletedSessions: 3,
+      blockPlannedSessions: 18,
+      blockProgressPercent: 17,
+      blockWeek: 2,
+    });
+  });
+
+  it("starts a new Training Block at 0% progress before any session is logged", () => {
+    const readModel = getActiveTrainingPlanPageReadModel({
+      now: new Date("2100-01-01T12:00:00.000Z"),
+      trainingPlan: createTrainingPlan({
+        trainingBlock: {
+          cycleNumber: 1,
+          endDate: "2100-02-11",
+          id: "training-block-1",
+          planId: "training-plan-test",
+          previousBlockId: null,
+          startDate: "2100-01-01",
+          status: "active",
+          weekNumber: 1,
+        },
+      }),
+      trainingSessions: [],
+    });
+
+    expect(readModel.progress).toMatchObject({
+      blockCompletedSessions: 0,
+      blockPlannedSessions: 18,
+      blockProgressPercent: 0,
+    });
+  });
+
   it("keeps Workout Template start actions on explicit Extra Training Session intent once the weekly target is met", () => {
     const readModel = getActiveTrainingPlanPageReadModel({
       activeTabId: "workout-1",

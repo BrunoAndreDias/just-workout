@@ -118,6 +118,10 @@ const weeklyMovementCoverageRuleBySplit = {
     compatibleFrequencies: [4, 5],
     rule: pushPullLegsRule,
   },
+  "rotating-upper-lower": {
+    compatibleFrequencies: [3, 5],
+    rule: upperLowerRule,
+  },
   "upper-lower-4-day": {
     compatibleFrequencies: [4],
     rule: upperLowerRule,

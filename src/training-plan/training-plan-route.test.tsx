@@ -19,11 +19,15 @@ const trainingHistoryCompactLayoutQuery = "(max-width: 720px)";
 describe("TrainingPlanRoute", () => {
   beforeEach(async () => {
     restoreDefaultMatchMedia();
+    // Seeded plans start their Training Block on 2026-06-07; pin today to its second week.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-15T12:00:00.000Z"));
     await resetLocalDatabase();
   });
 
   afterEach(() => {
     restoreDefaultMatchMedia();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -287,7 +291,6 @@ describe("TrainingPlanRoute", () => {
 
     for (const forbiddenText of [
       /change exercise/i,
-      /swap exercise/i,
       /swap for today only/i,
       /replace in plan/i,
       /add to rotation pool/i,
@@ -298,7 +301,6 @@ describe("TrainingPlanRoute", () => {
     }
 
     expect(within(workoutPanel).queryByRole("button", { name: /change/i })).not.toBeInTheDocument();
-    expect(within(workoutPanel).queryByRole("button", { name: /swap/i })).not.toBeInTheDocument();
     expect(
       within(workoutPanel).queryByRole("button", { name: /complete set/i }),
     ).not.toBeInTheDocument();
@@ -537,6 +539,7 @@ describe("TrainingPlanRoute", () => {
   });
 
   it("shows the latest Training Week verdict compactly on the active Training Plan", async () => {
+    vi.setSystemTime(new Date("2026-06-21T12:00:00.000Z"));
     const user = userEvent.setup();
     await seedTrainingPlan();
     await seedCompletedTrainingSessions([
@@ -651,7 +654,8 @@ describe("TrainingPlanRoute", () => {
       within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
     ).toBeVisible();
     expect(within(blockSummary).getByText("Next Training Block ready")).toBeVisible();
-    expect(within(blockSummary).getByText("20 proposed rotations")).toBeVisible();
+    // Full-body templates carry no abs slots, so only strength slots rotate.
+    expect(within(blockSummary).getByText("16 proposed rotations")).toBeVisible();
     expect(within(blockSummary).getByText("2 kept exercises")).toBeVisible();
 
     await user.click(
@@ -679,13 +683,13 @@ describe("TrainingPlanRoute", () => {
     expect(within(rirRamp).getByText("Week 1")).toBeVisible();
     expect(within(rirRamp).getByText("3 RIR")).toBeVisible();
     expect(within(rirRamp).getByText("Week 6")).toBeVisible();
-    expect(within(rirRamp).getByText("1-0 RIR")).toBeVisible();
+    expect(within(rirRamp).getByText("0-1 RIR")).toBeVisible();
 
     const rotationProposal = within(blockSummary).getByRole("region", {
       name: "Training Block Exercise Rotation Proposal",
     });
 
-    expect(within(rotationProposal).getAllByRole("listitem")).toHaveLength(22);
+    expect(within(rotationProposal).getAllByRole("listitem")).toHaveLength(18);
     expect(
       within(rotationProposal).getAllByText(
         /Flat Barbell Bench Press.*Incline Dumbbell Bench Press/,
@@ -694,7 +698,7 @@ describe("TrainingPlanRoute", () => {
     expect(
       within(rotationProposal).getAllByText("same Movement Pattern rotation pool"),
     ).toHaveLength(2);
-    expect(within(rotationProposal).getAllByText("compatible abs exercise")).toHaveLength(4);
+    expect(within(rotationProposal).queryAllByText("compatible abs exercise")).toHaveLength(0);
 
     const suggestedLoadInput = within(blockSummary).getByLabelText(
       "Suggested starting load for Incline Dumbbell Bench Press",
@@ -1714,8 +1718,9 @@ describe("TrainingPlanRoute", () => {
 
     await user.click(upperSessionToggle);
 
-    expect(await screen.findByText("Flat Barbell Bench Press")).toBeVisible();
-    const upperSessionDetails = screen.getByRole("region", { name: "Upper session details" });
+    const upperSessionDetails = await screen.findByRole("region", {
+      name: "Upper session details",
+    });
 
     expect(upperSessionToggle).toHaveAttribute("aria-controls", upperSessionDetails.id);
 

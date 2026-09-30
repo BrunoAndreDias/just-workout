@@ -17,15 +17,15 @@ import {
   isCompoundCapableMovementPattern,
   type MainCompoundSelection,
 } from "../training-taxonomy";
-import { hasBodyweightLoadExercise } from "./bodyweight-load";
-import type { TrainingBlock } from "./training-block";
+import type { TrainingWeekBodyweightUpdate } from "./session-bodyweight";
+import { requiresSessionBodyweight } from "./session-bodyweight";
+import { createFirstTrainingBlock, type TrainingBlock } from "./training-block";
 import { createTrainingPlanTemplatesForBlueprint } from "./training-plan-template-generation";
 import {
   applyTrainingPrescriptionsToWorkoutTemplates,
   type TrainingPrescription,
   type WorkoutExerciseRole,
 } from "./training-prescription";
-import type { TrainingWeekBodyweightUpdate } from "./training-week-bodyweight";
 import { getWeeklyRepTargetDriftNotices } from "./weekly-rep-target-drift";
 
 export type TrainingPlanSlot = {
@@ -206,6 +206,9 @@ export function createTrainingPlanFromDraft({
     generatedAt: timestamp,
     id,
     sourceBlueprintId,
+    trainingBlock:
+      draft.content.trainingBlock ??
+      createFirstTrainingBlock({ planId: id, startDate: timestamp.slice(0, 10) }),
     updatedAt: timestamp,
   };
 }
@@ -379,10 +382,7 @@ export function validateTrainingPlanDraftContent({
     });
   }
 
-  if (
-    content.baselineBodyweight == null &&
-    hasBodyweightLoadExercise(getTrainingPlanDraftExercises(content))
-  ) {
+  if (content.baselineBodyweight == null && requiresSessionBodyweight(content.workoutTemplates)) {
     warnings.push({
       kind: "missing_baseline_bodyweight",
       message:
@@ -476,11 +476,19 @@ const draftTrainingSplitAliases = [
     split: "rotating-push-pull-legs",
   },
   {
+    labels: ["Rotating Upper/Lower"],
+    split: "rotating-upper-lower",
+  },
+  {
     labels: ["4-Day Upper/Lower", "Upper/Lower 4-Day"],
     split: "upper-lower-4-day",
   },
   {
-    labels: ["Upper/Lower + Full Body", "Upper/Lower + Full Body 3-Day"],
+    labels: [
+      "Upper / Lower / Full Body",
+      "Upper/Lower + Full Body",
+      "Upper/Lower + Full Body 3-Day",
+    ],
     split: "upper-lower-full-body",
   },
 ] as const satisfies ReadonlyArray<{
@@ -516,12 +524,6 @@ function getMissingRequiredStrengthCoverageMessage(
   }
 
   return `Strength-focused Workout Templates are missing ${missingRequiredPatterns.length} required Movement Patterns.`;
-}
-
-function getTrainingPlanDraftExercises(content: TrainingPlanContent) {
-  return content.workoutTemplates.flatMap((template) =>
-    template.supersetGroups.flatMap((group) => group.slots),
-  );
 }
 
 function isInvalidTrainingPrescription(trainingPrescription: TrainingPrescription): boolean {

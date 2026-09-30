@@ -44,14 +44,6 @@ type TrainingBlockTransitionPrototypeProps = {
   transition: ReviewTrainingBlockTransitionWorkflow;
 };
 
-export function shouldShowTrainingBlockTransitionPrototype(): boolean {
-  return (
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).has("variant")
-  );
-}
-
 export function TrainingBlockTransitionPrototype({
   blockWeek,
   cycleNumber,

@@ -241,6 +241,28 @@ function normalizeDraftWorkoutTemplate(workoutTemplate: unknown): WorkoutTemplat
   };
 }
 
+/**
+ * Rejects the saved Training Plan Draft so the Plan Builder returns to its pre-generate state.
+ * Plan Builder choices stay untouched, so the user can change setup and generate again.
+ */
+export function discardTrainingPlanDraft({
+  blueprint,
+  timestamp,
+}: {
+  blueprint: PlanBlueprint;
+  timestamp: string;
+}): PlanBlueprint {
+  if (!blueprint.trainingPlanDraft) {
+    return blueprint;
+  }
+
+  return {
+    ...blueprint,
+    trainingPlanDraft: null,
+    updatedAt: timestamp,
+  };
+}
+
 /** Renames a Workout Template inside the saved Training Plan Draft. */
 export function renameTrainingPlanDraftWorkoutTemplate({
   blueprint,

@@ -20,19 +20,21 @@ describe("training split definitions", () => {
       "full-body-3-day",
       "upper-lower-full-body",
       "alternating-full-body-a-b",
+      "rotating-upper-lower",
     ]);
     expect(getCompatibleTrainingSplitOptions(4).map((option) => option.id)).toEqual([
       "upper-lower-4-day",
       "rotating-push-pull-legs",
     ]);
     expect(getCompatibleTrainingSplitOptions(5).map((option) => option.id)).toEqual([
+      "rotating-upper-lower",
       "rotating-push-pull-legs",
     ]);
 
     expect(getRecommendedTrainingSplitOption(2).id).toBe("full-body-2-day");
     expect(getRecommendedTrainingSplitOption(3).id).toBe("full-body-3-day");
     expect(getRecommendedTrainingSplitOption(4).id).toBe("upper-lower-4-day");
-    expect(getRecommendedTrainingSplitOption(5).id).toBe("rotating-push-pull-legs");
+    expect(getRecommendedTrainingSplitOption(5).id).toBe("rotating-upper-lower");
   });
 
   it("recommends 4-Day Upper/Lower while keeping Rotating Push/Pull/Legs compatible for 4 days/week", () => {
@@ -43,13 +45,30 @@ describe("training split definitions", () => {
     ]);
   });
 
-  it("keeps 2 days/week and 5 days/week on a single compatible split instead of dead-ending", () => {
+  it("keeps 2 days/week on a single compatible split instead of dead-ending", () => {
     expect(getRecommendedTrainingSplitId(2)).toBe("full-body-2-day");
     expect(getCompatibleTrainingSplits(2).map((split) => split.id)).toEqual(["full-body-2-day"]);
-    expect(getRecommendedTrainingSplitId(5)).toBe("rotating-push-pull-legs");
+  });
+
+  it("recommends Rotating Upper/Lower for 5 days/week and keeps it compatible for 3 days/week only", () => {
+    expect(getRecommendedTrainingSplitId(5)).toBe("rotating-upper-lower");
     expect(getCompatibleTrainingSplits(5).map((split) => split.id)).toEqual([
+      "rotating-upper-lower",
       "rotating-push-pull-legs",
     ]);
+    expect(isTrainingSplitCompatible("rotating-upper-lower", 3)).toBe(true);
+    expect(isTrainingSplitCompatible("rotating-upper-lower", 5)).toBe(true);
+    expect(isTrainingSplitCompatible("rotating-upper-lower", 2)).toBe(false);
+    expect(isTrainingSplitCompatible("rotating-upper-lower", 4)).toBe(false);
+
+    const schedule = getTrainingSplit("rotating-upper-lower").schedule;
+
+    expect(schedule.kind).toBe("rotating-cycle");
+    expect(
+      schedule.kind === "rotating-cycle"
+        ? schedule.cycle.map((session) => session.sessionLabel)
+        : [],
+    ).toEqual(["Upper A", "Lower A", "Upper B", "Lower B"]);
   });
 
   it("uses stable typed ids and compatibility checks instead of display text", () => {
@@ -76,11 +95,12 @@ describe("training split definitions", () => {
       cadence:
         "Schedule-flexible: the cycle rotates across available weekdays and can land as 4-5 sessions in a calendar week.",
       cycle: [
-        { id: "push-1", sessionLabel: "Push" },
-        { id: "pull-1", sessionLabel: "Pull" },
-        { id: "legs-1", sessionLabel: "Legs" },
-        { id: "push-2", sessionLabel: "Push" },
-        { id: "pull-2", sessionLabel: "Pull" },
+        { id: "push-a", sessionLabel: "Push A" },
+        { id: "pull-a", sessionLabel: "Pull A" },
+        { id: "legs-a", sessionLabel: "Legs A" },
+        { id: "push-b", sessionLabel: "Push B" },
+        { id: "pull-b", sessionLabel: "Pull B" },
+        { id: "legs-b", sessionLabel: "Legs B" },
       ],
       description:
         "This option does not lock to fixed weekdays. You continue the next Push, Pull, or Legs session each time you train.",

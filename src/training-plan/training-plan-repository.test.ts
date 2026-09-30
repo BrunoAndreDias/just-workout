@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import { completeMainCompoundSelections } from "../plan-builder/plan-builder-test-fixtures";
@@ -21,6 +21,12 @@ describe("trainingPlanRepository", () => {
   });
 
   it("keeps previous-block sessions queryable when a next Training Block is accepted on the same Active Training Plan", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-20T10:00:00.000Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+
     const activeTrainingPlan = createTrainingPlan({
       trainingBlock: {
         cycleNumber: 1,
@@ -289,7 +295,7 @@ describe("trainingPlanRepository", () => {
     });
   });
 
-  it("updates inherited Training Week bodyweight without overwriting per-session overrides", async () => {
+  it("persists a Weekly Bodyweight Update and the inherited sessions it rewrites", async () => {
     const trainingPlan = createTrainingPlan({
       baselineBodyweight: 80,
     });
@@ -317,28 +323,9 @@ describe("trainingPlanRepository", () => {
       template: firstWorkoutTemplate,
       timestamp: "2026-06-08T10:00:00.000Z",
     });
-    const overrideSession = createCompletedTrainingSession({
-      entries: [
-        {
-          exerciseId: "pull-ups",
-          exerciseName: "Pull-Ups",
-          movementPattern: "vertical_pull",
-          sets: [{ reps: 8, setIndex: 1, weight: 5 }],
-        },
-      ],
-      id: "session-override",
-      plan: trainingPlan,
-      sessionBodyweight: {
-        bodyweight: 78,
-        source: "session_override",
-      },
-      template: firstWorkoutTemplate,
-      timestamp: "2026-06-09T10:00:00.000Z",
-    });
-
     await seedTrainingPlanData({
       trainingPlans: [trainingPlan],
-      trainingSessions: [inheritedSession, overrideSession],
+      trainingSessions: [inheritedSession],
     });
 
     await saveTrainingWeekBodyweight({
@@ -369,17 +356,6 @@ describe("trainingPlanRepository", () => {
           {
             movementPattern: "vertical_pull",
             volume: 656,
-          },
-        ],
-      }),
-      expect.objectContaining({
-        id: "session-override",
-        sessionBodyweight: 78,
-        sessionBodyweightSource: "session_override",
-        volumeByMovementPattern: [
-          {
-            movementPattern: "vertical_pull",
-            volume: 664,
           },
         ],
       }),

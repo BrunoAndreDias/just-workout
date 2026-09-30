@@ -1,6 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import type { TrainingSessionExecutionGroup } from "./training-session-execution";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import type {
+  TrainingSessionExecutionAction,
+  TrainingSessionExecutionGroup,
+} from "./training-session-execution";
 import { TrainingSessionGroup } from "./training-session-group";
 
 describe("TrainingSessionGroup", () => {
@@ -25,11 +29,113 @@ describe("TrainingSessionGroup", () => {
       within(screen.getByRole("row", { name: /Incline Dumbbell Bench Press/i })).getAllByRole(
         "spinbutton",
       ),
-    ).toHaveLength(12);
+    ).toHaveLength(8);
+  });
+
+  it("captures RIR with an accessible radiogroup of effort chips", () => {
+    const onAction = vi.fn<(action: TrainingSessionExecutionAction) => void>();
+
+    render(<TrainingSessionGroup group={createTrainingSessionGroup()} onAction={onAction} />);
+
+    const effort = screen.getByRole("radiogroup", {
+      name: "Incline Dumbbell Bench Press set 1 RIR",
+    });
+    const radios = within(effort).getAllByRole("radio");
+
+    expect(radios.map((radio) => radio.getAttribute("aria-label"))).toEqual([
+      "0 reps in reserve",
+      "1 rep in reserve",
+      "2 reps in reserve",
+      "3 reps in reserve (target)",
+      "4 reps in reserve",
+      "5 or more reps in reserve",
+    ]);
+    expect(
+      within(effort).getByRole("radio", { name: "3 reps in reserve (target)" }).closest("label"),
+    ).toHaveClass("training-session-effort__chip--target");
+    expect(radios.some((radio) => (radio as HTMLInputElement).checked)).toBe(false);
+
+    fireEvent.click(within(effort).getByRole("radio", { name: "2 reps in reserve" }));
+
+    expect(onAction).toHaveBeenCalledWith({
+      setId: "group-1-bench-set-1",
+      type: "change-set-rir",
+      value: "2",
+    });
+  });
+
+  it("clears RIR when the selected effort chip is tapped again", () => {
+    const onAction = vi.fn<(action: TrainingSessionExecutionAction) => void>();
+
+    render(
+      <TrainingSessionGroup
+        group={createTrainingSessionGroup({ setOneRir: "2" })}
+        onAction={onAction}
+      />,
+    );
+
+    const effort = screen.getByRole("radiogroup", {
+      name: "Incline Dumbbell Bench Press set 1 RIR",
+    });
+    const selected = within(effort).getByRole("radio", { name: "2 reps in reserve" });
+
+    expect(selected).toBeChecked();
+
+    fireEvent.click(selected);
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith({
+      setId: "group-1-bench-set-1",
+      type: "change-set-rir",
+      value: "",
+    });
+  });
+
+  it("moves between effort chips with the arrow keys", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn<(action: TrainingSessionExecutionAction) => void>();
+
+    render(
+      <TrainingSessionGroup
+        group={createTrainingSessionGroup({ setOneRir: "2" })}
+        onAction={onAction}
+      />,
+    );
+
+    within(screen.getByRole("radiogroup", { name: "Incline Dumbbell Bench Press set 1 RIR" }))
+      .getByRole("radio", { name: "2 reps in reserve" })
+      .focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(onAction).toHaveBeenLastCalledWith({
+      setId: "group-1-bench-set-1",
+      type: "change-set-rir",
+      value: "3",
+    });
+    expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ value: "" }));
+  });
+
+  it("selects the open-ended chip for RIR values above its range", () => {
+    render(
+      <TrainingSessionGroup
+        group={createTrainingSessionGroup({ setOneRir: "7" })}
+        onAction={() => {}}
+      />,
+    );
+
+    expect(
+      within(
+        screen.getByRole("radiogroup", { name: "Incline Dumbbell Bench Press set 1 RIR" }),
+      ).getByRole("radio", { name: "5 or more reps in reserve" }),
+    ).toBeChecked();
   });
 });
 
-function createTrainingSessionGroup(): TrainingSessionExecutionGroup {
+function createTrainingSessionGroup({
+  setOneRir = "",
+}: {
+  setOneRir?: string;
+} = {}): TrainingSessionExecutionGroup {
   return {
     accessibleTitle: "Superset 1",
     groupId: "group-1",
@@ -44,7 +150,7 @@ function createTrainingSessionGroup(): TrainingSessionExecutionGroup {
       targetRepsLabel: "Target 6-8 reps",
     },
     rounds: [
-      createTrainingSessionRound(1),
+      createTrainingSessionRound(1, setOneRir),
       createTrainingSessionRound(2),
       createTrainingSessionRound(3),
       createTrainingSessionRound(4),
@@ -61,11 +167,13 @@ function createTrainingSessionGroup(): TrainingSessionExecutionGroup {
 
 function createTrainingSessionRound(
   roundIndex: number,
+  rir = "",
 ): TrainingSessionExecutionGroup["rounds"][number] {
   return {
     roundIndex,
     rows: [
       {
+        aimLabel: null,
         done: false,
         doneLabel: `Mark Incline Dumbbell Bench Press set ${roundIndex} done`,
         exerciseName: "Incline Dumbbell Bench Press",
@@ -74,7 +182,7 @@ function createTrainingSessionRound(
         prescriptionLabel: "4 x 6-8",
         previousSetLabel: "-",
         reps: "6",
-        rir: "",
+        rir,
         setId: `group-1-bench-set-${roundIndex}`,
         setIndex: roundIndex,
         targetRir: "3",

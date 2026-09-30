@@ -1,14 +1,12 @@
-import { createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
-import { TrainingCycleDevSeedRoute } from "../dev/training-cycle-dev-seed-route";
-import { PlanBuilderOnePageRoute, planBuilderPaths } from "../plan-builder";
 import {
-  TrainingPlanRoute,
-  TrainingPlansRoute,
-  TrainingSessionHistoryRoute,
-  TrainingSessionRoute,
-  TrainingSessionStartRoute,
-  trainingPlanPaths,
-} from "../training-plan";
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router";
+import { planBuilderPaths } from "../plan-builder/plan-builder-paths";
+import { trainingPlanPaths } from "../training-plan/training-plan-paths";
 import { RootLayout } from "./root-layout";
 
 const rootRoute = createRootRoute({
@@ -27,43 +25,64 @@ const indexRoute = createRoute({
 });
 
 const planBuilderEntryRoute = createRoute({
-  component: PlanBuilderOnePageRoute,
+  component: lazyRouteComponent(
+    () => import("../plan-builder/one-page/one-page-route"),
+    "PlanBuilderOnePageRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: planBuilderPaths.entry,
 });
 
 const trainingPlanRoute = createRoute({
-  component: TrainingPlanRoute,
+  component: lazyRouteComponent(
+    () => import("../training-plan/training-plan-route"),
+    "TrainingPlanRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: trainingPlanPaths.plan,
 });
 
 const trainingSessionRoute = createRoute({
-  component: TrainingSessionRoute,
+  component: lazyRouteComponent(
+    () => import("../training-plan/training-session-route"),
+    "TrainingSessionRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: trainingPlanPaths.sessionStart,
 });
 
 const trainingSessionStartRoute = createRoute({
-  component: TrainingSessionStartRoute,
+  component: lazyRouteComponent(
+    () => import("../training-plan/training-session-start-route"),
+    "TrainingSessionStartRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: trainingPlanPaths.sessionStartChoice,
 });
 
 const trainingSessionHistoryRoute = createRoute({
-  component: TrainingSessionHistoryRoute,
+  component: lazyRouteComponent(
+    () => import("../training-plan/training-session-history-route"),
+    "TrainingSessionHistoryRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: trainingPlanPaths.sessionHistory,
 });
 
 const trainingPlansRoute = createRoute({
-  component: TrainingPlansRoute,
+  component: lazyRouteComponent(
+    () => import("../training-plan/training-plan-route"),
+    "TrainingPlansRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: trainingPlanPaths.list,
 });
 
 const trainingCycleDevSeedRoute = createRoute({
-  component: TrainingCycleDevSeedRoute,
+  component: lazyRouteComponent(
+    () => import("../dev/training-cycle-dev-seed-route"),
+    "TrainingCycleDevSeedRoute",
+  ),
   getParentRoute: () => rootRoute,
   path: "/dev/training-cycle-seeds",
 });

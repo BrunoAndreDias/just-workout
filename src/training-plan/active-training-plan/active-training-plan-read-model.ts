@@ -1,3 +1,4 @@
+import { getCurrentTrainingWeek, isSessionInTrainingBlock } from "../training-block-calendar";
 import type { TrainingPlan, TrainingPlanSlot, WorkoutTemplate } from "../training-plan";
 import {
   getTrainingSessionHistoryRouteTarget,
@@ -24,7 +25,7 @@ import {
   movementCoverageRows,
 } from "./movement-coverage-read-model";
 import { getPlanSummaryReadModel, type PlanSummaryReadModel } from "./plan-summary-read-model";
-import { getBlockProgressPercent, getCurrentBlockWeek } from "./training-block-progress";
+import { getBlockProgressPercent } from "./training-block-progress";
 import {
   type ActiveTrainingPlanWeekProgressReadModel,
   getTrainingWeekProgressReadModel,
@@ -68,6 +69,11 @@ export type ActiveTrainingPlanRouteActionReadModel<RouteTarget> = {
 };
 
 export type ActiveTrainingPlanPageProgressReadModel = {
+  /** Planned Training Sessions completed in the current Training Block; Extra Training Sessions do not count. */
+  blockCompletedSessions: number;
+  /** Planned Training Sessions in the whole Training Block (days per week × block weeks). */
+  blockPlannedSessions: number;
+  /** Share of the block's planned Training Sessions completed, so it stays at 0% until one is logged. */
   blockProgressPercent: number;
   blockWeek: number;
   cycleNumber: number | undefined;
@@ -155,7 +161,7 @@ export function getActiveTrainingPlanPageReadModel({
   const tabs = getActiveTrainingPlanTabs(trainingPlan);
   const resolvedActiveTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
   const resolvedActiveTabId = resolvedActiveTab?.id ?? "overview";
-  const blockWeek = getCurrentBlockWeek(trainingPlan);
+  const blockWeek = getCurrentTrainingWeek(trainingPlan, now).weekNumber;
   const movementCoverage = getMovementCoverageTableReadModel(trainingPlan.workoutTemplates);
   const sessionSequenceState = getTrainingSessionSequenceState({
     now,
@@ -268,10 +274,19 @@ function getProgressReadModel({
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }): ActiveTrainingPlanPageProgressReadModel {
+  const blockCompletedSessions = countTrainingBlockPlannedSessions({
+    trainingPlan,
+    trainingSessions,
+  });
+  const blockPlannedSessions =
+    trainingPlan.trainingFrequencyDaysPerWeek * trainingPlan.trainingBlockWeeks;
+
   return {
+    blockCompletedSessions,
+    blockPlannedSessions,
     blockProgressPercent: getBlockProgressPercent({
-      blockWeek,
-      trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+      completedSessions: blockCompletedSessions,
+      plannedSessions: blockPlannedSessions,
     }),
     blockWeek,
     cycleNumber: trainingPlan.trainingBlock?.cycleNumber,
@@ -282,6 +297,32 @@ function getProgressReadModel({
     }),
     trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
   };
+}
+
+/**
+ * Sessions stamped with the current block id count; legacy sessions without block metadata count
+ * when completed within the block's dates. Without a Training Block every planned session counts.
+ */
+function countTrainingBlockPlannedSessions({
+  trainingPlan,
+  trainingSessions,
+}: {
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}): number {
+  const trainingBlock = trainingPlan.trainingBlock;
+
+  return trainingSessions.filter((trainingSession) => {
+    if (
+      trainingSession.planId !== trainingPlan.id ||
+      trainingSession.completedAt === null ||
+      trainingSession.sessionIntent === "extra"
+    ) {
+      return false;
+    }
+
+    return !trainingBlock || isSessionInTrainingBlock(trainingBlock, trainingSession);
+  }).length;
 }
 
 function getPageTabReadModel({

@@ -1136,20 +1136,37 @@ export const exerciseCatalogMuscleGroups = exerciseCatalogMuscleGroupDefinitions
   }),
 ) satisfies ReadonlyArray<ExerciseCatalogMuscleGroup>;
 
+// Lookups run inside render-time derivations and validation loops, so index the catalog once.
+const exerciseCatalogExerciseById = new Map<string, ExerciseCatalogExercise>();
+const exerciseCatalogExercisesByMovementPattern = new Map<
+  MovementPatternId,
+  Array<ExerciseCatalogExercise>
+>();
+
+for (const exercise of exerciseCatalogExercises) {
+  if (!exerciseCatalogExerciseById.has(exercise.id)) {
+    exerciseCatalogExerciseById.set(exercise.id, exercise);
+  }
+
+  const patternExercises = exerciseCatalogExercisesByMovementPattern.get(exercise.movementPattern);
+
+  if (patternExercises) {
+    patternExercises.push(exercise);
+  } else {
+    exerciseCatalogExercisesByMovementPattern.set(exercise.movementPattern, [exercise]);
+  }
+}
+
 export function getExerciseCatalogExercisesByMovementPattern(
   movementPattern: MovementPatternId,
 ): ReadonlyArray<ExerciseCatalogExercise> {
-  return exerciseCatalogExercises.filter(
-    (exercise) => exercise.movementPattern === movementPattern,
-  );
+  return [...(exerciseCatalogExercisesByMovementPattern.get(movementPattern) ?? [])];
 }
 
 export function getExerciseCatalogExercise(
   exerciseId: string,
 ): ExerciseCatalogExercise | undefined {
-  return exerciseCatalogExercises.find(
-    (exercise) => exercise.id === getConcreteExerciseCatalogExerciseId(exerciseId),
-  );
+  return exerciseCatalogExerciseById.get(getConcreteExerciseCatalogExerciseId(exerciseId));
 }
 
 export function getConcreteExerciseCatalogExerciseId(exerciseId: string): string {

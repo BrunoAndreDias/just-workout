@@ -1,24 +1,18 @@
 import type { DefaultExerciseSlotKey } from "./default-exercise-slots";
 import type { SupersetGroup } from "./training-plan";
-import {
-  createAbsFinisher,
-  createFullBodyIsolationFinisher,
-  createWorkoutBlock,
-} from "./workout-blocks";
+import { createFullBodyIsolationFinisher, createWorkoutBlock } from "./workout-blocks";
 import { createNamedExerciseSlot, createSelectionSlot } from "./workout-exercise-slots";
 import type { WorkoutTemplateSelections } from "./workout-template-selections";
 
 export function createFullBodySupersetGroups({
   fullBodyFocus,
   isAlternatingFullBodyAB,
-  isAllFullBodyPlan,
   selections,
   templateId,
   templateLabel,
 }: {
   fullBodyFocus: "upper" | "lower";
   isAlternatingFullBodyAB: boolean;
-  isAllFullBodyPlan: boolean;
   selections: WorkoutTemplateSelections;
   templateId: string;
   templateLabel: string;
@@ -35,7 +29,7 @@ export function createFullBodySupersetGroups({
     return alternatingFullBodyGroups;
   }
 
-  const groups: SupersetGroup[] = [
+  return [
     createWorkoutBlock({
       id: `${templateId}-full-body-superset-1`,
       slots: [
@@ -70,12 +64,6 @@ export function createFullBodySupersetGroups({
     }),
     createFullBodyIsolationFinisher(templateId),
   ];
-
-  if (isAllFullBodyPlan) {
-    groups.push(createAbsFinisher(templateId));
-  }
-
-  return groups;
 }
 
 function getSecondaryUpperPullDefaultSlotKey(

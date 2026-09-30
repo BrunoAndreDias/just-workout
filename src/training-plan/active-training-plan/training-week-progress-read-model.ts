@@ -1,5 +1,11 @@
 import { summarizeCompletedLoadVolume } from "../completed-load-volume";
 import {
+  getCurrentTrainingWeek,
+  getTrainingWeekWindow,
+  isSessionInTrainingWeek,
+  type TrainingWeekWindow,
+} from "../training-block-calendar";
+import {
   formatTrainingWeekProgressVerdict,
   formatTrainingWeekVolumeReference,
   formatWeight,
@@ -10,20 +16,12 @@ import type {
 } from "../training-history-week";
 import type { TrainingPlan } from "../training-plan";
 import type { TrainingSession } from "../training-session";
-import { addUtcDays, toDayKey, toUtcDay } from "../training-week-date";
-import { formatTrainingWeekRangeLabel } from "../training-week-range-label";
+import { toUtcDay } from "../training-week-date";
 
 type TrainingWeekVolumeSummary = {
   completedSessions: number;
   hasPartialVolume: boolean;
   totalVolume: number;
-};
-
-type TrainingWeekRange = {
-  end: Date;
-  endKey: string;
-  label: string;
-  start: Date;
 };
 
 /**
@@ -61,8 +59,8 @@ export function getTrainingWeekProgressReadModel({
   trainingPlan: TrainingPlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }): ActiveTrainingPlanWeekProgressReadModel {
-  const currentWeek = getCurrentTrainingWeekRange(trainingPlan);
-  const previousWeek = createTrainingWeekRange(addUtcDays(currentWeek.start, -7));
+  const currentWeek = getCurrentTrainingWeek(trainingPlan, now);
+  const previousWeek = getTrainingWeekWindow(trainingPlan, currentWeek.weekNumber - 1);
   const currentWeekSummary = summarizeTrainingWeekVolume({
     trainingSessions,
     weekRange: currentWeek,
@@ -71,6 +69,26 @@ export function getTrainingWeekProgressReadModel({
     trainingSessions,
     weekRange: previousWeek,
   });
+
+  if (isTrainingWeekClosed({ now, weekRange: currentWeek })) {
+    return createLatestVerdictReadModel({
+      trainingPlan,
+      trainingSessions,
+      week: currentWeek,
+      weekSummary: currentWeekSummary,
+    });
+  }
+
+  // Until the first session of a new week is logged, last week's verdict is the useful signal.
+  if (currentWeekSummary.completedSessions === 0 && previousWeekSummary.completedSessions > 0) {
+    return createLatestVerdictReadModel({
+      trainingPlan,
+      trainingSessions,
+      week: previousWeek,
+      weekSummary: previousWeekSummary,
+    });
+  }
+
   const reference = createTrainingWeekVolumeReference({
     previousWeek,
     previousWeekSummary,
@@ -79,23 +97,6 @@ export function getTrainingWeekProgressReadModel({
     currentWeekSummary,
     previousWeekSummary,
   });
-
-  if (isTrainingWeekClosed({ now, weekRange: currentWeek })) {
-    return {
-      caveat,
-      detail: `${currentWeek.label} · ${currentWeekSummary.completedSessions} / ${trainingPlan.trainingFrequencyDaysPerWeek} sessions`,
-      kind: "latest_verdict",
-      support: formatTrainingWeekVolumeReference(reference),
-      title: "Latest Training Week verdict",
-      value: formatTrainingWeekProgressVerdict(
-        calculateTrainingWeekProgressVerdict({
-          currentWeekSummary,
-          previousWeekSummary,
-        }),
-      ),
-      valueLabel: "Verdict",
-    };
-  }
 
   return {
     caveat,
@@ -110,16 +111,55 @@ export function getTrainingWeekProgressReadModel({
   };
 }
 
+function createLatestVerdictReadModel({
+  trainingPlan,
+  trainingSessions,
+  week,
+  weekSummary,
+}: {
+  trainingPlan: TrainingPlan;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+  week: TrainingWeekWindow;
+  weekSummary: TrainingWeekVolumeSummary;
+}): ActiveTrainingPlanWeekProgressReadModel {
+  const referenceWeek = getTrainingWeekWindow(trainingPlan, week.weekNumber - 1);
+  const referenceWeekSummary = summarizeTrainingWeekVolume({
+    trainingSessions,
+    weekRange: referenceWeek,
+  });
+  const reference = createTrainingWeekVolumeReference({
+    previousWeek: referenceWeek,
+    previousWeekSummary: referenceWeekSummary,
+  });
+
+  return {
+    caveat: getTrainingWeekProgressCaveat({
+      currentWeekSummary: weekSummary,
+      previousWeekSummary: referenceWeekSummary,
+    }),
+    detail: `${week.label} · ${weekSummary.completedSessions} / ${trainingPlan.trainingFrequencyDaysPerWeek} sessions`,
+    kind: "latest_verdict",
+    support: formatTrainingWeekVolumeReference(reference),
+    title: "Latest Training Week verdict",
+    value: formatTrainingWeekProgressVerdict(
+      calculateTrainingWeekProgressVerdict({
+        currentWeekSummary: weekSummary,
+        previousWeekSummary: referenceWeekSummary,
+      }),
+    ),
+    valueLabel: "Verdict",
+  };
+}
+
 function summarizeTrainingWeekVolume({
   trainingSessions,
   weekRange,
 }: {
   trainingSessions: ReadonlyArray<TrainingSession>;
-  weekRange: TrainingWeekRange;
+  weekRange: TrainingWeekWindow;
 }): TrainingWeekVolumeSummary {
   return trainingSessions
-    .filter(isCompletedTrainingSession)
-    .filter((trainingSession) => isTrainingSessionInWeek(trainingSession, weekRange))
+    .filter((trainingSession) => isSessionInTrainingWeek(trainingSession, weekRange))
     .reduce<TrainingWeekVolumeSummary>(
       (summary, trainingSession) => {
         const completedLoadVolume = summarizeCompletedLoadVolume(trainingSession.exercises, {
@@ -140,31 +180,12 @@ function summarizeTrainingWeekVolume({
     );
 }
 
-function getCurrentTrainingWeekRange(trainingPlan: TrainingPlan): TrainingWeekRange {
-  const anchorDay = toUtcDay(trainingPlan.trainingBlock?.startDate ?? trainingPlan.generatedAt);
-  const weekNumber = trainingPlan.trainingBlock?.weekNumber ?? 2;
-  const start = addUtcDays(anchorDay, Math.max(weekNumber - 1, 0) * 7);
-
-  return createTrainingWeekRange(start);
-}
-
-function createTrainingWeekRange(start: Date): TrainingWeekRange {
-  const end = addUtcDays(start, 6);
-
-  return {
-    end,
-    endKey: toDayKey(end),
-    label: formatTrainingWeekRangeLabel(start, end),
-    start,
-  };
-}
-
 function isTrainingWeekClosed({
   now,
   weekRange,
 }: {
   now: Date;
-  weekRange: TrainingWeekRange;
+  weekRange: TrainingWeekWindow;
 }): boolean {
   return toUtcDay(now.toISOString()).getTime() > weekRange.end.getTime();
 }
@@ -197,7 +218,7 @@ function createTrainingWeekVolumeReference({
   previousWeek,
   previousWeekSummary,
 }: {
-  previousWeek: TrainingWeekRange;
+  previousWeek: TrainingWeekWindow;
   previousWeekSummary: TrainingWeekVolumeSummary;
 }): TrainingWeekVolumeReference | null {
   if (
@@ -230,19 +251,4 @@ function getTrainingWeekProgressCaveat({
   }
 
   return null;
-}
-
-function isCompletedTrainingSession(
-  trainingSession: TrainingSession,
-): trainingSession is TrainingSession & { completedAt: string } {
-  return trainingSession.completedAt !== null;
-}
-
-function isTrainingSessionInWeek(
-  trainingSession: TrainingSession & { completedAt: string },
-  weekRange: TrainingWeekRange,
-): boolean {
-  const completedDayKey = toDayKey(toUtcDay(trainingSession.completedAt));
-
-  return completedDayKey >= toDayKey(weekRange.start) && completedDayKey <= weekRange.endKey;
 }

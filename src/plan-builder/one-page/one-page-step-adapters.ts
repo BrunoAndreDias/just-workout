@@ -1,17 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import {
-  type TrainingPlanDraftSetupUpdate,
-  trainingPlanService,
-  trainingPlansQueryOptions,
-} from "../../training-plan";
+import type { TrainingPlanDraftSetupUpdate } from "../../training-plan/training-plan";
+import { trainingPlansQueryOptions } from "../../training-plan/training-plan-query-options";
+import { trainingPlanService } from "../../training-plan/training-plan-service";
 import { planBuilderBlueprintQueryKey } from "../builder-state/plan-builder-config";
 import {
   useAddTrainingPlanDraftSlotMutation,
   useAddTrainingPlanDraftSupersetGroupMutation,
   useDeleteTrainingPlanDraftSlotMutation,
   useDeleteTrainingPlanDraftSupersetGroupMutation,
+  useDiscardTrainingPlanDraftMutation,
   useMoveTrainingPlanDraftSlotToSupersetGroupMutation,
   useRenameTrainingPlanDraftSupersetGroupMutation,
   useRenameTrainingPlanDraftWorkoutTemplateMutation,
@@ -47,6 +46,7 @@ import type {
   MainCompoundPreferencesChange,
   MainCompoundRotationPreferencesChange,
 } from "../plan-builder-main-compound-preferences";
+import type { PendingTrainingPlanDraftAction } from "../steps/generate-training-plan/generate-training-plan-step";
 import type { TrainingSplitId } from "../training-split";
 import type { OptionalVolumeMuscleGroupId, VolumePresetId } from "../training-volume";
 
@@ -204,6 +204,8 @@ export function useOnePageGenerateStep({
     onSuccess: updateCachedTrainingPlanDraft,
     scope: { id: "training-plan-draft-setup" },
   });
+  const { mutateAsync: discardDraft, isPending: isDiscardingDraft } =
+    useDiscardTrainingPlanDraftMutation();
   const { mutate: renameDraftWorkoutTemplate } =
     useRenameTrainingPlanDraftWorkoutTemplateMutation();
   const { mutate: reorderDraftWorkoutTemplate } =
@@ -258,12 +260,13 @@ export function useOnePageGenerateStep({
   }
 
   return {
-    isGenerating:
-      isStartingGenerateStep ||
-      isAcceptingRecommendedDefaults ||
-      isAcceptingDraft ||
-      isSavingDraft ||
+    isGenerating: isStartingGenerateStep || isAcceptingRecommendedDefaults,
+    pendingDraftAction: getPendingTrainingPlanDraftAction({
+      isAcceptingDraft,
+      isDiscardingDraft,
       isResettingDraft,
+      isSavingDraft,
+    }),
     onAcceptDraft: async () => {
       const acceptedTrainingPlan = await acceptDraft();
 
@@ -285,6 +288,10 @@ export function useOnePageGenerateStep({
     },
     onResetDraft: async () => {
       await resetDraft();
+    },
+    onDiscardDraft: async () => {
+      onPendingDefaultResolutionChange(null);
+      await discardDraft({ timestamp: new Date().toISOString() });
     },
     onSaveDraftSetup: async (update: TrainingPlanDraftSetupUpdate) => {
       await saveDraft(update);
@@ -427,4 +434,30 @@ export function useOnePageGenerateStep({
       });
     },
   };
+}
+
+function getPendingTrainingPlanDraftAction({
+  isAcceptingDraft,
+  isDiscardingDraft,
+  isResettingDraft,
+  isSavingDraft,
+}: {
+  isAcceptingDraft: boolean;
+  isDiscardingDraft: boolean;
+  isResettingDraft: boolean;
+  isSavingDraft: boolean;
+}): PendingTrainingPlanDraftAction {
+  if (isAcceptingDraft) {
+    return "accept";
+  }
+
+  if (isDiscardingDraft) {
+    return "discard";
+  }
+
+  if (isResettingDraft) {
+    return "reset";
+  }
+
+  return isSavingDraft ? "save-setup" : null;
 }

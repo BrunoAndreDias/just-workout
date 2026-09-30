@@ -178,6 +178,121 @@ describe("buildTrainingHistoryWeekReport", () => {
     expect(report.summary.previousWeekVolumeReference).toBeNull();
   });
 
+  it("compares each done set with the Session Target it was logged against", () => {
+    const session = createTrainingSession({
+      completedAt: "2026-06-06T09:00:00.000Z",
+      id: "targeted",
+      templateLabel: "Upper A",
+      volumeByMovementPattern: [],
+    });
+    const report = buildTrainingHistoryWeekReport({
+      selectedWeekEndKey: null,
+      trainingPlan: createTrainingPlan(),
+      trainingSessions: [
+        {
+          ...session,
+          exercises: [
+            {
+              exerciseId: "bench",
+              exerciseName: "Flat Barbell Bench Press",
+              movementPattern: "horizontal_push",
+              sets: [
+                {
+                  done: true,
+                  reps: 8,
+                  rir: 3,
+                  setIndex: 1,
+                  target: { reps: 8, rir: 4, weight: 60 },
+                  weight: 60,
+                },
+                {
+                  done: true,
+                  reps: 6,
+                  rir: null,
+                  setIndex: 2,
+                  target: { reps: 8, rir: 4, weight: 60 },
+                  weight: 60,
+                },
+                // Skipped sets are not compared.
+                {
+                  done: false,
+                  reps: 8,
+                  rir: null,
+                  setIndex: 3,
+                  target: { reps: 8, rir: 4, weight: 60 },
+                  weight: 60,
+                },
+              ],
+            },
+            {
+              exerciseId: "crunch",
+              exerciseName: "Cable Crunches",
+              movementPattern: "core",
+              sets: [
+                {
+                  done: true,
+                  reps: 12,
+                  rir: 2,
+                  setIndex: 1,
+                  target: { reps: null, rir: 4, weight: null },
+                  weight: 30,
+                },
+              ],
+            },
+            {
+              // Legacy history has no stored target.
+              exerciseId: "row",
+              exerciseName: "Cable Row",
+              movementPattern: "horizontal_pull",
+              sets: [{ reps: 10, setIndex: 1, weight: 50 }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const sessionReport = report.selectedSessions[0];
+
+    expect(sessionReport?.targetSummary).toEqual({ hitCount: 1, targetCount: 2 });
+    expect(sessionReport?.targetComparisons).toEqual([
+      {
+        exerciseId: "bench",
+        exerciseName: "Flat Barbell Bench Press",
+        sets: [
+          {
+            actualLabel: "60 kg × 8 · 3 RIR",
+            outcome: "hit",
+            setIndex: 1,
+            targetLabel: "60 kg × 8 · 4 RIR",
+          },
+          {
+            actualLabel: "60 kg × 6",
+            outcome: "missed",
+            setIndex: 2,
+            targetLabel: "60 kg × 8 · 4 RIR",
+          },
+        ],
+      },
+      {
+        exerciseId: "crunch",
+        exerciseName: "Cable Crunches",
+        sets: [
+          {
+            actualLabel: "30 kg × 12 · 2 RIR",
+            outcome: null,
+            setIndex: 1,
+            targetLabel: "4 RIR",
+          },
+        ],
+      },
+      {
+        exerciseId: "row",
+        exerciseName: "Cable Row",
+        sets: [{ actualLabel: "50 kg × 10", outcome: null, setIndex: 1, targetLabel: null }],
+      },
+    ]);
+  });
+
   it("builds Movement Pattern comparison rows for increase, regression, same, new, and dropped states", () => {
     const trainingPlan = createTrainingPlan();
     const trainingSessions = createTrainingSessions();

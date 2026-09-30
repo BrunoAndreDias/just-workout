@@ -1,4 +1,5 @@
-import { type TrainingPlanDraft, trainingPlanService } from "../training-plan";
+import type { TrainingPlanDraft } from "../training-plan/training-plan";
+import { trainingPlanService } from "../training-plan/training-plan-service";
 import type { PlanBlueprint, PlanBlueprintDefaultResolution } from "./plan-blueprint";
 import { planBuilderService } from "./plan-builder-service";
 

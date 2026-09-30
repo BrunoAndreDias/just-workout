@@ -302,21 +302,6 @@ function TrainingSessionSetControls({
           type="number"
           value={row.reps}
         />
-        <label className="training-session-sr" htmlFor={`${row.inputId}-rir`}>
-          {row.exerciseName} set {row.setIndex} RIR
-        </label>
-        <input
-          aria-label={`${row.exerciseName} set ${row.setIndex} RIR`}
-          className="training-session-reps-input"
-          id={`${row.inputId}-rir`}
-          inputMode="numeric"
-          min="0"
-          onChange={(event) =>
-            onAction(changeTrainingSessionExecutionSetRir(row, event.target.value))
-          }
-          type="number"
-          value={row.rir}
-        />
         <label className="training-session-done">
           <input
             aria-label={row.doneLabel}
@@ -330,12 +315,109 @@ function TrainingSessionSetControls({
             <span className="training-session-done__mark" />
           </span>
         </label>
+        <TrainingSessionEffortChips onAction={onAction} row={row} />
       </div>
       <span className="training-session-set-cell__previous">
-        Prev <strong>{row.previousSetLabel}</strong> · Target RIR <strong>{row.targetRir}</strong>
+        Prev <strong>{row.previousSetLabel}</strong>
+        {row.aimLabel ? (
+          <>
+            {" "}
+            · <strong className="training-session-set-cell__aim">{row.aimLabel}</strong>
+          </>
+        ) : null}
       </span>
     </div>
   );
+}
+
+/** Effort chips store these RIR values; the last chip covers "this many or more". */
+const TRAINING_SESSION_EFFORT_CHIP_MAX = 5;
+const TRAINING_SESSION_EFFORT_CHIP_VALUES = [0, 1, 2, 3, 4, TRAINING_SESSION_EFFORT_CHIP_MAX];
+
+/**
+ * One-tap RIR capture: native radios (arrow keys move, Space selects) styled as chips.
+ * Tapping or pressing Space on the selected chip clears the set back to no RIR.
+ */
+function TrainingSessionEffortChips({
+  onAction,
+  row,
+}: {
+  onAction: (action: TrainingSessionExecutionAction) => void;
+  row: TrainingSessionExecutionSetRow;
+}) {
+  const selectedValue = getEffortChipValue(row.rir);
+  const targetValue = getEffortChipValue(row.targetRir);
+  const groupLabel = `${row.exerciseName} set ${row.setIndex} RIR`;
+
+  return (
+    <div aria-label={groupLabel} className="training-session-effort" role="radiogroup">
+      <span aria-hidden="true" className="training-session-effort__label">
+        RIR
+      </span>
+      {TRAINING_SESSION_EFFORT_CHIP_VALUES.map((value) => {
+        const isSelected = selectedValue === value;
+        const isTarget = targetValue === value;
+        const isMax = value === TRAINING_SESSION_EFFORT_CHIP_MAX;
+
+        return (
+          <label
+            className={[
+              "training-session-effort__chip",
+              isTarget ? "training-session-effort__chip--target" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            key={value}
+          >
+            <input
+              aria-label={getEffortChipAccessibleName({ isMax, isTarget, value })}
+              checked={isSelected}
+              name={`${row.inputId}-rir`}
+              onChange={() => onAction(changeTrainingSessionExecutionSetRir(row, String(value)))}
+              onClick={() => {
+                // Native radios do not fire change when re-selected, so a click on the already
+                // selected chip is the "clear" gesture.
+                if (isSelected) {
+                  onAction(changeTrainingSessionExecutionSetRir(row, ""));
+                }
+              }}
+              type="radio"
+              value={value}
+            />
+            <span aria-hidden="true">{isMax ? `${value}+` : value}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function getEffortChipAccessibleName({
+  isMax,
+  isTarget,
+  value,
+}: {
+  isMax: boolean;
+  isTarget: boolean;
+  value: number;
+}): string {
+  const amount = isMax ? `${value} or more reps` : `${value} ${value === 1 ? "rep" : "reps"}`;
+
+  return `${amount} in reserve${isTarget ? " (target)" : ""}`;
+}
+
+function getEffortChipValue(rir: string): number | null {
+  if (rir.trim() === "") {
+    return null;
+  }
+
+  const value = Number(rir);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return null;
+  }
+
+  return Math.min(Math.round(value), TRAINING_SESSION_EFFORT_CHIP_MAX);
 }
 
 function getTrainingSessionSetCellClassName(row: { done: boolean; isFuture: boolean }): string {

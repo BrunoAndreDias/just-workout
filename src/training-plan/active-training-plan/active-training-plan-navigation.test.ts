@@ -21,6 +21,7 @@ describe("Active Training Plan navigation", () => {
           status: "active",
           weekNumber: 1,
         },
+        trainingBlockWeeks: 6,
         trainingFrequencyDaysPerWeek: 3,
         trainingSessions: [
           {
@@ -70,6 +71,7 @@ describe("Active Training Plan navigation", () => {
           status: "active",
           weekNumber: 1,
         },
+        trainingBlockWeeks: 6,
         trainingFrequencyDaysPerWeek: 3,
         trainingSessions: [
           createCompletedTrainingSession({

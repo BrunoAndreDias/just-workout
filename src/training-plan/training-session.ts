@@ -5,6 +5,13 @@ import {
 } from "./completed-load-volume";
 import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 
+/** The Session Target shown for a set when it was logged; null parts were not suggested. */
+export type TrainingSessionSetTarget = {
+  reps: number | null;
+  rir: number | null;
+  weight: number | null;
+};
+
 export type TrainingSessionSetEntry = {
   /** False when a draft set was not completed; absent for legacy completed set entries. */
   done?: boolean;
@@ -12,6 +19,8 @@ export type TrainingSessionSetEntry = {
   /** Captured effort for newly completed sets; absent on legacy history. */
   rir?: number | null;
   setIndex: number;
+  /** Session Target shown while logging, kept so Training History can compare; absent on legacy history. */
+  target?: TrainingSessionSetTarget | null;
   weight: number;
 };
 

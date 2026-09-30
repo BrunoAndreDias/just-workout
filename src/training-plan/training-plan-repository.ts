@@ -1,13 +1,9 @@
 import { db } from "../app/local-database";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
+import { applyWeeklyBodyweightUpdate, updateTrainingSessionBodyweight } from "./session-bodyweight";
+import { withCurrentTrainingBlockWeek } from "./training-block";
 import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 import type { TrainingSession } from "./training-session";
-import {
-  getTrainingWeekRangeForReferenceDate,
-  isTrainingSessionInWeekRange,
-  updateTrainingSessionBodyweight,
-  upsertTrainingWeekBodyweightUpdate,
-} from "./training-week-bodyweight";
 
 type PersistedWorkoutTemplate = Omit<WorkoutTemplate, "purpose"> &
   Partial<Pick<WorkoutTemplate, "purpose">>;
@@ -48,19 +44,19 @@ type SeedTrainingPlanDataOptions = {
 export async function getTrainingPlan(trainingPlanId: string): Promise<TrainingPlan | null> {
   const trainingPlan = await db.trainingPlans.get(trainingPlanId);
 
-  return trainingPlan ? normalizeTrainingPlan(trainingPlan) : null;
+  return trainingPlan ? readTrainingPlan(trainingPlan) : null;
 }
 
 export async function getTrainingPlans(): Promise<ReadonlyArray<TrainingPlan>> {
   const trainingPlans = await db.trainingPlans.toArray();
 
-  return sortTrainingPlansByMostRecentlyUpdated(trainingPlans.map(normalizeTrainingPlan));
+  return sortTrainingPlansByMostRecentlyUpdated(trainingPlans.map(readTrainingPlan));
 }
 
 export async function getActiveTrainingPlans(): Promise<ReadonlyArray<TrainingPlan>> {
   const trainingPlans = await db.trainingPlans.filter((plan) => plan.active).toArray();
 
-  return sortTrainingPlansByMostRecentlyUpdated(trainingPlans.map(normalizeTrainingPlan));
+  return sortTrainingPlansByMostRecentlyUpdated(trainingPlans.map(readTrainingPlan));
 }
 
 export async function getTrainingSessionsForPlan(
@@ -235,45 +231,18 @@ export async function saveTrainingWeekBodyweight({
       throw new Error("Cannot save Training Week Bodyweight without a Training Plan.");
     }
 
-    const trainingPlan = normalizeTrainingPlan(persistedTrainingPlan);
-    const weekRange = getTrainingWeekRangeForReferenceDate({
-      referenceDate,
-      trainingPlan,
-    });
-    updatedTrainingPlan = normalizeTrainingPlan({
-      ...trainingPlan,
-      updatedAt: timestamp,
-      weeklyBodyweightUpdates: upsertTrainingWeekBodyweightUpdate({
-        bodyweight,
-        timestamp,
-        trainingPlan,
-        weekRange,
-      }),
-    });
-    await db.trainingPlans.put(updatedTrainingPlan);
-
     const trainingSessions = await db.trainingSessions.where("planId").equals(planId).toArray();
+    const weeklyUpdate = applyWeeklyBodyweightUpdate({
+      bodyweight,
+      referenceDate,
+      sessions: trainingSessions.map(normalizeTrainingSession),
+      timestamp,
+      trainingPlan: normalizeTrainingPlan(persistedTrainingPlan),
+    });
+    updatedTrainingPlan = normalizeTrainingPlan(weeklyUpdate.trainingPlan);
 
-    await Promise.all(
-      trainingSessions
-        .map(normalizeTrainingSession)
-        .filter(
-          (trainingSession) =>
-            isTrainingSessionInWeekRange({ trainingSession, weekRange }) &&
-            (trainingSession.sessionBodyweightSource === "baseline" ||
-              trainingSession.sessionBodyweightSource === "inherited_weekly"),
-        )
-        .map((trainingSession) =>
-          db.trainingSessions.put(
-            updateTrainingSessionBodyweight({
-              bodyweight,
-              source: "inherited_weekly",
-              timestamp,
-              trainingSession,
-            }),
-          ),
-        ),
-    );
+    await db.trainingPlans.put(updatedTrainingPlan);
+    await db.trainingSessions.bulkPut([...weeklyUpdate.changedSessions]);
   });
 
   if (!updatedTrainingPlan) {
@@ -370,6 +339,11 @@ function sortTrainingSessionsByMostRecentlyUpdated(
   return trainingSessions.sort((firstSession, secondSession) =>
     secondSession.updatedAt.localeCompare(firstSession.updatedAt),
   );
+}
+
+/** Read models always see the Training Block week that matches today. */
+function readTrainingPlan(trainingPlan: PersistedTrainingPlan): TrainingPlan {
+  return withCurrentTrainingBlockWeek(normalizeTrainingPlan(trainingPlan));
 }
 
 function normalizeTrainingPlan(trainingPlan: PersistedTrainingPlan): TrainingPlan {

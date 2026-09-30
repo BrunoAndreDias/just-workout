@@ -12,6 +12,11 @@ import type {
   TrainingHistorySessionExerciseReport,
   TrainingHistorySessionReport,
 } from "./training-history-week";
+import type {
+  TrainingSessionExerciseTargetComparison,
+  TrainingSessionSetTargetOutcome,
+  TrainingSessionTargetSummary,
+} from "./training-session-target-comparison";
 import "./completed-sessions-section.css";
 
 export function CompletedSessionsSection({
@@ -215,7 +220,73 @@ function CompletedSessionDetails({
           </tbody>
         </table>
       )}
+      {session.targetComparisons.length > 0 ? (
+        <CompletedSessionTargetComparisons
+          comparisons={session.targetComparisons}
+          sessionId={session.id}
+          summary={session.targetSummary}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function CompletedSessionTargetComparisons({
+  comparisons,
+  sessionId,
+  summary,
+}: {
+  comparisons: ReadonlyArray<TrainingSessionExerciseTargetComparison>;
+  sessionId: string;
+  summary: TrainingSessionTargetSummary;
+}) {
+  const titleId = `${sessionId}-targets-title`;
+
+  return (
+    <section aria-labelledby={titleId} className="training-history-targets">
+      <div className="training-history-targets__header">
+        <h3 id={titleId}>Session Targets vs actual</h3>
+        {summary.targetCount > 0 ? (
+          <p>
+            Hit {summary.hitCount} of {summary.targetCount} targets
+          </p>
+        ) : null}
+      </div>
+      {comparisons.map((exercise) => (
+        <div className="training-history-targets__exercise" key={exercise.exerciseId}>
+          <p className="training-history-targets__exercise-name">{exercise.exerciseName}</p>
+          <ol
+            aria-label={`${exercise.exerciseName} sets`}
+            className="training-history-targets__sets"
+          >
+            {exercise.sets.map((set) => (
+              <li className="training-history-targets__set" key={set.setIndex}>
+                <span className="training-history-targets__set-index">Set {set.setIndex}</span>
+                <span className="training-history-targets__actual">{set.actualLabel}</span>
+                {set.targetLabel ? (
+                  <span className="training-history-targets__target">Target {set.targetLabel}</span>
+                ) : null}
+                {set.outcome ? <CompletedSetTargetOutcome outcome={set.outcome} /> : null}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function CompletedSetTargetOutcome({
+  outcome,
+}: {
+  outcome: Exclude<TrainingSessionSetTargetOutcome, null>;
+}) {
+  return (
+    <span
+      className={`training-history-targets__outcome training-history-targets__outcome--${outcome}`}
+    >
+      {outcome === "hit" ? "Hit" : "Missed"}
+    </span>
   );
 }
 

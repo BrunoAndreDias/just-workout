@@ -12,6 +12,7 @@ import {
   type TrainingSplitDefinition,
   type TrainingSplitId,
 } from "../../training-split";
+import { getCompactWeeklyLayout } from "./training-frequency-weekly-layout";
 import "./training-frequency-step.css";
 import "./training-frequency-responsive.css";
 import "./training-frequency-compact-responsive.css";
@@ -27,6 +28,7 @@ type TrainingFrequencyStepProps = {
   onTrainingSplitChange: (split: TrainingSplitId) => void;
   selectedTrainingSplitId: TrainingSplitId | null;
   selectedTrainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek | null;
+  showWeeklyPreview?: boolean;
 };
 
 export function TrainingFrequencyStep({
@@ -34,6 +36,7 @@ export function TrainingFrequencyStep({
   onTrainingSplitChange,
   selectedTrainingSplitId,
   selectedTrainingFrequencyDaysPerWeek,
+  showWeeklyPreview = true,
 }: TrainingFrequencyStepProps) {
   const selectedFrequency = selectedTrainingFrequencyDaysPerWeek ?? 3;
   const recommendedSplit = getTrainingSplit(getRecommendedTrainingSplitId(selectedFrequency));
@@ -65,7 +68,9 @@ export function TrainingFrequencyStep({
         compatibleSplits={compatibleSplits}
         onTrainingSplitChange={onTrainingSplitChange}
         recommendedSplit={recommendedSplit}
+        selectedFrequency={selectedFrequency}
         selectedSplit={selectedSplit}
+        showWeeklyPreview={showWeeklyPreview}
       />
     </section>
   );
@@ -151,22 +156,20 @@ type TrainingFrequencyRecommendationCardProps = {
   compatibleSplits: ReadonlyArray<TrainingSplitDefinition>;
   onTrainingSplitChange: (split: TrainingSplitId) => void;
   recommendedSplit: TrainingSplitDefinition;
+  selectedFrequency: TrainingFrequencyDaysPerWeek;
   selectedSplit: TrainingSplitDefinition;
-};
-
-type CompactWeeklyLayoutDay = {
-  dayLabel: string;
-  isRestDay: boolean;
-  sessionLabel: string;
+  showWeeklyPreview: boolean;
 };
 
 function TrainingFrequencyRecommendationCard({
   compatibleSplits,
   onTrainingSplitChange,
   recommendedSplit,
+  selectedFrequency,
   selectedSplit,
+  showWeeklyPreview,
 }: TrainingFrequencyRecommendationCardProps) {
-  const weeklyLayout = getCompactWeeklyLayout(selectedSplit);
+  const weeklyLayout = getCompactWeeklyLayout(selectedSplit, selectedFrequency);
   const splitOptions = [recommendedSplit, ...compatibleSplits];
 
   return (
@@ -229,31 +232,34 @@ function TrainingFrequencyRecommendationCard({
         })}
       </div>
 
-      <div className="training-schedule-split__layout">
-        <h3>Weekly preview</h3>
-        <p className="training-schedule-split__layout-helper">
-          Training on Mon, Wed and Fri with recovery days between sessions.
-        </p>
-        <ol>
-          {weeklyLayout.map((layoutDay) => (
-            <li
-              className={cn(
-                "training-schedule-split__layout-day",
-                layoutDay.isRestDay ? "training-schedule-split__layout-day--rest" : null,
-              )}
-              key={`${layoutDay.dayLabel}-${layoutDay.sessionLabel}`}
-            >
-              <strong>{layoutDay.dayLabel}</strong>
-              {layoutDay.isRestDay ? (
-                <Bed aria-hidden="true" size={24} strokeWidth={1.65} />
-              ) : (
-                <Dumbbell aria-hidden="true" size={24} strokeWidth={1.8} />
-              )}
-              <span>{layoutDay.sessionLabel}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {showWeeklyPreview ? (
+        <div className="training-schedule-split__layout">
+          <h3>Weekly preview</h3>
+          <p className="training-schedule-split__layout-helper">{weeklyLayout.helperText}</p>
+          {weeklyLayout.cycleNote ? (
+            <p className="training-schedule-split__layout-helper">{weeklyLayout.cycleNote}</p>
+          ) : null}
+          <ol>
+            {weeklyLayout.days.map((layoutDay) => (
+              <li
+                className={cn(
+                  "training-schedule-split__layout-day",
+                  layoutDay.isRestDay ? "training-schedule-split__layout-day--rest" : null,
+                )}
+                key={`${layoutDay.dayLabel}-${layoutDay.sessionLabel}`}
+              >
+                <strong>{layoutDay.dayLabel}</strong>
+                {layoutDay.isRestDay ? (
+                  <Bed aria-hidden="true" size={24} strokeWidth={1.65} />
+                ) : (
+                  <Dumbbell aria-hidden="true" size={24} strokeWidth={1.8} />
+                )}
+                <span>{layoutDay.sessionLabel}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -268,33 +274,11 @@ function getSplitCardBenefits(split: TrainingSplitDefinition): ReadonlyArray<str
       return ["Mixed emphasis", "Slightly more complex", "Good variety across the week"];
     case "upper-lower-4-day":
       return ["Upper and lower focus", "Muscles trained 2x/week", "Manageable recovery"];
+    case "rotating-upper-lower":
+      return ["Upper/Lower A & B rotate", "Abs in every session", "Works for 3 or 5 days"];
     case "rotating-push-pull-legs":
       return ["Flexible training days", "Push, pull, legs variety", "Best with movable weekdays"];
     default:
       return ["Muscles trained 3x/week", "Simple progression", "Manageable recovery"];
   }
-}
-
-function getCompactWeeklyLayout(
-  split: TrainingSplitDefinition,
-): ReadonlyArray<CompactWeeklyLayoutDay> {
-  const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  if (split.schedule.kind === "rotating-cycle") {
-    const cycle = split.schedule.cycle;
-
-    return weekdayLabels.map((dayLabel, index) => ({
-      dayLabel,
-      isRestDay: !cycle[index],
-      sessionLabel: cycle[index]?.sessionLabel ?? "Rest",
-    }));
-  }
-
-  return split.schedule.week.map((session, index) => ({
-    dayLabel: weekdayLabels[index] ?? session.dayLabel,
-    isRestDay: session.sessionLabel.toLowerCase().includes("rest"),
-    sessionLabel: session.sessionLabel.toLowerCase().includes("rest")
-      ? "Rest"
-      : session.sessionLabel,
-  }));
 }

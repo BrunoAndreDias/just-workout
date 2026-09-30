@@ -11,13 +11,19 @@ export type DefaultExerciseSlotKey =
   | "abs_2"
   | "hip_hamstring_dominant"
   | "hip_hamstring_secondary"
+  | "horizontal_pull_variation"
   | "horizontal_push"
+  | "horizontal_push_variation"
+  | "lateral_raise"
   | "lower_isolation"
   | "lower_isolation_2"
   | "quad_dominant"
   | "quad_secondary"
+  | "quad_secondary_b"
+  | "rear_delt"
   | "upper_isolation_1"
   | "upper_isolation_2"
+  | "upper_isolation_b"
   | "upper_pull_1"
   | "upper_pull_2"
   | "vertical_push";
@@ -74,6 +80,21 @@ const defaultExerciseBySlot = {
     "Flat Barbell Bench Press",
     "Horizontal push",
   ),
+  horizontal_pull_variation: createDefaultExercise(
+    "seated-cable-rows",
+    "Seated Cable Rows",
+    "Horizontal pull",
+  ),
+  horizontal_push_variation: createDefaultExercise(
+    "incline-dumbbell-bench-press",
+    "Incline Dumbbell Bench Press",
+    "Horizontal push",
+  ),
+  lateral_raise: createDefaultExercise(
+    "dumbbell-lateral-raises",
+    "Dumbbell Lateral Raises",
+    "Shoulders",
+  ),
   lower_isolation: createDefaultExercise("leg-extensions", "Leg Extensions", "Lower isolation"),
   lower_isolation_2: createDefaultExercise(
     "standing-calf-raises",
@@ -82,12 +103,23 @@ const defaultExerciseBySlot = {
   ),
   quad_dominant: createDefaultExercise("barbell-squats", "Barbell Squats", "Quad dominant"),
   quad_secondary: createDefaultExercise("leg-press", "Leg Press", "Quad secondary"),
+  quad_secondary_b: createDefaultExercise(
+    "dumbbell-split-squats",
+    "Dumbbell Split Squats",
+    "Quad secondary",
+  ),
+  rear_delt: createDefaultExercise(
+    "dumbbell-rear-delt-flyes",
+    "Dumbbell Rear Delt Flyes",
+    "Rear delts",
+  ),
   upper_isolation_1: createDefaultExercise(
     "standing-barbell-curls",
     "Standing Barbell Curls",
     "Biceps",
   ),
   upper_isolation_2: createDefaultExercise("cable-press-downs", "Cable Press-Downs", "Triceps"),
+  upper_isolation_b: createDefaultExercise("hammer-curls", "Hammer Curls", "Biceps"),
   upper_pull_1: createDefaultExercise("pull-ups", "Pull-Ups", "Vertical pull"),
   upper_pull_2: createDefaultExercise(
     "bent-over-barbell-rows",

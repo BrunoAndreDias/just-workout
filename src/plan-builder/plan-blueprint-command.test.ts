@@ -8,6 +8,7 @@ import {
   projectPlanBlueprintCommand,
 } from "./plan-blueprint-command";
 import { getCurrentPlanBlueprint } from "./plan-builder-repository";
+import { planBuilderService } from "./plan-builder-service";
 
 describe("plan blueprint command", () => {
   beforeEach(async () => {
@@ -52,6 +53,40 @@ describe("plan blueprint command", () => {
     expect(projectedBlueprint).toEqual(resolvedBlueprint);
     expect(persistedBlueprint).toEqual(resolvedBlueprint);
     expect(await getCurrentPlanBlueprint()).toEqual(resolvedBlueprint);
+  });
+
+  it("discards the Training Plan Draft through the service so the builder can generate again", async () => {
+    const blueprint = await getOrCreatePlanBlueprint();
+    const draftBlueprint = createDraftBlueprint({
+      ...blueprint,
+      workoutTemplates: [
+        {
+          id: "template-1",
+          label: "Upper A",
+          purpose: "strength",
+          supersetGroups: [
+            createSupersetGroup({ exerciseId: "flat-barbell-bench-press", id: "group-1" }),
+          ],
+        },
+      ],
+    });
+
+    await persistPlanBlueprintCommand(
+      planBlueprintCommandBuilders.applyResolvedPlanBlueprint({ blueprint: draftBlueprint }),
+    );
+
+    const command = planBlueprintCommandBuilders.discardTrainingPlanDraft({
+      timestamp: "2026-05-30T10:40:00.000Z",
+    });
+    const projectedBlueprint = projectPlanBlueprintCommand({ blueprint: draftBlueprint, command });
+    const discardedBlueprint = await planBuilderService.discardTrainingPlanDraft({
+      timestamp: "2026-05-30T10:40:00.000Z",
+    });
+
+    expect(discardedBlueprint).toEqual(projectedBlueprint);
+    expect(discardedBlueprint.trainingPlanDraft).toBeNull();
+    expect(discardedBlueprint.confirmedBuilderSteps).toEqual(draftBlueprint.confirmedBuilderSteps);
+    expect(await getCurrentPlanBlueprint()).toMatchObject({ trainingPlanDraft: null });
   });
 
   it("uses the same draft Workout Template command for projection and persistence", async () => {

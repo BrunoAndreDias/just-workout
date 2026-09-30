@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { lazy, type ReactNode, Suspense, useState } from "react";
 import { isBodyweightLoadExercise } from "../bodyweight-load";
 import type {
   NextTrainingBlockLoadSuggestion,
@@ -13,17 +13,31 @@ import type {
 } from "../training-block";
 import {
   applyTrainingBlockExerciseSwapToPreview,
+  generateWeeklyIntensityTargets,
   getTrainingBlockExerciseSwapAffectedSlotCount,
   getTrainingBlockExerciseSwapChoices,
 } from "../training-block";
 import type { TrainingSession } from "../training-session";
-import {
-  shouldShowTrainingBlockTransitionPrototype,
-  TrainingBlockTransitionPrototype,
-} from "./prototype-training-block-transition";
 import { TrainingBlockExerciseSwap } from "./training-block-exercise-swap";
 import type { ActiveTrainingPlanWeekProgressReadModel } from "./training-week-progress-read-model";
 import "./training-block-progress.css";
+
+// Dev-only prototype: loaded on demand so production bundles skip its code and CSS.
+const TrainingBlockTransitionPrototype = import.meta.env.DEV
+  ? lazy(() =>
+      import("./prototype-training-block-transition").then((module) => ({
+        default: module.TrainingBlockTransitionPrototype,
+      })),
+    )
+  : null;
+
+function shouldShowTrainingBlockTransitionPrototype(): boolean {
+  return (
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("variant")
+  );
+}
 
 type ReviewTrainingBlockTransitionWorkflow = Extract<
   NextTrainingBlockTransitionWorkflow,
@@ -36,6 +50,8 @@ type AcceptedTrainingBlockTransitionWorkflow = Extract<
 type TrainingBlockReviewMode = "accept_proposal" | "skip_rotation";
 
 export function TrainingBlockProgress({
+  blockCompletedSessions,
+  blockPlannedSessions,
   blockProgressPercent,
   blockWeek,
   cycleNumber = 1,
@@ -45,6 +61,8 @@ export function TrainingBlockProgress({
   trainingWeekProgress,
   trainingBlockWeeks,
 }: {
+  blockCompletedSessions: number;
+  blockPlannedSessions: number;
   blockProgressPercent: number;
   blockWeek: number;
   cycleNumber?: number;
@@ -62,15 +80,18 @@ export function TrainingBlockProgress({
 
   if (
     nextTrainingBlockTransition?.kind === "review" &&
+    TrainingBlockTransitionPrototype &&
     shouldShowTrainingBlockTransitionPrototype()
   ) {
     return (
-      <TrainingBlockTransitionPrototype
-        blockWeek={blockWeek}
-        cycleNumber={cycleNumber}
-        trainingBlockWeeks={trainingBlockWeeks}
-        transition={nextTrainingBlockTransition}
-      />
+      <Suspense fallback={null}>
+        <TrainingBlockTransitionPrototype
+          blockWeek={blockWeek}
+          cycleNumber={cycleNumber}
+          trainingBlockWeeks={trainingBlockWeeks}
+          transition={nextTrainingBlockTransition}
+        />
+      </Suspense>
     );
   }
 
@@ -82,18 +103,22 @@ export function TrainingBlockProgress({
       </p>
       <p>Current focus: {getTrainingBlockFocus(blockWeek, trainingBlockWeeks)}</p>
       <p>{getRotationStatusLabel({ isNextBlockReady, weeksUntilRotation })}</p>
+      <TrainingBlockEffortRamp blockWeek={blockWeek} trainingBlockWeeks={trainingBlockWeeks} />
       <div className="active-training-plan-progress__row">
         <div
           className="active-training-plan-progress__track"
-          aria-label={`Block progress ${blockProgressPercent}%`}
+          aria-label="Block progress"
           aria-valuemax={100}
           aria-valuemin={0}
           aria-valuenow={blockProgressPercent}
+          aria-valuetext={`${blockCompletedSessions} of ${blockPlannedSessions} sessions (${blockProgressPercent}%)`}
           role="progressbar"
         >
           <span style={{ width: `${blockProgressPercent}%` }} />
         </div>
-        <span>{blockProgressPercent}%</span>
+        <span>
+          {blockCompletedSessions} / {blockPlannedSessions} sessions · {blockProgressPercent}%
+        </span>
       </div>
       <p className="active-training-plan-progress__helper">
         After week 6, Just Workout can review the next Training Block, rotate exercises, and prefill
@@ -110,6 +135,35 @@ export function TrainingBlockProgress({
         transition={nextTrainingBlockTransition}
       />
     </section>
+  );
+}
+
+function TrainingBlockEffortRamp({
+  blockWeek,
+  trainingBlockWeeks,
+}: {
+  blockWeek: number;
+  trainingBlockWeeks: number;
+}) {
+  return (
+    <ol aria-label="Weekly effort targets" className="active-training-plan-progress__ramp">
+      {generateWeeklyIntensityTargets({ trainingBlockWeeks }).map((target) => (
+        <li
+          aria-current={target.weekNumber === blockWeek ? "step" : undefined}
+          className={
+            target.weekNumber === blockWeek
+              ? "active-training-plan-progress__ramp-week active-training-plan-progress__ramp-week--current"
+              : target.weekNumber < blockWeek
+                ? "active-training-plan-progress__ramp-week active-training-plan-progress__ramp-week--done"
+                : "active-training-plan-progress__ramp-week"
+          }
+          key={target.weekNumber}
+        >
+          <span>W{target.weekNumber}</span>
+          <strong>{formatWeeklyTargetRir(target.minTargetRir, target.maxTargetRir)}</strong>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -838,28 +892,28 @@ function mergeEditedLoadSuggestions({
 function formatWeeklyTargetRir(minTargetRir: number, maxTargetRir: number): string {
   return minTargetRir === maxTargetRir
     ? `${minTargetRir} RIR`
-    : `${maxTargetRir}-${minTargetRir} RIR`;
-}
-
-export function getCurrentBlockWeek({
-  trainingBlock,
-}: {
-  trainingBlock?: { weekNumber: number };
-}): number {
-  return trainingBlock?.weekNumber ?? 2;
+    : `${minTargetRir}-${maxTargetRir} RIR`;
 }
 
 export function getBlockProgressPercent({
-  blockWeek,
-  trainingBlockWeeks,
+  completedSessions,
+  plannedSessions,
 }: {
-  blockWeek: number;
-  trainingBlockWeeks: number;
+  completedSessions: number;
+  plannedSessions: number;
 }): number {
-  return Math.round((blockWeek / trainingBlockWeeks) * 100);
+  if (plannedSessions <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.round((completedSessions / plannedSessions) * 100), 100);
 }
 
 function getTrainingBlockFocus(blockWeek: number, trainingBlockWeeks: number): string {
+  if (blockWeek <= 1) {
+    return "easy week, 4-5 reps in reserve";
+  }
+
   if (blockWeek <= 2) {
     return "building consistency";
   }

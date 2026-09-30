@@ -3,12 +3,14 @@ import { useRouterState } from "@tanstack/react-router";
 import { CheckCircle2, Save } from "lucide-react";
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from "react";
 import { parsePositiveBodyweight } from "./bodyweight-input";
-import { hasBodyweightLoadExercise } from "./bodyweight-load";
-import type {
-  TrainingPlan,
-  TrainingPlanStartingLoadSuggestion,
-  WorkoutTemplate,
-} from "./training-plan";
+import {
+  completeSessionBodyweightField,
+  describeBodyweightSource,
+  editSessionBodyweightField,
+  initSessionBodyweightField,
+  type SessionBodyweightField,
+} from "./session-bodyweight";
+import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 import { parseTrainingSessionStartIntentSearch } from "./training-plan-paths";
 import {
   trainingPlanQueryOptions,
@@ -20,10 +22,15 @@ import { useTrainingPlanAndSessions } from "./training-plan-session-queries";
 import type {
   TrainingSession,
   TrainingSessionBodyweight,
-  TrainingSessionBodyweightSource,
   TrainingSessionExerciseEntry,
   TrainingSessionIntent,
 } from "./training-session";
+import {
+  clearTrainingSessionDraft,
+  getTrainingSessionDraftStorageKey,
+  loadTrainingSessionDraft,
+  saveTrainingSessionDraft,
+} from "./training-session-draft-storage";
 import {
   applyTrainingSessionExecutionAction,
   createEmptyTrainingSessionExecutionState,
@@ -44,7 +51,6 @@ import {
   parseTrainingSessionRoutePathname,
 } from "./training-session-route-read-model";
 import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
-import { resolveTrainingWeekBodyweight } from "./training-week-bodyweight";
 import "./training-plan-loading.css";
 import "./training-session-route.css";
 
@@ -59,13 +65,7 @@ export function TrainingSessionRoute() {
     trainingPlanQuery,
     workoutTemplate,
   } = useTrainingSessionData(routeParams);
-  const [executionState, setExecutionState] = useState<TrainingSessionExecutionState>(() =>
-    createEmptyTrainingSessionExecutionState(),
-  );
   const [completedSession, setCompletedSession] = useState<TrainingSession | null>(null);
-  const [dismissedPrefillExerciseIds, setDismissedPrefillExerciseIds] = useState<
-    ReadonlyArray<string>
-  >([]);
   const bodyweightState = useTrainingSessionBodyweight({
     trainingPlan,
     workoutTemplate,
@@ -75,26 +75,26 @@ export function TrainingSessionRoute() {
     trainingPlan,
     workoutTemplate,
   });
+  const execution = useTrainingSessionExecution({
+    completedSession,
+    isReady: sessionHistoryReady,
+    routeParams,
+    startingLoadPrefills,
+    workoutTemplate,
+  });
   const executionReadModel = useTrainingSessionReadModel({
     completedSession,
+    loadPrefills: startingLoadPrefills,
     previousTrainingSessions,
     sessionBodyweight: bodyweightState.sessionBodyweight,
-    state: executionState,
-    trainingBlockWeekNumber: trainingPlan?.trainingBlock?.weekNumber ?? null,
-    trainingBlockWeeks: trainingPlan?.trainingBlockWeeks ?? 6,
+    state: execution.executionState,
+    trainingPlan,
     workoutTemplate,
   });
   const completeSession = useCompleteTrainingSession({
     onCompletedSession: setCompletedSession,
     routeParams,
     sessionIntent,
-    workoutTemplate,
-  });
-
-  useInitializeTrainingSessionExecutionState({
-    isReady: sessionHistoryReady,
-    setExecutionState,
-    startingLoadSuggestions: startingLoadPrefills,
     workoutTemplate,
   });
 
@@ -106,32 +106,80 @@ export function TrainingSessionRoute() {
     return <TrainingSessionShell>Training Session not found.</TrainingSessionShell>;
   }
 
-  const activeExecutionReadModel = executionReadModel;
-  const activeLoadPrefills = completedSession
-    ? []
-    : startingLoadPrefills.filter(
-        (prefill) => !dismissedPrefillExerciseIds.includes(prefill.exerciseId),
-      );
-  const activeWorkoutTemplate = workoutTemplate;
-
   async function handleCompleteSession() {
     const completionInput = bodyweightState.getCompletionInput();
 
-    if (!completionInput) {
+    if (completionInput && executionReadModel) {
+      await completeSession.mutateAsync({
+        entries: executionReadModel.entries,
+        ...completionInput,
+      });
+    }
+  }
+
+  return (
+    <TrainingSessionPageContent
+      completedSession={completedSession}
+      executionReadModel={executionReadModel}
+      isCompleteSessionPending={completeSession.isPending}
+      loadPrefills={execution.activeLoadPrefills}
+      sessionTargets={execution.sessionTargets}
+      trainingPlan={trainingPlan}
+      onCompleteSession={handleCompleteSession}
+      onExecutionAction={execution.onExecutionAction}
+      bodyweightState={bodyweightState}
+      sessionIntent={sessionIntent}
+      workoutTemplate={workoutTemplate}
+    />
+  );
+}
+
+function useTrainingSessionExecution({
+  completedSession,
+  isReady,
+  routeParams,
+  startingLoadPrefills,
+  workoutTemplate,
+}: {
+  completedSession: TrainingSession | null;
+  isReady: boolean;
+  routeParams: { planId: string; templateId: string } | null;
+  startingLoadPrefills: ReadonlyArray<TrainingSessionLoadPrefill>;
+  workoutTemplate: WorkoutTemplate | null;
+}) {
+  const [executionState, setExecutionState] = useState<TrainingSessionExecutionState>(() =>
+    createEmptyTrainingSessionExecutionState(),
+  );
+  const [dismissedPrefillExerciseIds, setDismissedPrefillExerciseIds] = useState<
+    ReadonlyArray<string>
+  >([]);
+  const draftStorageKey =
+    routeParams && workoutTemplate
+      ? getTrainingSessionDraftStorageKey({
+          planId: routeParams.planId,
+          templateId: workoutTemplate.id,
+        })
+      : null;
+
+  useInitializeTrainingSessionExecutionState({
+    draftStorageKey,
+    isReady,
+    setExecutionState,
+    startingLoadSuggestions: startingLoadPrefills,
+    workoutTemplate,
+  });
+  usePersistTrainingSessionDraft({
+    completedSession,
+    draftStorageKey,
+    executionState,
+  });
+
+  function onExecutionAction(action: TrainingSessionExecutionAction) {
+    if (!workoutTemplate) {
       return;
     }
 
-    await completeSession.mutateAsync({
-      entries: activeExecutionReadModel.entries,
-      ...completionInput,
-    });
-  }
-
-  function handleExecutionAction(action: TrainingSessionExecutionAction) {
-    const exerciseId = getTrainingSessionExecutionActionExerciseId({
-      action,
-      workoutTemplate: activeWorkoutTemplate,
-    });
+    const exerciseId = getTrainingSessionExecutionActionExerciseId({ action, workoutTemplate });
 
     if (exerciseId) {
       setDismissedPrefillExerciseIds((currentExerciseIds) =>
@@ -142,27 +190,20 @@ export function TrainingSessionRoute() {
     }
 
     setExecutionState((currentState) =>
-      applyTrainingSessionExecutionAction({
-        action,
-        state: currentState,
-        workoutTemplate: activeWorkoutTemplate,
-      }),
+      applyTrainingSessionExecutionAction({ action, state: currentState, workoutTemplate }),
     );
   }
 
-  return (
-    <TrainingSessionPageContent
-      completedSession={completedSession}
-      executionReadModel={activeExecutionReadModel}
-      isCompleteSessionPending={completeSession.isPending}
-      loadPrefills={activeLoadPrefills}
-      onCompleteSession={handleCompleteSession}
-      onExecutionAction={handleExecutionAction}
-      bodyweightState={bodyweightState}
-      sessionIntent={sessionIntent}
-      workoutTemplate={activeWorkoutTemplate}
-    />
-  );
+  return {
+    activeLoadPrefills: completedSession
+      ? []
+      : startingLoadPrefills.filter(
+          (prefill) => !dismissedPrefillExerciseIds.includes(prefill.exerciseId),
+        ),
+    executionState,
+    onExecutionAction,
+    sessionTargets: completedSession ? [] : startingLoadPrefills,
+  };
 }
 
 function TrainingSessionPageContent({
@@ -174,6 +215,8 @@ function TrainingSessionPageContent({
   onCompleteSession,
   onExecutionAction,
   sessionIntent,
+  sessionTargets,
+  trainingPlan,
   workoutTemplate,
 }: {
   bodyweightState: TrainingSessionBodyweightState;
@@ -184,6 +227,8 @@ function TrainingSessionPageContent({
   onCompleteSession: () => Promise<void>;
   onExecutionAction: (action: TrainingSessionExecutionAction) => void;
   sessionIntent: TrainingSessionIntent;
+  sessionTargets: ReadonlyArray<TrainingSessionLoadPrefill>;
+  trainingPlan: TrainingPlan;
   workoutTemplate: WorkoutTemplate;
 }) {
   return (
@@ -191,22 +236,14 @@ function TrainingSessionPageContent({
       <h1 className="training-session-sr">
         {workoutTemplate.label} {sessionIntent === "extra" ? "extra session" : "session"}
       </h1>
-      {completedSession ? (
-        <section className="training-session-complete" aria-labelledby="session-complete-title">
-          <CheckCircle2 aria-hidden="true" />
-          <div>
-            <h2 id="session-complete-title">
-              {sessionIntent === "extra" ? "Extra Training Session completed" : "Session completed"}
-            </h2>
-            <p>
-              The {sessionIntent === "extra" ? "Extra Training Session" : "Training Session"} was
-              stored with movement-pattern volume.
-            </p>
-          </div>
-        </section>
-      ) : null}
+      {completedSession ? <TrainingSessionCompletedNotice sessionIntent={sessionIntent} /> : null}
       <TrainingSessionBodyweightPanel bodyweightState={bodyweightState} />
       <TrainingSessionPrefillNotes loadPrefills={loadPrefills} />
+      <TrainingSessionTargets
+        sessionTargets={sessionTargets}
+        trainingBlockWeekNumber={trainingPlan.trainingBlock?.weekNumber ?? null}
+        trainingBlockWeeks={trainingPlan.trainingBlockWeeks}
+      />
 
       <div className="training-session-work">
         {executionReadModel.groups.map((group) => (
@@ -214,37 +251,79 @@ function TrainingSessionPageContent({
         ))}
       </div>
 
-      <footer className="training-session-footer">
-        <span>
-          {executionReadModel.completedSetCount}/{executionReadModel.plannedSetCount} planned sets
-          completed
-        </span>
-        {executionReadModel.volumeByMovementPattern.length > 0 ? (
-          <div className="training-session-volume-inline">
-            {executionReadModel.volumeByMovementPattern.map((row) => (
-              <span key={row.movementPattern}>
-                {row.movementPatternLabel}{" "}
-                <strong className="training-session-volume-inline__value">{row.volume} kg</strong>
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {executionReadModel.hasPartialVolume ? (
-          <span>Partial volume until Session Bodyweight is set.</span>
-        ) : null}
-        <button
-          className="training-session-complete-button"
-          disabled={isCompleteSessionPending || completedSession !== null}
-          onClick={() => {
-            void onCompleteSession();
-          }}
-          type="button"
-        >
-          <Save aria-hidden="true" />
-          <span>{completedSession ? "Session stored" : "Complete session"}</span>
-        </button>
-      </footer>
+      <TrainingSessionFooter
+        executionReadModel={executionReadModel}
+        isCompleteSessionPending={isCompleteSessionPending}
+        isSessionStored={completedSession !== null}
+        onCompleteSession={onCompleteSession}
+      />
     </section>
+  );
+}
+
+function TrainingSessionCompletedNotice({
+  sessionIntent,
+}: {
+  sessionIntent: TrainingSessionIntent;
+}) {
+  return (
+    <section className="training-session-complete" aria-labelledby="session-complete-title">
+      <CheckCircle2 aria-hidden="true" />
+      <div>
+        <h2 id="session-complete-title">
+          {sessionIntent === "extra" ? "Extra Training Session completed" : "Session completed"}
+        </h2>
+        <p>
+          The {sessionIntent === "extra" ? "Extra Training Session" : "Training Session"} was stored
+          with movement-pattern volume.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function TrainingSessionFooter({
+  executionReadModel,
+  isCompleteSessionPending,
+  isSessionStored,
+  onCompleteSession,
+}: {
+  executionReadModel: NonNullable<ReturnType<typeof useTrainingSessionReadModel>>;
+  isCompleteSessionPending: boolean;
+  isSessionStored: boolean;
+  onCompleteSession: () => Promise<void>;
+}) {
+  return (
+    <footer className="training-session-footer">
+      <span>
+        {executionReadModel.completedSetCount}/{executionReadModel.plannedSetCount} planned sets
+        completed
+      </span>
+      {executionReadModel.volumeByMovementPattern.length > 0 ? (
+        <div className="training-session-volume-inline">
+          {executionReadModel.volumeByMovementPattern.map((row) => (
+            <span key={row.movementPattern}>
+              {row.movementPatternLabel}{" "}
+              <strong className="training-session-volume-inline__value">{row.volume} kg</strong>
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {executionReadModel.hasPartialVolume ? (
+        <span>Partial volume until Session Bodyweight is set.</span>
+      ) : null}
+      <button
+        className="training-session-complete-button"
+        disabled={isCompleteSessionPending || isSessionStored}
+        onClick={() => {
+          void onCompleteSession();
+        }}
+        type="button"
+      >
+        <Save aria-hidden="true" />
+        <span>{isSessionStored ? "Session stored" : "Complete session"}</span>
+      </button>
+    </footer>
   );
 }
 
@@ -270,6 +349,58 @@ function TrainingSessionPrefillNotes({
   );
 }
 
+function TrainingSessionTargets({
+  sessionTargets,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
+}: {
+  sessionTargets: ReadonlyArray<TrainingSessionLoadPrefill>;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
+}) {
+  if (sessionTargets.length === 0) {
+    return null;
+  }
+
+  const weekNumber = trainingBlockWeekNumber ?? 1;
+
+  return (
+    <details className="training-session-targets">
+      <summary>
+        <span>
+          Week {weekNumber} of {trainingBlockWeeks}
+        </span>
+        <strong>{getTrainingWeekEffortCopy(weekNumber, trainingBlockWeeks)}</strong>
+        <small>Why these targets?</small>
+      </summary>
+      <ul aria-label="Session targets">
+        {sessionTargets.map((target) => (
+          <li key={target.exerciseId}>
+            <strong>{target.exerciseName}</strong>
+            <span>{target.progressionNote}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="training-session-targets__hint">
+        Tap the RIR chip (reps left in the tank) on each set; the dashed chip is this week's target.
+        Logging real effort makes next time's rep and load targets smarter.
+      </p>
+    </details>
+  );
+}
+
+function getTrainingWeekEffortCopy(weekNumber: number, trainingBlockWeeks: number): string {
+  if (weekNumber <= 1) {
+    return "Easy week: stop with 4-5 reps left in the tank.";
+  }
+
+  if (weekNumber >= trainingBlockWeeks) {
+    return "Peak week: 1 RIR on compounds, isolations to failure (0 RIR).";
+  }
+
+  return "Effort builds each week toward 1 RIR in the final week.";
+}
+
 function TrainingSessionShell({ children }: { children: string }) {
   return (
     <section className="training-session-page" aria-label="Training Session">
@@ -283,23 +414,23 @@ function useTrainingSessionRouteParams(): {
   requestedIntent: "extra" | null;
   templateId: string;
 } | null {
-  const location = useRouterState({
-    select: (state) => ({
-      pathname: state.location.pathname,
-      searchStr: state.location.searchStr,
-    }),
-  });
+  // Select primitives so the parsed params keep a stable identity across renders and don't
+  // invalidate the memos and effects that depend on them.
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const searchStr = useRouterState({ select: (state) => state.location.searchStr });
 
-  const params = parseTrainingSessionRoutePathname(location.pathname);
+  return useMemo(() => {
+    const params = parseTrainingSessionRoutePathname(pathname);
 
-  if (!params) {
-    return null;
-  }
+    if (!params) {
+      return null;
+    }
 
-  return {
-    ...params,
-    requestedIntent: parseTrainingSessionStartIntentSearch(location.searchStr),
-  };
+    return {
+      ...params,
+      requestedIntent: parseTrainingSessionStartIntentSearch(searchStr),
+    };
+  }, [pathname, searchStr]);
 }
 
 function useTrainingSessionData(
@@ -348,41 +479,42 @@ function useTrainingSessionData(
 
 function useTrainingSessionReadModel({
   completedSession,
+  loadPrefills,
   previousTrainingSessions,
   sessionBodyweight,
   state,
-  trainingBlockWeekNumber,
-  trainingBlockWeeks,
+  trainingPlan,
   workoutTemplate,
 }: {
   completedSession: TrainingSession | null;
+  loadPrefills: ReadonlyArray<TrainingSessionLoadPrefill>;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   sessionBodyweight: number | null;
   state: TrainingSessionExecutionState;
-  trainingBlockWeekNumber: number | null;
-  trainingBlockWeeks: number;
+  trainingPlan: TrainingPlan | null | undefined;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   return useMemo(
     () =>
-      workoutTemplate
+      trainingPlan && workoutTemplate
         ? createTrainingSessionExecutionReadModel({
             completedSession,
+            loadPrefills,
             previousTrainingSessions,
             sessionBodyweight,
             state,
-            trainingBlockWeekNumber,
-            trainingBlockWeeks,
+            trainingBlockWeekNumber: trainingPlan.trainingBlock?.weekNumber ?? null,
+            trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
             workoutTemplate,
           })
         : null,
     [
       completedSession,
+      loadPrefills,
       previousTrainingSessions,
       sessionBodyweight,
       state,
-      trainingBlockWeekNumber,
-      trainingBlockWeeks,
+      trainingPlan,
       workoutTemplate,
     ],
   );
@@ -478,15 +610,42 @@ function useCompleteTrainingSession({
   });
 }
 
+function usePersistTrainingSessionDraft({
+  completedSession,
+  draftStorageKey,
+  executionState,
+}: {
+  completedSession: TrainingSession | null;
+  draftStorageKey: string | null;
+  executionState: TrainingSessionExecutionState;
+}) {
+  useEffect(() => {
+    if (!draftStorageKey) {
+      return;
+    }
+
+    if (completedSession) {
+      clearTrainingSessionDraft(draftStorageKey);
+      return;
+    }
+
+    if (hasTrainingSessionExecutionDrafts(executionState)) {
+      saveTrainingSessionDraft(draftStorageKey, executionState);
+    }
+  }, [completedSession, draftStorageKey, executionState]);
+}
+
 function useInitializeTrainingSessionExecutionState({
+  draftStorageKey,
   isReady,
   setExecutionState,
   startingLoadSuggestions,
   workoutTemplate,
 }: {
+  draftStorageKey: string | null;
   isReady: boolean;
   setExecutionState: Dispatch<SetStateAction<TrainingSessionExecutionState>>;
-  startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+  startingLoadSuggestions: ReadonlyArray<TrainingSessionLoadPrefill>;
   workoutTemplate: WorkoutTemplate | null;
 }) {
   useEffect(() => {
@@ -494,27 +653,27 @@ function useInitializeTrainingSessionExecutionState({
       return;
     }
 
-    setExecutionState((currentState) =>
-      hasTrainingSessionExecutionDrafts(currentState)
-        ? currentState
-        : createInitialTrainingSessionExecutionState({
-            startingLoadSuggestions,
-            workoutTemplate,
-          }),
-    );
-  }, [isReady, setExecutionState, startingLoadSuggestions, workoutTemplate]);
+    setExecutionState((currentState) => {
+      if (hasTrainingSessionExecutionDrafts(currentState)) {
+        return currentState;
+      }
+
+      return (
+        (draftStorageKey ? loadTrainingSessionDraft(draftStorageKey) : null) ??
+        createInitialTrainingSessionExecutionState({
+          startingLoadSuggestions,
+          workoutTemplate,
+        })
+      );
+    });
+  }, [draftStorageKey, isReady, setExecutionState, startingLoadSuggestions, workoutTemplate]);
 }
 
 type TrainingSessionBodyweightState = {
-  error: string | null;
-  getCompletionInput: () => {
-    sessionBodyweight: TrainingSessionBodyweight | null;
-  } | null;
-  input: string;
+  field: SessionBodyweightField;
+  getCompletionInput: () => { sessionBodyweight: TrainingSessionBodyweight | null } | null;
   onInputChange: (value: string) => void;
-  requiresSessionBodyweight: boolean;
   sessionBodyweight: number | null;
-  sourceLabel: string;
 };
 
 function useTrainingSessionBodyweight({
@@ -524,68 +683,31 @@ function useTrainingSessionBodyweight({
   trainingPlan: TrainingPlan | null | undefined;
   workoutTemplate: WorkoutTemplate | null;
 }): TrainingSessionBodyweightState {
-  const [sessionBodyweightInput, setSessionBodyweightInput] = useState("");
-  const [sessionBodyweightSource, setSessionBodyweightSource] =
-    useState<TrainingSessionBodyweightSource | null>(null);
-  const [sessionBodyweightError, setSessionBodyweightError] = useState<string | null>(null);
-  const resolvedTrainingWeekBodyweight =
-    trainingPlan && workoutTemplate
-      ? resolveTrainingWeekBodyweight({
-          referenceDate: new Date().toISOString(),
-          trainingPlan,
-        })
-      : null;
-  const requiresSessionBodyweight = workoutTemplate
-    ? hasWorkoutTemplateBodyweightExercises(workoutTemplate)
-    : false;
-  const sessionBodyweight = parsePositiveBodyweight(sessionBodyweightInput);
+  const initialField = initSessionBodyweightField({
+    referenceDate: new Date().toISOString(),
+    trainingPlan,
+    workoutTemplate,
+  });
+  const [field, setField] = useState(initialField);
 
+  // Re-seed the field whenever the resolved default changes (e.g. once the plan has loaded).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the resolved default values.
   useEffect(() => {
-    if (!requiresSessionBodyweight) {
-      setSessionBodyweightInput("");
-      setSessionBodyweightSource(null);
-      setSessionBodyweightError(null);
-      return;
-    }
-
-    setSessionBodyweightInput(resolvedTrainingWeekBodyweight?.bodyweight?.toString() ?? "");
-    setSessionBodyweightSource(resolvedTrainingWeekBodyweight?.source ?? null);
-    setSessionBodyweightError(null);
-  }, [
-    requiresSessionBodyweight,
-    resolvedTrainingWeekBodyweight?.bodyweight,
-    resolvedTrainingWeekBodyweight?.source,
-  ]);
+    setField(initialField);
+  }, [initialField.input, initialField.required, initialField.source]);
 
   return {
-    error: sessionBodyweightError,
+    field,
     getCompletionInput: () => {
-      if (requiresSessionBodyweight && sessionBodyweight === null) {
-        setSessionBodyweightError("Session Bodyweight is required to complete bodyweight volume.");
-        return null;
-      }
+      const completion = completeSessionBodyweightField(field);
 
-      setSessionBodyweightError(null);
+      setField(completion.field);
 
-      return {
-        sessionBodyweight:
-          requiresSessionBodyweight && sessionBodyweight !== null
-            ? {
-                bodyweight: sessionBodyweight,
-                source: sessionBodyweightSource ?? "session_override",
-              }
-            : null,
-      };
+      return completion.ok ? { sessionBodyweight: completion.sessionBodyweight } : null;
     },
-    input: sessionBodyweightInput,
-    onInputChange: (value) => {
-      setSessionBodyweightError(null);
-      setSessionBodyweightInput(value);
-      setSessionBodyweightSource("session_override");
-    },
-    requiresSessionBodyweight,
-    sessionBodyweight,
-    sourceLabel: getSessionBodyweightSourceLabel(sessionBodyweightSource),
+    onInputChange: (value) =>
+      setField((currentField) => editSessionBodyweightField(currentField, value)),
+    sessionBodyweight: parsePositiveBodyweight(field.input),
   };
 }
 
@@ -594,7 +716,9 @@ function TrainingSessionBodyweightPanel({
 }: {
   bodyweightState: TrainingSessionBodyweightState;
 }) {
-  if (!bodyweightState.requiresSessionBodyweight) {
+  const { field } = bodyweightState;
+
+  if (!field.required) {
     return null;
   }
 
@@ -613,29 +737,18 @@ function TrainingSessionBodyweightPanel({
             min="0"
             onChange={(event) => bodyweightState.onInputChange(event.target.value)}
             type="number"
-            value={bodyweightState.input}
+            value={field.input}
           />
           <span>kg</span>
         </div>
-        <small>{bodyweightState.sourceLabel}</small>
-        {bodyweightState.error ? (
+        <small>{describeBodyweightSource(field.source, "session")}</small>
+        {field.error ? (
           <strong className="training-session-bodyweight__error" role="alert">
-            {bodyweightState.error}
+            {field.error}
           </strong>
         ) : null}
       </label>
     </section>
-  );
-}
-
-function hasWorkoutTemplateBodyweightExercises(workoutTemplate: WorkoutTemplate): boolean {
-  return hasBodyweightLoadExercise(
-    workoutTemplate.supersetGroups.flatMap((group) =>
-      group.slots.map((slot) => ({
-        exerciseId: slot.exerciseId,
-        exerciseName: slot.exerciseName,
-      })),
-    ),
   );
 }
 
@@ -654,21 +767,4 @@ function getTrainingSessionWorkoutTemplate({
     templateId: routeParams?.templateId ?? null,
     workoutTemplates: trainingPlan.workoutTemplates,
   });
-}
-
-function getSessionBodyweightSourceLabel(
-  sessionBodyweightSource: TrainingSessionBodyweightSource | null,
-): string {
-  switch (sessionBodyweightSource) {
-    case "baseline":
-      return "Inherited from Baseline Bodyweight.";
-    case "inherited_weekly":
-      return "Inherited from the current Training Week bodyweight.";
-    case "session_override":
-      return "Stored as a Per-Session Bodyweight Override.";
-    case "historical_correction":
-      return "Stored as a Historical Bodyweight Correction.";
-    default:
-      return "Required before completing bodyweight volume.";
-  }
 }

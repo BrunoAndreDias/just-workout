@@ -52,12 +52,3 @@ export function createFullBodyIsolationFinisher(templateId: string): SupersetGro
     type: "isolation",
   };
 }
-
-export function createAbsFinisher(templateId: string): SupersetGroup {
-  return {
-    id: `${templateId}-abs-finisher`,
-    slots: [createDefaultExerciseSlot("abs_1", "abs"), createDefaultExerciseSlot("abs_2", "abs")],
-    title: "Abs finisher",
-    type: "abs",
-  };
-}

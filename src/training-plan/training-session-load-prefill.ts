@@ -1,6 +1,7 @@
 import { isBodyweightLoadExercise } from "./bodyweight-load";
+import { createExerciseLoadHistory, type ExercisePerformance } from "./exercise-load-history";
+import { roundToNearestIncrement, suggestNextExerciseTarget } from "./exercise-progression";
 import {
-  applyTrainingBlockProgressionRule,
   generateWeeklyIntensityTargets,
   getTrainingBlockExerciseTargetRir,
 } from "./training-block";
@@ -10,14 +11,19 @@ import type {
   TrainingPlanStartingLoadSuggestion,
 } from "./training-plan";
 import { createLegacyDefaultTrainingPrescription } from "./training-prescription";
-import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
-import { getCompletedTrainingSessionsNewestFirst } from "./training-session-history";
+import type { TrainingSession } from "./training-session";
 
 const DEFAULT_AVAILABLE_LOAD_INCREMENT = 2.5;
 
 export type TrainingSessionLoadPrefill = TrainingPlanStartingLoadSuggestion & {
+  /** Plain-language explanation of how this session's target was derived. */
+  progressionNote: string;
   /** True while an exact-history prefill should be explained in the first relevant session. */
   showPrefillExplanation: boolean;
+  /** Rep target for every working set this session; null leaves the prescription minimum. */
+  targetReps: number | null;
+  /** This Training Week's RIR target for the exercise. */
+  targetRir: number;
 };
 
 /**
@@ -41,56 +47,52 @@ export function createTrainingSessionLoadPrefills({
     ]),
   );
 
-  return getUniqueWorkoutTemplateSlots(workoutTemplate).map((slot) => {
-    const latestCurrentBlockHistory = getLatestCompletedExerciseHistory({
-      exerciseId: slot.exerciseId,
-      sessions: previousTrainingSessions,
-      trainingBlockId: trainingPlan.trainingBlock?.id ?? null,
+  const currentWeekNumber = trainingPlan.trainingBlock?.weekNumber ?? 1;
+  const weeklyIntensityTargets = generateWeeklyIntensityTargets({
+    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
+  });
+  const getTargetRir = (slot: TrainingPlanSlot, weekNumber: number) =>
+    getTrainingBlockExerciseTargetRir({
+      role: slot.role,
+      weekNumber,
+      weeklyIntensityTargets,
     });
 
-    if (latestCurrentBlockHistory) {
-      return createProgressedPrefillFromLatestHistory({
-        availableLoadIncrement,
-        history: latestCurrentBlockHistory,
-        slot,
-        trainingPlan,
-      });
+  const exerciseLoadHistory = createExerciseLoadHistory(previousTrainingSessions);
+  const currentTrainingBlockId = trainingPlan.trainingBlock?.id ?? null;
+
+  return getUniqueWorkoutTemplateSlots(workoutTemplate).map((slot) => {
+    const targetRir = getTargetRir(slot, currentWeekNumber);
+    const latestCurrentBlockHistory = exerciseLoadHistory.latestPerformance(slot.exerciseId, {
+      trainingBlockId: currentTrainingBlockId,
+    });
+    const latestHistory =
+      latestCurrentBlockHistory ?? exerciseLoadHistory.latestPerformance(slot.exerciseId);
+    const progressedPrefill = latestHistory
+      ? createProgressedPrefillFromLatestHistory({
+          availableLoadIncrement,
+          history: latestHistory,
+          previousTargetRir: getTargetRir(
+            slot,
+            latestHistory.session.trainingBlockWeekNumber ?? currentWeekNumber,
+          ),
+          showPrefillExplanation: latestCurrentBlockHistory === null,
+          slot,
+          targetRir,
+        })
+      : null;
+
+    if (latestCurrentBlockHistory && progressedPrefill) {
+      return progressedPrefill;
     }
 
     const persistedSuggestion = persistedSuggestionsByExerciseId.get(slot.exerciseId);
 
     if (persistedSuggestion && hasPersistedEffectiveLoad(persistedSuggestion)) {
-      return {
-        ...persistedSuggestion,
-        showPrefillExplanation: persistedSuggestion.kind === "exact_previous_exercise",
-      };
+      return createPersistedPrefill({ persistedSuggestion, progressedPrefill, slot, targetRir });
     }
 
-    const latestExactHistory = getLatestCompletedExerciseHistory({
-      exerciseId: slot.exerciseId,
-      sessions: previousTrainingSessions,
-      trainingBlockId: null,
-    });
-
-    if (latestExactHistory) {
-      const previousLoad = getLatestCompletedExerciseLoad({
-        entry: latestExactHistory.entry,
-        slot,
-      });
-
-      if (previousLoad !== null) {
-        return createExactHistoryPrefill({
-          exerciseName: slot.exerciseName,
-          exerciseId: slot.exerciseId,
-          movementPattern: slot.movementPattern,
-          previousLoad,
-          suggestedLoad: roundToNearestIncrement(previousLoad, availableLoadIncrement),
-          showPrefillExplanation: true,
-        });
-      }
-    }
-
-    return createFirstTimePrefill(slot);
+    return progressedPrefill ?? createFirstTimePrefill(slot, targetRir);
   });
 }
 
@@ -108,139 +110,107 @@ function getUniqueWorkoutTemplateSlots(
   return [...slotsByExerciseId.values()];
 }
 
-function hasPersistedEffectiveLoad(suggestion: TrainingPlanStartingLoadSuggestion): boolean {
-  return suggestion.effectiveLoad !== null;
+function createPersistedPrefill({
+  persistedSuggestion,
+  progressedPrefill,
+  slot,
+  targetRir,
+}: {
+  persistedSuggestion: TrainingPlanStartingLoadSuggestion;
+  progressedPrefill: TrainingSessionLoadPrefill | null;
+  slot: TrainingPlanSlot;
+  targetRir: number;
+}): TrainingSessionLoadPrefill {
+  const isCarriedOver = persistedSuggestion.kind === "exact_previous_exercise";
+  const minReps = getPrescription(slot).repRange.min;
+
+  return {
+    ...persistedSuggestion,
+    progressionNote: isCarriedOver
+      ? `Starting load carried over from your last Training Block. Aim for ${
+          progressedPrefill?.targetReps ?? minReps
+        } reps at ${targetRir} RIR.`
+      : `Starting load you set for this Training Block. Aim for ${minReps} reps at ${targetRir} RIR.`,
+    showPrefillExplanation: isCarriedOver,
+    targetReps: progressedPrefill?.targetReps ?? null,
+    targetRir,
+  };
 }
 
-function getLatestCompletedExerciseHistory({
-  exerciseId,
-  sessions,
-  trainingBlockId,
-}: {
-  exerciseId: string;
-  sessions: ReadonlyArray<TrainingSession>;
-  trainingBlockId: string | null;
-}): { entry: TrainingSessionExerciseEntry; session: TrainingSession } | null {
-  for (const session of getCompletedTrainingSessionsNewestFirst(sessions)) {
-    if (trainingBlockId && session.trainingBlockId !== trainingBlockId) {
-      continue;
-    }
-
-    const entry = session.exercises.find((exercise) => exercise.exerciseId === exerciseId);
-
-    if (entry) {
-      return {
-        entry,
-        session,
-      };
-    }
-  }
-
-  return null;
+function hasPersistedEffectiveLoad(suggestion: TrainingPlanStartingLoadSuggestion): boolean {
+  return suggestion.effectiveLoad !== null;
 }
 
 function createProgressedPrefillFromLatestHistory({
   availableLoadIncrement,
   history,
+  previousTargetRir,
+  showPrefillExplanation,
   slot,
-  trainingPlan,
+  targetRir,
 }: {
   availableLoadIncrement: number;
-  history: { entry: TrainingSessionExerciseEntry; session: TrainingSession };
+  history: ExercisePerformance;
+  previousTargetRir: number;
+  showPrefillExplanation: boolean;
   slot: TrainingPlanSlot;
-  trainingPlan: TrainingPlan;
-}): TrainingSessionLoadPrefill {
-  const previousLoad = getLatestCompletedExerciseLoad({
-    entry: history.entry,
-    slot,
+  targetRir: number;
+}): TrainingSessionLoadPrefill | null {
+  const previousLoad = history.sets.at(-1)?.weight ?? null;
+
+  const target = suggestNextExerciseTarget({
+    availableLoadIncrement,
+    isBodyweightLoad: isBodyweightLoadExercise(slot),
+    nextTargetRir: targetRir,
+    previousSets: history.sets.map((set) => ({
+      reps: set.reps,
+      rir: set.rir ?? null,
+      weight: set.weight,
+    })),
+    previousTargetRir,
+    repRange: getPrescription(slot).repRange,
   });
 
-  if (previousLoad === null) {
-    return createFirstTimePrefill(slot);
+  if (!target) {
+    return null;
   }
 
-  const trainingPrescription =
-    slot.trainingPrescription ?? createLegacyDefaultTrainingPrescription();
-  const weeklyIntensityTargets = generateWeeklyIntensityTargets({
-    trainingBlockWeeks: trainingPlan.trainingBlockWeeks,
-  });
-  const defaultTargetRir = getTrainingBlockExerciseTargetRir({
-    role: slot.role,
-    setIndex: 1,
-    weekNumber:
-      history.session.trainingBlockWeekNumber ?? trainingPlan.trainingBlock?.weekNumber ?? 1,
-    weeklyIntensityTargets,
-  });
-  const decision = applyTrainingBlockProgressionRule({
-    completedSets: history.entry.sets
-      .filter((set) => isCompletedProgressionSet({ set, slot }))
-      .map((set) => ({
-        reps: set.reps,
-        rir: set.rir ?? null,
-        targetRir: getTrainingBlockExerciseTargetRir({
-          role: slot.role,
-          setIndex: set.setIndex,
-          weekNumber:
-            history.session.trainingBlockWeekNumber ?? trainingPlan.trainingBlock?.weekNumber ?? 1,
-          weeklyIntensityTargets,
-        }),
-      })),
-    plannedSetCount: trainingPrescription.setCount,
-    repRange: {
-      maxReps: trainingPrescription.repRange.max,
-      minReps: trainingPrescription.repRange.min,
-    },
-    targetRir: defaultTargetRir,
-  });
+  const suggestedLoad = roundToNearestIncrement(target.load, availableLoadIncrement);
 
-  return createExactHistoryPrefill({
-    exerciseId: slot.exerciseId,
-    exerciseName: slot.exerciseName,
-    movementPattern: slot.movementPattern,
-    previousLoad,
-    reason: decision.reason,
-    suggestedLoad: applyProgressionDecisionToLoad({
-      availableLoadIncrement,
-      decision: decision.type,
-      previousLoad,
-      slot,
-    }),
-    showPrefillExplanation: false,
-  });
-}
-
-function createExactHistoryPrefill({
-  exerciseId,
-  exerciseName,
-  movementPattern,
-  previousLoad,
-  reason = "previous exact exercise load prefill",
-  suggestedLoad,
-  showPrefillExplanation,
-}: {
-  exerciseId: string;
-  exerciseName: string;
-  movementPattern: TrainingPlanSlot["movementPattern"];
-  previousLoad: number;
-  reason?: string;
-  suggestedLoad: number;
-  showPrefillExplanation: boolean;
-}): TrainingSessionLoadPrefill {
   return {
     effectiveLoad: suggestedLoad,
-    exerciseId,
-    exerciseName,
+    exerciseId: slot.exerciseId,
+    exerciseName: slot.exerciseName,
     kind: "exact_previous_exercise",
-    movementPattern,
+    movementPattern: slot.movementPattern,
     previousLoad,
-    reason,
+    progressionNote: target.note,
+    reason: getProgressionReason(target.loadChange),
     showPrefillExplanation,
     suggestedLoad,
+    targetReps: target.reps,
+    targetRir,
     userEditedLoad: null,
   };
 }
 
-function createFirstTimePrefill(slot: TrainingPlanSlot): TrainingSessionLoadPrefill {
+function getProgressionReason(loadChange: "increase" | "keep" | "reduce"): string {
+  switch (loadChange) {
+    case "increase":
+      return "rep target passed the top of the rep range, so the load goes up";
+    case "reduce":
+      return "rep target fell below the rep range, so the load goes down";
+    default:
+      return "rep target adjusted from last session's reps and RIR";
+  }
+}
+
+function createFirstTimePrefill(
+  slot: TrainingPlanSlot,
+  targetRir: number,
+): TrainingSessionLoadPrefill {
+  const { repRange } = getPrescription(slot);
+
   return {
     effectiveLoad: null,
     exerciseId: slot.exerciseId,
@@ -248,72 +218,16 @@ function createFirstTimePrefill(slot: TrainingPlanSlot): TrainingSessionLoadPref
     kind: "first_time",
     movementPattern: slot.movementPattern,
     previousLoad: null,
+    progressionNote: `First time: pick a load you can lift for ${repRange.min}–${repRange.max} reps with about ${targetRir} reps left in the tank.`,
     reason: "first-time exercise, start empty",
     showPrefillExplanation: false,
     suggestedLoad: null,
+    targetReps: null,
+    targetRir,
     userEditedLoad: null,
   };
 }
 
-function getLatestCompletedExerciseLoad({
-  entry,
-  slot,
-}: {
-  entry: TrainingSessionExerciseEntry;
-  slot: TrainingPlanSlot;
-}): number | null {
-  const completedSets = entry.sets
-    .filter((set) => isCompletedProgressionSet({ set, slot }))
-    .sort((firstSet, secondSet) => secondSet.setIndex - firstSet.setIndex);
-
-  return completedSets[0]?.weight ?? null;
-}
-
-function isCompletedProgressionSet({
-  set,
-  slot,
-}: {
-  set: TrainingSessionExerciseEntry["sets"][number];
-  slot: TrainingPlanSlot;
-}): boolean {
-  if (set.done === false || set.reps <= 0) {
-    return false;
-  }
-
-  if (isBodyweightLoadExercise(slot)) {
-    return true;
-  }
-
-  return set.weight > 0;
-}
-
-function applyProgressionDecisionToLoad({
-  availableLoadIncrement,
-  decision,
-  previousLoad,
-  slot,
-}: {
-  availableLoadIncrement: number;
-  decision: "increase_load" | "keep_load" | "reduce_load";
-  previousLoad: number;
-  slot: TrainingPlanSlot;
-}): number {
-  if (decision === "keep_load") {
-    return previousLoad;
-  }
-
-  const nextLoad =
-    decision === "increase_load"
-      ? previousLoad + availableLoadIncrement
-      : previousLoad - availableLoadIncrement;
-
-  if (!isBodyweightLoadExercise(slot)) {
-    return roundToNearestIncrement(Math.max(nextLoad, 0), availableLoadIncrement);
-  }
-
-  return roundToNearestIncrement(nextLoad, availableLoadIncrement);
-}
-
-function roundToNearestIncrement(value: number, increment: number): number {
-  return Math.round(value / increment) * increment;
+function getPrescription(slot: TrainingPlanSlot) {
+  return slot.trainingPrescription ?? createLegacyDefaultTrainingPrescription();
 }

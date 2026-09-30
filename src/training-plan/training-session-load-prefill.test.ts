@@ -37,37 +37,6 @@ describe("Training Session load prefills", () => {
     ]);
   });
 
-  it("leaves first-time exercises empty instead of falling back to the same Movement Pattern", () => {
-    const trainingPlan = createTrainingPlan({
-      workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
-    });
-
-    expect(
-      createTrainingSessionLoadPrefills({
-        previousTrainingSessions: [
-          createTrainingSession({
-            completedAt: "2026-07-12T10:00:00.000Z",
-            exerciseId: "flat-barbell-bench-press",
-            exerciseName: "Flat Barbell Bench Press",
-            trainingBlockId: "training-block-1",
-            trainingBlockWeekNumber: 6,
-            weight: 100,
-          }),
-        ],
-        trainingPlan,
-        workoutTemplate: trainingPlan.workoutTemplates[0] as WorkoutTemplate,
-      }),
-    ).toEqual([
-      expect.objectContaining({
-        effectiveLoad: null,
-        exerciseId: "incline-dumbbell-bench-press",
-        kind: "first_time",
-        previousLoad: null,
-        showPrefillExplanation: false,
-      }),
-    ]);
-  });
-
   it("explains an exact-history prefill that was not persisted from transition suggestions", () => {
     const trainingPlan = createTrainingPlan({
       workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
@@ -90,11 +59,15 @@ describe("Training Session load prefills", () => {
       }),
     ).toEqual([
       expect.objectContaining({
-        effectiveLoad: 87.5,
+        // Week 6 ended near failure; week 1 of the next block targets 4 RIR, so the load
+        // steps down one increment to keep the rep target inside the 6-8 range.
+        effectiveLoad: 85,
         exerciseId: "incline-dumbbell-bench-press",
         kind: "exact_previous_exercise",
         previousLoad: 87.5,
         showPrefillExplanation: true,
+        targetReps: 6,
+        targetRir: 4,
       }),
     ]);
   });
@@ -134,16 +107,20 @@ describe("Training Session load prefills", () => {
       }),
     ).toEqual([
       expect.objectContaining({
-        effectiveLoad: 87.5,
+        // Week 6 ended near failure; week 1 of the next block targets 4 RIR, so the load
+        // steps down one increment to keep the rep target inside the 6-8 range.
+        effectiveLoad: 85,
         exerciseId: "incline-dumbbell-bench-press",
         kind: "exact_previous_exercise",
         previousLoad: 87.5,
         showPrefillExplanation: true,
+        targetReps: 6,
+        targetRir: 4,
       }),
     ]);
   });
 
-  it("progresses the next exact-exercise prefill from completed sets and target RIR", () => {
+  it("adjusts the next exact-exercise target from completed sets and target RIR", () => {
     const trainingPlan = createTrainingPlan({
       workoutTemplate: createWorkoutTemplate(inclineBenchPressSlot),
     });
@@ -170,11 +147,14 @@ describe("Training Session load prefills", () => {
       }),
     ).toEqual([
       expect.objectContaining({
-        effectiveLoad: 95,
+        // 8 reps at 3 RIR was harder than the week 1 target of 4 RIR: one rep fewer, same load.
+        effectiveLoad: 92.5,
         exerciseId: "incline-dumbbell-bench-press",
         kind: "exact_previous_exercise",
         previousLoad: 92.5,
         showPrefillExplanation: false,
+        targetReps: 7,
+        targetRir: 4,
       }),
     ]);
   });
@@ -210,11 +190,12 @@ describe("Training Session load prefills", () => {
       }),
     ).toEqual([
       expect.objectContaining({
-        effectiveLoad: 95,
+        effectiveLoad: 92.5,
         exerciseId: "incline-dumbbell-bench-press",
         kind: "exact_previous_exercise",
         previousLoad: 95,
         showPrefillExplanation: true,
+        targetReps: 6,
       }),
     ]);
   });

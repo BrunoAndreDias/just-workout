@@ -4,11 +4,26 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        // Framework code changes far less often than app code, so keep it in stable
+        // chunks that survive app deploys in the browser and service-worker caches.
+        codeSplitting: {
+          groups: [
+            { name: "react", test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: "tanstack", test: /node_modules[\\/]@tanstack[\\/]/ },
+            { name: "dexie", test: /node_modules[\\/]dexie[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
-      includeAssets: ["icon.svg", "maskable-icon.svg"],
+      includeAssets: ["icon.svg", "maskable-icon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "Just Workout",
         short_name: "Workout",
@@ -17,7 +32,26 @@ export default defineConfig({
         background_color: "#f4f0e8",
         display: "standalone",
         start_url: "/",
+        // PNGs first: some Android launchers and iOS ignore SVG manifest icons.
         icons: [
+          {
+            src: "/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
           {
             src: "/icon.svg",
             sizes: "any",

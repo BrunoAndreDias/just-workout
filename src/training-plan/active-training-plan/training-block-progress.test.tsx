@@ -10,11 +10,42 @@ type ReviewTrainingBlockTransitionWorkflow = Extract<
 >;
 
 describe("TrainingBlockProgress", () => {
+  it("shows block progress as planned Training Sessions completed", () => {
+    render(
+      <TrainingBlockProgress
+        blockCompletedSessions={0}
+        blockPlannedSessions={18}
+        blockProgressPercent={0}
+        blockWeek={1}
+        onOpenTrainingHistory={() => {}}
+        trainingSessions={[]}
+        trainingWeekProgress={{
+          caveat: null,
+          detail: "0 / 3 sessions",
+          kind: "current_week",
+          support: "No Training Week Volume Reference yet.",
+          title: "Current week progress",
+          value: "0 kg",
+          valueLabel: "Known volume",
+        }}
+        trainingBlockWeeks={6}
+      />,
+    );
+
+    const progressbar = screen.getByRole("progressbar", { name: "Block progress" });
+
+    expect(progressbar).toHaveAttribute("aria-valuenow", "0");
+    expect(progressbar).toHaveAttribute("aria-valuetext", "0 of 18 sessions (0%)");
+    expect(screen.getByText("0 / 18 sessions · 0%")).toBeVisible();
+  });
+
   it("shows editable load prefill details for kept exercises in the transition preview", async () => {
     const user = userEvent.setup();
 
     render(
       <TrainingBlockProgress
+        blockCompletedSessions={18}
+        blockPlannedSessions={18}
         blockProgressPercent={100}
         blockWeek={6}
         nextTrainingBlockTransition={createTransitionWithKeptExercise()}

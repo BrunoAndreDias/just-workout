@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { Button } from "../design-system/button";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
@@ -20,6 +21,7 @@ import {
   trainingPlansQueryOptions,
 } from "./training-plan-query-options";
 import { trainingPlanService } from "./training-plan-service";
+import type { TrainingSession } from "./training-session";
 
 export function TrainingPlansRoute() {
   const trainingPlansQuery = useQuery(trainingPlansQueryOptions());
@@ -62,6 +64,8 @@ export function TrainingPlansRoute() {
     </section>
   );
 }
+
+const noTrainingSessions: ReadonlyArray<TrainingSession> = [];
 
 export function TrainingPlanRoute() {
   const navigate = useNavigate();
@@ -112,6 +116,39 @@ export function TrainingPlanRoute() {
     },
   });
 
+  const trainingSessions = trainingSessionsQuery.data ?? noTrainingSessions;
+  const today = new Date().toISOString().slice(0, 10);
+  const { mutateAsync: saveAcceptedTrainingPlanAsync } = saveAcceptedTrainingPlan;
+  const { mutateAsync: undoAcceptedTrainingBlockTransitionAsync } =
+    undoAcceptedTrainingBlockTransition;
+  // Building the next-block previews walks every session; only redo it when the plan, its
+  // sessions, or the calendar day change rather than on every mutation state flip.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `today` refreshes the `now` date.
+  const nextTrainingBlockTransition = useMemo(
+    () =>
+      trainingPlan
+        ? (createNextTrainingBlockTransitionWorkflow({
+            now: new Date(),
+            onAcceptedTrainingPlan: (savedTrainingPlan) =>
+              navigate(getTrainingPlanRouteTarget(savedTrainingPlan.id)),
+            saveAcceptedTrainingPlan: (acceptedTrainingPlan) =>
+              saveAcceptedTrainingPlanAsync(acceptedTrainingPlan),
+            undoAcceptedTrainingBlockTransition: (acceptedPlanId) =>
+              undoAcceptedTrainingBlockTransitionAsync(acceptedPlanId),
+            trainingPlan,
+            trainingSessions,
+          }) ?? undefined)
+        : undefined,
+    [
+      navigate,
+      saveAcceptedTrainingPlanAsync,
+      today,
+      trainingPlan,
+      trainingSessions,
+      undoAcceptedTrainingBlockTransitionAsync,
+    ],
+  );
+
   if (trainingPlanQuery.isLoading) {
     return <ActiveTrainingPlanLoading>Loading Training Plan...</ActiveTrainingPlanLoading>;
   }
@@ -122,18 +159,7 @@ export function TrainingPlanRoute() {
 
   return (
     <ActiveTrainingPlanPage
-      nextTrainingBlockTransition={
-        createNextTrainingBlockTransitionWorkflow({
-          onAcceptedTrainingPlan: (savedTrainingPlan) =>
-            navigate(getTrainingPlanRouteTarget(savedTrainingPlan.id)),
-          saveAcceptedTrainingPlan: (acceptedTrainingPlan) =>
-            saveAcceptedTrainingPlan.mutateAsync(acceptedTrainingPlan),
-          undoAcceptedTrainingBlockTransition: (acceptedPlanId) =>
-            undoAcceptedTrainingBlockTransition.mutateAsync(acceptedPlanId),
-          trainingPlan,
-          trainingSessions: trainingSessionsQuery.data ?? [],
-        }) ?? undefined
-      }
+      nextTrainingBlockTransition={nextTrainingBlockTransition}
       onSwapCurrentBlockExercise={async ({ groupId, nextExerciseId, slotIndex, templateId }) =>
         saveTrainingPlan.mutateAsync(
           applyTrainingBlockExerciseSwapToTrainingPlan({
@@ -147,7 +173,7 @@ export function TrainingPlanRoute() {
         )
       }
       trainingPlan={trainingPlan}
-      trainingSessions={trainingSessionsQuery.data ?? []}
+      trainingSessions={trainingSessions}
     />
   );
 }

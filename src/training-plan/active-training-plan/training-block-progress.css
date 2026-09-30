@@ -445,3 +445,58 @@
     flex-direction: column;
   }
 }
+
+.active-training-plan-progress__ramp {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.375rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.active-training-plan-progress__ramp-week {
+  display: grid;
+  gap: 0.125rem;
+  justify-items: center;
+  border: 1px solid rgba(49, 80, 93, 0.14);
+  border-radius: 0.6rem;
+  background: rgba(255, 250, 242, 0.82);
+  padding: 0.4rem 0.25rem;
+  text-align: center;
+}
+
+.active-training-plan-progress__ramp-week span {
+  color: #5b6f78;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.active-training-plan-progress__ramp-week strong {
+  color: #31505d;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.active-training-plan-progress__ramp-week--done {
+  opacity: 0.55;
+}
+
+.active-training-plan-progress__ramp-week--current {
+  border-color: #007780;
+  background: #007780;
+}
+
+.active-training-plan-progress__ramp-week--current span,
+.active-training-plan-progress__ramp-week--current strong {
+  color: #ffffff;
+}
+
+@media (max-width: 380px) {
+  .active-training-plan-progress__ramp {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

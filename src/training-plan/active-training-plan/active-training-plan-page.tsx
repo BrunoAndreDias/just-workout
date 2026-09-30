@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { History, Play } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader, PageMain } from "../../design-system/typography";
 import {
   hasCompletedTrainingBlockSessions,
@@ -23,11 +23,13 @@ import { WorkoutBlueprint } from "./workout-blueprint";
 import "../training-plan-loading.css";
 import "./active-training-plan-page.css";
 
+const noTrainingSessions: ReadonlyArray<TrainingSession> = [];
+
 export function ActiveTrainingPlanPage({
   nextTrainingBlockTransition,
   onSwapCurrentBlockExercise,
   trainingPlan,
-  trainingSessions = [],
+  trainingSessions = noTrainingSessions,
 }: {
   nextTrainingBlockTransition?: NextTrainingBlockTransitionWorkflow;
   onSwapCurrentBlockExercise?: (
@@ -37,11 +39,15 @@ export function ActiveTrainingPlanPage({
   trainingSessions?: ReadonlyArray<TrainingSession>;
 }) {
   const [activeTabId, setActiveTabId] = useState<ActiveTrainingPlanTabId>("overview");
-  const readModel = getActiveTrainingPlanPageReadModel({
-    activeTabId,
-    trainingPlan,
-    trainingSessions,
-  });
+  const readModel = useMemo(
+    () =>
+      getActiveTrainingPlanPageReadModel({
+        activeTabId,
+        trainingPlan,
+        trainingSessions,
+      }),
+    [activeTabId, trainingPlan, trainingSessions],
+  );
 
   return (
     <section className="active-training-plan-page-shell" aria-label="Active Training Plan">
@@ -113,6 +119,8 @@ function ActiveTrainingPlanActions({
         </button>
       </div>
       <TrainingBlockProgress
+        blockCompletedSessions={readModel.progress.blockCompletedSessions}
+        blockPlannedSessions={readModel.progress.blockPlannedSessions}
         blockProgressPercent={readModel.progress.blockProgressPercent}
         blockWeek={readModel.progress.blockWeek}
         cycleNumber={readModel.progress.cycleNumber}

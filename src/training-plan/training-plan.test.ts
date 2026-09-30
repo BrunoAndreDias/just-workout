@@ -5,6 +5,7 @@ import { createPresetWeeklyRepTargets } from "../training-taxonomy";
 import {
   generateTrainingPlanContentFromBlueprint,
   generateTrainingPlanFromBlueprint,
+  validateTrainingPlanDraftContent,
   type WorkoutTemplate,
 } from "./training-plan";
 import type { TrainingPrescription } from "./training-prescription";
@@ -203,7 +204,7 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expectWorkoutHasNoDuplicateExercises(upperTemplate);
   });
 
-  it("builds all-full-body templates as upper-focused core supersets plus separate accessories and abs", () => {
+  it("builds all-full-body templates as upper-focused core supersets plus separate accessories without abs", () => {
     const trainingPlan = generateTrainingPlanFromBlueprint({
       blueprint: createCompleteBlueprint({
         split: "full-body-3-day",
@@ -219,13 +220,11 @@ describe("generateTrainingPlanFromBlueprint", () => {
       "Full-body superset 1",
       "Full-body superset 2",
       "Isolation finisher",
-      "Abs finisher",
     ]);
     expect(fullBodyTemplate?.supersetGroups.map((group) => group.type)).toEqual([
       "superset",
       "superset",
       "isolation",
-      "abs",
     ]);
     expect(fullBodyTemplate?.supersetGroups[0]?.slots.map((slot) => slot.movementPattern)).toEqual([
       "horizontal_push",
@@ -257,13 +256,8 @@ describe("generateTrainingPlanFromBlueprint", () => {
       "Cable Press-Downs",
       "Standing Calf Raises",
     ]);
-    expect(fullBodyTemplate?.supersetGroups[3]?.slots.map((slot) => slot.role)).toEqual([
-      "abs",
-      "abs",
-    ]);
     expect(
       fullBodyTemplate?.supersetGroups
-        .slice(0, 2)
         .flatMap((group) => group.slots)
         .some((slot) => slot.role === "abs"),
     ).toBe(false);
@@ -561,34 +555,124 @@ describe("generateTrainingPlanFromBlueprint", () => {
     expect(trainingPlan.workoutTemplates.map((template) => template.label)).toEqual([
       "Push A",
       "Pull A",
-      "Legs",
+      "Legs A",
       "Push B",
       "Pull B",
+      "Legs B",
     ]);
 
-    const pushA = trainingPlan.workoutTemplates.find((template) => template.label === "Push A");
-    const pushB = trainingPlan.workoutTemplates.find((template) => template.label === "Push B");
-    const pullA = trainingPlan.workoutTemplates.find((template) => template.label === "Pull A");
-    const pullB = trainingPlan.workoutTemplates.find((template) => template.label === "Pull B");
-    const legs = trainingPlan.workoutTemplates.find((template) => template.label === "Legs");
+    const byLabel = (label: string) =>
+      trainingPlan.workoutTemplates.find((template) => template.label === label);
+    const mainExerciseIds = (label: string) =>
+      byLabel(label)
+        ?.supersetGroups.flatMap((group) => group.slots)
+        .filter((slot) => slot.role === "main_compound")
+        .map((slot) => slot.exerciseId);
 
-    expect(pushA?.supersetGroups.map((group) => group.title)).toEqual([
-      "Upper superset 1",
-      "Upper superset 2",
+    expect(byLabel("Push A")?.supersetGroups.map((group) => group.title)).toEqual([
+      "Push superset 1",
+      "Push superset 2",
       "Isolation finisher",
     ]);
-    expect(legs?.supersetGroups.map((group) => group.title)).toEqual([
+    expect(byLabel("Legs A")?.supersetGroups.map((group) => group.title)).toEqual([
       "Lower superset 1",
       "Lower superset 2",
       "Isolation finisher",
     ]);
-    expect(getExerciseIds(pushA)).toContain("flat-barbell-bench-press");
-    expect(getExerciseIds(pushB)).toContain("standing-overhead-barbell-press");
-    expect(getExerciseIds(pullA)).toContain("bent-over-barbell-rows");
-    expect(getExerciseIds(pullB)).toContain("pull-ups");
-    expect(getExerciseIds(legs)).toEqual(
+    // Push days only press and Pull days only pull; A and B lead with different main lifts.
+    expect(mainExerciseIds("Push A")).toEqual(["flat-barbell-bench-press"]);
+    expect(mainExerciseIds("Push B")).toEqual(["standing-overhead-barbell-press"]);
+    expect(mainExerciseIds("Pull A")).toEqual(["bent-over-barbell-rows"]);
+    expect(mainExerciseIds("Pull B")).toEqual(["pull-ups"]);
+    expect(getExerciseIds(byLabel("Push A"))).not.toContain("bent-over-barbell-rows");
+    expect(getExerciseIds(byLabel("Pull A"))).not.toContain("flat-barbell-bench-press");
+    expect(getExerciseIds(byLabel("Legs B"))).toEqual(
       expect.arrayContaining(["barbell-squats", "barbell-romanian-deadlifts"]),
     );
+    expect(validateTrainingPlanDraftContent({ content: trainingPlan }).blockers).toEqual([]);
+  });
+
+  it.each([
+    ["full-body-2-day", 2],
+    ["full-body-3-day", 3],
+    ["alternating-full-body-a-b", 3],
+    ["upper-lower-full-body", 3],
+    ["rotating-upper-lower", 3],
+    ["upper-lower-4-day", 4],
+    ["rotating-push-pull-legs", 4],
+    ["rotating-upper-lower", 5],
+    ["rotating-push-pull-legs", 5],
+  ] as const)("generates an acceptable draft for %s at %i days/week", (split, trainingFrequencyDaysPerWeek) => {
+    const content = generateTrainingPlanContentFromBlueprint({
+      blueprint: createCompleteBlueprint({ split, trainingFrequencyDaysPerWeek }),
+    });
+
+    expect(validateTrainingPlanDraftContent({ content }).blockers).toEqual([]);
+  });
+
+  it("swaps avoided default exercises for compatible alternatives instead of blocking the draft", () => {
+    const blueprint = createCompleteBlueprint({
+      split: "rotating-upper-lower",
+      trainingFrequencyDaysPerWeek: 3,
+    });
+    const content = generateTrainingPlanContentFromBlueprint({
+      blueprint: {
+        ...blueprint,
+        exerciseSelectionPreferences: {
+          ...blueprint.exerciseSelectionPreferences,
+          avoidedExercises: [
+            { id: "avoid-1", rawText: "Incline Dumbbell Bench Press" },
+            { id: "avoid-2", rawText: "Hanging Leg Raises" },
+            { id: "avoid-3", rawText: "Dumbbell Split Squats" },
+          ],
+        },
+      },
+    });
+    const exerciseIds = content.workoutTemplates.flatMap((template) => getExerciseIds(template));
+
+    expect(exerciseIds).not.toContain("incline-dumbbell-bench-press");
+    expect(exerciseIds).not.toContain("hanging-leg-raises");
+    expect(exerciseIds).not.toContain("dumbbell-split-squats");
+    expect(validateTrainingPlanDraftContent({ content }).blockers).toEqual([]);
+  });
+
+  it.each([
+    3, 5,
+  ] as const)("builds Rotating Upper/Lower A/B templates with abs in the main supersets for %i days/week", (trainingFrequencyDaysPerWeek) => {
+    const trainingPlan = generateTrainingPlanFromBlueprint({
+      blueprint: createCompleteBlueprint({
+        split: "rotating-upper-lower",
+        trainingFrequencyDaysPerWeek,
+      }),
+      id: "training-plan-test",
+      timestamp: "2026-06-07T10:00:00.000Z",
+    });
+
+    expect(trainingPlan.split).toBe("Rotating Upper/Lower");
+    expect(trainingPlan.trainingFrequencyDaysPerWeek).toBe(trainingFrequencyDaysPerWeek);
+    expect(trainingPlan.workoutTemplates.map((template) => template.label)).toEqual([
+      "Upper A",
+      "Lower A",
+      "Upper B",
+      "Lower B",
+    ]);
+
+    for (const template of trainingPlan.workoutTemplates) {
+      const isUpper = template.label.startsWith("Upper");
+
+      expect(template.supersetGroups.map((group) => group.title)).toEqual(
+        isUpper
+          ? ["Upper superset 1", "Upper superset 2", "Isolation finisher"]
+          : ["Lower superset 1", "Lower superset 2", "Isolation finisher"],
+      );
+      expect(
+        template.supersetGroups
+          .slice(0, 2)
+          .map((group) => group.slots.filter((slot) => slot.role === "abs").length),
+      ).toEqual([1, 1]);
+      expect(template.supersetGroups[2]?.slots.some((slot) => slot.role === "abs")).toBe(false);
+      expectWorkoutHasNoDuplicateExercises(template);
+    }
   });
 
   it("derives Main Compound Rotation Pools from ranked rotation preferences and empty buckets", () => {

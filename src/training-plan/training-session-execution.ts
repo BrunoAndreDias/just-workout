@@ -1,5 +1,6 @@
 import { isBodyweightLoadExercise } from "./bodyweight-load";
 import { summarizeCompletedLoadVolume } from "./completed-load-volume";
+import { createExerciseLoadHistory } from "./exercise-load-history";
 import {
   generateWeeklyIntensityTargets,
   getTrainingBlockExerciseTargetRir,
@@ -19,7 +20,11 @@ import {
   createLegacyDefaultTrainingPrescription,
   type TrainingPrescription,
 } from "./training-prescription";
-import type { TrainingSession, TrainingSessionExerciseEntry } from "./training-session";
+import type {
+  TrainingSession,
+  TrainingSessionExerciseEntry,
+  TrainingSessionSetTarget,
+} from "./training-session";
 
 export type TrainingSessionSetDraft = {
   done: boolean;
@@ -30,6 +35,11 @@ export type TrainingSessionSetDraft = {
 };
 
 export type TrainingSessionExerciseDrafts = Record<string, TrainingSessionSetDraft[]>;
+
+/** A starting load plus the optional per-session rep target derived from progression. */
+export type TrainingSessionStartingTarget = TrainingPlanStartingLoadSuggestion & {
+  targetReps?: number | null;
+};
 
 export type TrainingSessionExercise = {
   groupId: string;
@@ -87,6 +97,8 @@ export type TrainingSessionExecutionSetRow = {
   exerciseName: string;
   inputId: string;
   movementPatternLabel: string;
+  /** Suggested load × reps for this session, when progression has one. */
+  aimLabel: string | null;
   prescriptionLabel: string;
   previousSetLabel: string;
   reps: string;
@@ -147,7 +159,7 @@ export function createInitialTrainingSessionExecutionState({
   startingLoadSuggestions = [],
   workoutTemplate,
 }: {
-  startingLoadSuggestions?: ReadonlyArray<TrainingPlanStartingLoadSuggestion>;
+  startingLoadSuggestions?: ReadonlyArray<TrainingSessionStartingTarget>;
   workoutTemplate: WorkoutTemplate;
 }): TrainingSessionExecutionState {
   return {
@@ -219,6 +231,7 @@ export function toggleTrainingSessionExecutionGroup(
 
 export function createTrainingSessionExecutionReadModel({
   completedSession,
+  loadPrefills = [],
   previousTrainingSessions,
   sessionBodyweight = null,
   state,
@@ -227,6 +240,8 @@ export function createTrainingSessionExecutionReadModel({
   workoutTemplate,
 }: {
   completedSession: TrainingSession | null;
+  /** Session targets used to show what to aim for on each set. */
+  loadPrefills?: ReadonlyArray<TrainingSessionStartingTarget>;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
   sessionBodyweight?: number | null;
   state: TrainingSessionExecutionState;
@@ -235,9 +250,27 @@ export function createTrainingSessionExecutionReadModel({
   workoutTemplate: WorkoutTemplate;
 }): TrainingSessionExecutionReadModel {
   const sessionExercises = createTrainingSessionExercises(workoutTemplate);
-  const entries = createTrainingSessionEntries(sessionExercises, state.drafts);
+  const startingTargetsByExerciseId = new Map(
+    loadPrefills.map((prefill) => [prefill.exerciseId, prefill] as const),
+  );
+  const entries = createTrainingSessionEntries(sessionExercises, state.drafts, (slot, setIndex) =>
+    getTrainingSessionSetTarget({
+      setIndex,
+      slot,
+      startingTarget: startingTargetsByExerciseId.get(slot.exerciseId),
+      trainingBlockWeekNumber,
+      trainingBlockWeeks,
+    }),
+  );
   const completedSetCount = countCompletedTrainingSessionSets(state.drafts);
   const plannedSetCount = getTrainingSessionPlannedSetCount(sessionExercises);
+  const aimLabelsByExerciseId = new Map(
+    loadPrefills.flatMap((prefill) => {
+      const aimLabel = formatAimLabel(prefill);
+
+      return aimLabel ? [[prefill.exerciseId, aimLabel] as const] : [];
+    }),
+  );
   const completedLoadVolumeSummary = summarizeCompletedLoadVolume(
     completedSession?.exercises ?? entries,
     {
@@ -250,6 +283,7 @@ export function createTrainingSessionExecutionReadModel({
     entries,
     groups: workoutTemplate.supersetGroups.map((group, groupIndex) =>
       createTrainingSessionExecutionGroup({
+        aimLabelsByExerciseId,
         drafts: state.drafts,
         expandedGroupIds: state.expandedGroupIds,
         group,
@@ -294,7 +328,7 @@ export function applyTrainingSessionExecutionAction({
     return state;
   }
 
-  const drafts = applyTrainingSessionDraftChange({
+  const changedDrafts = applyTrainingSessionDraftChange({
     drafts: state.drafts,
     exerciseKey: target.exerciseKey,
     field: getTrainingSessionExecutionDraftField(action),
@@ -302,6 +336,15 @@ export function applyTrainingSessionExecutionAction({
     slot: target.slot,
     value: action.value,
   });
+  const drafts =
+    action.type === "change-set-rir"
+      ? copyTrainingSessionSetRirForward({
+          drafts: changedDrafts,
+          exerciseKey: target.exerciseKey,
+          setIndex: target.setIndex,
+          value: action.value,
+        })
+      : changedDrafts;
   const groupProgress = getTrainingSessionGroupProgress({
     drafts,
     groupId: target.group.id,
@@ -336,28 +379,38 @@ export function createTrainingSessionExercises(
 
 export function createInitialTrainingSessionDrafts(
   sessionExercises: ReadonlyArray<TrainingSessionExercise>,
-  startingLoadSuggestions: ReadonlyArray<TrainingPlanStartingLoadSuggestion> = [],
+  startingLoadSuggestions: ReadonlyArray<TrainingSessionStartingTarget> = [],
 ): TrainingSessionExerciseDrafts {
-  const startingLoadByExerciseId = new Map(
-    startingLoadSuggestions.map((suggestion) => [
-      suggestion.exerciseId,
-      suggestion.effectiveLoad === null ? "" : String(suggestion.effectiveLoad),
-    ]),
+  const startingTargetByExerciseId = new Map(
+    startingLoadSuggestions.map((suggestion) => [suggestion.exerciseId, suggestion]),
   );
 
   return Object.fromEntries(
-    sessionExercises.map(({ groupId, slot }) => [
-      getTrainingSessionExerciseKey(groupId, slot),
-      createDefaultTrainingSessionSetDrafts(slot, startingLoadByExerciseId.get(slot.exerciseId)),
-    ]),
+    sessionExercises.map(({ groupId, slot }) => {
+      const startingTarget = startingTargetByExerciseId.get(slot.exerciseId);
+
+      return [
+        getTrainingSessionExerciseKey(groupId, slot),
+        createDefaultTrainingSessionSetDrafts(
+          slot,
+          startingTarget
+            ? startingTarget.effectiveLoad === null
+              ? ""
+              : String(startingTarget.effectiveLoad)
+            : undefined,
+          startingTarget?.targetReps ?? undefined,
+        ),
+      ];
+    }),
   );
 }
 
 function createDefaultTrainingSessionSetDrafts(
   slot?: TrainingPlanSlot,
   startingLoad?: string,
+  targetReps?: number,
 ): TrainingSessionSetDraft[] {
-  const reps = String(getTrainingSessionDefaultReps(slot));
+  const reps = String(targetReps ?? getTrainingSessionDefaultReps(slot));
 
   return getTrainingSessionSetIndexes(slot).map((setIndex) => ({
     done: false,
@@ -383,6 +436,8 @@ function getDefaultTrainingSessionSetDraft(slot?: TrainingPlanSlot): TrainingSes
 export function createTrainingSessionEntries(
   sessionExercises: ReadonlyArray<TrainingSessionExercise>,
   drafts: TrainingSessionExerciseDrafts,
+  /** Resolves the Session Target to store with each set; omitted entries carry no target. */
+  getSetTarget?: (slot: TrainingPlanSlot, setIndex: number) => TrainingSessionSetTarget,
 ): TrainingSessionExerciseEntry[] {
   return sessionExercises.map(({ groupId, slot }) => ({
     exerciseId: slot.exerciseId,
@@ -396,6 +451,7 @@ export function createTrainingSessionEntries(
       reps: Number(draft.reps) || 0,
       rir: parseNullableNonNegativeNumber(draft.rir),
       setIndex: draft.setIndex,
+      ...(getSetTarget ? { target: getSetTarget(slot, draft.setIndex) } : {}),
       weight: Number(draft.weight) || 0,
     })),
   }));
@@ -467,6 +523,43 @@ export function applyTrainingSessionDraftChange({
   };
 }
 
+/**
+ * Copy-forward for quick effort capture: picking a RIR on a set pre-fills the *next* set of the
+ * same exercise, but only when that set has no RIR yet and is not done. Clearing a RIR never
+ * propagates, and sets further ahead are untouched, so each pick only ever seeds one guess the
+ * user can overwrite.
+ */
+function copyTrainingSessionSetRirForward({
+  drafts,
+  exerciseKey,
+  setIndex,
+  value,
+}: {
+  drafts: TrainingSessionExerciseDrafts;
+  exerciseKey: string;
+  setIndex: number;
+  value: string;
+}): TrainingSessionExerciseDrafts {
+  const exerciseDrafts = drafts[exerciseKey];
+
+  if (value.trim() === "" || !exerciseDrafts) {
+    return drafts;
+  }
+
+  const nextDraft = exerciseDrafts.find((draft) => draft.setIndex === setIndex + 1);
+
+  if (!nextDraft || nextDraft.done || (nextDraft.rir ?? "").trim() !== "") {
+    return drafts;
+  }
+
+  return {
+    ...drafts,
+    [exerciseKey]: exerciseDrafts.map((draft) =>
+      draft === nextDraft ? { ...draft, rir: value } : draft,
+    ),
+  };
+}
+
 function applyTrainingSessionExecutionGroupToggle({
   groupId,
   state,
@@ -523,24 +616,19 @@ export function getPreviousTrainingSessionSetLabel({
   setIndex: number;
   slot: TrainingPlanSlot;
 }): string {
-  for (const session of previousTrainingSessions) {
-    const previousExercise = session.exercises.find(
-      (exercise) => exercise.exerciseId === slot.exerciseId,
-    );
-    const previousSet = previousExercise?.sets.find((set) => set.setIndex === setIndex);
+  const previousSet = createExerciseLoadHistory(previousTrainingSessions).previousSet(
+    slot.exerciseId,
+    setIndex,
+  );
 
-    if (!previousSet || previousSet.reps <= 0) {
-      continue;
-    }
-
-    if (previousSet.weight <= 0) {
-      return /pull-ups/i.test(slot.exerciseName) ? `BW x ${previousSet.reps}` : "-";
-    }
-
-    return `${previousSet.weight}kg x ${previousSet.reps}`;
+  if (!previousSet) {
+    return "-";
   }
 
-  return "-";
+  // Load history only keeps zero or negative loads for bodyweight exercises.
+  return previousSet.weight > 0
+    ? `${previousSet.weight}kg x ${previousSet.reps}`
+    : `BW x ${previousSet.reps}`;
 }
 
 function getInitialTrainingSessionExpandedGroupIds(
@@ -550,6 +638,7 @@ function getInitialTrainingSessionExpandedGroupIds(
 }
 
 function createTrainingSessionExecutionGroup({
+  aimLabelsByExerciseId,
   drafts,
   expandedGroupIds,
   group,
@@ -559,6 +648,7 @@ function createTrainingSessionExecutionGroup({
   trainingBlockWeeks,
   workoutTemplateLabel,
 }: {
+  aimLabelsByExerciseId: ReadonlyMap<string, string>;
   drafts: TrainingSessionExerciseDrafts;
   expandedGroupIds: ReadonlyArray<string>;
   group: WorkoutTemplate["supersetGroups"][number];
@@ -580,6 +670,9 @@ function createTrainingSessionExecutionGroup({
     groupId: group.id,
     isOpen,
     now: createTrainingSessionExecutionNow({
+      aimLabel: group.slots[0]
+        ? (aimLabelsByExerciseId.get(group.slots[0].exerciseId) ?? null)
+        : null,
       slot: group.slots[0],
       trainingBlockWeekNumber,
       trainingBlockWeeks,
@@ -587,6 +680,7 @@ function createTrainingSessionExecutionGroup({
     rounds: getTrainingSessionGroupRoundIndexes(group.slots).map((roundIndex) => ({
       roundIndex,
       rows: createTrainingSessionExecutionRoundRows({
+        aimLabelsByExerciseId,
         drafts,
         groupId: group.id,
         previousTrainingSessions,
@@ -605,10 +699,12 @@ function createTrainingSessionExecutionGroup({
 }
 
 function createTrainingSessionExecutionNow({
+  aimLabel,
   slot,
   trainingBlockWeekNumber,
   trainingBlockWeeks,
 }: {
+  aimLabel: string | null;
   slot: TrainingPlanSlot | undefined;
   trainingBlockWeekNumber: number | null;
   trainingBlockWeeks: number;
@@ -629,11 +725,12 @@ function createTrainingSessionExecutionNow({
       trainingBlockWeekNumber,
       trainingBlockWeeks,
     }),
-    targetRepsLabel: getTrainingSessionTargetRepsLabel(slot),
+    targetRepsLabel: aimLabel ?? getTrainingSessionTargetRepsLabel(slot),
   };
 }
 
 function createTrainingSessionExecutionRoundRows({
+  aimLabelsByExerciseId,
   drafts,
   groupId,
   previousTrainingSessions,
@@ -642,6 +739,7 @@ function createTrainingSessionExecutionRoundRows({
   trainingBlockWeekNumber,
   trainingBlockWeeks,
 }: {
+  aimLabelsByExerciseId: ReadonlyMap<string, string>;
   drafts: TrainingSessionExerciseDrafts;
   groupId: string;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
@@ -654,6 +752,7 @@ function createTrainingSessionExecutionRoundRows({
     .filter((slot) => roundIndex <= getTrainingSessionSetCount(slot))
     .map((slot) =>
       createTrainingSessionExecutionSetRow({
+        aimLabel: aimLabelsByExerciseId.get(slot.exerciseId) ?? null,
         drafts,
         groupId,
         previousTrainingSessions,
@@ -666,6 +765,7 @@ function createTrainingSessionExecutionRoundRows({
 }
 
 function createTrainingSessionExecutionSetRow({
+  aimLabel,
   drafts,
   groupId,
   previousTrainingSessions,
@@ -674,6 +774,7 @@ function createTrainingSessionExecutionSetRow({
   trainingBlockWeekNumber,
   trainingBlockWeeks,
 }: {
+  aimLabel: string | null;
   drafts: TrainingSessionExerciseDrafts;
   groupId: string;
   previousTrainingSessions: ReadonlyArray<TrainingSession>;
@@ -694,6 +795,7 @@ function createTrainingSessionExecutionSetRow({
     ) ?? getDefaultTrainingSessionSetDraft(slot);
 
   return {
+    aimLabel,
     done: draft.done,
     doneLabel: `Mark ${slot.exerciseName} set ${draft.setIndex} ${
       draft.done ? "not done" : "done"
@@ -830,6 +932,20 @@ function getTrainingSessionPrescriptionLabel(slot: TrainingPlanSlot): string {
   return `${setCount} x ${formatTrainingSessionRepRange(repRange)}`;
 }
 
+function formatAimLabel(prefill: TrainingSessionStartingTarget): string | null {
+  if (prefill.targetReps === null || prefill.targetReps === undefined) {
+    return null;
+  }
+
+  if (prefill.effectiveLoad === null) {
+    return `Aim ${prefill.targetReps} reps`;
+  }
+
+  const load = prefill.effectiveLoad === 0 ? "BW" : `${prefill.effectiveLoad} kg`;
+
+  return `Aim ${load} × ${prefill.targetReps}`;
+}
+
 function getTrainingSessionTargetRepsLabel(slot: TrainingPlanSlot): string {
   return `Target ${formatTrainingSessionRepRange(getTrainingSessionPrescription(slot).repRange)} reps`;
 }
@@ -853,6 +969,31 @@ function getTrainingSessionTargetRir({
       trainingBlockWeeks,
     }),
   });
+}
+
+function getTrainingSessionSetTarget({
+  setIndex,
+  slot,
+  startingTarget,
+  trainingBlockWeekNumber,
+  trainingBlockWeeks,
+}: {
+  setIndex: number;
+  slot: TrainingPlanSlot;
+  startingTarget: TrainingSessionStartingTarget | undefined;
+  trainingBlockWeekNumber: number | null;
+  trainingBlockWeeks: number;
+}): TrainingSessionSetTarget {
+  return {
+    reps: startingTarget?.targetReps ?? null,
+    rir: getTrainingSessionTargetRir({
+      setIndex,
+      slot,
+      trainingBlockWeekNumber,
+      trainingBlockWeeks,
+    }),
+    weight: startingTarget?.effectiveLoad ?? null,
+  };
 }
 
 function getTrainingSessionTargetRirLabel({
@@ -923,6 +1064,10 @@ function formatGroupTitle(title: string, templateLabel: string, groupIndex: numb
 
   if (groupIndex >= 2 || /isolation/i.test(title)) {
     return "Isolation work";
+  }
+
+  if (/^(upper|lower) /i.test(baseTitle)) {
+    return baseTitle.replace(/^\w/, (letter) => letter.toUpperCase());
   }
 
   if (/upper|full body a/i.test(templateLabel)) {

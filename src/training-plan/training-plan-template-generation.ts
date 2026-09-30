@@ -3,6 +3,7 @@ import { getTrainingSplit } from "../training-taxonomy";
 import { applyIsolationExercisePreferencesToWorkoutTemplates } from "./isolation-exercise-preference-selection";
 import { createAssignedTemplateDrafts } from "./template-draft-assignment";
 import type { WorkoutTemplate } from "./training-plan";
+import { resolveWorkoutTemplateSlotConflicts } from "./workout-slot-conflict-resolution";
 import { createWorkoutTemplates } from "./workout-template-generation";
 
 type CreateTrainingPlanTemplatesForBlueprintOptions = {
@@ -37,9 +38,12 @@ export function createTrainingPlanTemplatesForBlueprint({
 
   return {
     splitLabel: trainingSplit.label,
-    workoutTemplates: applyIsolationExercisePreferencesToWorkoutTemplates({
+    workoutTemplates: resolveWorkoutTemplateSlotConflicts({
       blueprint,
-      workoutTemplates,
+      workoutTemplates: applyIsolationExercisePreferencesToWorkoutTemplates({
+        blueprint,
+        workoutTemplates,
+      }),
     }),
   };
 }

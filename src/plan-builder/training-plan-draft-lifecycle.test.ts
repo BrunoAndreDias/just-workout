@@ -5,6 +5,7 @@ import {
   addTrainingPlanDraftSlot,
   addTrainingPlanDraftSupersetGroup,
   deleteTrainingPlanDraftSlot,
+  discardTrainingPlanDraft,
   markTrainingPlanDraftStale,
   normalizeTrainingPlanDraft,
   reorderTrainingPlanDraftSlot,
@@ -47,6 +48,29 @@ describe("Training Plan Draft lifecycle", () => {
         warnings: [],
       },
     });
+  });
+
+  it("discards the Training Plan Draft while keeping Plan Builder choices", () => {
+    const blueprint = createTestPlanBlueprint();
+    const discardedBlueprint = discardTrainingPlanDraft({
+      blueprint,
+      timestamp: "2026-07-07T08:30:00.000Z",
+    });
+
+    expect(blueprint.trainingPlanDraft).not.toBeNull();
+    expect(discardedBlueprint).toEqual({
+      ...blueprint,
+      trainingPlanDraft: null,
+      updatedAt: "2026-07-07T08:30:00.000Z",
+    });
+  });
+
+  it("leaves a Plan Builder without a Training Plan Draft unchanged when discarding", () => {
+    const blueprint: PlanBlueprint = { ...createTestPlanBlueprint(), trainingPlanDraft: null };
+
+    expect(discardTrainingPlanDraft({ blueprint, timestamp: "2026-07-07T08:30:00.000Z" })).toBe(
+      blueprint,
+    );
   });
 
   it("marks Training Plan Draft as Stale Builder Output without losing draft content", () => {

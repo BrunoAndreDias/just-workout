@@ -136,6 +136,14 @@ async function applyResolvedPlanBlueprint(
   );
 }
 
+async function discardTrainingPlanDraft(
+  options?: Parameters<typeof planBlueprintCommandBuilders.discardTrainingPlanDraft>[0],
+) {
+  return persistPlanBlueprintCommand(
+    planBlueprintCommandBuilders.discardTrainingPlanDraft(options),
+  );
+}
+
 async function renameTrainingPlanDraftWorkoutTemplate(
   options: Parameters<
     typeof planBlueprintCommandBuilders.renameTrainingPlanDraftWorkoutTemplate
@@ -271,6 +279,7 @@ export const planBuilderService = {
   confirmSelectedTrainingVolume,
   deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
+  discardTrainingPlanDraft,
   getOrCreatePlanBlueprint: getOrCreateCurrentPlanBlueprint,
   initializeTrainingVolume,
   moveTrainingPlanDraftSlotToSupersetGroup,

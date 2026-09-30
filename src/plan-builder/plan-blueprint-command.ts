@@ -8,6 +8,7 @@ import {
   createDefaultPlanBlueprint,
   deleteTrainingPlanDraftSlot,
   deleteTrainingPlanDraftSupersetGroup,
+  discardTrainingPlanDraft,
   moveTrainingPlanDraftSlotToSupersetGroup,
   normalizePlanBlueprint,
   type PlanBlueprint,
@@ -37,6 +38,10 @@ export type PlanBlueprintCommand =
   | {
       transition: PlanBlueprintTransition;
       type: "planBlueprintTransition";
+    }
+  | {
+      timestamp: string;
+      type: "discardTrainingPlanDraft";
     }
   | {
       timestamp: string;
@@ -379,6 +384,8 @@ export function projectPlanBlueprintCommand({
         blueprint,
         transition: command.transition,
       });
+    case "discardTrainingPlanDraft":
+      return discardTrainingPlanDraft({ blueprint, timestamp: command.timestamp });
     case "renameTrainingPlanDraftWorkoutTemplate":
       return renameTrainingPlanDraftWorkoutTemplate({
         blueprint,
@@ -501,6 +508,12 @@ export const planBlueprintCommandBuilders = {
     return {
       blueprint,
       type: "replacePlanBlueprint",
+    } satisfies PlanBlueprintCommand;
+  },
+  discardTrainingPlanDraft({ timestamp }: { timestamp?: string } = {}) {
+    return {
+      timestamp: getPlanBlueprintCommandTimestamp(timestamp),
+      type: "discardTrainingPlanDraft",
     } satisfies PlanBlueprintCommand;
   },
   renameTrainingPlanDraftWorkoutTemplate({

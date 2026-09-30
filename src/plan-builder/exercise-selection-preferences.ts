@@ -144,6 +144,10 @@ const movementPatternSessionBiasBySplit = {
       "Covered when legs sessions come up in the rotation, with accessory work added as needed.",
     upper_body: "Covered across push and pull sessions in the rotation instead of one fixed week.",
   },
+  "rotating-upper-lower": {
+    lower_body: "Covered across the rotating Lower A and Lower B sessions.",
+    upper_body: "Covered across the rotating Upper A and Upper B sessions.",
+  },
   "upper-lower-4-day": {
     lower_body: "Covered across the split's lower sessions with room for direct accessory work.",
     upper_body: "Covered across the split's upper sessions while lower days stay focused.",

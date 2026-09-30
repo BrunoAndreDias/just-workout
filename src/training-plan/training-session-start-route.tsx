@@ -4,7 +4,12 @@ import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader, PageMain } from "../design-system/typography";
 import { parsePositiveBodyweight } from "./bodyweight-input";
-import { hasBodyweightLoadExercise } from "./bodyweight-load";
+import {
+  describeBodyweightSource,
+  type ResolvedTrainingWeekBodyweight,
+  requiresSessionBodyweight,
+  resolveTrainingWeekBodyweight,
+} from "./session-bodyweight";
 import type { TrainingPlan, WorkoutTemplate } from "./training-plan";
 import {
   parseTrainingSessionStartChoicePathname,
@@ -19,7 +24,6 @@ import { trainingPlanService } from "./training-plan-service";
 import { useTrainingPlanAndSessions } from "./training-plan-session-queries";
 import type { TrainingSession, TrainingSessionIntent } from "./training-session";
 import { resolveRequestedTrainingSessionIntent } from "./training-session-sequencing";
-import { resolveTrainingWeekBodyweight } from "./training-week-bodyweight";
 import "./training-plan-loading.css";
 import "./training-session-start-route.css";
 
@@ -56,7 +60,7 @@ export function TrainingSessionStartRoute() {
         title={sessionIntent === "extra" ? "Start Extra Training Session" : "Start training"}
       />
       <PageMain>
-        {hasTrainingPlanBodyweightExercises(trainingPlan.workoutTemplates) ? (
+        {requiresSessionBodyweight(trainingPlan.workoutTemplates) ? (
           <TrainingSurfaceBodyweightCard
             baselineBodyweightInput={baselineBodyweightInput}
             currentWeekInput={trainingWeekBodyweightInput}
@@ -107,7 +111,7 @@ function useTrainingSessionStartData(
   routeParams: { planId: string; requestedIntent: "extra" | null } | null,
 ): {
   isLoading: boolean;
-  resolvedTrainingWeekBodyweight: ReturnType<typeof resolveTrainingWeekBodyweight> | null;
+  resolvedTrainingWeekBodyweight: ResolvedTrainingWeekBodyweight | null;
   sessionIntent: TrainingSessionIntent;
   trainingPlan: TrainingPlan | null | undefined;
 } {
@@ -157,7 +161,7 @@ function useTrainingSurfaceBodyweightState({
   trainingPlan,
 }: {
   queryClient: ReturnType<typeof useQueryClient>;
-  resolvedTrainingWeekBodyweight: ReturnType<typeof resolveTrainingWeekBodyweight> | null;
+  resolvedTrainingWeekBodyweight: ResolvedTrainingWeekBodyweight | null;
   trainingPlan: TrainingPlan | null | undefined;
 }) {
   const [baselineBodyweightInput, setBaselineBodyweightInput] = useState("");
@@ -321,7 +325,7 @@ function TrainingSurfaceBodyweightCard({
 }: {
   baselineBodyweightInput: string;
   currentWeekInput: string;
-  inheritedBodyweightSource: "baseline" | "inherited_weekly" | null;
+  inheritedBodyweightSource: ResolvedTrainingWeekBodyweight["source"];
   onBaselineBodyweightInputChange: (value: string) => void;
   onCurrentWeekInputChange: (value: string) => void;
   onSaveBaselineBodyweight: () => void;
@@ -370,7 +374,7 @@ function TrainingSurfaceBodyweightCard({
           </div>
           <small>
             {weekLabel ? `Current Training Week ${weekLabel}. ` : ""}
-            {getInheritedBodyweightSourceLabel(inheritedBodyweightSource)}
+            {describeBodyweightSource(inheritedBodyweightSource, "week")}
           </small>
           <button onClick={onSaveCurrentWeekBodyweight} type="button">
             Save Training Week bodyweight
@@ -378,31 +382,5 @@ function TrainingSurfaceBodyweightCard({
         </label>
       </div>
     </section>
-  );
-}
-
-function getInheritedBodyweightSourceLabel(source: "baseline" | "inherited_weekly" | null): string {
-  switch (source) {
-    case "baseline":
-      return "Inherited from Baseline Bodyweight.";
-    case "inherited_weekly":
-      return "Inherited from the last saved Training Week bodyweight.";
-    default:
-      return "Set a Baseline Bodyweight first.";
-  }
-}
-
-function hasTrainingPlanBodyweightExercises(
-  workoutTemplates: ReadonlyArray<WorkoutTemplate>,
-): boolean {
-  return hasBodyweightLoadExercise(
-    workoutTemplates.flatMap((template) =>
-      template.supersetGroups.flatMap((group) =>
-        group.slots.map((slot) => ({
-          exerciseId: slot.exerciseId,
-          exerciseName: slot.exerciseName,
-        })),
-      ),
-    ),
   );
 }

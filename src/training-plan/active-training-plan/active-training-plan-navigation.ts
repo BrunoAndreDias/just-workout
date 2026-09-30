@@ -6,43 +6,35 @@ import {
   type TrainingSessionStartRouteTarget,
 } from "../training-plan-paths";
 import type { TrainingSession } from "../training-session";
-import { getTrainingSessionSequenceState } from "../training-session-sequencing";
+import {
+  getTrainingSessionSequenceState,
+  type TrainingSessionSequenceState,
+} from "../training-session-sequencing";
 
 export type StartWorkoutRouteTarget =
   | TrainingSessionStartChoiceRouteTarget
   | TrainingSessionStartRouteTarget;
 
+type NextWorkoutSequencePlan = Partial<
+  Pick<
+    TrainingPlan,
+    | "generatedAt"
+    | "trainingBlock"
+    | "trainingBlockWeeks"
+    | "trainingFrequencyDaysPerWeek"
+    | "workoutTemplates"
+  >
+> & {
+  now?: Date;
+  trainingSessions?: ReadonlyArray<TrainingSession>;
+};
+
 export function getStartNextWorkoutRouteTarget(
-  trainingPlan: Pick<TrainingPlan, "id" | "workoutTemplates"> &
-    Partial<
-      Pick<TrainingPlan, "generatedAt" | "trainingBlock" | "trainingFrequencyDaysPerWeek">
-    > & {
-      now?: Date;
-      trainingSessions?: ReadonlyArray<TrainingSession>;
-    },
+  trainingPlan: Pick<TrainingPlan, "id" | "workoutTemplates"> & NextWorkoutSequencePlan,
 ): StartWorkoutRouteTarget {
-  if (
-    !trainingPlan.trainingFrequencyDaysPerWeek ||
-    (!trainingPlan.generatedAt && !trainingPlan.trainingBlock?.startDate)
-  ) {
-    return getStartWorkoutRouteTarget({
-      planId: trainingPlan.id,
-      workoutTemplateId: trainingPlan.workoutTemplates[0]?.id ?? "template-1",
-    });
-  }
+  const sequenceState = getNextWorkoutSequenceState(trainingPlan);
 
-  const sequenceState = getTrainingSessionSequenceState({
-    now: trainingPlan.now,
-    trainingPlan: {
-      generatedAt: trainingPlan.generatedAt,
-      trainingBlock: trainingPlan.trainingBlock,
-      trainingFrequencyDaysPerWeek: trainingPlan.trainingFrequencyDaysPerWeek,
-      workoutTemplates: trainingPlan.workoutTemplates,
-    },
-    trainingSessions: trainingPlan.trainingSessions ?? [],
-  });
-
-  if (sequenceState.isExtraSessionAvailable) {
+  if (sequenceState?.isExtraSessionAvailable) {
     return getTrainingSessionStartChoiceRouteTarget({
       intent: "extra",
       planId: trainingPlan.id,
@@ -51,7 +43,8 @@ export function getStartNextWorkoutRouteTarget(
 
   return getStartWorkoutRouteTarget({
     planId: trainingPlan.id,
-    workoutTemplateId: sequenceState.nextPlannedTemplateId,
+    workoutTemplateId:
+      sequenceState?.nextPlannedTemplateId ?? trainingPlan.workoutTemplates[0]?.id ?? "template-1",
   });
 }
 
@@ -71,40 +64,46 @@ export function getStartWorkoutRouteTarget({
   });
 }
 
-export function getNextWorkoutTemplateId({
+export function getNextWorkoutTemplateId(
+  trainingPlan: NextWorkoutSequencePlan,
+): WorkoutTemplate["id"] {
+  return (
+    getNextWorkoutSequenceState(trainingPlan)?.nextPlannedTemplateId ??
+    trainingPlan.workoutTemplates?.[0]?.id ??
+    "template-1"
+  );
+}
+
+/** Without templates, a weekly target, or a calendar anchor, sequencing falls back to the first template. */
+function getNextWorkoutSequenceState({
+  generatedAt,
   now,
+  trainingBlock,
+  trainingBlockWeeks,
   trainingFrequencyDaysPerWeek,
   trainingSessions = [],
-  trainingBlock,
-  generatedAt,
-  workoutTemplates,
-}: Partial<
-  Pick<
-    TrainingPlan,
-    "generatedAt" | "trainingBlock" | "trainingFrequencyDaysPerWeek" | "workoutTemplates"
-  >
-> & {
-  now?: Date;
-  trainingSessions?: ReadonlyArray<TrainingSession>;
-}): WorkoutTemplate["id"] {
-  const resolvedWorkoutTemplates = workoutTemplates ?? [];
+  workoutTemplates = [],
+}: NextWorkoutSequencePlan): TrainingSessionSequenceState | null {
+  const calendarAnchor = generatedAt ?? trainingBlock?.startDate;
 
   if (
-    resolvedWorkoutTemplates.length === 0 ||
+    workoutTemplates.length === 0 ||
     !trainingFrequencyDaysPerWeek ||
-    (!generatedAt && !trainingBlock?.startDate)
+    !trainingBlockWeeks ||
+    !calendarAnchor
   ) {
-    return resolvedWorkoutTemplates[0]?.id ?? "template-1";
+    return null;
   }
 
   return getTrainingSessionSequenceState({
     now,
     trainingPlan: {
-      generatedAt,
+      generatedAt: calendarAnchor,
       trainingBlock,
+      trainingBlockWeeks,
       trainingFrequencyDaysPerWeek,
-      workoutTemplates: resolvedWorkoutTemplates,
+      workoutTemplates,
     },
     trainingSessions,
-  }).nextPlannedTemplateId;
+  });
 }

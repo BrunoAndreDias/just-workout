@@ -16,6 +16,7 @@ type RepRangeStyleStepProps = {
   onRepRangeStyleChange: (repRangeStyle: RepRangeStyleId) => void;
   savedRepRangeStyleId: RepRangeStyleId | null;
   selectedRepRangeStyle: RepRangeStyle;
+  showEffectsPanel?: boolean;
 };
 
 type RepRangeStyleEffectsPanelProps = {
@@ -37,6 +38,7 @@ export function RepRangeStyleStep({
   onRepRangeStyleChange,
   savedRepRangeStyleId,
   selectedRepRangeStyle,
+  showEffectsPanel = true,
 }: RepRangeStyleStepProps) {
   return (
     <section aria-label="Rep Range Style selection" className="rep-range-step">
@@ -53,7 +55,9 @@ export function RepRangeStyleStep({
         ))}
       </fieldset>
 
-      <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
+      {showEffectsPanel ? (
+        <RepRangeStyleEffectsPanel repRangeStyle={selectedRepRangeStyle} />
+      ) : null}
 
       <div className="rep-range-generation-note" role="note">
         <Info aria-hidden="true" size={18} strokeWidth={1.9} />

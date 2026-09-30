@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
 import type { PlanBlueprint } from "../plan-builder/plan-blueprint";
 import {
@@ -18,6 +18,12 @@ describe("trainingPlanService", () => {
   });
 
   it("stores current Training Block metadata on newly completed Training Sessions", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-20T10:00:00.000Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+
     const trainingPlan = createTrainingPlan({
       trainingBlock: {
         cycleNumber: 2,

@@ -351,4 +351,21 @@
     ol {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .plan-builder-one-page__step.plan-builder-page.plan-builder-page--frequency
+    .training-schedule-split__card,
+  .plan-builder-one-page__step.plan-builder-page.plan-builder-page--frequency
+    .training-schedule-split__layout
+    li {
+    min-width: 0;
+  }
+
+  .plan-builder-one-page__step.plan-builder-page.plan-builder-page--frequency
+    .training-schedule-split__title-row
+    h3,
+  .plan-builder-one-page__step.plan-builder-page.plan-builder-page--frequency
+    .training-schedule-split__layout
+    span {
+    overflow-wrap: anywhere;
+  }
 }

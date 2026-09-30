@@ -12,6 +12,12 @@ import {
 } from "./training-plan-presentation";
 import type { TrainingSession } from "./training-session";
 import { getTrainingSessionIntent } from "./training-session-sequencing";
+import {
+  compareTrainingSessionTargets,
+  summarizeTrainingSessionTargets,
+  type TrainingSessionExerciseTargetComparison,
+  type TrainingSessionTargetSummary,
+} from "./training-session-target-comparison";
 import { addUtcDays, toDayKey, toUtcDay } from "./training-week-date";
 import { formatTrainingWeekRangeLabel } from "./training-week-range-label";
 
@@ -55,6 +61,9 @@ export type TrainingHistorySessionReport = {
   loadedSetCount: number;
   sessionIntent: "extra" | "planned";
   sessionBodyweight: number | null;
+  /** Done sets next to the Session Target each was logged against. */
+  targetComparisons: ReadonlyArray<TrainingSessionExerciseTargetComparison>;
+  targetSummary: TrainingSessionTargetSummary;
   templateId: string;
   templateLabel: string;
   volumeProgression: TrainingHistorySessionVolumeProgression;
@@ -193,6 +202,7 @@ export function buildTrainingHistoryWeekReport({
   );
   const selectedSessionReports = addTrainingSessionProgression({
     completedSessions,
+    trainingSessions,
     selectedSessionReports: selectedTrainingSessions.map(createTrainingHistorySessionReport),
   });
   const previousSessionReports = previousSessions.map(createTrainingHistorySessionReport);
@@ -643,6 +653,7 @@ function createTrainingHistorySessionReport(
       sessionBodyweight: trainingSession.sessionBodyweight,
     }),
   );
+  const targetComparisons = compareTrainingSessionTargets(trainingSession.exercises);
 
   return {
     completedAt: trainingSession.completedAt,
@@ -654,6 +665,8 @@ function createTrainingHistorySessionReport(
     loadedSetCount: completedLoadVolume.loadedSetCount,
     sessionIntent: getTrainingSessionIntent(trainingSession),
     sessionBodyweight: trainingSession.sessionBodyweight ?? null,
+    targetComparisons,
+    targetSummary: summarizeTrainingSessionTargets(targetComparisons),
     templateId: trainingSession.templateId,
     templateLabel: trainingSession.templateLabel,
     volumeProgression: {
@@ -668,36 +681,53 @@ function createTrainingHistorySessionReport(
 function addTrainingSessionProgression({
   completedSessions,
   selectedSessionReports,
+  trainingSessions,
 }: {
   completedSessions: ReadonlyArray<CompletedTrainingSession>;
   selectedSessionReports: ReadonlyArray<TrainingHistorySessionReport>;
+  trainingSessions: ReadonlyArray<TrainingSession>;
 }): ReadonlyArray<TrainingHistorySessionReport> {
-  const sessionReportsById = new Map(
-    completedSessions
-      .slice()
-      .sort((firstSession, secondSession) =>
-        firstSession.completedAt.localeCompare(secondSession.completedAt),
-      )
-      .map((session) => {
-        const report = createTrainingHistorySessionReport(session);
+  const volumeProgressionBySessionId = getVolumeProgressionBySessionId({
+    completedSessions,
+    trainingSessions,
+  });
 
-        return [session.id, report] as const;
-      }),
-  );
+  return selectedSessionReports.map((sessionReport) => ({
+    ...sessionReport,
+    volumeProgression:
+      volumeProgressionBySessionId.get(sessionReport.id) ?? sessionReport.volumeProgression,
+  }));
+}
+
+// Progression spans the whole history, so switching weeks reuses it for the same session list.
+const volumeProgressionBySessionIdCache = new WeakMap<
+  ReadonlyArray<TrainingSession>,
+  ReadonlyMap<string, TrainingHistorySessionVolumeProgression>
+>();
+
+function getVolumeProgressionBySessionId({
+  completedSessions,
+  trainingSessions,
+}: {
+  completedSessions: ReadonlyArray<CompletedTrainingSession>;
+  trainingSessions: ReadonlyArray<TrainingSession>;
+}): ReadonlyMap<string, TrainingHistorySessionVolumeProgression> {
+  const cachedProgression = volumeProgressionBySessionIdCache.get(trainingSessions);
+
+  if (cachedProgression) {
+    return cachedProgression;
+  }
+
   const previousComparableSessionByTemplateId = new Map<string, TrainingHistorySessionReport>();
   const volumeProgressionBySessionId = new Map<string, TrainingHistorySessionVolumeProgression>();
-
-  for (const trainingSession of completedSessions
+  const sessionReports = completedSessions
     .slice()
     .sort((firstSession, secondSession) =>
       firstSession.completedAt.localeCompare(secondSession.completedAt),
-    )) {
-    const sessionReport = sessionReportsById.get(trainingSession.id);
+    )
+    .map(createTrainingHistorySessionReport);
 
-    if (!sessionReport) {
-      continue;
-    }
-
+  for (const sessionReport of sessionReports) {
     const comparableSessionKey = getComparableTrainingSessionKey(sessionReport);
     const previousComparableSession =
       previousComparableSessionByTemplateId.get(comparableSessionKey);
@@ -712,11 +742,9 @@ function addTrainingSessionProgression({
     previousComparableSessionByTemplateId.set(comparableSessionKey, sessionReport);
   }
 
-  return selectedSessionReports.map((sessionReport) => ({
-    ...sessionReport,
-    volumeProgression:
-      volumeProgressionBySessionId.get(sessionReport.id) ?? sessionReport.volumeProgression,
-  }));
+  volumeProgressionBySessionIdCache.set(trainingSessions, volumeProgressionBySessionId);
+
+  return volumeProgressionBySessionId;
 }
 
 function getComparableTrainingSessionKey(sessionReport: TrainingHistorySessionReport): string {

@@ -1,15 +1,15 @@
+import { getCurrentTrainingWeek, isSessionInTrainingWeek } from "./training-block-calendar";
 import type { TrainingPlan } from "./training-plan";
 import type { TrainingSession, TrainingSessionIntent } from "./training-session";
-import {
-  getTrainingWeekRangeForReferenceDate,
-  isTrainingSessionInWeekRange,
-} from "./training-week-bodyweight";
 
 type TrainingSessionSequencePlan = Pick<
   TrainingPlan,
-  "trainingBlock" | "trainingFrequencyDaysPerWeek" | "workoutTemplates"
-> &
-  Partial<Pick<TrainingPlan, "generatedAt">>;
+  | "generatedAt"
+  | "trainingBlock"
+  | "trainingBlockWeeks"
+  | "trainingFrequencyDaysPerWeek"
+  | "workoutTemplates"
+>;
 
 export type TrainingSessionSequenceState = {
   completedPlannedSessions: number;
@@ -32,23 +32,32 @@ export function getTrainingSessionSequenceState({
   trainingPlan: TrainingSessionSequencePlan;
   trainingSessions: ReadonlyArray<TrainingSession>;
 }): TrainingSessionSequenceState {
-  const currentWeekRange = getTrainingWeekRangeForReferenceDate({
-    referenceDate: now.toISOString(),
-    trainingPlan,
-  });
+  const currentWeek = getCurrentTrainingWeek(trainingPlan, now);
   const completedPlannedSessions = trainingSessions.filter(
     (trainingSession) =>
       trainingSession.completedAt !== null &&
-      isTrainingSessionInWeekRange({ trainingSession, weekRange: currentWeekRange }) &&
+      isSessionInTrainingWeek(trainingSession, currentWeek) &&
       getTrainingSessionIntent(trainingSession) === "planned",
   ).length;
+
+  // A rotating cycle (e.g. Upper A/Lower A/Upper B/Lower B on 3 days/week) carries over across
+  // weeks, so its position comes from every planned session instead of restarting each week.
+  const isRotatingCycle =
+    trainingPlan.workoutTemplates.length !== trainingPlan.trainingFrequencyDaysPerWeek;
+  const sequencePosition = isRotatingCycle
+    ? trainingSessions.filter(
+        (trainingSession) =>
+          trainingSession.completedAt !== null &&
+          getTrainingSessionIntent(trainingSession) === "planned",
+      ).length
+    : completedPlannedSessions;
 
   return {
     completedPlannedSessions,
     isExtraSessionAvailable: completedPlannedSessions >= trainingPlan.trainingFrequencyDaysPerWeek,
     nextPlannedTemplateId:
-      trainingPlan.workoutTemplates[completedPlannedSessions % trainingPlan.workoutTemplates.length]
-        ?.id ?? "template-1",
+      trainingPlan.workoutTemplates[sequencePosition % trainingPlan.workoutTemplates.length]?.id ??
+      "template-1",
   };
 }
 
