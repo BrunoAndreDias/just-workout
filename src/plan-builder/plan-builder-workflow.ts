@@ -21,6 +21,7 @@ export type PlanBuilderWorkflow = {
   defaultEntryActions: {
     shouldInitializeTrainingVolume: boolean;
     shouldSelectDefaultRepRangeStyle: boolean;
+    shouldSelectDefaultTrainingSplit: boolean;
   };
   exerciseSetup: {
     configuredBlueprint: PlanBlueprint | null;
@@ -82,6 +83,7 @@ function getLoadingPlanBuilderWorkflow(activeStep: PlanBuilderStep | null): Plan
     defaultEntryActions: {
       shouldInitializeTrainingVolume: activeStep === "volume",
       shouldSelectDefaultRepRangeStyle: activeStep === "rep-ranges",
+      shouldSelectDefaultTrainingSplit: false,
     },
     exerciseSetup: {
       configuredBlueprint: null,

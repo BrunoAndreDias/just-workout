@@ -65,10 +65,23 @@
   --jw-builder-section-title-line-height: 2rem;
   --jw-builder-body-size: 1rem;
   --jw-builder-body-line-height: 1.5rem;
+  /* Fluid type scale: grows from phone (360px) to laptop (1440px), then steps up on very large screens. */
+  --jw-type-meta: clamp(0.75rem, 0.7292rem + 0.0926vw, 0.8125rem);
+  --jw-type-label: clamp(0.8125rem, 0.7833rem + 0.1296vw, 0.9rem);
+  --jw-type-body: clamp(0.9375rem, 0.9167rem + 0.0926vw, 1rem);
+  --jw-type-card-title: clamp(1rem, 0.9375rem + 0.2778vw, 1.1875rem);
+  --jw-type-section-title: clamp(1.125rem, 1.0417rem + 0.3704vw, 1.375rem);
+  --jw-type-display: clamp(1.5rem, 1.2917rem + 0.9259vw, 2.125rem);
 }
 
 @media (min-width: 1800px) {
   :root {
+    --jw-type-meta: 0.875rem;
+    --jw-type-label: 0.9375rem;
+    --jw-type-body: 1.0625rem;
+    --jw-type-card-title: 1.25rem;
+    --jw-type-section-title: 1.5rem;
+    --jw-type-display: 2.5rem;
     --jw-page-title-size: 2.125rem;
     --jw-page-title-line-height: 2.5rem;
     --jw-page-lead-size: 0.9375rem;

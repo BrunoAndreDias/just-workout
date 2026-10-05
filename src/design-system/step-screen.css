@@ -26,10 +26,6 @@
 }
 
 @media (min-width: 1024px) and (min-height: 700px) {
-  .plan-builder-page .plan-builder-workspace-card {
-    padding-bottom: 6rem;
-  }
-
   .plan-builder-page .step-actions.step-actions {
     position: fixed;
     right: auto;

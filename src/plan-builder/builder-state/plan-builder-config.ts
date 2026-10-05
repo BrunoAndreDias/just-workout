@@ -4,7 +4,7 @@ const planBuilderSteps = [
   { id: "volume", label: "Volume" },
   { id: "exercises", label: "Exercises" },
   { id: "generate", label: "Generate" },
-];
+] as const;
 
 export type PlanBuilderStep = (typeof planBuilderSteps)[number]["id"];
 

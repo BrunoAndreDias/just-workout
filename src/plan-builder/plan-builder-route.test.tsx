@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { resetLocalDatabase } from "../app/local-database";
@@ -34,14 +34,9 @@ const upstreamPlanBuilderOptions = {
   volumePreset: "higher_volume",
 } as const;
 
-const unconfirmedExerciseDefaultsOverviewCopy =
-  "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults";
+const unconfirmedExerciseDefaultsOverviewCopy = "Not reviewed";
 
-const confirmedExerciseDefaultsOverviewCopy =
-  "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults";
-
-const generateStepPreferenceMappingCopy =
-  "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
+const confirmedExerciseDefaultsOverviewCopy = "Recommended picks";
 
 const defaultGenerationPreferenceMappingCopy =
   "The Generate Step will turn your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
@@ -64,7 +59,7 @@ describe("Plan Builder canonical route", () => {
       expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     });
 
-    expect(screen.getByText("Plan Blueprint sections")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Build your Training Plan" })).toBeVisible();
     expect(await screen.findByRole("navigation", { name: /primary/i })).toBeVisible();
     expect(
       await screen.findByRole("navigation", { name: /plan blueprint sections/i }),
@@ -115,6 +110,61 @@ describe("Plan Builder canonical route", () => {
     expect(await screen.findByRole("heading", { name: /generate training plan/i })).toBeVisible();
   });
 
+  it("moves between sections with the shared step footer without gating any section", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+    await user.click(await screen.findByRole("button", { name: /^next: rep ranges$/i }));
+    expect(await screen.findByRole("heading", { name: "How many reps per set?" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /^next: volume$/i }));
+    await user.click(await screen.findByRole("button", { name: /^next: exercises$/i }));
+    await user.click(await screen.findByRole("button", { name: /^next: generate$/i }));
+    expect(await screen.findByRole("heading", { name: "Generate Training Plan" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /^edit rep ranges$/i }));
+    expect(await screen.findByRole("heading", { name: "How many reps per set?" })).toBeVisible();
+
+    await user.click(within(getStepFooter()).getByRole("button", { name: /^overview$/i }));
+    expect(await screen.findByRole("heading", { name: "Build your Training Plan" })).toBeVisible();
+  });
+
+  it("applies the Recommended Training Split when Training schedule opens", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await user.click(await getOnePageSectionButton("Training schedule"));
+
+    expect(await screen.findByRole("radio", { name: /3-day full body/i })).toBeChecked();
+    await waitFor(async () => {
+      expect(await planBuilderService.getOrCreatePlanBlueprint()).toMatchObject({
+        split: "full-body-3-day",
+      });
+    });
+  });
+
+  it("keeps optional Exercises sections collapsed until the user customizes them", async () => {
+    const user = userEvent.setup();
+
+    renderPlanBuilder({ initialEntries: [planBuilderPaths.entry] });
+
+    await openExercisesSection(user);
+
+    expect(await screen.findByText("Using recommended backups for every movement.")).toBeVisible();
+    expect(screen.getByText("Using recommended accessories.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /^customize accessories$/i }));
+
+    expect(await screen.findByText("Biceps")).toBeVisible();
+    expect(screen.getByRole("button", { name: /^hide accessories$/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
   it("resets viewport scroll when entering a Plan Builder section", async () => {
     const user = userEvent.setup();
     const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
@@ -149,16 +199,7 @@ describe("Plan Builder canonical route", () => {
     const exercisesCard = await getOnePageSectionButton("Exercises");
 
     expect(
-      await within(exercisesCard).findByText("Exercises Step preference progress"),
-    ).toBeVisible();
-    expect(
-      await within(exercisesCard).findByText("0 Main Compound Preferences buckets ranked"),
-    ).toBeVisible();
-    expect(
-      await within(exercisesCard).findByText("0 Main Compound Rotation Preferences buckets ranked"),
-    ).toBeVisible();
-    expect(
-      await within(exercisesCard).findByText("0 Isolation Exercise Preferences buckets ranked"),
+      await within(exercisesCard).findByText("Rank the lifts you like, or keep our picks"),
     ).toBeVisible();
     expect(
       await within(exercisesCard).findByText(unconfirmedExerciseDefaultsOverviewCopy),
@@ -168,15 +209,7 @@ describe("Plan Builder canonical route", () => {
     await rankHorizontalPushRotationPreferences(user);
     await rankBicepsIsolationPreferences(user);
 
-    expect(
-      within(exercisesCard).getByText("1 Main Compound Preferences bucket ranked"),
-    ).toBeVisible();
-    expect(
-      within(exercisesCard).getByText("1 Main Compound Rotation Preferences bucket ranked"),
-    ).toBeVisible();
-    expect(
-      within(exercisesCard).getByText("1 Isolation Exercise Preferences bucket ranked"),
-    ).toBeVisible();
+    expect(within(exercisesCard).getByText("3 preferences ranked")).toBeVisible();
   });
 
   it("shows confirmed Exercises default language in the overview and Generate Step review copy", async () => {
@@ -202,7 +235,9 @@ describe("Plan Builder canonical route", () => {
     await user.click(await getOnePageSectionButton("Generate"));
 
     expect(
-      await screen.findByText(generateStepPreferenceMappingCopy, { exact: false }),
+      await screen.findByText(confirmedExerciseDefaultsOverviewCopy, {
+        selector: ".pb-generate__choice-value",
+      }),
     ).toBeVisible();
   });
 
@@ -589,7 +624,7 @@ describe("Plan Builder canonical route", () => {
     await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
     const confirmation = await screen.findByRole("dialog", {
-      name: /default generation confirmation/i,
+      name: /use recommended defaults\?/i,
     });
 
     expect(
@@ -601,7 +636,7 @@ describe("Plan Builder canonical route", () => {
     await user.click(within(confirmation).getByRole("button", { name: /^cancel$/i }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: /default generation confirmation/i })).toBeNull();
+      expect(screen.queryByRole("dialog", { name: /use recommended defaults\?/i })).toBeNull();
     });
     expect(router.state.location.pathname).toBe(planBuilderPaths.entry);
     expect(await getActiveTrainingPlans()).toHaveLength(0);
@@ -621,7 +656,7 @@ describe("Plan Builder canonical route", () => {
     await user.click(screen.getByRole("button", { name: /^generate training plan$/i }));
 
     const confirmation = await screen.findByRole("dialog", {
-      name: /default generation confirmation/i,
+      name: /use recommended defaults\?/i,
     });
 
     expect(within(confirmation).getByText("3-Day Full Body")).toBeVisible();
@@ -1481,9 +1516,38 @@ async function getMainCompoundRotationPreferenceRow(title: string) {
   return row;
 }
 
+function getStepFooter() {
+  const footer = document.querySelector(".pb-step-footer");
+
+  if (!(footer instanceof HTMLElement)) {
+    throw new Error("Expected the shared Plan Builder step footer.");
+  }
+
+  return footer;
+}
+
+async function expandOptionalExercisesSection(title: string) {
+  const heading = await screen.findByRole("heading", { name: title });
+  const section = heading.closest("section");
+
+  if (!section) {
+    throw new Error(`Expected an optional Exercises section for "${title}".`);
+  }
+
+  const toggle = within(section).queryByRole("button", {
+    name: new RegExp(`^customize ${title}$`, "i"),
+  });
+
+  if (toggle) {
+    fireEvent.click(toggle);
+  }
+}
+
 async function getVisibleMainCompoundRotationRow(title: string) {
+  await expandOptionalExercisesSection("Backup exercises");
+
   const heading = await screen.findByRole("heading", {
-    name: "Rotation (Backup Exercises)",
+    name: "Backup exercises",
   });
   const section = heading.closest("section");
 
@@ -1502,6 +1566,8 @@ async function getVisibleMainCompoundRotationRow(title: string) {
 }
 
 async function getIsolationPreferenceRow(title: string) {
+  await expandOptionalExercisesSection("Accessories");
+
   const label = await screen.findByText(title);
   const row = label.closest("li");
 

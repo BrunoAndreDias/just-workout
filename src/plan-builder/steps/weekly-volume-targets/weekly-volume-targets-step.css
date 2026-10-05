@@ -1,255 +1,136 @@
-.training-volume-step {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.training-volume-panel h4,
-.training-volume-panel h5,
-.training-volume-section-title,
-.volume-preset-option__title {
-  font-family: var(--jw-font-heading);
-  font-weight: 700;
-  letter-spacing: var(--jw-heading-tracking);
-}
-
-.training-volume-section-title,
-.training-volume-panel h4 {
-  font-size: var(--jw-section-title-size);
-  line-height: var(--jw-section-title-line-height);
-}
-
-.volume-preset-option__title {
-  font-size: var(--jw-card-title-size);
-  line-height: var(--jw-card-title-line-height);
-}
-
-.training-volume-section-copy,
-.volume-preset-option__copy {
-  font-size: var(--jw-body-size);
-  line-height: var(--jw-body-line-height);
-}
-
-.training-volume-panel {
-  min-width: 0;
-}
-
-.volume-preset-options {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 0;
-}
-
-.volume-preset-option {
-  display: block;
-  min-height: 12.5rem;
-  padding: 1rem;
-}
-
-.volume-preset-option--selected {
-  border-color: #00636a;
-  background: #fbfdfc;
-  color: #112c3a;
-  box-shadow: inset 0 0 0 1px #00636a;
-}
-
-.volume-preset-option__body {
-  display: flex;
-  height: 100%;
-  gap: 0.95rem;
-}
-
-.volume-preset-option__body > .min-w-0 {
-  display: flex;
-  min-height: 100%;
-  flex-direction: column;
-}
-
-.volume-preset-option .rep-range-targets {
-  padding-top: 0.9rem;
-}
-
-.volume-preset-option .rep-range-target {
-  padding: 0.58rem 0;
-}
-
-.training-volume-targets-grid {
-  display: grid;
-  gap: 1.25rem;
-  margin-top: 1.25rem;
-  max-width: 58rem;
-}
-
-.training-volume-target-section {
-  min-width: 0;
-}
-
-.weekly-volume-target-groups {
-  display: grid;
-  gap: 0;
-  margin-top: 1rem;
-}
-
-.weekly-volume-target-group {
-  min-width: 0;
-  border-top: 1px solid var(--jw-step-border);
-  padding: 0.82rem 0 0.9rem;
-}
-
-.weekly-volume-target-group:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.weekly-volume-target-group--optional {
-  padding-bottom: 0;
-}
-
-.weekly-volume-target-group h5 {
+.pb-loading {
   margin: 0;
-  color: #31505d;
-  font-family: var(--jw-font-heading);
-  font-size: 0.76rem;
+  color: #4f656e;
+  font-size: var(--jw-type-body);
+  font-weight: 600;
+}
+
+.pb-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.pb-targets__group {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.5rem;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 0.875rem;
+  background: #ffffff;
+  padding: 0.875rem 1rem 0.5rem;
+}
+
+.pb-targets__group-title {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  color: #120f0d;
+  font-size: var(--jw-type-label);
   font-weight: 800;
-  letter-spacing: 0.01em;
-  line-height: 1.1rem;
 }
 
-.weekly-volume-target-group__header {
+.pb-targets__group-title span {
+  color: #4f656e;
+  font-size: var(--jw-type-meta);
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.pb-targets__list {
   display: grid;
-  gap: 0.25rem;
-  max-width: 40rem;
-}
-
-.weekly-volume-target-group__header p {
-  margin: 0;
-  color: var(--jw-step-copy);
-  font-size: 0.78rem;
-  font-weight: 500;
-  line-height: 1.15rem;
-}
-
-.weekly-volume-target-list {
-  display: grid;
-  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.weekly-volume-target-list {
-  margin-top: 0.42rem;
-}
-
-.weekly-volume-target-row {
+.pb-targets__row {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) 8rem 8.5rem 7rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "muscle reps"
+    "muscle sets";
+  column-gap: 0.75rem;
   align-items: center;
-  gap: 0.85rem;
-  min-width: 0;
-  border-top: 1px solid rgba(25, 43, 45, 0.1);
-  padding: 0.62rem 0;
+  border-top: 1px solid rgba(28, 25, 23, 0.07);
+  padding: 0.5rem 0;
 }
 
-.weekly-volume-target-row__muscle {
-  display: grid;
-  gap: 0.12rem;
-  min-width: 0;
-  color: var(--jw-step-ink);
-  font-size: 0.86rem;
-  font-weight: 650;
-  line-height: 1.15rem;
+.pb-targets__row:first-child {
+  border-top: 0;
 }
 
-.weekly-volume-target-row__description {
-  color: #6f7774;
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1rem;
+.pb-targets__muscle {
+  grid-area: muscle;
+  color: #120f0d;
+  font-size: var(--jw-type-body);
+  font-weight: 700;
 }
 
-.weekly-volume-target-row__reps,
-.weekly-volume-target-row__sets {
-  color: #1f3439;
-  font-size: 0.8rem;
+.pb-targets__reps {
+  grid-area: reps;
+  color: #120f0d;
+  font-size: var(--jw-type-label);
   font-weight: 750;
-  line-height: 1rem;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-.weekly-volume-target-row__sets {
-  color: #52636a;
+.pb-targets__sets {
+  grid-area: sets;
+  color: #4f656e;
+  font-size: var(--jw-type-meta);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pb-targets__row--optional {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "muscle reps toggle"
+    "muscle sets toggle";
+}
+
+.pb-targets__row--optional:not(.pb-targets__row--included) .pb-targets__reps {
+  color: #6a7d85;
   font-weight: 600;
 }
 
-.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
-  .weekly-volume-target-row__muscle,
-.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
-  .weekly-volume-target-row__reps,
-.weekly-volume-target-row--optional:not(.weekly-volume-target-row--included)
-  .weekly-volume-target-row__sets {
-  color: #69736f;
-}
-
-.weekly-volume-target-row--included {
-  background: linear-gradient(90deg, rgba(0, 119, 128, 0.06), rgba(0, 119, 128, 0));
-}
-
-.weekly-volume-target-row__action {
-  justify-self: end;
-  min-width: 6.35rem;
-  height: 2rem;
+.pb-targets__toggle {
+  display: inline-flex;
+  grid-area: toggle;
   min-height: 2rem;
-  border-radius: 0.45rem;
-  font-size: 0.76rem;
-  font-weight: 750;
-  transition:
-    background-color 160ms ease-out,
-    border-color 160ms ease-out,
-    color 160ms ease-out,
-    transform 160ms ease-out;
-}
-
-.weekly-volume-target-row__action--add {
-  border-color: rgba(0, 119, 128, 0.34);
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid rgba(0, 119, 128, 0.35);
+  border-radius: 999px;
   background: #ffffff;
-  color: #00636a;
+  color: #075d63;
+  padding: 0 0.7rem 0 0.55rem;
+  font-size: var(--jw-type-meta);
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease;
 }
 
-.weekly-volume-target-row__action--remove {
-  width: 2rem;
-  min-width: 2rem;
-  border: 1px solid transparent;
-  padding-right: 0;
-  padding-left: 0;
-  color: #52636a;
+.pb-targets__toggle:hover {
+  background: rgba(0, 119, 128, 0.06);
 }
 
-.weekly-volume-target-row__action--remove:hover {
-  border-color: rgba(25, 43, 45, 0.12);
-  background: rgba(25, 43, 45, 0.05);
-  color: #1f3439;
+.pb-targets__toggle[data-included] {
+  border-color: rgba(28, 25, 23, 0.14);
+  color: #4f656e;
 }
 
-.weekly-volume-target-row__action:hover {
-  border-color: rgba(0, 119, 128, 0.32);
-  background: rgba(0, 119, 128, 0.08);
-  color: #005f66;
+.pb-targets__toggle:focus-visible {
+  outline: 2px solid #007780;
+  outline-offset: 2px;
 }
 
-.weekly-volume-target-row__action:active {
-  transform: translateY(1px);
-}
-
-.weekly-volume-target-row__action:focus-visible {
-  outline-color: #007780;
-}
-
-.weekly-volume-targets-note {
-  width: 100%;
-  margin: 0;
-  border-top: 1px solid var(--jw-step-border);
-  padding-top: 0.7rem;
-  color: #31505d;
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.2rem;
+@media (max-width: 980px) {
+  .pb-targets {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

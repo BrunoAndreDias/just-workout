@@ -71,6 +71,27 @@ export function useRepRangeDefaultSelection({
   }, [defaultRepRangeStyleId, shouldSelectDefaultRepRangeStyle, updateRepRangeStyle]);
 }
 
+export function useTrainingSplitDefaultSelection({
+  defaultTrainingSplitId,
+  shouldSelectDefaultTrainingSplit,
+  updateTrainingSplit,
+}: {
+  defaultTrainingSplitId: TrainingSplitId;
+  shouldSelectDefaultTrainingSplit: boolean;
+  updateTrainingSplit: (variables: { split: TrainingSplitId; timestamp: string }) => void;
+}) {
+  useEffect(() => {
+    if (!shouldSelectDefaultTrainingSplit) {
+      return;
+    }
+
+    updateTrainingSplit({
+      split: defaultTrainingSplitId,
+      timestamp: new Date().toISOString(),
+    });
+  }, [defaultTrainingSplitId, shouldSelectDefaultTrainingSplit, updateTrainingSplit]);
+}
+
 export function useTrainingVolumeDefaultSelection({
   initializeTrainingVolumeDefaults,
   shouldInitializeTrainingVolume,

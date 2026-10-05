@@ -1,26 +1,3 @@
-@media (min-width: 860px) {
-  .exercise-foundation-row__grid {
-    grid-template-columns: minmax(15rem, 1.25fr) minmax(13rem, 0.9fr) auto;
-    align-items: center;
-  }
-
-  .exercise-foundation-row__actions {
-    justify-content: flex-end;
-  }
-}
-
-@media (min-width: 1280px) {
-  .exercise-foundation-status {
-    padding: 1rem 1.15rem;
-  }
-}
-
-@media (min-width: 1600px) {
-  .exercise-foundation-workspace {
-    gap: 1.25rem;
-  }
-}
-
 @media (min-width: 1280px) and (max-width: 1599px) {
   .main-compound-drawer {
     width: min(31rem, calc(100vw - var(--jw-sidebar-width)));
@@ -34,11 +11,6 @@
 }
 
 @media (max-width: 640px) {
-  .rotation-pool-inline-preview {
-    margin-left: 0;
-    max-width: 100%;
-  }
-
   .main-compound-drawer {
     width: 100%;
     border-left: 0;
@@ -56,29 +28,8 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
-  .optional-accessories-drawer__option {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .main-compound-drawer__option-tags {
-    grid-column: 2 / -1;
-    justify-content: flex-start;
-  }
-
-  .optional-accessories-drawer__option-action {
-    grid-column: 2 / -1;
-    width: fit-content;
-  }
-
   .main-compound-drawer__option-name {
     white-space: normal;
-  }
-}
-
-@media (max-width: 360px) {
-  .rotation-pool-inline-preview {
-    grid-template-columns: 1fr;
-    width: 100%;
   }
 }
 

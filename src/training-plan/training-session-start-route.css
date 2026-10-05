@@ -1,5 +1,10 @@
 .training-session-start-page {
-  min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)) - 4.9375rem);
+  min-height: calc(
+    100dvh -
+    (2 * var(--app-shell-frame-padding-y)) -
+    var(--app-shell-topbar-height) -
+    1px
+  );
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
 }
 
@@ -152,7 +157,7 @@
 
 @media (max-width: 520px) {
   .training-session-start-page {
-    min-height: calc(100dvh - 4.3125rem);
+    min-height: calc(100dvh - var(--app-shell-topbar-height) - 1px);
     padding: 1.125rem 1rem calc(6.75rem + env(safe-area-inset-bottom));
   }
 }

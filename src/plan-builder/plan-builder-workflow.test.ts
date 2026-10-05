@@ -80,6 +80,7 @@ describe("Plan Builder workflow", () => {
     ).toEqual({
       shouldInitializeTrainingVolume: false,
       shouldSelectDefaultRepRangeStyle: true,
+      shouldSelectDefaultTrainingSplit: false,
     });
 
     expect(
@@ -92,6 +93,7 @@ describe("Plan Builder workflow", () => {
     ).toEqual({
       shouldInitializeTrainingVolume: true,
       shouldSelectDefaultRepRangeStyle: false,
+      shouldSelectDefaultTrainingSplit: false,
     });
   });
 
@@ -104,6 +106,7 @@ describe("Plan Builder workflow", () => {
     ).toEqual({
       shouldInitializeTrainingVolume: false,
       shouldSelectDefaultRepRangeStyle: true,
+      shouldSelectDefaultTrainingSplit: false,
     });
 
     expect(
@@ -114,6 +117,7 @@ describe("Plan Builder workflow", () => {
     ).toEqual({
       shouldInitializeTrainingVolume: true,
       shouldSelectDefaultRepRangeStyle: false,
+      shouldSelectDefaultTrainingSplit: false,
     });
   });
 

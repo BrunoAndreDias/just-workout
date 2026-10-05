@@ -1,20 +1,12 @@
-import {
-  Check,
-  Circle,
-  CircleCheck,
-  Dumbbell,
-  Layers3,
-  SlidersHorizontal,
-  Wand2,
-} from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Wand2 } from "lucide-react";
 import { cn } from "../../design-system/cn";
 import type { PlanBuilderStep } from "../builder-state/plan-builder-config";
-import {
-  hasConfiguredExercises,
-  type PlanBlueprint,
-  type PlanBlueprintSummary,
-} from "../plan-blueprint";
-import type { PlanBuilderWorkflowSectionStatus } from "../plan-builder-workflow";
+import type { PlanBlueprint, PlanBlueprintSummary } from "../plan-blueprint";
+import type {
+  PlanBuilderWorkflow,
+  PlanBuilderWorkflowSectionStatus,
+} from "../plan-builder-workflow";
+import { getPlanBuilderChoiceValue } from "./plan-builder-choice-values";
 import "./one-page-overview.css";
 
 export const planBuilderOnePageSections = [
@@ -22,50 +14,153 @@ export const planBuilderOnePageSections = [
     id: "frequency",
     compactTitle: "Schedule",
     title: "Training schedule",
-    subtitle: "Frequency and split",
-    icon: CircleCheck,
+    subtitle: "How many days you train, and how they're split",
   },
   {
     id: "rep-ranges",
     compactTitle: "Rep ranges",
     title: "Rep ranges",
-    subtitle: "Intensity target",
-    icon: SlidersHorizontal,
+    subtitle: "How many reps you do in each set",
   },
   {
     id: "volume",
     compactTitle: "Volume",
     title: "Volume",
-    subtitle: "Sets and weekly load",
-    icon: Layers3,
+    subtitle: "How much work each muscle gets per week",
   },
   {
     id: "exercises",
     compactTitle: "Exercises",
     title: "Exercises",
-    subtitle: "Exercises Step preference progress",
-    icon: Dumbbell,
+    subtitle: "Rank the lifts you like, or keep our picks",
   },
   {
     id: "generate",
     compactTitle: "Generate",
     title: "Generate",
-    subtitle: "Review before creation",
-    icon: Wand2,
+    subtitle: "Review your choices and create your Training Plan",
   },
 ] as const satisfies ReadonlyArray<{
   id: PlanBuilderStep;
   compactTitle: string;
-  icon: typeof CircleCheck;
   subtitle: string;
   title: string;
 }>;
+
+const planBuilderOnePageChoiceSteps = planBuilderOnePageSections
+  .map((section) => section.id)
+  .filter((step) => step !== "generate");
+
+export function getPlanBuilderOnePageProgress(workflow: PlanBuilderWorkflow) {
+  const steps = planBuilderOnePageChoiceSteps.map((step) => ({
+    id: step,
+    isComplete: workflow.sectionStatuses[step]?.isComplete === true,
+  }));
+
+  return {
+    completedCount: steps.filter((step) => step.isComplete).length,
+    steps,
+    totalCount: steps.length,
+  };
+}
+
+export function PlanBuilderOnePageOverviewHeader({
+  progress,
+}: {
+  progress: ReturnType<typeof getPlanBuilderOnePageProgress>;
+}) {
+  return (
+    <div className="plan-builder-one-page__section-nav-header">
+      <div className="plan-builder-one-page__section-nav-intro">
+        <h2 className="plan-builder-one-page__section-nav-title">Build your Training Plan</h2>
+        <p className="plan-builder-one-page__section-nav-copy">
+          Make four choices in any order, then generate. Anything you skip uses a Recommended
+          Default.
+        </p>
+      </div>
+      <div className="plan-builder-one-page__progress">
+        <p className="plan-builder-one-page__progress-label">
+          <strong>{progress.completedCount}</strong> of {progress.totalCount} set
+        </p>
+        <span aria-hidden="true" className="plan-builder-one-page__progress-track">
+          {progress.steps.map((step) => (
+            <span
+              className="plan-builder-one-page__progress-segment"
+              data-filled={step.isComplete ? "true" : undefined}
+              key={step.id}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Compact step list that lives in the app top bar while a step is open (laptop and up). */
+export function PlanBuilderTopbarStepper({
+  activeStep,
+  onOpenStep,
+  onOverview,
+  workflow,
+}: {
+  activeStep: PlanBuilderStep;
+  onOpenStep: (step: PlanBuilderStep) => void;
+  onOverview: () => void;
+  workflow: PlanBuilderWorkflow;
+}) {
+  return (
+    <nav aria-label="Plan Builder steps" className="pb-topbar-steps">
+      <button className="pb-topbar-steps__overview" onClick={onOverview} type="button">
+        <ArrowLeft aria-hidden="true" size={15} strokeWidth={2.4} />
+        <span>Overview</span>
+      </button>
+      <ol className="pb-topbar-steps__list">
+        {planBuilderOnePageSections.map((section, index) => {
+          const isCurrent = section.id === activeStep;
+          const isComplete = workflow.sectionStatuses[section.id]?.isComplete === true;
+
+          return (
+            <li key={section.id}>
+              <button
+                aria-current={isCurrent ? "step" : undefined}
+                className="pb-topbar-steps__step"
+                data-complete={isComplete ? "true" : undefined}
+                onClick={() => {
+                  if (!isCurrent) {
+                    onOpenStep(section.id);
+                  }
+                }}
+                type="button"
+              >
+                <span aria-hidden="true" className="pb-topbar-steps__marker">
+                  {isComplete ? <Check size={11} strokeWidth={3.4} /> : index + 1}
+                </span>
+                {section.compactTitle}
+                {isComplete ? <span className="sr-only"> (set)</span> : null}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+export function PlanBuilderOnePageOverviewButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button className="plan-builder-one-page__overview-button" onClick={onClick} type="button">
+      <ArrowLeft aria-hidden="true" size={16} strokeWidth={2.4} />
+      <span>Overview</span>
+    </button>
+  );
+}
 
 export function PlanBuilderOnePageSectionCard({
   blueprint,
   isActive,
   isExpanded,
   onSelect,
+  position,
   section,
   summary,
   status,
@@ -74,16 +169,27 @@ export function PlanBuilderOnePageSectionCard({
   isActive: boolean;
   isExpanded: boolean;
   onSelect: () => void;
+  position: number;
   section: (typeof planBuilderOnePageSections)[number];
   summary: PlanBlueprintSummary | null;
   status: PlanBuilderWorkflowSectionStatus;
 }) {
-  const Icon = section.icon;
+  const isGenerate = section.id === "generate";
+  const value = isGenerate
+    ? null
+    : getPlanBuilderChoiceValue({
+        blueprint,
+        isConfigured: status.isComplete,
+        sectionId: section.id,
+        summary,
+      });
+  const subtitle = isGenerate && summary ? getGenerateSubtitle(summary, status) : section.subtitle;
 
   return (
     <li
       className={cn(
         "plan-builder-one-page__section-card",
+        isGenerate ? "plan-builder-one-page__section-card--generate" : null,
         isActive ? "plan-builder-one-page__section-card--active" : null,
       )}
       data-status={status.tone}
@@ -97,9 +203,11 @@ export function PlanBuilderOnePageSectionCard({
       >
         <span className="plan-builder-one-page__section-icon" data-status={status.tone}>
           {status.tone === "complete" ? (
-            <Check aria-hidden="true" size={16} strokeWidth={3} />
+            <Check aria-hidden="true" size={15} strokeWidth={3} />
+          ) : isGenerate ? (
+            <Wand2 aria-hidden="true" size={16} strokeWidth={2.2} />
           ) : (
-            <Icon aria-hidden="true" size={17} strokeWidth={2.2} />
+            <span aria-hidden="true">{position}</span>
           )}
         </span>
         <span className="plan-builder-one-page__section-copy">
@@ -109,19 +217,20 @@ export function PlanBuilderOnePageSectionCard({
               {section.compactTitle}
             </span>
           </span>
-          <span className="plan-builder-one-page__section-subtitle">{section.subtitle}</span>
+          <span className="plan-builder-one-page__section-subtitle">{subtitle}</span>
         </span>
+        {value ? (
+          <span
+            className="plan-builder-one-page__section-details"
+            data-empty={status.isComplete ? undefined : "true"}
+          >
+            {value}
+          </span>
+        ) : null}
         <span className="plan-builder-one-page__status-pill" data-status={status.tone}>
-          {status.label}
-        </span>
-
-        <span className="plan-builder-one-page__section-details">
-          {getSectionDetails(section.id, blueprint, summary).map((detail) => (
-            <span className="plan-builder-one-page__section-detail" key={detail.id}>
-              <Circle aria-hidden="true" size={7} strokeWidth={3} />
-              <span>{formatOverviewDetail(detail.label)}</span>
-            </span>
-          ))}
+          <span className="sr-only">{getStatusDescription(status)}. </span>
+          {getSectionActionLabel(section.id, status)}
+          <ChevronRight aria-hidden="true" size={15} strokeWidth={2.4} />
         </span>
       </button>
     </li>
@@ -132,143 +241,41 @@ export function getPlanBuilderOnePageStepTitle(step: PlanBuilderStep): string {
   return planBuilderOnePageSections.find((section) => section.id === step)?.title ?? "Builder";
 }
 
-function formatOverviewDetail(detail: string): string {
-  switch (detail) {
-    case "Loading Plan Blueprint":
-      return "Loading plan blueprint";
-    case "Choose a Training Split":
-      return "Choose training split";
-    case "Choose Rep ranges":
-      return "Choose rep ranges";
-    case "Choose a compatible split to see this detail.":
-      return "Choose a compatible split first";
-    case "Weekly Rep Targets":
-      return "Weekly rep targets";
-    case "Create Training Plan":
-      return "Create training plan";
-    default:
-      return detail.replace(/\.$/, "");
+function getStatusDescription(status: PlanBuilderWorkflowSectionStatus): string {
+  switch (status.tone) {
+    case "complete":
+      return "Set";
+    case "next":
+      return "Up next";
+    case "current":
+      return "Open";
+    case "ready":
+      return status.label === "Loading" ? "Loading" : "Not set yet";
   }
 }
 
-function getSectionDetails(
+function getSectionActionLabel(
   sectionId: PlanBuilderStep,
-  blueprint: PlanBlueprint | undefined,
-  summary: PlanBlueprintSummary | null,
-): ReadonlyArray<{ id: string; label: string }> {
-  if (!blueprint || !summary) {
-    return getLoadingSectionDetails(sectionId);
+  status: PlanBuilderWorkflowSectionStatus,
+): string {
+  if (sectionId === "generate") {
+    return "Review";
   }
 
-  switch (sectionId) {
-    case "frequency":
-      return getFrequencySectionDetails(summary);
-    case "rep-ranges":
-      return getRepRangeSectionDetails(summary);
-    case "volume":
-      return getVolumeSectionDetails(summary);
-    case "exercises":
-      return getExercisesSectionDetails(blueprint);
-    case "generate":
-      return getGenerateSectionDetails(summary);
+  if (status.tone === "complete") {
+    return "Edit";
   }
 
-  return [];
+  return status.tone === "next" ? "Start" : "Choose";
 }
 
-function getLoadingSectionDetails(sectionId: PlanBuilderStep) {
-  return [
-    { id: `${sectionId}-loading`, label: "Loading Plan Blueprint" },
-    { id: `${sectionId}-defaults`, label: "Default choices available" },
-    { id: `${sectionId}-saved`, label: "Progress saved locally" },
-  ] as const;
-}
+function getGenerateSubtitle(
+  summary: PlanBlueprintSummary,
+  status: PlanBuilderWorkflowSectionStatus,
+): string {
+  if (summary.nextStep === "Generate" || status.tone === "next") {
+    return "All set. Review your choices and create your Training Plan";
+  }
 
-function getFrequencySectionDetails(summary: PlanBlueprintSummary) {
-  return [
-    { id: "frequency-days", label: summary.trainingFrequency },
-    { id: "frequency-split", label: summary.split },
-    { id: "frequency-recovery", label: summary.recovery },
-  ] as const;
-}
-
-function getRepRangeSectionDetails(summary: PlanBlueprintSummary) {
-  return [
-    { id: "rep-ranges-selection", label: summary.repRanges },
-    { id: "rep-ranges-bias", label: "Main and secondary lift bias" },
-    { id: "rep-ranges-accessories", label: "Accessory defaults" },
-  ] as const;
-}
-
-function getVolumeSectionDetails(summary: PlanBlueprintSummary) {
-  return [
-    { id: "volume-preset", label: summary.volumePreset },
-    { id: "volume-targets", label: "Weekly Rep Targets" },
-    { id: "volume-optional", label: "Optional target groups" },
-  ] as const;
-}
-
-function getExercisesSectionDetails(blueprint: PlanBlueprint) {
-  const mainCompoundBucketCount = blueprint.mainCompoundPreferences.length;
-  const rotationBucketCount = blueprint.mainCompoundRotationPreferences.length;
-  const isolationBucketCount = blueprint.isolationExercisePreferences.length;
-
-  return [
-    {
-      id: "exercises-main-compound-preferences",
-      label: formatBucketProgressLabel({
-        count: mainCompoundBucketCount,
-        singularLabel: "Main Compound Preferences bucket ranked",
-        pluralLabel: "Main Compound Preferences buckets ranked",
-      }),
-    },
-    {
-      id: "exercises-main-compound-rotation-preferences",
-      label: formatBucketProgressLabel({
-        count: rotationBucketCount,
-        singularLabel: "Main Compound Rotation Preferences bucket ranked",
-        pluralLabel: "Main Compound Rotation Preferences buckets ranked",
-      }),
-    },
-    {
-      id: "exercises-isolation-preferences",
-      label: formatBucketProgressLabel({
-        count: isolationBucketCount,
-        singularLabel: "Isolation Exercise Preferences bucket ranked",
-        pluralLabel: "Isolation Exercise Preferences buckets ranked",
-      }),
-    },
-    {
-      id: "exercises-defaults",
-      label: hasConfiguredExercises(blueprint)
-        ? "Exercise Selection Preferences and Weekly Movement Coverage can still use Recommended Defaults"
-        : "Exercise Selection Preferences and Weekly Movement Coverage can use Recommended Defaults",
-    },
-  ] as const;
-}
-
-function formatBucketProgressLabel({
-  count,
-  pluralLabel,
-  singularLabel,
-}: {
-  count: number;
-  pluralLabel: string;
-  singularLabel: string;
-}) {
-  return `${count} ${count === 1 ? singularLabel : pluralLabel}`;
-}
-
-function getGenerateSectionDetails(summary: PlanBlueprintSummary) {
-  return [
-    { id: "generate-review", label: "Review blueprint" },
-    { id: "generate-status", label: summary.generationStatus },
-    {
-      id: "generate-action",
-      label:
-        summary.nextStep === "Generate"
-          ? "Create Training Plan"
-          : "Defaults or choices still needed",
-    },
-  ] as const;
+  return "Ready any time. Unset choices use Recommended Defaults";
 }

@@ -1,0 +1,186 @@
+/*
+ * One card for every "pick one" choice in the Plan Builder:
+ * training split, rep range style and volume preset.
+ */
+
+.pb-choice-group {
+  display: grid;
+  grid-template-columns: repeat(var(--pb-choice-columns, 3), minmax(0, 1fr));
+  gap: 0.875rem;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.pb-choice-group[data-columns="2"] {
+  --pb-choice-columns: 2;
+}
+
+.pb-choice-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.875rem;
+  background: #ffffff;
+  padding: 1rem 1.125rem 1.125rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pb-choice-card:hover {
+  border-color: rgba(0, 119, 128, 0.4);
+}
+
+.pb-choice-card[data-selected] {
+  border-color: #007780;
+  background: #f3faf9;
+  box-shadow: 0 0 0 1px #007780;
+}
+
+.pb-choice-card:has(input:focus-visible) {
+  outline: 2px solid #007780;
+  outline-offset: 3px;
+}
+
+.pb-choice-card__head {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.625rem;
+}
+
+.pb-choice-card__radio {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(49, 80, 93, 0.4);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #ffffff;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.pb-choice-card[data-selected] .pb-choice-card__radio {
+  border-color: #007780;
+  background: #007780;
+}
+
+.pb-choice-card__title {
+  min-width: 0;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-size: var(--jw-type-card-title);
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.3;
+}
+
+.pb-choice-card__badge {
+  display: inline-flex;
+  min-height: 1.375rem;
+  align-items: center;
+  border-radius: 999px;
+  background: #e2f4ee;
+  color: #07603f;
+  padding: 0 0.5rem;
+  font-size: var(--jw-type-meta);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pb-choice-card__description {
+  color: #31505d;
+  font-size: var(--jw-type-body);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.pb-choice-card__facts {
+  display: grid;
+  margin: auto 0 0;
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
+}
+
+.pb-choice-card__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(28, 25, 23, 0.06);
+  padding: 0.5rem 0;
+}
+
+.pb-choice-card__fact:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pb-choice-card__fact dt {
+  color: #4f656e;
+  font-size: var(--jw-type-label);
+  font-weight: 600;
+}
+
+.pb-choice-card__fact dd {
+  margin: 0;
+  color: #120f0d;
+  font-size: var(--jw-type-body);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pb-choice-card__highlights {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pb-choice-card__highlights li {
+  position: relative;
+  padding-left: 0.95rem;
+  color: #31505d;
+  font-size: var(--jw-type-label);
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.pb-choice-card__highlights li::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0.1rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: #007780;
+  content: "";
+}
+
+@media (max-width: 980px) {
+  .pb-choice-group,
+  .pb-choice-group[data-columns="2"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-choice-card,
+  .pb-choice-card__radio {
+    transition: none;
+  }
+}

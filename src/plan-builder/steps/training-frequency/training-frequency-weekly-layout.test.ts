@@ -65,3 +65,34 @@ describe("compact weekly layout", () => {
     );
   });
 });
+
+describe("training session families", () => {
+  it("colours sessions by the kind of work they hold", () => {
+    const layout = getCompactWeeklyLayout(getTrainingSplit("rotating-push-pull-legs"), 4);
+
+    expect(layout.days.map((day) => day.sessionFamily)).toEqual([
+      "push",
+      "pull",
+      null,
+      "legs",
+      "push",
+      null,
+      null,
+    ]);
+    expect(layout.cycleWeeks).toEqual([
+      ["Push A", "Pull A", "Legs A", "Push B"],
+      ["Pull B", "Legs B", "Push A", "Pull A"],
+    ]);
+  });
+
+  it("treats full-body templates as one family", () => {
+    const layout = getCompactWeeklyLayout(getTrainingSplit("alternating-full-body-a-b"), 3);
+
+    expect(layout.days.filter((day) => !day.isRestDay).map((day) => day.sessionFamily)).toEqual([
+      "full-body",
+      "full-body",
+      "full-body",
+    ]);
+    expect(layout.cycleWeeks).toBeNull();
+  });
+});

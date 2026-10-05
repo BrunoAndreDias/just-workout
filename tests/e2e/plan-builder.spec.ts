@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 
 const planBuilderPath = /\/plan-builder$/;
-const defaultGenerationDialogName = /default generation confirmation/i;
+const defaultGenerationDialogName = /use recommended defaults\?/i;
 const recommendedDefaults = [
   "3-Day Full Body",
   "Balanced hypertrophy",
@@ -101,7 +101,15 @@ test("keeps the production Generate Step review usable on a mobile viewport", as
 });
 
 async function openBuilderSection(page: Page, sectionName: RegExp) {
-  await page.getByRole("button", { name: sectionName }).click();
+  // On laptop and up, an open step moves the step list into the app top bar.
+  const inPageSection = page
+    .getByRole("navigation", { name: /plan blueprint sections/i })
+    .getByRole("button", { name: sectionName });
+  const topbarStep = page
+    .getByRole("navigation", { name: /plan builder steps/i })
+    .getByRole("button", { name: sectionName });
+
+  await inPageSection.or(topbarStep).first().click();
 }
 
 function defaultGenerationConfirmation(page: Page) {

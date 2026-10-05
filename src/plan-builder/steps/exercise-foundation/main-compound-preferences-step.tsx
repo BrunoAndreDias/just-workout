@@ -1,7 +1,6 @@
 import { Activity, ChevronDown, CirclePlus, Dumbbell } from "lucide-react";
 import {
   type KeyboardEvent,
-  type ReactNode,
   useCallback,
   useEffect,
   useId,
@@ -10,7 +9,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { StepPanel } from "../../../design-system/step-screen";
 import type {
   CompoundCapableMovementPatternId,
   ExerciseCatalogMuscleGroupId,
@@ -25,6 +23,7 @@ import type {
   MainCompoundPreferenceRowReadModel,
 } from "../../main-compound-preference-read-model";
 import type { MainCompoundRotationPreferenceReadModel } from "../../main-compound-rotation-preference-read-model";
+import { PlanBuilderStepSection } from "../../shared-ui/step-layout/plan-builder-step-layout";
 import { FoundationPatternIcon, getFoundationIconClassName } from "./foundation-pattern-icon";
 import { IsolationExercisePreferencesPicker } from "./isolation-exercise-preferences-picker";
 import { MainCompoundPickerToggleButton } from "./main-compound-picker-toggle-button";
@@ -170,14 +169,12 @@ export function MainCompoundPreferencesStep({
 
   return (
     <div className="exercise-foundation-shell">
-      <StepPanel aria-label="Exercise selection" className="exercise-foundation-panel">
+      <div className="exercise-foundation-panel">
         <div className="exercise-foundation-workspace">
-          <ExercisePoolSection
-            body="Choose your primary lifts across key movement patterns."
-            heading="Main Compounds"
-            headingId="main-compound-preference-buckets-title"
-            number="1"
-            summary="Recommended 5-6"
+          <PlanBuilderStepSection
+            description="Your main lift for each movement. These carry most of your progress."
+            title="Main compounds"
+            titleId="main-compound-preference-buckets-title-heading"
           >
             <ul className="exercise-selection-main-grid">
               {visibleMainMovementPatternOrder.flatMap((movementPattern) => {
@@ -203,14 +200,17 @@ export function MainCompoundPreferencesStep({
                 );
               })}
             </ul>
-          </ExercisePoolSection>
+          </PlanBuilderStepSection>
 
-          <ExercisePoolSection
-            body="Add alternative exercises to rotate in and keep progress moving."
-            heading="Rotation (Backup Exercises)"
-            headingId="main-compound-rotation-preference-buckets-title"
-            number="2"
-            summary="Recommended 2-4 per pattern"
+          <PlanBuilderStepSection
+            collapsedSummary="Using recommended backups for every movement."
+            defaultOpen={mainCompoundRotationReadModel.rows.some(
+              (row) => row.preferences.length > 0,
+            )}
+            description="Optional. Alternatives that rotate in later to keep progress moving (2–4 per movement)."
+            isCollapsible
+            title="Backup exercises"
+            titleId="main-compound-rotation-preference-buckets-title-heading"
           >
             <ul className="exercise-selection-rotation-grid">
               {visibleMainMovementPatternOrder.flatMap((movementPattern) => {
@@ -236,14 +236,15 @@ export function MainCompoundPreferencesStep({
                 );
               })}
             </ul>
-          </ExercisePoolSection>
+          </PlanBuilderStepSection>
 
-          <ExercisePoolSection
-            body="Add accessory work to round out your program."
-            heading="Isolation (Optional Accessories)"
-            headingId="isolation-exercise-preference-buckets-title"
-            number="3"
-            summary="Recommended 3-8 total"
+          <PlanBuilderStepSection
+            collapsedSummary="Using recommended accessories."
+            defaultOpen={isolationReadModel.rows.some((row) => row.preferences.length > 0)}
+            description="Optional. Smaller exercises that round out your plan (3–8 in total)."
+            isCollapsible
+            title="Accessories"
+            titleId="isolation-exercise-preference-buckets-title-heading"
           >
             <ul className="exercise-selection-isolation-grid">
               {visibleIsolationMuscleGroups.flatMap((muscleGroup) => {
@@ -269,7 +270,7 @@ export function MainCompoundPreferencesStep({
                 );
               })}
             </ul>
-          </ExercisePoolSection>
+          </PlanBuilderStepSection>
         </div>
 
         <ExerciseSelectionCompatibilityControls
@@ -278,7 +279,7 @@ export function MainCompoundPreferencesStep({
           }
           rotationRows={mainCompoundRotationReadModel.rows}
         />
-      </StepPanel>
+      </div>
 
       {activeMainCompoundPickerRow ? (
         <MainCompoundPreferencesPicker
@@ -364,45 +365,6 @@ function ExerciseSelectionCompatibilityControls({
         </ul>
       </section>
     </div>
-  );
-}
-
-function ExercisePoolSection({
-  body,
-  children,
-  heading,
-  headingId,
-  number,
-  summary,
-}: {
-  body: string;
-  children: ReactNode;
-  heading: string;
-  headingId: string;
-  number: string;
-  summary: string;
-}) {
-  return (
-    <section
-      aria-labelledby={`${headingId}-heading`}
-      className="exercise-pool-section"
-      id={headingId}
-    >
-      <header className="exercise-pool-section__header">
-        <span aria-hidden="true" className="exercise-pool-section__number">
-          {number}
-        </span>
-        <div>
-          <div className="exercise-pool-section__title-row">
-            <h3 id={`${headingId}-heading`}>{heading}</h3>
-            <span>{summary}</span>
-          </div>
-          <p>{body}</p>
-        </div>
-      </header>
-
-      {children}
-    </section>
   );
 }
 

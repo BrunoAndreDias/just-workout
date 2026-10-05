@@ -1,5 +1,5 @@
 .plan-builder-one-page {
-  --plan-builder-one-page-sticky-offset: 4.875rem;
+  --plan-builder-one-page-sticky-offset: var(--app-shell-topbar-height);
   min-height: 100%;
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
 }
@@ -8,7 +8,8 @@
   min-height: calc(
     100dvh -
     (2 * var(--app-shell-frame-padding-y)) -
-    4.9375rem -
+    var(--app-shell-topbar-height) -
+    1px -
     (2 * var(--jw-page-padding-y))
   );
 }
@@ -59,9 +60,9 @@
 
 .plan-builder-one-page__loading {
   color: #31505d;
-  font-size: 0.9rem;
+  font-size: var(--jw-type-body);
   font-weight: 650;
-  line-height: 1.35rem;
+  line-height: 1.5;
 }
 @media (max-width: 680px) {
   .plan-builder-one-page {
@@ -147,14 +148,151 @@
     transform: translateY(-0.36rem);
   }
 }
-@media (max-width: 520px) {
-  .plan-builder-one-page {
-    --plan-builder-one-page-sticky-offset: 4.25rem;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .plan-builder-one-page__active-panel,
   .plan-builder-one-page__active-panel--closing .plan-builder-one-page__step {
     animation: none;
+  }
+}
+
+/* Laptop and up: the step list moves into the app top bar, so the in-page tabs row goes. */
+@media (min-width: 1024px) {
+  .plan-builder-one-page__section-nav--compact {
+    display: none;
+  }
+
+  /* Stretch the open step to the window so its footer rests on the bottom edge. */
+  .plan-builder-one-page__active-panel {
+    align-content: stretch;
+  }
+
+  .plan-builder-one-page__step {
+    display: grid;
+  }
+
+  .plan-builder-one-page__step > .pb-step {
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .plan-builder-one-page__active-panel {
+    min-height: calc(
+      100dvh -
+      (2 * var(--app-shell-frame-padding-y)) -
+      var(--app-shell-topbar-height) -
+      (2 * var(--jw-page-padding-y)) -
+      1px
+    );
+  }
+}
+
+.pb-topbar-steps {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pb-topbar-steps__list {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pb-topbar-steps__overview,
+.pb-topbar-steps__step {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 0.7rem;
+  color: #3d545d;
+  font-size: var(--jw-type-label);
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.pb-topbar-steps__overview {
+  margin-right: 0.25rem;
+  color: #075d63;
+  font-weight: 750;
+  padding-left: 0.55rem;
+}
+
+.pb-topbar-steps__overview:hover,
+.pb-topbar-steps__step:hover {
+  background: rgba(28, 25, 23, 0.05);
+  color: #120f0d;
+}
+
+.pb-topbar-steps__step[aria-current="step"] {
+  background: rgba(0, 119, 128, 0.1);
+  color: #064f55;
+  font-weight: 800;
+  cursor: default;
+}
+
+.pb-topbar-steps__marker {
+  display: inline-flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(49, 80, 93, 0.35);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pb-topbar-steps__step[data-complete] .pb-topbar-steps__marker {
+  border-color: #08744c;
+  background: #08744c;
+  color: #ffffff;
+}
+
+.pb-topbar-steps__step[aria-current="step"] .pb-topbar-steps__marker {
+  border-color: #007780;
+  background: #007780;
+  color: #ffffff;
+}
+
+.pb-topbar-steps__overview:focus-visible,
+.pb-topbar-steps__step:focus-visible {
+  outline: 2px solid #007780;
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .pb-topbar-steps__overview span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .pb-topbar-steps__step {
+    padding: 0 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-topbar-steps__overview,
+  .pb-topbar-steps__step {
+    transition: none;
   }
 }

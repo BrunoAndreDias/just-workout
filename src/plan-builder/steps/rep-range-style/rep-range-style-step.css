@@ -1,206 +1,23 @@
-.rep-range-step {
+.pb-effects {
   display: grid;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.training-volume-section-copy {
-  max-width: 61rem;
-  color: #244256;
-  font-size: 0.92rem;
-  font-weight: 500;
-  line-height: 1.45rem;
-}
-
-.rep-range-options {
-  display: grid;
-  gap: 0.85rem;
-  min-width: 0;
-}
-
-.rep-range-option {
-  display: block;
-  min-width: 0;
-  min-height: 17rem;
-  padding: 1rem;
-}
-
-.rep-range-options .rep-range-option.rep-range-option--selected {
-  border-color: rgba(0, 119, 128, 0.28);
-  background: #eefafa;
-  color: #112c3a;
-  box-shadow: none;
-}
-
-.rep-range-option__body,
-.volume-preset-option__body {
-  display: flex;
-  height: 100%;
-  gap: 0.95rem;
-}
-
-.rep-range-option__body > .min-w-0 {
-  display: flex;
-  min-height: 100%;
-  flex-direction: column;
-}
-
-.rep-range-option__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 2rem;
-}
-
-.rep-range-option__title-row {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rep-range-option__title-row span {
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.rep-range-option__title,
-.volume-preset-option__title {
-  font-size: 0.98rem;
-  line-height: 1.25;
-}
-
-.rep-range-option__copy,
-.volume-preset-option__copy {
-  margin-top: 0.85rem;
-  max-width: 18rem;
-  color: #244256;
-  font-size: 0.86rem;
-  font-weight: 500;
-  line-height: 1.35rem;
-}
-
-.rep-range-targets {
-  display: grid;
-  gap: 0;
-  margin-top: auto;
-  padding-top: 1rem;
-}
-
-.rep-range-target {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 0.75rem;
-  min-width: 0;
-  border-top: 1px solid rgba(28, 25, 23, 0.1);
-  border-radius: 0;
-  background: transparent;
-  padding: 0.72rem 0;
-}
-
-.rep-range-option--selected .rep-range-target,
-.rep-range-details .rep-range-target {
-  background: transparent;
-}
-
-.rep-range-target__label {
-  color: #112c3a;
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.1rem;
-}
-
-.rep-range-target__value {
-  color: #120f0d;
-  font-size: 0.82rem;
-  font-weight: 800;
-  line-height: 1.1rem;
-  white-space: nowrap;
-}
-
-.rep-range-details {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.rep-range-details h3 {
-  color: #120f0d;
-  font-size: 1rem;
-  line-height: 1.25;
-}
-
-.rep-range-effects-list {
-  display: grid;
-  gap: 0.48rem;
+  gap: 0.625rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.rep-range-effects-list li {
+.pb-effects li {
   display: flex;
-  gap: 0.65rem;
-  color: #162325;
-  font-size: 0.84rem;
-  font-weight: 500;
-  line-height: 1.25rem;
+  align-items: flex-start;
+  gap: 0.625rem;
+  color: #31505d;
+  font-size: var(--jw-type-body);
+  font-weight: 550;
+  line-height: 1.45;
 }
 
-.rep-range-effects-list svg {
+.pb-effects svg {
+  flex: 0 0 auto;
   margin-top: 0.1rem;
-  flex-shrink: 0;
-  color: #00636a;
-}
-
-.rep-range-generation-note {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.75rem;
-  border: 1px solid rgba(186, 86, 31, 0.24);
-  border-radius: 0.45rem;
-  background: rgba(255, 255, 255, 0.58);
-  padding: 0.55rem 0.75rem;
-  color: #a94719;
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.15rem;
-}
-
-.rep-range-generation-note svg {
-  flex-shrink: 0;
-}
-
-.training-volume-section-title,
-.rep-range-option__title,
-.volume-preset-option__title,
-.rep-range-details h3,
-.rep-range-details h4 {
-  font-family: var(--jw-font-heading);
-  font-weight: 700;
-  letter-spacing: var(--jw-heading-tracking);
-}
-
-.training-volume-section-title {
-  font-size: var(--jw-section-title-size);
-  line-height: var(--jw-section-title-line-height);
-}
-
-.rep-range-option__title,
-.volume-preset-option__title,
-.rep-range-details h4 {
-  font-size: var(--jw-card-title-size);
-  line-height: var(--jw-card-title-line-height);
-}
-
-.training-volume-section-copy,
-.rep-range-option__copy,
-.volume-preset-option__copy,
-.rep-range-effects-list li,
-.rep-range-generation-note {
-  font-size: var(--jw-body-size);
-  line-height: var(--jw-body-line-height);
+  color: #08744c;
 }

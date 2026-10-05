@@ -1,286 +1,630 @@
-.training-frequency-title,
-.training-frequency-option__label,
-.training-frequency-recommendation__title {
-  font-family: var(--jw-font-heading);
-  font-weight: 700;
-  letter-spacing: var(--jw-heading-tracking);
-}
+/*
+ * Schedule step: the week being built is the hero.
+ * Choices on the left, a live "Your week" panel on the right that answers
+ * "what does this actually look like?" for every change.
+ */
 
-.training-frequency-title {
-  font-size: var(--jw-section-title-size);
-  line-height: var(--jw-section-title-line-height);
-}
+.pb-schedule {
+  /* Session families: one hue per kind of work, shared by pills and the week. */
+  --pb-family-full-body-bg: #e1f3f0;
+  --pb-family-full-body-ink: #055a60;
+  --pb-family-full-body-mark: #007780;
+  --pb-family-upper-bg: #e5edf6;
+  --pb-family-upper-ink: #214b73;
+  --pb-family-upper-mark: #3a6d9c;
+  --pb-family-lower-bg: #f5eadb;
+  --pb-family-lower-ink: #6f430f;
+  --pb-family-lower-mark: #b0701f;
+  --pb-family-pull-bg: #eee8f5;
+  --pb-family-pull-ink: #4f376f;
+  --pb-family-pull-mark: #6c4f8f;
+  --pb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-.training-frequency-options {
-  gap: var(--jw-section-gap);
-  margin-top: var(--jw-section-gap);
-}
-
-.training-frequency-option {
-  min-height: 10.25rem;
-  padding: var(--jw-card-padding);
-}
-
-.training-frequency-option__icon,
-.training-frequency-option__icon-frame {
-  height: var(--jw-icon-circle-lg);
-  width: var(--jw-icon-circle-lg);
-}
-
-.training-frequency-option__icon svg {
-  height: var(--jw-icon-lg);
-  width: var(--jw-icon-lg);
-}
-
-.training-frequency-option__day {
-  font-size: var(--jw-card-title-size);
-  line-height: var(--jw-card-title-line-height);
-}
-
-.training-frequency-option__label {
-  margin-top: 0.75rem;
-  font-size: var(--jw-card-title-size);
-  line-height: var(--jw-card-title-line-height);
-}
-
-.training-frequency-option__helper,
-.training-frequency-recommendation p {
-  font-size: var(--jw-body-size);
-  line-height: var(--jw-body-line-height);
-}
-
-/* Final Training Frequency hierarchy: current step first, supporting notes as rows. */
-.training-frequency-panel {
-  min-width: 0;
-  margin-right: 0;
-  margin-left: 0;
-  padding: 0;
-}
-
-.training-frequency-title {
-  font-size: var(--jw-builder-section-title-size);
-  line-height: var(--jw-builder-section-title-line-height);
-}
-
-.training-frequency-options {
-  gap: 0.75rem;
-  margin-top: 0.875rem;
-}
-
-.training-frequency-option {
-  min-height: 8.5rem;
-  border-color: rgba(28, 25, 23, 0.12);
-  background: rgba(255, 255, 255, 0.64);
-  padding: var(--jw-builder-card-padding);
-  box-shadow: none;
-}
-
-.training-frequency-option:hover {
-  border-color: rgba(0, 119, 128, 0.24);
-  background: rgba(255, 255, 255, 0.82);
-}
-
-.training-frequency-option:has(input:checked) {
-  border-color: #007780;
-  background: rgba(248, 252, 252, 0.7);
-  color: #075d63;
-  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.1);
-}
-
-.training-frequency-option > span.absolute {
-  top: 0.625rem;
-  right: 0.625rem;
-  height: 1.375rem;
-  width: 1.375rem;
-  border: 1px solid rgba(0, 119, 128, 0.26);
-  background: #ffffff;
-  color: #007780;
-}
-
-.training-frequency-option > span.absolute svg {
-  height: 0.875rem;
-  width: 0.875rem;
-}
-
-.training-frequency-option__icon,
-.training-frequency-option__icon-frame {
-  height: 2.5rem;
-  width: 2.5rem;
-}
-
-.training-frequency-option__icon svg {
-  height: 2.375rem;
-  width: 2.375rem;
-  stroke-width: 1.55;
-}
-
-.training-frequency-option__day {
-  top: 0.95rem;
-  font-size: 0.875rem;
-  line-height: 1;
-}
-
-.training-frequency-option__label {
-  margin-top: 0.625rem;
-  font-size: 1rem;
-  line-height: 1.25rem;
-}
-
-.training-frequency-option__helper {
-  min-height: 2rem;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  line-height: 1.125rem;
-}
-
-/* Structural frequency-step refactor. */
-.training-frequency-panel {
   display: grid;
   min-width: 0;
-  gap: 0;
-  margin: 0;
-  padding: 0;
+  gap: 2rem;
 }
 
-.training-frequency-heading {
+.pb-schedule__choices {
+  display: grid;
   min-width: 0;
+  align-content: start;
+  gap: 1.75rem;
 }
 
-.training-frequency-title {
+.pb-schedule__group {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.pb-schedule__heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.pb-schedule__heading {
   margin: 0;
   color: #120f0d;
   font-family: var(--jw-font-heading);
-  font-size: var(--jw-builder-section-title-size);
-  font-weight: 700;
-  line-height: var(--jw-builder-section-title-line-height);
+  font-size: var(--jw-type-card-title);
+  font-weight: 800;
   letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.3;
 }
 
-.training-frequency-options {
+.pb-schedule__hint {
+  margin: 0;
+  color: #4f656e;
+  font-size: var(--jw-type-label);
+  font-weight: 600;
+}
+
+/* Training days: numeral tiles, each with a mini week of where sessions land. */
+
+.pb-days {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-  margin: 0.875rem 0 0;
-  padding: 0;
-  border: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.625rem;
 }
 
-.training-frequency-option {
-  position: relative;
-  display: flex;
-  min-width: 0;
-  min-height: 6.6rem;
-  cursor: pointer;
-  flex-direction: column;
+.pb-days__option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "count unit"
+    "dots dots";
   align-items: center;
-  justify-content: center;
+  gap: 0.625rem 0.5rem;
   border: 1px solid rgba(28, 25, 23, 0.12);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 0.8rem 0.85rem;
-  text-align: center;
-  box-shadow: none;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  padding: 0.75rem 0.875rem 0.875rem;
+  cursor: pointer;
   transition:
     border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    box-shadow 200ms var(--pb-ease-out),
+    transform 200ms var(--pb-ease-out);
 }
 
-.training-frequency-option:hover {
-  border-color: rgba(0, 119, 128, 0.3);
-  background: rgba(255, 255, 255, 0.9);
+.pb-days__option:hover {
+  border-color: rgba(0, 119, 128, 0.45);
 }
 
-.training-frequency-option:has(input:focus-visible) {
-  outline: 2px solid #007780;
-  outline-offset: 2px;
+.pb-days__option:active {
+  transform: scale(0.98);
 }
 
-.training-frequency-option--selected {
+.pb-days__option[data-selected] {
   border-color: #007780;
-  background: rgba(248, 252, 252, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(0, 119, 128, 0.08);
+  background: #007780;
+  box-shadow:
+    0 1px 2px rgba(0, 72, 78, 0.2),
+    0 10px 20px -12px rgba(0, 119, 128, 0.7);
 }
 
-.training-frequency-option__check {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  display: flex;
-  width: 1.375rem;
-  height: 1.375rem;
+.pb-days__option:has(input:focus-visible) {
+  outline: 2px solid #007780;
+  outline-offset: 3px;
+}
+
+.pb-days__count {
+  grid-area: count;
+  color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-size: clamp(2rem, 1.6rem + 1.2vw, 2.625rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+.pb-days__unit-tail {
+  display: block;
+}
+
+.pb-days__unit {
+  grid-area: unit;
+  color: #4f656e;
+  font-size: var(--jw-type-meta);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.pb-days__dots {
+  display: grid;
+  grid-area: dots;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.pb-days__dot {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.1);
+}
+
+.pb-days__dot[data-training] {
+  background: #007780;
+}
+
+.pb-days__option[data-selected] .pb-days__count {
+  color: #ffffff;
+}
+
+.pb-days__option[data-selected] .pb-days__unit {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pb-days__option[data-selected] .pb-days__dot {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.pb-days__option[data-selected] .pb-days__dot[data-training] {
+  background: #ffffff;
+}
+
+/* Weekly split: rows that show the session rhythm instead of generic bullets. */
+
+.pb-splits {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.pb-split {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.875rem;
+  border: 1px solid rgba(28, 25, 23, 0.12);
+  border-radius: 0.875rem;
+  background: #ffffff;
+  padding: 0.875rem 1rem 0.9375rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pb-split:hover {
+  border-color: rgba(0, 119, 128, 0.45);
+}
+
+.pb-split[data-selected] {
+  border-color: #007780;
+  background: #f3faf9;
+  box-shadow: 0 0 0 1px #007780;
+}
+
+.pb-split:has(input:focus-visible) {
+  outline: 2px solid #007780;
+  outline-offset: 3px;
+}
+
+.pb-split__radio {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.1rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 119, 128, 0.28);
+  border: 1.5px solid rgba(49, 80, 93, 0.4);
   border-radius: 999px;
   background: #ffffff;
-  color: #007780;
+  color: #ffffff;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
-.training-frequency-option__check svg {
-  width: 0.875rem;
-  height: 0.875rem;
+.pb-split[data-selected] .pb-split__radio {
+  border-color: #007780;
+  background: #007780;
 }
 
-.training-frequency-option__icon,
-.training-frequency-option__icon-frame {
-  position: relative;
+.pb-split__body {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.pb-split__head {
   display: flex;
-  width: 2rem;
-  height: 2rem;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  gap: 0.35rem 0.625rem;
+}
+
+.pb-split__title {
   color: #120f0d;
+  font-family: var(--jw-font-heading);
+  font-size: var(--jw-type-body);
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking);
+  line-height: 1.3;
 }
 
-.training-frequency-option__icon svg {
-  width: 1.95rem;
-  height: 1.95rem;
-  stroke-width: 1.6;
-}
-
-.training-frequency-option__day {
-  position: absolute;
-  top: 0.74rem;
-  font-size: 0.76rem;
-  font-weight: 700;
+.pb-split__badge {
+  display: inline-flex;
+  min-height: 1.375rem;
+  align-items: center;
+  border-radius: 999px;
+  background: #e2f4ee;
+  color: #07603f;
+  padding: 0 0.5rem;
+  font-size: var(--jw-type-meta);
+  font-weight: 800;
   line-height: 1;
 }
 
-.training-frequency-option__label {
-  display: block;
-  margin-top: 0.45rem;
+.pb-split__rhythm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pb-split__notes {
+  color: #4f656e;
+  font-size: var(--jw-type-label);
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+/* Session pill: shared by split rows and the cycle footnote. */
+
+.pb-session {
+  display: inline-flex;
+  min-height: 1.625rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.4375rem;
+  background: var(--pb-session-bg);
+  color: var(--pb-session-ink);
+  padding: 0 0.5rem;
+  font-size: var(--jw-type-meta);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.pb-session::before {
+  width: 0.375rem;
+  height: 0.375rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--pb-session-mark);
+  content: "";
+}
+
+.pb-session--small {
+  min-height: 1.375rem;
+  padding: 0 0.4rem;
+}
+
+[data-family="full-body"] {
+  --pb-session-bg: var(--pb-family-full-body-bg);
+  --pb-session-ink: var(--pb-family-full-body-ink);
+  --pb-session-mark: var(--pb-family-full-body-mark);
+}
+
+/* Push work is upper-body pressing; legs are lower body — they share those hues. */
+[data-family="upper"],
+[data-family="push"] {
+  --pb-session-bg: var(--pb-family-upper-bg);
+  --pb-session-ink: var(--pb-family-upper-ink);
+  --pb-session-mark: var(--pb-family-upper-mark);
+}
+
+[data-family="lower"],
+[data-family="legs"] {
+  --pb-session-bg: var(--pb-family-lower-bg);
+  --pb-session-ink: var(--pb-family-lower-ink);
+  --pb-session-mark: var(--pb-family-lower-mark);
+}
+
+[data-family="pull"] {
+  --pb-session-bg: var(--pb-family-pull-bg);
+  --pb-session-ink: var(--pb-family-pull-ink);
+  --pb-session-mark: var(--pb-family-pull-mark);
+}
+
+/* Your week */
+
+.pb-week-panel {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.875rem;
+  border: 1px solid rgba(28, 25, 23, 0.1);
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1.125rem 1.125rem 1.25rem;
+  box-shadow:
+    0 1px 2px rgba(28, 25, 23, 0.04),
+    0 18px 36px -28px rgba(28, 25, 23, 0.35);
+}
+
+.pb-week-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pb-week-panel__tally {
+  margin: 0;
+  color: #4f656e;
+  font-size: var(--jw-type-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pb-week-panel__tally strong {
   color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.2rem;
-  letter-spacing: var(--jw-heading-tracking);
+  font-weight: 800;
 }
 
-.training-frequency-option__helper {
-  display: block;
-  min-height: 1.05rem;
-  margin-top: 0.18rem;
-  color: #526873;
-  font-size: 0.82rem;
-  font-weight: 500;
-  line-height: 0.98rem;
+.pb-week {
+  display: grid;
+  gap: 0.3125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* Grouped Training schedule step. */
-.training-frequency-panel {
-  gap: 0;
+.pb-week__day {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
 }
 
-.training-frequency-title {
-  font-size: 1.15rem;
-  line-height: 1.35rem;
+.pb-week__day-name {
+  color: #31505d;
+  font-size: var(--jw-type-meta);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.training-frequency-options {
-  margin-top: 0.9rem;
+.pb-week__session {
+  display: flex;
+  min-width: 0;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  background: var(--pb-session-bg);
+  color: var(--pb-session-ink);
+  padding: 0 0.75rem;
+  font-size: var(--jw-type-label);
+  font-weight: 800;
+  animation: pb-week-wipe 480ms var(--pb-ease-out) both;
+  animation-delay: calc(var(--pb-week-day-index, 0) * 32ms);
 }
 
-.training-frequency-option {
-  min-height: 5.75rem;
+.pb-week__session::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--pb-session-mark);
+  content: "";
+}
+
+.pb-week__day--rest .pb-week__session {
+  min-height: 2.5rem;
+  border: 1px dashed rgba(28, 25, 23, 0.14);
+  background: transparent;
+  color: #6a7d85;
+  font-weight: 600;
+  animation: none;
+}
+
+.pb-week__day--rest .pb-week__session::before {
+  display: none;
+}
+
+.pb-week__day--rest .pb-week__day-name {
+  color: #7a8b92;
+}
+
+@keyframes pb-week-wipe {
+  from {
+    clip-path: inset(0 100% 0 0 round 0.625rem);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0 round 0.625rem);
+  }
+}
+
+.pb-week-panel__note {
+  margin: 0;
+  color: #4f656e;
+  font-size: var(--jw-type-label);
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+.pb-week-cycle {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
+  padding-top: 0.75rem;
+}
+
+.pb-week-cycle__week {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.625rem;
+  margin: 0;
+}
+
+.pb-week-cycle__label {
+  padding-top: 0.2rem;
+  color: #31505d;
+  font-size: var(--jw-type-meta);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pb-week-cycle__sessions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Desktop: choices and the live week side by side, week pinned while choosing. */
+
+@media (min-width: 1024px) {
+  .pb-schedule--with-week {
+    grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 21rem);
+    align-items: start;
+    gap: 2.5rem;
+  }
+
+  .pb-schedule--with-week .pb-week-panel {
+    position: sticky;
+    top: calc(var(--app-shell-topbar-height, 0rem) + 1rem);
+  }
+
+  .pb-schedule__choices {
+    gap: 1.25rem;
+  }
+
+  .pb-schedule__group {
+    gap: 0.5rem;
+  }
+
+  /* Day tiles on one line: numeral, unit, then the mini week. */
+  .pb-days__option {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "count unit dots";
+    min-height: 3.5rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .pb-days__count {
+    font-size: 1.75rem;
+  }
+
+  .pb-days__dots {
+    width: 100%;
+    max-width: 4.25rem;
+    justify-self: end;
+    gap: 0.1875rem;
+  }
+
+  .pb-days__dot {
+    height: 0.3125rem;
+  }
+
+  .pb-split {
+    gap: 0.625rem;
+    padding: 0.6875rem 0.8125rem 0.75rem;
+  }
+
+  .pb-split__body {
+    gap: 0.375rem;
+  }
+
+  .pb-week-panel {
+    gap: 0.625rem;
+    padding: 0.875rem;
+  }
+
+  .pb-splits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pb-splits > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .pb-schedule--with-week .pb-week {
+    gap: 0.25rem;
+  }
+
+  .pb-schedule--with-week .pb-week__session {
+    min-height: 1.875rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .pb-schedule {
+    gap: 1.5rem;
+  }
+
+  .pb-schedule__choices {
+    gap: 1.5rem;
+  }
+
+  .pb-days {
+    gap: 0.4rem;
+  }
+
+  .pb-days__option {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "count"
+      "unit"
+      "dots";
+    justify-items: center;
+    gap: 0.3rem;
+    padding: 0.625rem 0.5rem 0.75rem;
+    text-align: center;
+  }
+
+  .pb-days__unit-tail {
+    display: inline;
+  }
+
+  .pb-days__dots {
+    width: 100%;
+    gap: 0.15rem;
+    margin-top: 0.2rem;
+  }
+
+  .pb-split {
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem 0.875rem;
+  }
+
+  .pb-week-panel {
+    padding: 1rem;
+  }
+
+  .pb-week__session {
+    min-height: 2.25rem;
+  }
+
+  .pb-week__day--rest .pb-week__session {
+    min-height: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-days__option,
+  .pb-split,
+  .pb-split__radio {
+    transition: none;
+  }
+
+  .pb-days__option:active {
+    transform: none;
+  }
+
+  .pb-week__session {
+    animation: none;
+  }
 }

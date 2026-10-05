@@ -3,685 +3,24 @@
 }
 
 /* Exercise pool polish: stacked tool panels with a desktop summary rail. */
-.plan-builder-page--exercises .exercise-foundation-shell {
-  display: grid;
-  gap: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-panel {
-  color: var(--jw-step-ink);
-}
-
-.plan-builder-page--exercises .exercise-foundation-header {
-  display: flex;
-  min-width: 0;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-title {
-  margin: 0;
-  color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 1.9rem;
-  font-weight: 800;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 2.2rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-lead {
-  max-width: 68ch;
-  margin: 0.35rem 0 0;
-  color: var(--jw-step-copy);
-  font-size: 0.875rem;
-  font-weight: 550;
-  line-height: 1.35rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-concept {
-  display: inline-flex;
-  min-height: 1.875rem;
-  flex: 0 0 auto;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(0, 119, 128, 0.1);
-  padding: 0.25rem 0.75rem;
-  color: var(--jw-step-selected-ink);
-  font-size: 0.75rem;
-  font-weight: 800;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-workspace {
-  display: grid;
-  gap: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-main {
-  gap: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section {
-  scroll-margin-top: 6rem;
-  border: 1px solid var(--jw-step-border);
-  border-radius: 0.75rem;
-  background: rgba(255, 253, 250, 0.76);
-  padding: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__header {
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.875rem;
-  margin-bottom: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__number {
-  display: inline-flex;
-  width: 2rem;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  background: #003f45;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row h3 {
-  margin: 0;
-  color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 1.35rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row span {
-  display: inline-flex;
-  min-height: 1.5rem;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(28, 25, 23, 0.08);
-  padding: 0.18rem 0.55rem;
-  color: #4b4742;
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__header p {
-  max-width: 68ch;
-  margin: 0.25rem 0 0;
-  color: var(--jw-step-copy);
-  font-size: 0.8125rem;
-  font-weight: 550;
-  line-height: 1.2rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-list {
-  gap: 0.625rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-list--main {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.plan-builder-page--exercises .exercise-foundation-list--rotation,
-.plan-builder-page--exercises .exercise-foundation-list--isolation {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.plan-builder-page--exercises .exercise-foundation-row {
-  display: grid;
-  align-content: start;
-  min-width: 0;
-  min-height: 0;
-  border-color: var(--jw-step-border);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.7);
-  padding: 0.625rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row:hover {
-  background: #fffdfa;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--ranked {
-  border-color: rgba(0, 119, 128, 0.48);
-  background: var(--jw-step-selected-bg);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--main {
-  min-height: 8.75rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__grid {
-  display: grid;
-  height: 100%;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-  gap: 0.5rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__pattern {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.4rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.375rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__heading {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__heading h4 {
-  font-size: 0.8125rem;
-  line-height: 1.05rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__heading span,
-.plan-builder-page--exercises .exercise-foundation-row__helper,
-.plan-builder-page--exercises .exercise-foundation-row__selection span {
-  color: var(--jw-step-muted);
-  font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 0.95rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__helper {
-  display: none;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__selection {
-  align-self: end;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__selection p {
-  display: flex;
-  min-height: 2rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border: 1px solid rgba(28, 25, 23, 0.12);
-  border-radius: 0.375rem;
-  background: #ffffff;
-  padding: 0.45rem 0.55rem;
-  color: #120f0d;
-  font-size: 0.78rem;
-  font-weight: 760;
-  line-height: 1rem;
-  white-space: normal;
-}
-
-.plan-builder-page--exercises
-  .exercise-foundation-row--empty
-  .exercise-foundation-row__selection
-  p {
-  color: #526873;
-  font-weight: 700;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__selection svg {
-  flex: 0 0 auto;
-  color: var(--jw-step-selected-strong);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions {
-  align-self: end;
-  justify-content: stretch;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button {
-  width: 100%;
-  min-width: 0;
-  min-height: 2rem;
-  padding-right: 0.5rem;
-  padding-left: 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__preferences {
-  gap: 0.3rem;
-  margin: 0.5rem 0 0;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__preferences li {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plan-builder-page--exercises .exercise-foundation-selected {
-  display: grid;
-  grid-template-columns: minmax(9rem, 0.55fr) minmax(0, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-selected p {
-  margin: 0;
-  color: #120f0d;
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 1.1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-selected ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.plan-builder-page--exercises .exercise-foundation-selected li,
-.plan-builder-page--exercises .exercise-foundation-selected > span {
-  display: inline-flex;
-  min-height: 1.8rem;
-  align-items: center;
-  border: 1px solid rgba(28, 25, 23, 0.12);
-  border-radius: 0.375rem;
-  background: #ffffff;
-  padding: 0.35rem 0.65rem;
-  color: #120f0d;
-  font-size: 0.78rem;
-  font-weight: 720;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-selected > span {
-  color: var(--jw-step-muted);
-}
-
-.plan-builder-page--exercises .exercise-pool-summary {
-  display: none;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary__header h3 {
-  margin: 0;
-  color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 1.3rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary__header p {
-  margin: 0.25rem 0 0;
-  color: var(--jw-step-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card {
-  overflow: hidden;
-  border: 1px solid var(--jw-step-border);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.74);
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card__body {
-  display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card__icon {
-  display: inline-flex;
-  width: 2.75rem;
-  height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card__icon[data-tone="teal"] {
-  background: #dff4f2;
-  color: #00636a;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card__icon[data-tone="gold"] {
-  background: #fff1cf;
-  color: #8a5a00;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card__icon[data-tone="violet"] {
-  background: #ecebff;
-  color: #4d46a9;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card strong {
-  display: block;
-  color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 1.75rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card p {
-  margin: 0.1rem 0 0;
-  color: #120f0d;
-  font-size: 0.82rem;
-  font-weight: 800;
-  line-height: 1.05rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card span {
-  color: var(--jw-step-muted);
-  font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 0.95rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card a {
-  display: flex;
-  min-height: 2.35rem;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--jw-step-border);
-  padding: 0 0.875rem;
-  color: #120f0d;
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 1rem;
-  text-decoration: none;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card a:hover {
-  background: rgba(0, 119, 128, 0.05);
-}
-
-.plan-builder-page--exercises .exercise-pool-summary-card a:focus-visible {
-  outline: 2px solid var(--jw-step-selected-border);
-  outline-offset: -2px;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary__total {
-  border-top: 1px solid var(--jw-step-border);
-  padding-top: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary__total p,
-.plan-builder-page--exercises .exercise-pool-summary__total span {
-  margin: 0;
-  color: var(--jw-step-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-summary__total strong {
-  display: block;
-  margin-top: 0.2rem;
-  color: #120f0d;
-  font-family: var(--jw-font-heading);
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 2.2rem;
-}
-
-@media (min-width: 760px) {
-  .plan-builder-page--exercises .exercise-foundation-list--main {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-list--isolation {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1180px) {
-  .plan-builder-page--exercises .exercise-foundation-workspace {
-    grid-template-columns: minmax(0, 1fr) 14rem;
-    align-items: start;
-  }
-
-  .plan-builder-page--exercises .exercise-pool-summary {
-    position: sticky;
-    top: 1rem;
-    display: grid;
-    gap: 0.875rem;
-    border: 1px solid var(--jw-step-border);
-    border-radius: 0.75rem;
-    background: rgba(255, 253, 250, 0.78);
-    padding: 1rem;
-  }
-}
-
-@media (min-width: 1440px) {
-  .plan-builder-page--exercises .exercise-foundation-workspace {
-    grid-template-columns: minmax(0, 1fr) 15.5rem;
-  }
-}
-
-@media (max-width: 759px) {
-  .plan-builder-page--exercises .exercise-foundation-header {
-    display: grid;
-    gap: 0.625rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-title {
-    font-size: 1.5rem;
-    line-height: 1.85rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-concept {
-    width: fit-content;
-  }
-
-  .plan-builder-page--exercises .exercise-pool-section {
-    padding: 0.875rem;
-  }
-
-  .plan-builder-page--exercises .exercise-pool-section__header {
-    grid-template-columns: 1.875rem minmax(0, 1fr);
-    gap: 0.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-list--main,
-  .plan-builder-page--exercises .exercise-foundation-list--rotation,
-  .plan-builder-page--exercises .exercise-foundation-list--isolation {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row {
-    border-width: 1px;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions button {
-    min-height: 2.75rem;
-    font-size: 0.875rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-selected {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-}
-
-@media (min-width: 1024px) and (min-height: 700px) {
-  .plan-builder-page--exercises .exercise-accessories-summary {
-    margin-bottom: 5.75rem;
-  }
-}
 
 /* Compact anti-card pass for Exercise Foundation. */
-.plan-builder-page--exercises .exercise-foundation-workspace,
-.plan-builder-page--exercises .exercise-foundation-main {
-  gap: 0.75rem;
-}
 
-.plan-builder-page--exercises .exercise-foundation-status,
-.plan-builder-page--exercises .exercise-foundation-card {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.plan-builder-page--exercises .exercise-foundation-status {
-  gap: 0.75rem;
-  padding: 0.5rem 0 0.625rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-overview {
-  border-bottom: 1px solid var(--jw-step-border);
-}
-
-.plan-builder-page--exercises .exercise-foundation-status__icon {
-  width: 1.875rem;
-  height: 1.875rem;
-  box-shadow: none;
-}
-
-.plan-builder-page--exercises .exercise-foundation-status__title {
-  font-size: 0.9375rem;
-  line-height: 1.15rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-status__body {
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-section-header {
-  margin-top: 0.125rem;
-  border-top-color: var(--jw-step-border);
-  padding-top: 0.75rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-section-header h3 {
-  font-size: 0.9375rem;
-  line-height: 1.25rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-section-header p {
-  color: var(--jw-step-copy);
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-section-header > span {
-  background-color: rgba(0, 119, 128, 0.08);
-  color: var(--jw-step-selected-ink);
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-card {
-  overflow: visible;
-  border: 0;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row {
-  padding: 0.66rem 0.78rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row:hover {
-  border-color: rgba(0, 119, 128, 0.2);
-  background-color: var(--jw-step-surface);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--missing {
-  background: rgba(255, 248, 238, 0.78);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__pattern {
-  grid-template-columns: 1.875rem minmax(0, 1fr);
-  gap: 0.65rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__icon,
 .plan-builder-page--exercises .main-compound-drawer__option-icon {
   width: 1.875rem;
   height: 1.875rem;
   border-radius: 0.375rem;
 }
 
-.plan-builder-page--exercises .exercise-foundation-row__heading h4,
-.plan-builder-page--exercises .exercise-foundation-row__selection p {
-  font-size: 0.8125rem;
-  line-height: 1.05rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__helper,
-.plan-builder-page--exercises .exercise-foundation-row__selection span,
-.plan-builder-page--exercises .exercise-foundation-row__status,
-.plan-builder-page--exercises .rotation-pool-inline-preview__status {
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .rotation-pool-inline-preview {
-  margin-top: 0.55rem;
-  background-color: transparent;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button {
-  min-width: 8.75rem;
-  white-space: nowrap;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button svg {
-  flex: 0 0 auto;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__preferences {
-  margin-left: 2.525rem;
-}
-
 /* Final shared polish: keep Exercises in the same palette as the rest of Plan Builder. */
 .plan-builder-page--exercises .step-panel,
-.plan-builder-page--exercises .exercise-foundation-row,
-.plan-builder-page--exercises .main-compound-drawer__option,
-.plan-builder-page--exercises .accessory-selector {
+.plan-builder-page--exercises .main-compound-drawer__option {
   border-color: var(--jw-step-border);
   background-color: var(--jw-step-surface-soft);
   color: var(--jw-step-ink);
 }
 
-.plan-builder-page--exercises .main-compound-drawer__option:hover,
-.plan-builder-page--exercises .accessory-selector:hover {
+.plan-builder-page--exercises .main-compound-drawer__option:hover {
   border-color: rgba(0, 119, 128, 0.3);
   background-color: var(--jw-step-surface);
 }
@@ -699,17 +38,6 @@
   border-color: var(--jw-step-selected-strong);
   background-color: var(--jw-step-selected-strong);
   color: #ffffff;
-}
-
-.plan-builder-page--exercises .main-compound-status-pill,
-.plan-builder-page--exercises .accessory-selector__count {
-  background-color: rgba(0, 119, 128, 0.09);
-  color: var(--jw-step-selected-ink);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__description,
-.plan-builder-page--exercises .main-compound-drawer__option-description {
-  color: var(--jw-step-copy);
 }
 
 .plan-builder-page--exercises
@@ -737,243 +65,17 @@
 
 /* Phone layout: fewer repeated labels, flatter rows, larger touch targets. */
 @media (max-width: 639px) {
-  .plan-builder-page--exercises .exercise-foundation-workspace,
-  .plan-builder-page--exercises .exercise-foundation-main {
-    gap: 0.5rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-status {
-    display: block;
-    padding: 0 0 0.625rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-status__icon {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-status__title,
-  .plan-builder-page--exercises .exercise-foundation-status__body {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-status__body {
-    margin-top: 0.125rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-section-header {
-    display: grid;
-    gap: 0.375rem;
-    align-items: start;
-    margin-top: 0.375rem;
-    padding-top: 0.875rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-section-header h3 {
-    font-size: 0.9375rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-section-header p {
-    max-width: none;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-section-header > span {
-    width: fit-content;
-    min-height: 1.75rem;
-    font-size: 0.8125rem;
-    line-height: 1rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-tabbar {
-    justify-content: flex-start;
-    min-height: 0;
-    margin-top: -0.125rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-tabbar__active {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-tabbar__locked {
-    min-height: 2rem;
-    padding: 0.25rem 0.625rem;
-    font-size: 0.875rem;
-    line-height: 1.125rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-list {
-    gap: 0;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row {
-    border-width: 1px 0 0;
-    border-radius: 0;
-    background: transparent;
-    padding: 0.68rem 0;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row:first-child {
-    border-top: 0;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row--missing {
-    margin: 0.25rem 0;
-    border: 1px solid var(--jw-step-warning-border);
-    border-radius: 0.5rem;
-    background: var(--jw-step-warning-bg);
-    padding: 0.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__grid {
-    grid-template-areas:
-      "pattern actions"
-      "selection selection";
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 0.375rem 0.625rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__pattern {
-    grid-area: pattern;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__icon,
-  .plan-builder-page--exercises .exercise-foundation-row__helper,
-  .plan-builder-page--exercises .exercise-foundation-row__heading span,
-  .plan-builder-page--exercises .exercise-foundation-row__selection span,
-  .plan-builder-page--exercises .exercise-foundation-row__status {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__heading h4,
-  .plan-builder-page--exercises .exercise-foundation-row__selection p {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__selection {
-    grid-area: selection;
-  }
-
-  .plan-builder-page--exercises
-    .exercise-foundation-row--empty
-    .exercise-foundation-row__selection {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__selection p {
-    white-space: normal;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions {
-    grid-area: actions;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
-    gap: 0.375rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions button {
-    min-width: 0;
-    max-width: 9.5rem;
-    padding-right: 0.75rem;
-    padding-left: 0.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions button svg {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__preferences {
-    gap: 0.3rem;
-    margin: 0.45rem 0 0;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions button,
-  .plan-builder-page--exercises .rotation-pool-inline-preview button,
-  .plan-builder-page--exercises
-    .exercise-accessories-summary
-    button:not(.exercise-accessories-selected__remove) {
-    min-height: 2.75rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .rotation-pool-inline-preview {
-    display: flex;
-    width: 100%;
-    max-width: 100%;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.625rem;
-    margin: 0.5rem 0 0;
-  }
-
-  .plan-builder-page--exercises .rotation-pool-inline-preview__header {
-    min-height: 0;
-    background: transparent;
-    padding: 0;
-  }
-
-  .plan-builder-page--exercises .rotation-pool-inline-preview__label {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .rotation-pool-inline-preview__status {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-summary {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-summary__header {
-    align-items: center;
-    gap: 0.625rem;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-summary__header h3,
-  .plan-builder-page--exercises .exercise-accessories-summary__header p {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-summary__header h3 + p,
-  .plan-builder-page--exercises .exercise-accessories-summary__empty {
-    display: none;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-selected__item {
-    min-height: 2.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-selected__name,
-  .plan-builder-page--exercises .exercise-accessories-selected__meta {
-    font-size: 0.875rem;
-    line-height: 1.125rem;
-  }
-
-  .plan-builder-page--exercises .exercise-accessories-selected__remove {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
   .plan-builder-page--exercises .main-compound-drawer__header {
     padding: 0.875rem 0.875rem 0.75rem;
   }
 
   .plan-builder-page--exercises .main-compound-drawer__title {
-    font-size: 1.125rem;
-    line-height: 1.375rem;
+    font-size: var(--jw-type-section-title);
+    line-height: 1.22;
   }
 
   .plan-builder-page--exercises .main-compound-drawer__helper,
-  .plan-builder-page--exercises .main-compound-drawer__footer,
-  .plan-builder-page--exercises .main-compound-drawer__option-tags {
+  .plan-builder-page--exercises .main-compound-drawer__footer {
     display: none;
   }
 
@@ -986,23 +88,9 @@
     min-height: 2.75rem;
   }
 
-  .plan-builder-page--exercises .main-compound-drawer__filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.125rem;
-  }
-
-  .plan-builder-page--exercises .main-compound-drawer__filter {
-    flex: 0 0 auto;
-    min-height: 2.75rem;
-    font-size: 0.875rem;
-    line-height: 1.125rem;
-  }
-
   .plan-builder-page--exercises .main-compound-drawer__options,
   .plan-builder-page--exercises
-    .main-compound-drawer__options-fieldset.main-compound-drawer__options,
-  .plan-builder-page--exercises .optional-accessories-drawer__options {
+    .main-compound-drawer__options-fieldset.main-compound-drawer__options {
     padding: 0.5rem 0.5rem 1rem;
   }
 
@@ -1017,146 +105,14 @@
 
   .plan-builder-page--exercises .main-compound-drawer__option-name,
   .plan-builder-page--exercises .main-compound-drawer__option-meta {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: var(--jw-type-body);
+    line-height: 1.43;
   }
 }
 
 /* Final exercise pool cascade layer. Keep this after the compact phone overrides. */
-.plan-builder-page--exercises .exercise-foundation-workspace {
-  display: grid;
-  gap: 1rem;
-}
 
-.plan-builder-page--exercises .exercise-foundation-main {
-  gap: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section {
-  border: 1px solid var(--jw-step-border);
-  border-radius: 0.75rem;
-  background: rgba(255, 253, 250, 0.76);
-  padding: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-list {
-  display: grid;
-  gap: 0.625rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-list--main {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.plan-builder-page--exercises .exercise-foundation-list--rotation,
-.plan-builder-page--exercises .exercise-foundation-list--isolation {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.plan-builder-page--exercises .exercise-foundation-row,
-.plan-builder-page--exercises .exercise-foundation-row:first-child {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  border: 1px solid var(--jw-step-border);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.7);
-  padding: 0.625rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--ranked {
-  border-color: rgba(0, 119, 128, 0.48);
-  background: var(--jw-step-selected-bg);
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--main {
-  min-height: 8.75rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__grid {
-  display: grid;
-  height: 100%;
-  grid-template-areas: none;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-  gap: 0.5rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__pattern {
-  grid-area: auto;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.4rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__icon {
-  display: inline-flex;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__helper {
-  display: none;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__heading {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__heading span,
-.plan-builder-page--exercises .exercise-foundation-row__selection span {
-  display: block;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__selection {
-  display: block;
-  grid-area: auto;
-  align-self: end;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row--empty .exercise-foundation-row__selection {
-  display: block;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__selection p {
-  display: flex;
-  min-height: 2rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border: 1px solid rgba(28, 25, 23, 0.12);
-  border-radius: 0.375rem;
-  background: #ffffff;
-  padding: 0.45rem 0.55rem;
-  white-space: normal;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions {
-  grid-area: auto;
-  justify-content: stretch;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button {
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  min-height: 2rem;
-  padding-right: 0.5rem;
-  padding-left: 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__actions button svg {
-  display: block;
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-row__preferences {
-  margin: 0.5rem 0 0;
-}
-
-.plan-builder-page--exercises
-  .main-compound-drawer__options-fieldset
+.plan-builder-page--exercises .main-compound-drawer__options-fieldset
   .main-compound-drawer__option {
   grid-template-areas:
     "icon copy state"
@@ -1169,209 +125,11 @@
 
 .plan-builder-page--exercises
   .main-compound-drawer__options-fieldset
-  .main-compound-drawer__option-tags {
-  display: none;
-}
-
-.plan-builder-page--exercises
-  .main-compound-drawer__options-fieldset
   .main-compound-drawer__option-meta {
   -webkit-line-clamp: 1;
 }
 
-@media (min-width: 760px) {
-  .plan-builder-page--exercises .exercise-foundation-list--main {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-list--isolation {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1180px) {
-  .plan-builder-page--exercises .exercise-foundation-workspace {
-    grid-template-columns: minmax(0, 1fr) 14rem;
-    align-items: start;
-  }
-
-  .plan-builder-page--exercises .exercise-pool-summary {
-    position: sticky;
-    top: 1rem;
-    display: grid;
-    gap: 0.875rem;
-  }
-}
-
-@media (min-width: 1440px) {
-  .plan-builder-page--exercises .exercise-foundation-workspace {
-    grid-template-columns: minmax(0, 1fr) 15.5rem;
-  }
-}
-
-@media (max-width: 759px) {
-  .plan-builder-page--exercises .exercise-foundation-list--main,
-  .plan-builder-page--exercises .exercise-foundation-list--rotation,
-  .plan-builder-page--exercises .exercise-foundation-list--isolation {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row,
-  .plan-builder-page--exercises .exercise-foundation-row:first-child {
-    border-width: 1px;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-row__actions button {
-    min-height: 2.75rem;
-    font-size: 0.875rem;
-  }
-}
-
 /* Stacked exercise selection screen. */
-.plan-builder-page--exercises .exercise-foundation-workspace {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.plan-builder-page--exercises .exercise-pool-summary {
-  display: none;
-}
-
-.plan-builder-page.plan-builder-page--exercises .exercise-foundation-panel {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 1.25rem 0 0.35rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(28, 25, 23, 0.1);
-  padding-bottom: 1.1rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-header > div {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-title {
-  margin: 0;
-  color: #12100d;
-  font-family: var(--jw-font-heading);
-  font-size: 1.75rem;
-  font-weight: 850;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 2rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-lead {
-  max-width: 68ch;
-  margin: 0;
-  color: #244256;
-  font-size: 0.9rem;
-  font-weight: 560;
-  line-height: 1.35rem;
-}
-
-.plan-builder-page--exercises .exercise-foundation-concept {
-  display: inline-flex;
-  min-height: 1.75rem;
-  flex: 0 0 auto;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(0, 119, 128, 0.11);
-  padding: 0.25rem 0.72rem;
-  color: #075d63;
-  font-size: 0.74rem;
-  font-weight: 820;
-  line-height: 1rem;
-  white-space: nowrap;
-}
-
-.plan-builder-page--exercises .exercise-foundation-workspace {
-  display: grid;
-  gap: 0;
-}
-
-.plan-builder-page--exercises .exercise-pool-section {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0 0 1.35rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section + .exercise-pool-section {
-  border-top: 1px solid rgba(28, 25, 23, 0.09);
-  padding-top: 1.35rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__header {
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.9rem;
-  align-items: start;
-  margin-bottom: 1rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__number {
-  display: inline-flex;
-  width: 1.9rem;
-  height: 1.9rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.42rem;
-  background: #003f45;
-  color: #ffffff;
-  font-size: 0.86rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.7rem;
-  margin-bottom: 0.35rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row h3 {
-  margin: 0;
-  color: #12100d;
-  font-family: var(--jw-font-heading);
-  font-size: 1.02rem;
-  font-weight: 850;
-  letter-spacing: var(--jw-heading-tracking);
-  line-height: 1.25rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__title-row span {
-  display: inline-flex;
-  min-height: 1.25rem;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(28, 25, 23, 0.06);
-  padding: 0.15rem 0.48rem;
-  color: #3f4d54;
-  font-size: 0.68rem;
-  font-weight: 820;
-  line-height: 0.9rem;
-}
-
-.plan-builder-page--exercises .exercise-pool-section__header p {
-  margin: 0;
-  color: #244256;
-  font-size: 0.78rem;
-  font-weight: 620;
-  line-height: 1.12rem;
-}
 
 .exercise-selection-main-grid,
 .exercise-selection-rotation-grid,
@@ -1396,11 +154,6 @@
 
 .movement-pattern-bucket:first-child {
   border-left: 0;
-}
-
-.movement-pattern-bucket--recommended {
-  border-radius: 0.5rem;
-  background: rgba(49, 80, 93, 0.045);
 }
 
 .movement-pattern-bucket--rotation {
@@ -1435,9 +188,9 @@
   overflow: hidden;
   margin: 0;
   color: #12100d;
-  font-size: 0.78rem;
+  font-size: var(--jw-type-meta);
   font-weight: 830;
-  line-height: 1rem;
+  line-height: 1.28;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1447,24 +200,14 @@
   overflow: hidden;
   margin: 0.1rem 0 0;
   color: #536873;
-  font-size: 0.69rem;
+  font-size: var(--jw-type-meta);
   font-weight: 670;
-  line-height: 0.9rem;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.movement-pattern-bucket__recommendation {
-  display: block;
-  margin-bottom: 0.05rem;
-  color: #31505d;
-  font-size: 0.64rem;
-  font-weight: 780;
-  line-height: 0.82rem;
-}
-
-.exercise-dropdown,
-.rotation-pool__pattern-filter {
+.exercise-dropdown {
   position: relative;
   display: block;
   min-width: 0;
@@ -1477,8 +220,7 @@
   align-items: stretch;
 }
 
-.exercise-dropdown__button,
-.rotation-pool__pattern-filter select {
+.exercise-dropdown__button {
   width: 100%;
   height: 2rem;
   min-width: 0;
@@ -1488,9 +230,9 @@
   background: #ffffff;
   color: #151f20;
   padding: 0 1.85rem 0 0.55rem;
-  font-size: 0.72rem;
+  font-size: var(--jw-type-meta);
   font-weight: 620;
-  line-height: 1rem;
+  line-height: 1.39;
 }
 
 .exercise-dropdown__button {
@@ -1510,16 +252,15 @@
   min-width: 0;
   overflow: hidden;
   color: #151f20;
-  font-size: 0.72rem;
+  font-size: var(--jw-type-meta);
   font-weight: 620;
-  line-height: 1rem;
+  line-height: 1.39;
   pointer-events: none;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.plan-builder-page--exercises .exercise-dropdown svg,
-.plan-builder-page--exercises .rotation-pool__pattern-filter svg {
+.plan-builder-page--exercises .exercise-dropdown svg {
   position: absolute;
   top: 50%;
   right: 0.55rem;
@@ -1529,11 +270,7 @@
 }
 
 .exercise-dropdown__button:focus-visible,
-.rotation-pool__pattern-filter select:focus-visible,
-.rotation-pool__search input:focus-visible,
-.exercise-selection-secondary-button:focus-visible,
 .exercise-selection-add-button:focus-visible,
-.rotation-pool button:focus-visible,
 .isolation-group button:focus-visible {
   outline: 2px solid rgba(0, 119, 128, 0.72);
   outline-offset: 2px;
@@ -1562,9 +299,9 @@
   color: #151f20;
   cursor: pointer;
   padding: 0.45rem 0.58rem;
-  font-size: 0.82rem;
+  font-size: var(--jw-type-label);
   font-weight: 620;
-  line-height: 1.1rem;
+  line-height: 1.34;
   text-align: left;
 }
 
@@ -1574,11 +311,7 @@
   color: #075d63;
 }
 
-.exercise-selection-secondary-button,
-.exercise-selection-add-button,
-.rotation-pool__chip,
-.rotation-pool__exercise-row,
-.rotation-pool__more {
+.exercise-selection-add-button {
   border: 1px solid rgba(28, 25, 23, 0.1);
   background: rgba(255, 255, 255, 0.72);
   color: #12100d;
@@ -1587,14 +320,6 @@
     border-color 150ms ease-out,
     background-color 150ms ease-out,
     color 150ms ease-out;
-}
-
-.exercise-selection-secondary-button {
-  height: 1.9rem;
-  border-radius: 0.28rem;
-  font-size: 0.7rem;
-  font-weight: 760;
-  line-height: 1;
 }
 
 .exercise-selection-add-button {
@@ -1622,8 +347,8 @@
   height: auto;
   gap: 0.35rem;
   padding: 0.34rem 0.5rem;
-  font-size: 0.7rem;
-  line-height: 0.9rem;
+  font-size: var(--jw-type-meta);
+  line-height: 1.29;
   text-align: center;
   white-space: normal;
 }
@@ -1632,174 +357,10 @@
   flex: 0 0 auto;
 }
 
-.exercise-selection-secondary-button:hover,
-.exercise-selection-add-button:hover,
-.rotation-pool__chip:hover,
-.rotation-pool__exercise-row:hover,
-.rotation-pool__more:hover {
+.exercise-selection-add-button:hover {
   border-color: rgba(0, 119, 128, 0.28);
   background: #ffffff;
   color: #075d63;
-}
-
-.rotation-pool {
-  display: grid;
-  grid-template-columns: minmax(19rem, 0.85fr) minmax(0, 1.35fr);
-  gap: 1.5rem;
-}
-
-.rotation-pool__selected {
-  min-inline-size: 0;
-  min-width: 0;
-  margin: 0;
-  border: 0;
-  border-right: 1px solid rgba(28, 25, 23, 0.1);
-  padding-right: 1.25rem;
-}
-
-.plan-builder-page--exercises .rotation-pool__selected legend {
-  padding: 0;
-  margin: 0 0 0.55rem;
-  color: #12100d;
-  font-size: 0.76rem;
-  font-weight: 830;
-  line-height: 1rem;
-}
-
-.rotation-pool__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.rotation-pool__chip {
-  display: inline-flex;
-  min-height: 2rem;
-  max-width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  border-radius: 0.34rem;
-  padding: 0.35rem 0.62rem;
-  font-size: 0.72rem;
-  font-weight: 680;
-  line-height: 1rem;
-}
-
-.rotation-pool__browser {
-  display: grid;
-  min-width: 0;
-  gap: 0.45rem;
-}
-
-.rotation-pool__filters {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 12.5rem;
-  gap: 0.55rem;
-}
-
-.rotation-pool__search {
-  display: flex;
-  min-width: 0;
-  height: 2.25rem;
-  align-items: center;
-  gap: 0.45rem;
-  border: 1px solid rgba(28, 25, 23, 0.11);
-  border-radius: 0.34rem;
-  background: #ffffff;
-  padding: 0 0.65rem;
-  color: #536873;
-}
-
-.rotation-pool__search input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  background: transparent;
-  color: #12100d;
-  font-size: 0.76rem;
-  font-weight: 560;
-  outline: 0;
-}
-
-.rotation-pool__search input::placeholder {
-  color: #69777d;
-  opacity: 1;
-}
-
-.rotation-pool__pattern-filter select {
-  height: 2.25rem;
-  border-color: rgba(28, 25, 23, 0.11);
-}
-
-.rotation-pool__exercise-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid rgba(28, 25, 23, 0.1);
-  border-radius: 0.42rem;
-}
-
-.rotation-pool__exercise-row {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.5rem;
-  align-items: center;
-  border-width: 0 0 1px;
-  border-radius: 0;
-  padding: 0.55rem 0.62rem;
-  text-align: left;
-}
-
-.rotation-pool__exercise-row:nth-last-child(-n + 2) {
-  border-bottom-width: 0;
-}
-
-.rotation-pool__exercise-row:nth-child(odd) {
-  border-right-width: 1px;
-}
-
-.plan-builder-page--exercises .rotation-pool__exercise-row span {
-  min-width: 0;
-  overflow: hidden;
-  color: #12100d;
-  font-size: 0.75rem;
-  font-weight: 660;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rotation-pool__exercise-row small {
-  color: #536873;
-  font-size: 0.62rem;
-  font-weight: 650;
-  line-height: 0.85rem;
-  white-space: nowrap;
-}
-
-.plan-builder-page--exercises .rotation-pool__exercise-row svg,
-.plan-builder-page--exercises .rotation-pool__chip svg {
-  flex: 0 0 auto;
-  color: #31505d;
-}
-
-.rotation-pool__more {
-  justify-self: center;
-  display: inline-flex;
-  min-height: 1.75rem;
-  align-items: center;
-  gap: 0.35rem;
-  border-color: transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: #007780;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 780;
-  line-height: 1rem;
 }
 
 .isolation-group {
@@ -1813,10 +374,6 @@
 
 .isolation-group:first-child {
   border-left: 0;
-}
-
-.exercise-selection-actions {
-  margin-top: 0.95rem;
 }
 
 @media (max-width: 1240px) {
@@ -1840,59 +397,11 @@
   }
 }
 
-@media (max-width: 900px) {
-  .plan-builder-page.plan-builder-page--exercises .exercise-foundation-panel {
-    padding: 1rem;
-  }
-
-  .plan-builder-page--exercises .exercise-foundation-header {
-    display: grid;
-  }
-
-  .rotation-pool {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.8rem;
-  }
-
-  .rotation-pool__selected {
-    border-right: 0;
-    border-bottom: 1px solid rgba(28, 25, 23, 0.1);
-    padding-right: 0;
-    padding-bottom: 0.8rem;
-  }
-}
-
 @media (max-width: 720px) {
   .exercise-selection-main-grid,
   .exercise-selection-rotation-grid,
-  .exercise-selection-isolation-grid,
-  .rotation-pool__exercise-list,
-  .rotation-pool__filters {
+  .exercise-selection-isolation-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .rotation-pool__exercise-row:nth-child(odd) {
-    border-right-width: 0;
-  }
-
-  .rotation-pool__exercise-row:nth-last-child(-n + 2) {
-    border-bottom-width: 1px;
-  }
-
-  .rotation-pool__exercise-row:last-child {
-    border-bottom-width: 0;
-  }
-}
-
-.plan-builder-page.plan-builder-page.plan-builder-page--exercises
-  .exercise-foundation-panel.step-panel {
-  padding: 1.25rem 0 0.35rem;
-}
-
-@media (max-width: 900px) {
-  .plan-builder-page.plan-builder-page.plan-builder-page--exercises
-    .exercise-foundation-panel.step-panel {
-    padding: 1rem;
   }
 }
 
@@ -1920,7 +429,6 @@
   border-top: 0;
 }
 
-.plan-builder-page--exercises .movement-pattern-bucket--recommended,
 .plan-builder-page--exercises .movement-pattern-bucket--rotation {
   background: transparent;
 }
@@ -1941,8 +449,8 @@
 
 .plan-builder-page--exercises .movement-pattern-bucket h4 {
   overflow: visible;
-  font-size: 0.88rem;
-  line-height: 1.1rem;
+  font-size: var(--jw-type-body);
+  line-height: 1.25;
   text-overflow: clip;
   white-space: normal;
 }
@@ -1950,8 +458,8 @@
 .plan-builder-page--exercises .movement-pattern-bucket p {
   overflow: visible;
   margin-top: 0.18rem;
-  font-size: 0.76rem;
-  line-height: 1rem;
+  font-size: var(--jw-type-meta);
+  line-height: 1.32;
   text-overflow: clip;
   white-space: normal;
 }
@@ -1968,14 +476,14 @@
 .plan-builder-page--exercises .exercise-dropdown__button {
   padding-right: 2.15rem;
   padding-left: 0.85rem;
-  font-size: 0.9rem;
-  line-height: 1.15rem;
+  font-size: var(--jw-type-body);
+  line-height: 1.28;
 }
 
 .plan-builder-page--exercises .exercise-dropdown__selected-value {
   overflow: hidden;
-  font-size: 0.9rem;
-  line-height: 1.15rem;
+  font-size: var(--jw-type-body);
+  line-height: 1.28;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1989,8 +497,8 @@
   justify-content: center;
   gap: 0.55rem;
   padding: 0.5rem 0.8rem;
-  font-size: 0.82rem;
-  line-height: 1.05rem;
+  font-size: var(--jw-type-label);
+  line-height: 1.28;
 }
 
 .main-compound-ranking-drawer-shell {
@@ -2037,17 +545,17 @@
 .main-compound-ranking-drawer__title {
   margin: 0;
   color: var(--jw-step-ink);
-  font-size: 1.35rem;
+  font-size: var(--jw-type-section-title);
   font-weight: 760;
   letter-spacing: 0;
-  line-height: 1.65rem;
+  line-height: 1.22;
 }
 
 .main-compound-ranking-drawer__helper {
   margin: 0.7rem 0 0;
   color: var(--jw-step-copy);
-  font-size: 0.96rem;
-  line-height: 1.35rem;
+  font-size: var(--jw-type-card-title);
+  line-height: 1.41;
 }
 
 .main-compound-ranking-drawer__close {
@@ -2065,9 +573,9 @@
   background: rgba(28, 25, 23, 0.06);
   color: var(--jw-step-copy);
   padding: 0.18rem 0.5rem;
-  font-size: 0.78rem;
+  font-size: var(--jw-type-meta);
   font-weight: 650;
-  line-height: 1rem;
+  line-height: 1.28;
 }
 
 .main-compound-ranking-drawer__body {
@@ -2156,17 +664,17 @@
   border-radius: 0.42rem;
   background: rgba(0, 119, 128, 0.07);
   color: var(--jw-step-selected-ink);
-  font-size: 0.88rem;
+  font-size: var(--jw-type-body);
   font-weight: 760;
-  line-height: 1rem;
+  line-height: 1.14;
 }
 
 .main-compound-ranking-drawer__name {
   min-width: 0;
   color: var(--jw-step-ink);
-  font-size: 0.98rem;
+  font-size: var(--jw-type-card-title);
   font-weight: 720;
-  line-height: 1.35rem;
+  line-height: 1.38;
   overflow-wrap: anywhere;
 }
 
@@ -2177,8 +685,8 @@
 .main-compound-ranking-drawer__empty {
   margin: 0;
   color: var(--jw-step-copy);
-  font-size: 0.95rem;
-  line-height: 1.35rem;
+  font-size: var(--jw-type-body);
+  line-height: 1.42;
 }
 
 .main-compound-ranking-drawer__footer {

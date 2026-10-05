@@ -1,17 +1,10 @@
-import { Trash2 } from "lucide-react";
-import { Button } from "../../../design-system/button";
+import { Minus, Plus } from "lucide-react";
 import { cn } from "../../../design-system/cn";
 import type { RepRangeStyle } from "../../plan-blueprint";
-import {
-  getSelectableOptionCardClassName,
-  getSelectableOptionState,
-  SelectableOptionStatusBadge,
-  selectableOptionDescriptionStyles,
-  selectableOptionDetailStyles,
-} from "../../shared-ui/option-ui/selectable-option-ui";
+import { ChoiceCard, ChoiceCardGroup } from "../../shared-ui/choice-card/choice-card";
+import { PlanBuilderStepSection } from "../../shared-ui/step-layout/plan-builder-step-layout";
 import {
   type OptionalVolumeMuscleGroupId,
-  type VolumePreset,
   type VolumePresetId,
   type VolumePresetSource,
   volumePresets,
@@ -24,28 +17,17 @@ import {
   type WeeklyVolumeTargetDisplayRow,
 } from "./weekly-volume-target-rows";
 import "./weekly-volume-targets-step.css";
-import "./weekly-volume-targets-responsive.css";
-import "./weekly-volume-targets-page-overrides.css";
 
 const volumePresetDescriptions = {
-  balanced: "Middle of the backed weekly rep range.",
-  conservative: "Lower weekly reps for easier recovery.",
-  higher_volume: "Higher weekly reps when recovery allows it.",
+  balanced: "A middle-of-the-range amount of weekly work.",
+  conservative: "Fewer weekly reps, so recovery is easier.",
+  higher_volume: "More weekly reps, if you can recover from them.",
 } as const satisfies Record<VolumePresetId, string>;
-
-type WeeklyVolumeTargetStatusTone = "accessory" | "main-target" | "moderate" | "optional";
 
 type OptionalVolumeTargetToggleHandler = (
   muscleGroup: OptionalVolumeMuscleGroupId,
   isEnabled: boolean,
 ) => void;
-
-const weeklyVolumeTargetStatusStyles = {
-  accessory: "bg-[#f7efe4] text-[#8a5a2b]",
-  "main-target": "bg-[#e8f6f3] text-[#0d6d67]",
-  moderate: "bg-[#eef3fb] text-[#315d8a]",
-  optional: "bg-[#f4f0e8] text-[#5c6d73]",
-} as const satisfies Record<WeeklyVolumeTargetStatusTone, string>;
 
 type WeeklyVolumeTargetsStepProps = {
   onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
@@ -54,44 +36,6 @@ type WeeklyVolumeTargetsStepProps = {
   selectedVolumePresetId: VolumePresetId | null;
   volumePresetSource: VolumePresetSource | null;
   weeklyRepTargets: ReadonlyArray<WeeklyRepTarget> | null;
-};
-type VolumePresetSelectorProps = {
-  onVolumePresetChange: (volumePreset: VolumePresetId) => void;
-  selectedVolumePresetId: VolumePresetId | null;
-  volumePresetSource: VolumePresetSource | null;
-};
-
-type VolumePresetOptionRadioProps = {
-  isExplicitSelection: boolean;
-  isSelected: boolean;
-  onSelect: (volumePreset: VolumePresetId) => void;
-  option: VolumePreset;
-};
-
-type VolumePresetTargetsProps = {
-  isSelected: boolean;
-  option: VolumePreset;
-};
-
-type RequiredWeeklyRepTargetsRowsProps = {
-  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
-  optionalRows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
-  rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
-};
-
-type WeeklyVolumeTargetGroupProps = {
-  label: string;
-  rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
-};
-
-type OptionalWeeklyVolumeTargetGroupProps = {
-  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
-  rows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
-};
-
-type WeeklyVolumeTargetStatusBadgeProps = {
-  label: string;
-  tone: WeeklyVolumeTargetStatusTone;
 };
 
 const mainWeeklyTargetMuscleGroups = ["chest", "back", "quads", "hamstrings"] as const;
@@ -104,157 +48,8 @@ export function WeeklyVolumeTargetsStep({
   volumePresetSource,
   weeklyRepTargets,
 }: WeeklyVolumeTargetsStepProps) {
-  const requiredWeeklyVolumeTargetRows = getRequiredWeeklyVolumeTargetRows({
-    repRangeStyle,
-    weeklyRepTargets,
-  });
-  const optionalWeeklyVolumeTargetRows = getOptionalWeeklyVolumeTargetRows({
-    repRangeStyle,
-    weeklyRepTargets,
-  });
-
-  return (
-    <div className="training-volume-step">
-      <div className="min-w-0 space-y-4">
-        <section aria-label="Training volume options" className="training-volume-panel">
-          <VolumePresetSelector
-            onVolumePresetChange={onVolumePresetChange}
-            selectedVolumePresetId={selectedVolumePresetId}
-            volumePresetSource={volumePresetSource}
-          />
-
-          <div className="training-volume-targets-grid">
-            <RequiredWeeklyRepTargetsSection
-              onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
-              optionalRows={optionalWeeklyVolumeTargetRows}
-              rows={requiredWeeklyVolumeTargetRows}
-            />
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-function VolumePresetSelector({
-  onVolumePresetChange,
-  selectedVolumePresetId,
-  volumePresetSource,
-}: VolumePresetSelectorProps) {
-  if (!selectedVolumePresetId || !volumePresetSource) {
-    return <p className="mt-5 text-sm font-semibold text-stone-600">Loading volume presets...</p>;
-  }
-
-  return (
-    <fieldset className="volume-preset-options">
-      <legend className="sr-only">Volume preset</legend>
-      {volumePresets.map((option) => (
-        <VolumePresetOptionRadio
-          isExplicitSelection={
-            selectedVolumePresetId === option.id && volumePresetSource === "user_selected"
-          }
-          isSelected={selectedVolumePresetId === option.id}
-          key={option.id}
-          onSelect={onVolumePresetChange}
-          option={option}
-        />
-      ))}
-    </fieldset>
-  );
-}
-
-function VolumePresetOptionRadio({
-  isExplicitSelection,
-  isSelected,
-  onSelect,
-  option,
-}: VolumePresetOptionRadioProps) {
-  const optionState = getSelectableOptionState(isSelected);
-
-  function selectOption() {
-    onSelect(option.id);
-  }
-
-  function saveExplicitSelection() {
-    if (isSelected && !isExplicitSelection) {
-      selectOption();
-    }
-  }
-
-  return (
-    <label
-      className={cn(
-        "volume-preset-option",
-        getSelectableOptionCardClassName(optionState),
-        isSelected ? "volume-preset-option--selected" : null,
-      )}
-    >
-      <input
-        checked={isSelected}
-        className="sr-only"
-        name="volume-preset"
-        onClick={saveExplicitSelection}
-        onChange={selectOption}
-        type="radio"
-        value={option.id}
-      />
-      <div className="volume-preset-option__body">
-        <div className="min-w-0 flex-1">
-          <div className="rep-range-option__header">
-            <div className="rep-range-option__title-row">
-              <p className="volume-preset-option__title font-black">{option.title}</p>
-              {option.isRecommended ? (
-                <SelectableOptionStatusBadge tone="recommended">
-                  Recommended
-                </SelectableOptionStatusBadge>
-              ) : null}
-            </div>
-          </div>
-          <p
-            className={cn(
-              "volume-preset-option__copy",
-              selectableOptionDescriptionStyles[optionState],
-            )}
-          >
-            {volumePresetDescriptions[option.id]}
-          </p>
-          <VolumePresetTargets isSelected={isSelected} option={option} />
-        </div>
-      </div>
-    </label>
-  );
-}
-
-function VolumePresetTargets({ isSelected, option }: VolumePresetTargetsProps) {
-  const optionState = getSelectableOptionState(isSelected);
-  const styles = selectableOptionDetailStyles[optionState];
-
-  return (
-    <dl className="rep-range-targets">
-      <div className="rep-range-target min-w-0">
-        <dt className={cn("rep-range-target__label", styles.targetLabelClassName)}>
-          Larger muscle groups
-        </dt>
-        <dd className={cn("rep-range-target__value", styles.targetValueClassName)}>
-          {option.largerMuscleTarget} reps/week
-        </dd>
-      </div>
-      <div className="rep-range-target min-w-0">
-        <dt className={cn("rep-range-target__label", styles.targetLabelClassName)}>
-          Smaller muscle groups
-        </dt>
-        <dd className={cn("rep-range-target__value", styles.targetValueClassName)}>
-          {option.smallerMuscleTarget} reps/week
-        </dd>
-      </div>
-    </dl>
-  );
-}
-
-function RequiredWeeklyRepTargetsSection({
-  onOptionalVolumeTargetToggle,
-  optionalRows,
-  rows,
-}: RequiredWeeklyRepTargetsRowsProps) {
+  const rows = getRequiredWeeklyVolumeTargetRows({ repRangeStyle, weeklyRepTargets });
+  const optionalRows = getOptionalWeeklyVolumeTargetRows({ repRangeStyle, weeklyRepTargets });
   const mainRows = getRowsForMuscleGroups(rows, mainWeeklyTargetMuscleGroups);
   const supportingRows = rows.filter(
     (row) =>
@@ -262,55 +57,78 @@ function RequiredWeeklyRepTargetsSection({
   );
 
   return (
-    <section
-      aria-labelledby="weekly-volume-targets-title"
-      className="training-volume-target-section training-volume-target-section--required"
-    >
-      <div className="training-volume-target-section__header">
-        <div>
-          <h4
-            className="text-lg font-black text-stone-950 sm:text-xl"
-            id="weekly-volume-targets-title"
-          >
-            Weekly volume targets
-          </h4>
-          <p className="training-volume-section-copy">
-            These targets guide which exercises and how much work your plan should include.
-          </p>
-        </div>
-      </div>
+    <>
+      {selectedVolumePresetId && volumePresetSource ? (
+        <ChoiceCardGroup legend="Volume preset">
+          {volumePresets.map((option) => {
+            const isSelected = selectedVolumePresetId === option.id;
+            const isExplicitSelection = isSelected && volumePresetSource === "user_selected";
 
-      {rows.length > 0 ? (
-        <div className="weekly-volume-target-groups">
-          <WeeklyVolumeTargetGroup label="Main targets" rows={mainRows} />
-          <WeeklyVolumeTargetGroup label="Supporting targets" rows={supportingRows} />
-          <OptionalWeeklyVolumeTargetGroup
-            onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
-            rows={optionalRows}
-          />
-          <p className="weekly-volume-targets-note">
-            Targets are generated from your selected volume style and guide exercise selection in
-            the next step.
-          </p>
-        </div>
+            return (
+              <ChoiceCard
+                description={volumePresetDescriptions[option.id]}
+                facts={[
+                  { label: "Larger muscles", value: `${option.largerMuscleTarget} reps/week` },
+                  { label: "Smaller muscles", value: `${option.smallerMuscleTarget} reps/week` },
+                ]}
+                isRecommended={option.isRecommended}
+                isSelected={isSelected}
+                key={option.id}
+                name="volume-preset"
+                onClick={() => {
+                  // Clicking the shown default saves it as an explicit choice.
+                  if (isSelected && !isExplicitSelection) {
+                    onVolumePresetChange(option.id);
+                  }
+                }}
+                onSelect={() => onVolumePresetChange(option.id)}
+                title={option.title}
+                value={option.id}
+              />
+            );
+          })}
+        </ChoiceCardGroup>
       ) : (
-        <p className="mt-3 text-sm font-semibold text-stone-600">Loading weekly rep targets...</p>
+        <p className="pb-loading">Loading volume presets…</p>
       )}
-    </section>
+
+      <PlanBuilderStepSection
+        description="What your plan aims for each week, per muscle. Exercises are picked to hit these."
+        title="Weekly volume targets"
+      >
+        {rows.length > 0 ? (
+          <div className="pb-targets">
+            <WeeklyVolumeTargetGroup label="Main muscles" rows={mainRows} />
+            <WeeklyVolumeTargetGroup label="Supporting muscles" rows={supportingRows} />
+            <OptionalWeeklyVolumeTargetGroup
+              onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+              rows={optionalRows}
+            />
+          </div>
+        ) : (
+          <p className="pb-loading">Loading weekly rep targets…</p>
+        )}
+      </PlanBuilderStepSection>
+    </>
   );
 }
 
-function WeeklyVolumeTargetGroup({ label, rows }: WeeklyVolumeTargetGroupProps) {
+function WeeklyVolumeTargetGroup({
+  label,
+  rows,
+}: {
+  label: string;
+  rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
+}) {
   return (
-    <section className="weekly-volume-target-group" aria-label={label}>
-      <h5>{label}</h5>
-      <ul className="weekly-volume-target-list" aria-label={label}>
+    <section aria-label={label} className="pb-targets__group">
+      <h4 className="pb-targets__group-title">{label}</h4>
+      <ul className="pb-targets__list">
         {rows.map((row) => (
-          <li className="weekly-volume-target-row" key={row.muscleGroupId}>
-            <span className="weekly-volume-target-row__muscle">{row.label}</span>
-            <span className="weekly-volume-target-row__reps">{row.weeklyRepTargetLabel}</span>
-            <span className="weekly-volume-target-row__sets">{row.estimatedSetRangeLabel}</span>
-            <WeeklyVolumeTargetStatusBadge label={row.statusLabel} tone={row.statusTone} />
+          <li className="pb-targets__row" key={row.muscleGroupId}>
+            <span className="pb-targets__muscle">{row.label}</span>
+            <span className="pb-targets__reps">{row.weeklyRepTargetLabel}</span>
+            <span className="pb-targets__sets">{row.estimatedSetRangeLabel}</span>
           </li>
         ))}
       </ul>
@@ -321,79 +139,54 @@ function WeeklyVolumeTargetGroup({ label, rows }: WeeklyVolumeTargetGroupProps) 
 function OptionalWeeklyVolumeTargetGroup({
   onOptionalVolumeTargetToggle,
   rows,
-}: OptionalWeeklyVolumeTargetGroupProps) {
-  return (
-    <section
-      className="weekly-volume-target-group weekly-volume-target-group--optional"
-      aria-label="Optional targets"
-    >
-      <div className="weekly-volume-target-group__header">
-        <h5>Optional targets</h5>
-        <p>Add direct work for smaller muscle groups if you want them included in the plan.</p>
-      </div>
-      {rows.length > 0 ? (
-        <ul className="weekly-volume-target-list" aria-label="Optional targets">
-          {rows.map((row) => (
-            <li
-              className={cn(
-                "weekly-volume-target-row weekly-volume-target-row--optional",
-                row.isEnabled ? "weekly-volume-target-row--included" : null,
-              )}
-              key={row.muscleGroupId}
-            >
-              <span className="weekly-volume-target-row__muscle">
-                <span>{row.label}</span>
-                <span className="weekly-volume-target-row__description">
-                  {getOptionalVolumeAddonCopy(row.muscleGroupId)}
-                </span>
-              </span>
-              <span className="weekly-volume-target-row__reps">
-                {row.isEnabled ? row.weeklyRepTargetLabel : "Not included"}
-              </span>
-              <span className="weekly-volume-target-row__sets">
-                {row.isEnabled ? row.estimatedSetRangeLabel : "Optional direct work"}
-              </span>
-              <Button
-                aria-label={`${row.actionLabel} ${row.label} target`}
-                className={cn(
-                  "weekly-volume-target-row__action",
-                  row.isEnabled
-                    ? "weekly-volume-target-row__action--remove"
-                    : "weekly-volume-target-row__action--add",
-                )}
-                onClick={() => onOptionalVolumeTargetToggle(row.muscleGroupId, !row.isEnabled)}
-                size="sm"
-                type="button"
-                variant={row.isEnabled ? "ghost" : "outline"}
-              >
-                {row.isEnabled ? (
-                  <Trash2 aria-hidden="true" size={15} strokeWidth={2.1} />
-                ) : (
-                  "Add target"
-                )}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-sm font-semibold text-stone-600">
-          Loading optional volume targets...
-        </p>
-      )}
-    </section>
-  );
-}
+}: {
+  onOptionalVolumeTargetToggle: OptionalVolumeTargetToggleHandler;
+  rows: ReadonlyArray<OptionalWeeklyVolumeTargetDisplayRow>;
+}) {
+  if (rows.length === 0) {
+    return null;
+  }
 
-function WeeklyVolumeTargetStatusBadge({ label, tone }: WeeklyVolumeTargetStatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-bold",
-        weeklyVolumeTargetStatusStyles[tone],
-      )}
-    >
-      {label}
-    </span>
+    <section aria-label="Optional targets" className="pb-targets__group">
+      <h4 className="pb-targets__group-title">
+        Optional extras
+        <span>Add direct work for these if you want it in your plan.</span>
+      </h4>
+      <ul className="pb-targets__list">
+        {rows.map((row) => (
+          <li
+            className={cn(
+              "pb-targets__row pb-targets__row--optional",
+              row.isEnabled ? "pb-targets__row--included" : null,
+            )}
+            key={row.muscleGroupId}
+          >
+            <span className="pb-targets__muscle">{row.label}</span>
+            <span className="pb-targets__reps">
+              {row.isEnabled ? row.weeklyRepTargetLabel : "Not included"}
+            </span>
+            <span className="pb-targets__sets">
+              {row.isEnabled ? row.estimatedSetRangeLabel : null}
+            </span>
+            <button
+              aria-label={`${row.actionLabel} ${row.label} target`}
+              className="pb-targets__toggle"
+              data-included={row.isEnabled ? "true" : undefined}
+              onClick={() => onOptionalVolumeTargetToggle(row.muscleGroupId, !row.isEnabled)}
+              type="button"
+            >
+              {row.isEnabled ? (
+                <Minus aria-hidden="true" size={15} strokeWidth={2.6} />
+              ) : (
+                <Plus aria-hidden="true" size={15} strokeWidth={2.6} />
+              )}
+              {row.actionLabel}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -404,12 +197,4 @@ function getRowsForMuscleGroups(
   return muscleGroupIds.flatMap((muscleGroupId) =>
     rows.filter((row) => row.muscleGroupId === muscleGroupId),
   );
-}
-
-function getOptionalVolumeAddonCopy(muscleGroupId: OptionalVolumeMuscleGroupId) {
-  if (muscleGroupId === "calves") {
-    return "Optional direct lower-leg work";
-  }
-
-  return "Optional direct core work";
 }

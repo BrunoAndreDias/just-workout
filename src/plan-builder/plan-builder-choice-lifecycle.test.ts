@@ -91,6 +91,7 @@ describe("Plan Builder choice lifecycle", () => {
     expect(repRangesLifecycle.defaultEntryActions).toEqual({
       shouldInitializeTrainingVolume: false,
       shouldSelectDefaultRepRangeStyle: true,
+      shouldSelectDefaultTrainingSplit: false,
     });
 
     const volumeBlueprint = createTestPlanBlueprint({
@@ -108,7 +109,32 @@ describe("Plan Builder choice lifecycle", () => {
     expect(volumeLifecycle.defaultEntryActions).toEqual({
       shouldInitializeTrainingVolume: true,
       shouldSelectDefaultRepRangeStyle: false,
+      shouldSelectDefaultTrainingSplit: false,
     });
+  });
+
+  it("selects the recommended Training Split when Training schedule opens without a compatible split", () => {
+    const unsetLifecycle = getPlanBuilderChoiceLifecycle({
+      activeStep: "frequency",
+      blueprint: createTestPlanBlueprint({ split: null }),
+    });
+
+    expect(unsetLifecycle.defaultEntryActions.shouldSelectDefaultTrainingSplit).toBe(true);
+    expect(unsetLifecycle.selectedDefaults.visibleTrainingSplitId).toBe("full-body-3-day");
+
+    const configuredLifecycle = getPlanBuilderChoiceLifecycle({
+      activeStep: "frequency",
+      blueprint: createTestPlanBlueprint({ split: "full-body-3-day" }),
+    });
+
+    expect(configuredLifecycle.defaultEntryActions.shouldSelectDefaultTrainingSplit).toBe(false);
+
+    const otherStepLifecycle = getPlanBuilderChoiceLifecycle({
+      activeStep: "volume",
+      blueprint: createTestPlanBlueprint({ split: null }),
+    });
+
+    expect(otherStepLifecycle.defaultEntryActions.shouldSelectDefaultTrainingSplit).toBe(false);
   });
 
   it("keeps the Exercises Step immediately ready from the current Plan Blueprint", () => {

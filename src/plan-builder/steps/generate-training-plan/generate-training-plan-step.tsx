@@ -1,4 +1,4 @@
-import { Wand2 } from "lucide-react";
+import { ChevronRight, Wand2 } from "lucide-react";
 import {
   type Dispatch,
   type ReactNode,
@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { Button } from "../../../design-system/button";
-import { StepActions, StepPanel } from "../../../design-system/step-screen";
+import { StepPanel } from "../../../design-system/step-screen";
 import type {
   TrainingPlanDraft,
   TrainingPlanDraftSetupUpdate,
@@ -18,6 +18,7 @@ import { parsePositiveBodyweight } from "../../../training-plan/bodyweight-input
 import { isBodyweightLoadExercise } from "../../../training-plan/bodyweight-load";
 import { requiresSessionBodyweight } from "../../../training-plan/session-bodyweight";
 import { getTrainingBlockExerciseSwapChoices } from "../../../training-plan/training-block";
+import type { PlanBuilderStep } from "../../builder-state/plan-builder-config";
 import { getExerciseCatalogExercise } from "../../exercise-catalog";
 import { getEquipmentPreset } from "../../exercise-selection-preferences";
 import {
@@ -33,7 +34,10 @@ import {
   type PlanBlueprintSummary,
   type RepRangeStyle,
 } from "../../plan-blueprint";
-import { PlanBuilderStepStatusCard } from "../../shared-ui/step-status-card/step-status-card";
+import {
+  PlanBuilderStepHeader,
+  PlanBuilderStepSection,
+} from "../../shared-ui/step-layout/plan-builder-step-layout";
 import { getTrainingSplitLabel, type TrainingSplitId } from "../../training-split";
 import {
   getVolumePreset,
@@ -41,6 +45,7 @@ import {
   type VolumePresetId,
 } from "../../training-volume";
 import { formatMovementPatternLabel } from "../../weekly-movement-coverage";
+import "./generate-training-plan-step.css";
 
 type RecommendedDefaultsConfirmationProps = {
   onAcceptRecommendedDefaults: (resolution: PlanBlueprintDefaultResolution) => Promise<void>;
@@ -48,11 +53,20 @@ type RecommendedDefaultsConfirmationProps = {
   resolution: PlanBlueprintDefaultResolution;
 };
 
+type GenerateChoiceSummary = {
+  isConfigured: boolean;
+  step: PlanBuilderStep;
+  title: string;
+  value: string;
+};
+
 type GenerateTrainingPlanStepProps = {
   blockingIssues?: PlanBlueprintDefaultResolution["blockingIssues"];
+  choiceSummaries?: ReadonlyArray<GenerateChoiceSummary>;
   draftActions: TrainingPlanDraftActions;
   generationInputs: DraftGenerationInputProps;
   isGenerating: boolean;
+  onEditStep?: (step: PlanBuilderStep) => void;
   onGenerateTrainingPlan: () => Promise<void>;
   pendingDraftAction?: PendingTrainingPlanDraftAction;
   recommendedDefaultsConfirmation?: RecommendedDefaultsConfirmationProps | null;
@@ -128,9 +142,6 @@ type TrainingPlanDraftSlotPrescriptionUpdate = {
 type TrainingPlanDraftSlot =
   TrainingPlanDraft["content"]["workoutTemplates"][number]["supersetGroups"][number]["slots"][number];
 
-const generateStepPreferenceMappingCopy =
-  "The Generate Step turns your Exercises Step preferences into final Main Compound Selections, Main Compound Rotation Pools, and generated accessory choices.";
-
 const trainingBlockProgressionCopy =
   "Each Training Block runs 6 weeks: week 1 starts easy at 4-5 Reps In Reserve, then effort builds each week until week 6 reaches 1 RIR on compound lifts and 0 RIR on isolation exercises.";
 
@@ -140,9 +151,11 @@ const defaultGenerationPreferenceMappingCopy =
 export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
   const {
     blockingIssues = [],
+    choiceSummaries = [],
     draftActions,
     generationInputs,
     isGenerating,
+    onEditStep,
     onGenerateTrainingPlan,
     pendingDraftAction = null,
     recommendedDefaultsConfirmation,
@@ -190,81 +203,113 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
     );
   }
 
+  const unsetChoiceCount = choiceSummaries.filter((choice) => !choice.isConfigured).length;
+
   return (
     <>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
-        <div className="min-w-0 space-y-4">
-          <StepPanel>
-            <h3 className="text-xl font-black text-stone-950 sm:text-2xl">
-              Generate Training Plan
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm text-stone-600">
-              {generateStepPreferenceMappingCopy} Just Workout will create a Training Plan Draft
-              from your Plan Builder choices, with split-derived Workout Templates, Superset Groups,
-              and Training Prescriptions from your Rep Range Style. You can review, edit, accept, or
-              discard the draft. Nothing becomes your Active Training Plan until you accept it.
+      <section aria-labelledby="generate-training-plan-title" className="pb-step pb-generate">
+        <PlanBuilderStepHeader
+          description="Check your choices, then generate. You get a draft to review and edit first; nothing changes until you accept it."
+          title="Generate Training Plan"
+          titleId="generate-training-plan-title"
+        />
+
+        <div className="pb-step__body">
+          {choiceSummaries.length > 0 ? (
+            <PlanBuilderStepSection
+              description={
+                unsetChoiceCount > 0
+                  ? "Unset choices will use a Recommended Default. You'll see the list before anything is created."
+                  : "Everything is set. Change anything before you generate."
+              }
+              title="Your choices"
+            >
+              <ul className="pb-generate__choices">
+                {choiceSummaries.map((choice) => (
+                  <li className="pb-generate__choice" key={choice.step}>
+                    <span className="pb-generate__choice-title">{choice.title}</span>
+                    <span
+                      className="pb-generate__choice-value"
+                      data-default={choice.isConfigured ? undefined : "true"}
+                    >
+                      {choice.isConfigured ? choice.value : "Recommended Default"}
+                    </span>
+                    {onEditStep ? (
+                      <button
+                        aria-label={`Edit ${choice.title}`}
+                        className="pb-generate__choice-edit"
+                        onClick={() => onEditStep(choice.step)}
+                        type="button"
+                      >
+                        Edit
+                        <ChevronRight aria-hidden="true" size={15} strokeWidth={2.4} />
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </PlanBuilderStepSection>
+          ) : null}
+
+          <PlanBuilderStepSection title="What happens next">
+            <ol className="pb-generate__next-steps">
+              <li>
+                <strong>Draft.</strong> Just Workout builds your workouts, sets and reps from these
+                choices.
+              </li>
+              <li>
+                <strong>Review.</strong> Swap exercises and adjust sets and reps until it looks
+                right.
+              </li>
+              <li>
+                <strong>Accept.</strong> It becomes your Active Training Plan. Each Training Block
+                runs 6 weeks and gets gradually harder.
+              </li>
+            </ol>
+          </PlanBuilderStepSection>
+
+          {blockingIssues.length > 0 ? (
+            <div className="pb-generate__blocked" role="alert">
+              <p className="pb-generate__blocked-title">Generation is blocked.</p>
+              <p>
+                Exercise Selection Preferences are hard exclusions. Just Workout will not generate
+                an avoided exercise.
+              </p>
+              <ul>
+                {blockingIssues.map((issue) => (
+                  <li key={`${issue.kind}-${issue.movementPattern}`}>{issue.message}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {errorAlert}
+        </div>
+
+        <footer className="pb-step-footer">
+          <div className="pb-step-footer__inner">
+            <p className="pb-step-footer__status pb-generate__footer-note">
+              {unsetChoiceCount > 0
+                ? `${unsetChoiceCount} ${unsetChoiceCount === 1 ? "choice uses" : "choices use"} a Recommended Default`
+                : "Ready to generate"}
             </p>
-            <p className="mt-3 max-w-2xl text-sm text-stone-600">{trainingBlockProgressionCopy}</p>
-
-            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-              <GenerateSummaryField
-                label="Frequency"
-                value={summary?.trainingFrequency ?? "Ready"}
-              />
-              <GenerateSummaryField label="Split" value={summary?.split ?? "Ready"} />
-              <GenerateSummaryField label="Rep ranges" value={summary?.repRanges ?? "Ready"} />
-              <GenerateSummaryField label="Volume" value={summary?.volumePreset ?? "Ready"} />
-            </dl>
-
-            <StepActions className="mt-6">
-              <Button
-                disabled={isGenerating || blockingIssues.length > 0}
-                onClick={() => {
-                  void runAction(
-                    onGenerateTrainingPlan,
-                    "Could not generate the Training Plan Draft.",
-                  );
-                }}
-                type="button"
-                variant="builderPrimary"
-              >
-                <Wand2 aria-hidden="true" size={18} strokeWidth={2} />
-                {isGenerating ? "Generating..." : "Generate Training Plan"}
-              </Button>
-            </StepActions>
-
-            {errorAlert}
-
-            {blockingIssues.length > 0 ? (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-                <p className="font-semibold">Generation is blocked.</p>
-                <p className="mt-2">
-                  Exercise Selection Preferences are hard exclusions. Just Workout will not generate
-                  an avoided exercise.
-                </p>
-                <ul className="mt-2 space-y-2">
-                  {blockingIssues.map((issue) => (
-                    <li key={`${issue.kind}-${issue.movementPattern}`}>{issue.message}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </StepPanel>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-          <PlanBuilderStepStatusCard
-            body="Generation creates a Training Plan Draft. Accepting it makes it your Active Training Plan; discarding it takes you back to the Plan Builder."
-            title="Generation"
-            titleDisplay="visible"
-          />
-          <PlanBuilderStepStatusCard
-            body="Workout Templates use Superset Groups by default, with selected compounds and concrete default exercises where details are still configurable later."
-            title="Template shape"
-            titleDisplay="visible"
-          />
-        </div>
-      </div>
+            <button
+              className="pb-step-footer__next"
+              disabled={isGenerating || blockingIssues.length > 0}
+              onClick={() => {
+                void runAction(
+                  onGenerateTrainingPlan,
+                  "Could not generate the Training Plan Draft.",
+                );
+              }}
+              type="button"
+            >
+              <Wand2 aria-hidden="true" size={18} strokeWidth={2} />
+              {isGenerating ? "Generating..." : "Generate Training Plan"}
+            </button>
+          </div>
+        </footer>
+      </section>
 
       {recommendedDefaultsConfirmation ? (
         <DefaultGenerationConfirmation
@@ -1249,26 +1294,36 @@ function DraftGenerationInputs({
           Edit the upstream Plan Builder choices here. These changes update the Plan Builder and can
           make the current draft stale until you reset it.
         </p>
-        <div className="mt-5 grid gap-6">
-          <OnePageTrainingScheduleStep
-            blueprint={blueprint}
-            onTrainingFrequencyChange={onTrainingFrequencyChange}
-            onTrainingSplitChange={onTrainingSplitChange}
-            selectedTrainingSplitId={visibleTrainingSplitId}
-            showWeeklyPreview={false}
-          />
-          <OnePageRepRangeStep
-            onRepRangeStyleChange={onRepRangeStyleChange}
-            savedRepRangeStyleId={savedRepRangeStyleId}
-            selectedRepRangeStyle={repRangeStyle}
-            showEffectsPanel={false}
-          />
-          <OnePageVolumeStep
-            blueprint={blueprint}
-            onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
-            onVolumePresetChange={onVolumePresetChange}
-            repRangeStyle={repRangeStyle}
-          />
+        <div className="mt-5 grid gap-8">
+          <PlanBuilderStepSection title="Training schedule">
+            <div className="grid gap-6">
+              <OnePageTrainingScheduleStep
+                blueprint={blueprint}
+                onTrainingFrequencyChange={onTrainingFrequencyChange}
+                onTrainingSplitChange={onTrainingSplitChange}
+                selectedTrainingSplitId={visibleTrainingSplitId}
+                showWeeklyPreview={false}
+              />
+            </div>
+          </PlanBuilderStepSection>
+          <PlanBuilderStepSection title="Rep ranges">
+            <OnePageRepRangeStep
+              onRepRangeStyleChange={onRepRangeStyleChange}
+              savedRepRangeStyleId={savedRepRangeStyleId}
+              selectedRepRangeStyle={repRangeStyle}
+              showEffectsPanel={false}
+            />
+          </PlanBuilderStepSection>
+          <PlanBuilderStepSection title="Volume">
+            <div className="grid gap-6">
+              <OnePageVolumeStep
+                blueprint={blueprint}
+                onOptionalVolumeTargetToggle={onOptionalVolumeTargetToggle}
+                onVolumePresetChange={onVolumePresetChange}
+                repRangeStyle={repRangeStyle}
+              />
+            </div>
+          </PlanBuilderStepSection>
         </div>
       </StepPanel>
     </div>
@@ -1303,7 +1358,7 @@ function DefaultGenerationConfirmation({
             className="text-xl font-black text-stone-950 sm:text-2xl"
             id="default-generation-confirmation-title"
           >
-            Default Generation Confirmation
+            Use Recommended Defaults?
           </h3>
           <p className="mt-3 text-sm text-stone-600">
             Just Workout will apply these Recommended Defaults before generation continues.

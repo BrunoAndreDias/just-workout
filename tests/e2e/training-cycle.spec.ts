@@ -110,7 +110,7 @@ async function startFirstUpperLowerSession(page: Page) {
   await page.getByRole("button", { name: /^generate/i }).click();
   await page.getByRole("button", { name: /^generate training plan$/i }).click();
 
-  const confirmation = page.getByRole("dialog", { name: /default generation confirmation/i });
+  const confirmation = page.getByRole("dialog", { name: /use recommended defaults\?/i });
 
   if (await confirmation.isVisible().catch(() => false)) {
     await confirmation

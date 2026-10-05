@@ -1,14 +1,20 @@
 import type { TrainingFrequencyDaysPerWeek } from "../../plan-blueprint";
 import type { TrainingSplitDefinition } from "../../training-split";
 
+/** Colour family for a session, so the same kind of session reads the same everywhere. */
+export type TrainingSessionFamily = "full-body" | "upper" | "lower" | "push" | "pull" | "legs";
+
 export type CompactWeeklyLayoutDay = {
   dayLabel: string;
   isRestDay: boolean;
+  sessionFamily: TrainingSessionFamily | null;
   sessionLabel: string;
 };
 
 export type CompactWeeklyLayout = {
   cycleNote: string | null;
+  /** Session labels for the first two weeks of a rotating cycle that carries over; null otherwise. */
+  cycleWeeks: ReadonlyArray<ReadonlyArray<string>> | null;
   days: ReadonlyArray<CompactWeeklyLayoutDay>;
   helperText: string;
 };
@@ -27,12 +33,37 @@ export function getCompactWeeklyLayout(
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
 ): CompactWeeklyLayout {
   const days = getCompactWeeklyLayoutDays(split, trainingFrequencyDaysPerWeek);
+  const cycleWeeks = getRotatingCycleWeeks(split, trainingFrequencyDaysPerWeek);
 
   return {
-    cycleNote: getRotatingCycleNote(split, trainingFrequencyDaysPerWeek),
+    cycleNote: cycleWeeks
+      ? `The cycle carries over to the next week: ${cycleWeeks
+          .map((week, weekIndex) => `week ${weekIndex + 1} ${week.join(" / ")}`)
+          .join(", ")}.`
+      : null,
+    cycleWeeks,
     days,
     helperText: formatWeeklyLayoutHelperText(days),
   };
+}
+
+/** Weekday indexes (Mon = 0) that hold a training session by default for each frequency. */
+export function getDefaultTrainingDayIndexes(
+  trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
+): ReadonlyArray<number> {
+  return rotatingCycleTrainingDayIndexesByFrequency[trainingFrequencyDaysPerWeek];
+}
+
+export function getTrainingSessionFamily(sessionLabel: string): TrainingSessionFamily {
+  const label = sessionLabel.toLowerCase();
+
+  if (label.startsWith("upper")) return "upper";
+  if (label.startsWith("lower")) return "lower";
+  if (label.startsWith("push")) return "push";
+  if (label.startsWith("pull")) return "pull";
+  if (label.startsWith("legs")) return "legs";
+
+  return "full-body";
 }
 
 function getCompactWeeklyLayoutDays(
@@ -47,14 +78,18 @@ function getCompactWeeklyLayoutDays(
     return weekdayLabels.map((dayLabel, dayIndex) => {
       const sessionIndex = trainingDayIndexes.indexOf(dayIndex);
 
-      if (sessionIndex === -1) {
-        return { dayLabel, isRestDay: true, sessionLabel: "Rest" };
+      const sessionLabel =
+        sessionIndex === -1 ? undefined : cycle[sessionIndex % cycle.length]?.sessionLabel;
+
+      if (!sessionLabel) {
+        return { dayLabel, isRestDay: true, sessionFamily: null, sessionLabel: "Rest" };
       }
 
       return {
         dayLabel,
         isRestDay: false,
-        sessionLabel: cycle[sessionIndex % cycle.length]?.sessionLabel ?? "Rest",
+        sessionFamily: getTrainingSessionFamily(sessionLabel),
+        sessionLabel,
       };
     });
   }
@@ -65,6 +100,7 @@ function getCompactWeeklyLayoutDays(
     return {
       dayLabel: weekdayLabels[index] ?? session.dayLabel,
       isRestDay,
+      sessionFamily: isRestDay ? null : getTrainingSessionFamily(session.sessionLabel),
       sessionLabel: isRestDay ? "Rest" : session.sessionLabel,
     };
   });
@@ -84,10 +120,10 @@ function formatList(items: ReadonlyArray<string>): string {
   return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }
 
-function getRotatingCycleNote(
+function getRotatingCycleWeeks(
   split: TrainingSplitDefinition,
   trainingFrequencyDaysPerWeek: TrainingFrequencyDaysPerWeek,
-): string | null {
+): ReadonlyArray<ReadonlyArray<string>> | null {
   if (split.schedule.kind !== "rotating-cycle") {
     return null;
   }
@@ -98,12 +134,11 @@ function getRotatingCycleNote(
     return null;
   }
 
-  const weekSessions = (weekIndex: number) =>
+  return [0, 1].map((weekIndex) =>
     Array.from({ length: trainingFrequencyDaysPerWeek }, (_, dayIndex) => {
       const sessionIndex = weekIndex * trainingFrequencyDaysPerWeek + dayIndex;
 
       return cycle[sessionIndex % cycle.length]?.sessionLabel ?? "";
-    }).join(" / ");
-
-  return `The cycle carries over to the next week: week 1 ${weekSessions(0)}, week 2 ${weekSessions(1)}.`;
+    }),
+  );
 }

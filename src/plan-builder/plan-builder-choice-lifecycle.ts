@@ -35,6 +35,7 @@ export type PlanBuilderChoiceLifecycle = {
   defaultEntryActions: {
     shouldInitializeTrainingVolume: boolean;
     shouldSelectDefaultRepRangeStyle: boolean;
+    shouldSelectDefaultTrainingSplit: boolean;
   };
   exercisesStep: {
     configuredBlueprint: PlanBlueprint;
@@ -88,6 +89,8 @@ export function getPlanBuilderChoiceLifecycle({
         activeStep === "volume" && trainingVolumeConfiguration === null,
       shouldSelectDefaultRepRangeStyle:
         activeStep === "rep-ranges" && savedRepRangeStyleId === null,
+      shouldSelectDefaultTrainingSplit:
+        activeStep === "frequency" && !hasConfiguredTrainingSchedule(blueprint),
     },
     exercisesStep: {
       configuredBlueprint: blueprint,
