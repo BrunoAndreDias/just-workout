@@ -1,69 +1,7 @@
-.training-block-exercise-swap {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: var(--scrim);
-}
-
-.training-block-exercise-swap__surface {
-  width: min(32rem, 100%);
-  max-height: min(40rem, calc(100vh - 2rem));
-  overflow: auto;
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-16);
-  background: var(--surface);
-  box-shadow: 0 24px 60px color-mix(in srgb, var(--shadow-ink) 18%, transparent);
-  padding: 1rem;
-}
-
-.training-block-exercise-swap__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.training-block-exercise-swap__title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.training-block-exercise-swap__copy {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.training-block-exercise-swap__close {
-  border-radius: var(--radius-pill);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.training-block-exercise-swap__close {
-  border: 1px solid var(--input-border);
-  background: var(--surface);
-  color: var(--ink-2);
-}
-
-.training-block-exercise-swap__close {
-  padding: 0.45rem 0.8rem;
-}
-
 .training-block-exercise-swap__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.9rem;
 }
 
 .training-block-exercise-swap__meta span {
@@ -75,48 +13,13 @@
   font-weight: 700;
 }
 
-.training-block-exercise-swap__field {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 1rem;
-}
-
-.training-block-exercise-swap__field span {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--ink-2);
-}
-
-.training-block-exercise-swap__select {
-  width: 100%;
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-12);
-  background: var(--field);
-  color: var(--ink);
-  font: inherit;
-  padding: 0.7rem 0.85rem;
-}
-
-.training-block-exercise-swap__choice-reason {
-  margin: 0.65rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
 .training-block-exercise-swap__actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  margin-top: 1rem;
 }
 
 @media (max-width: 720px) {
-  .training-block-exercise-swap__surface {
-    max-height: calc(100vh - 1rem);
-    padding: 0.9rem;
-  }
-
   .training-block-exercise-swap__actions {
     flex-direction: column-reverse;
   }

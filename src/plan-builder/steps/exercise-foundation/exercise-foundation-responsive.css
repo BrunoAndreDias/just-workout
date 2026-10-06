@@ -1,40 +1,9 @@
-@media (min-width: 1280px) and (max-width: 1599px) {
-  .main-compound-drawer {
-    width: min(31rem, calc(100vw - var(--jw-sidebar-width)));
-  }
-}
-
-@media (min-width: 1600px) {
-  .main-compound-drawer {
-    width: 34rem;
-  }
-}
-
 @media (max-width: 640px) {
-  .main-compound-drawer {
-    width: 100%;
-    border-left: 0;
-  }
-
-  .main-compound-drawer__header {
-    padding: 1.15rem 1rem 0.85rem;
-  }
-
-  .main-compound-drawer__controls {
-    padding: 0.85rem 1rem;
-  }
-
   .main-compound-drawer__option {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .main-compound-drawer__option-name {
     white-space: normal;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .main-compound-drawer {
-    animation: main-compound-drawer-enter 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }

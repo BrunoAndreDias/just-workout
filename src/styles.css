@@ -239,3 +239,13 @@ h4 {
     overscroll-behavior-y: contain;
   }
 }
+
+/* Backdrop behind Plano panels and dialogs; a button where tapping it closes the panel. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--scrim);
+  cursor: default;
+}

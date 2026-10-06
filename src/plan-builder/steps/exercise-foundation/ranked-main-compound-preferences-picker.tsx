@@ -116,37 +116,32 @@ export function RankedMainCompoundPreferencesPicker({
   }
 
   const drawer = (
-    <div className="main-compound-ranking-drawer-shell">
-      <button
-        aria-label={closeLabel}
-        className="main-compound-ranking-drawer-backdrop"
-        onClick={onClose}
-        type="button"
-      />
+    <div className="panel-layer">
+      <button aria-label={closeLabel} className="scrim" onClick={onClose} type="button" />
       <section
         aria-describedby={`${helperId} ${countId}`}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="main-compound-ranking-drawer"
+        className="panel"
         id={id}
         role="dialog"
       >
-        <div className="main-compound-ranking-drawer__header">
-          <div className="main-compound-ranking-drawer__title-row">
+        <div className="panel-top">
+          <div className="panel-title-row">
             <div>
-              <h3 className="main-compound-ranking-drawer__title" id={titleId}>
+              <h3 className="panel-title" id={titleId}>
                 {title}
               </h3>
-              <p className="main-compound-ranking-drawer__helper" id={helperId}>
+              <p className="panel-note" id={helperId}>
                 {helperText}
               </p>
             </div>
             <Button
               aria-label={closeLabel}
+              className="panel-close"
               onClick={onClose}
               size="icon"
               type="button"
-              variant="ghost"
             >
               <X aria-hidden="true" size={20} strokeWidth={2} />
             </Button>
@@ -156,7 +151,7 @@ export function RankedMainCompoundPreferencesPicker({
           </span>
         </div>
 
-        <div className="main-compound-ranking-drawer__body">
+        <div className="panel-body">
           {rankedOptions.length > 0 ? (
             <ol className="main-compound-ranking-drawer__list">
               {rankedOptions.map((exercise, index) => (
@@ -192,7 +187,7 @@ export function RankedMainCompoundPreferencesPicker({
                   <span className="main-compound-ranking-drawer__name">{exercise.name}</span>
                   <button
                     aria-label={`Remove ${exercise.name}`}
-                    className="main-compound-ranking-drawer__remove"
+                    className="icon-btn main-compound-ranking-drawer__remove"
                     onClick={() =>
                       setDraftExerciseIds((currentExerciseIds) =>
                         currentExerciseIds.filter((exerciseId) => exerciseId !== exercise.id),
@@ -210,7 +205,7 @@ export function RankedMainCompoundPreferencesPicker({
           )}
         </div>
 
-        <div className="main-compound-ranking-drawer__footer">
+        <div className="panel-foot main-compound-ranking-drawer__footer">
           <Button
             className="main-compound-ranking-drawer__action"
             onClick={onClose}

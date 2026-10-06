@@ -51,42 +51,34 @@ export function IsolationExercisePreferencesPicker({
   const titleId = `${id}-title`;
 
   return (
-    <div className="main-compound-drawer-shell">
+    <div className="panel-layer">
       <button
         aria-label="Close isolation exercise preferences picker"
-        className="main-compound-drawer-backdrop"
+        className="scrim"
         onClick={onClose}
         type="button"
       />
-      <section
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="main-compound-drawer"
-        id={id}
-        role="dialog"
-      >
-        <div className="main-compound-drawer__header">
-          <div className="main-compound-drawer__title-row">
-            <h3 className="main-compound-drawer__title" id={titleId}>
+      <section aria-labelledby={titleId} aria-modal="true" className="panel" id={id} role="dialog">
+        <div className="panel-top">
+          <div className="panel-title-row">
+            <h3 className="panel-title" id={titleId}>
               {`Rank your ${formattedMuscleGroupTitle} preferences`}
             </h3>
             <Button
               aria-label="Close isolation exercise preferences picker"
+              className="panel-close"
               onClick={onClose}
+              size="icon"
               type="button"
-              variant="ghost"
             >
               <X aria-hidden="true" size={18} strokeWidth={2} />
             </Button>
           </div>
-          <p className="main-compound-drawer__helper">
+          <p className="panel-note">
             Choose as many isolation exercises as you want, then move them up or down to set the
             ranking.
           </p>
-        </div>
-
-        <div className="main-compound-drawer__controls">
-          <label className="main-compound-drawer__search">
+          <label className="field-input main-compound-drawer__search">
             <Search aria-hidden="true" size={18} strokeWidth={2} />
             <span className="sr-only">{`Search ${primaryMuscleGroupLabel} exercises`}</span>
             <input
@@ -98,62 +90,64 @@ export function IsolationExercisePreferencesPicker({
           </label>
         </div>
 
-        <div className="main-compound-drawer__selected-options">
-          <RankedPreferenceSelectedList
-            ariaLabel={`${primaryMuscleGroupLabel} ranked preferences`}
-            emptyMessage="No preferences ranked yet."
-            onMovePreference={(exerciseId, direction) => {
-              void handleMovePreference(exerciseId, direction);
-            }}
-            onRemovePreference={(exerciseId) => {
-              void handleRemovePreference(exerciseId);
-            }}
-            options={selectedOptions}
-            title={`Ranked ${formattedMuscleGroupTitle} preferences`}
-          />
+        <div className="panel-body">
+          <div className="main-compound-drawer__selected-options">
+            <RankedPreferenceSelectedList
+              ariaLabel={`${primaryMuscleGroupLabel} ranked preferences`}
+              emptyMessage="No preferences ranked yet."
+              onMovePreference={(exerciseId, direction) => {
+                void handleMovePreference(exerciseId, direction);
+              }}
+              onRemovePreference={(exerciseId) => {
+                void handleRemovePreference(exerciseId);
+              }}
+              options={selectedOptions}
+              title={`Ranked ${formattedMuscleGroupTitle} preferences`}
+            />
+          </div>
+
+          <fieldset className="main-compound-drawer__options main-compound-drawer__options-fieldset">
+            <legend className="sr-only">{`${primaryMuscleGroupLabel} isolation exercise options`}</legend>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((exercise) => {
+                const isSelected = preferenceExerciseIds.includes(exercise.id);
+
+                return (
+                  <label
+                    className={cn("main-compound-drawer__option", isSelected && "is-selected")}
+                    key={exercise.id}
+                  >
+                    <input
+                      checked={isSelected}
+                      name={`isolation-preferences-${primaryMuscleGroup}`}
+                      onChange={() => {
+                        void handleOptionToggle(exercise, isSelected);
+                      }}
+                      type="checkbox"
+                    />
+                    <span aria-hidden="true" className="main-compound-drawer__option-icon">
+                      <Dumbbell size={16} strokeWidth={2} />
+                    </span>
+                    <span className="main-compound-drawer__option-copy">
+                      <span className="main-compound-drawer__option-name">{exercise.name}</span>
+                      <span className="main-compound-drawer__option-meta">{exercise.metadata}</span>
+                    </span>
+                    <span className="main-compound-drawer__option-state" aria-hidden="true">
+                      {isSelected ? <Check size={16} strokeWidth={2.4} /> : null}
+                    </span>
+                  </label>
+                );
+              })
+            ) : (
+              <p className="main-compound-drawer__empty">
+                No isolation exercises match the current search.
+              </p>
+            )}
+          </fieldset>
         </div>
 
-        <fieldset className="main-compound-drawer__options main-compound-drawer__options-fieldset">
-          <legend className="sr-only">{`${primaryMuscleGroupLabel} isolation exercise options`}</legend>
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((exercise) => {
-              const isSelected = preferenceExerciseIds.includes(exercise.id);
-
-              return (
-                <label
-                  className={cn("main-compound-drawer__option", isSelected && "is-selected")}
-                  key={exercise.id}
-                >
-                  <input
-                    checked={isSelected}
-                    name={`isolation-preferences-${primaryMuscleGroup}`}
-                    onChange={() => {
-                      void handleOptionToggle(exercise, isSelected);
-                    }}
-                    type="checkbox"
-                  />
-                  <span aria-hidden="true" className="main-compound-drawer__option-icon">
-                    <Dumbbell size={16} strokeWidth={2} />
-                  </span>
-                  <span className="main-compound-drawer__option-copy">
-                    <span className="main-compound-drawer__option-name">{exercise.name}</span>
-                    <span className="main-compound-drawer__option-meta">{exercise.metadata}</span>
-                  </span>
-                  <span className="main-compound-drawer__option-state" aria-hidden="true">
-                    {isSelected ? <Check size={16} strokeWidth={2.4} /> : null}
-                  </span>
-                </label>
-              );
-            })
-          ) : (
-            <p className="main-compound-drawer__empty">
-              No isolation exercises match the current search.
-            </p>
-          )}
-        </fieldset>
-
-        <div className="main-compound-drawer__footer">
-          <p>
+        <div className="panel-foot">
+          <p className="panel-note">
             Ranked preferences stay optional. Empty buckets remain valid and Recommended Defaults
             can still fill any gaps later.
           </p>

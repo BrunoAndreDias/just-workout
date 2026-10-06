@@ -474,68 +474,11 @@
   width: 2.5rem;
 }
 
-.main-compound-ranking-drawer-shell {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.main-compound-ranking-drawer-backdrop {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: var(--scrim);
-  cursor: default;
-}
-
-.main-compound-ranking-drawer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: min(100vw, 37.5rem);
-  height: 100vh;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--jw-step-ink);
-  box-shadow: -18px 0 36px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
-}
-
-.main-compound-ranking-drawer__header {
-  padding: 2.1rem 2rem 1.3rem;
-}
-
-.main-compound-ranking-drawer__title-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 1rem;
-}
-
-.main-compound-ranking-drawer__title {
-  margin: 0;
-  color: var(--jw-step-ink);
-  font-size: var(--jw-type-section-title);
-  font-weight: 760;
-  letter-spacing: 0;
-  line-height: 1.22;
-}
-
-.main-compound-ranking-drawer__helper {
-  margin: 0.7rem 0 0;
-  color: var(--jw-step-copy);
-  font-size: var(--jw-type-card-title);
-  line-height: 1.41;
-}
-
 .main-compound-ranking-drawer__count {
   display: inline-flex;
   min-height: 1.4rem;
   align-items: center;
-  margin-top: 1.05rem;
+  align-self: flex-start;
   border-radius: var(--radius-pill);
   background: var(--track);
   color: var(--jw-step-copy);
@@ -543,14 +486,6 @@
   font-size: var(--jw-type-meta);
   font-weight: 650;
   line-height: 1.28;
-}
-
-.main-compound-ranking-drawer__body {
-  min-height: 0;
-  flex: 1;
-  overflow: auto;
-  border-top: 1px solid var(--rule);
-  padding: 1.45rem 2rem 2rem;
 }
 
 .main-compound-ranking-drawer__list {
@@ -586,8 +521,7 @@
   opacity: 0.58;
 }
 
-.main-compound-ranking-drawer__drag-handle,
-.main-compound-ranking-drawer__remove {
+.main-compound-ranking-drawer__drag-handle {
   display: inline-flex;
   width: 2rem;
   height: 2rem;
@@ -609,14 +543,12 @@
   cursor: grabbing;
 }
 
-.main-compound-ranking-drawer__drag-handle:hover,
-.main-compound-ranking-drawer__remove:hover {
+.main-compound-ranking-drawer__drag-handle:hover {
   background: var(--track);
   color: var(--jw-step-ink);
 }
 
-.main-compound-ranking-drawer__drag-handle:focus-visible,
-.main-compound-ranking-drawer__remove:focus-visible {
+.main-compound-ranking-drawer__drag-handle:focus-visible {
   outline: 2px solid var(--jw-step-selected-strong);
   outline-offset: 2px;
 }
@@ -660,9 +592,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  padding: 1rem 2rem;
 }
 
 .main-compound-ranking-drawer__action {
@@ -684,28 +613,11 @@
 }
 
 @media (max-width: 640px) {
-  .main-compound-ranking-drawer {
-    width: 100vw;
-    border-left: 0;
-  }
-
-  .main-compound-ranking-drawer__header {
-    padding: 1.35rem 1rem 1rem;
-  }
-
-  .main-compound-ranking-drawer__body {
-    padding: 1rem;
-  }
-
   .main-compound-ranking-drawer__item {
     min-height: 4.25rem;
     grid-template-columns: 1.5rem auto minmax(0, 1fr) auto;
     gap: 0.7rem;
     padding: 0.8rem 0.75rem;
-  }
-
-  .main-compound-ranking-drawer__footer {
-    padding: 0.85rem 1rem;
   }
 
   .main-compound-ranking-drawer__action {
