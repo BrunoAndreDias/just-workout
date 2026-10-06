@@ -55,13 +55,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* Plano's .tab marks aria-current; these ARIA tabs mark aria-selected. */
-.tab[aria-selected="true"] {
-  border-bottom-color: var(--ink);
-  font-weight: 600;
-  color: var(--ink);
-}
-
 .active-training-plan-tabs__summary {
   display: flex;
   flex: 0 0 auto;
