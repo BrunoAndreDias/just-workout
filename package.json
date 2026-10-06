@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
     "check:write": "biome check --write .",
+    "colors": "node scripts/plano-colors.mjs",
+    "colors:check": "node scripts/plano-colors.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

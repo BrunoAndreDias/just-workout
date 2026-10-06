@@ -1,5 +1,44 @@
 @import "tailwindcss";
 @import "./design-system/plano/tokens.css";
+@import "./design-system/app-tokens.css";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-field: var(--field);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-rule: var(--rule);
+  --color-track: var(--track);
+  --color-input-border: var(--input-border);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --color-accent-tint: var(--accent-tint);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-over-bg: var(--over-bg);
+  --color-over-fg: var(--over-fg);
+  --color-under: var(--under);
+  --color-under-bg: var(--under-bg);
+  --color-under-fg: var(--under-fg);
+  --color-data-blue-bg: var(--data-blue-bg);
+  --color-data-blue-mark: var(--data-blue-mark);
+  --color-data-blue-ink: var(--data-blue-ink);
+  --color-data-amber-bg: var(--data-amber-bg);
+  --color-data-amber-mark: var(--data-amber-mark);
+  --color-data-amber-ink: var(--data-amber-ink);
+  --color-data-violet-bg: var(--data-violet-bg);
+  --color-data-violet-mark: var(--data-violet-mark);
+  --color-data-violet-ink: var(--data-violet-ink);
+  --color-data-red-bg: var(--data-red-bg);
+  --color-data-red-ink: var(--data-red-ink);
+  --color-scrim: var(--scrim);
+  --color-shadow-ink: var(--shadow-ink);
+}
 
 :root {
   color: var(--ink);

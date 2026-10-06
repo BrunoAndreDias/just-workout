@@ -1,0 +1,38 @@
+/* Colours just-workout needs on top of Plano. Each exists because Plano has no role for it. */
+:root {
+  /* Data series: training-split families (upper, lower, pull) and movement-pattern icons
+     (push, legs). Plano's accent family covers full body and pull patterns. Dots, marks and
+     tinted tiles only, never buttons or surfaces. */
+  --data-blue-bg: #e5edf6;
+  --data-blue-mark: #3a6d9c;
+  --data-blue-ink: #214b73;
+  --data-amber-bg: #f5eadb;
+  --data-amber-mark: #b0701f;
+  --data-amber-ink: #6f430f;
+  --data-violet-bg: #eee8f5;
+  --data-violet-mark: #6c4f8f;
+  --data-violet-ink: #4f376f;
+  --data-red-bg: #fbe7e3;
+  --data-red-ink: #a3402f;
+  /* Backdrop behind drawers and dialogs. Stays dark in both themes, unlike translucent ink. */
+  --scrim: rgba(28, 27, 24, 0.4);
+  /* Shadow colour. Plano's shadow tokens are whole values; this lets existing shadows keep
+     their geometry and stay dark in dark mode. */
+  --shadow-ink: #1c1b18;
+}
+
+:root[data-theme="dark"] {
+  --data-blue-bg: #1e2834;
+  --data-blue-mark: #6b9bd6;
+  --data-blue-ink: #a9c6ea;
+  --data-amber-bg: #33291a;
+  --data-amber-mark: #d39a4a;
+  --data-amber-ink: #e8c58f;
+  --data-violet-bg: #2a2333;
+  --data-violet-mark: #a68cc9;
+  --data-violet-ink: #cdb9e6;
+  --data-red-bg: #3a211d;
+  --data-red-ink: #f0a294;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow-ink: #000000;
+}
