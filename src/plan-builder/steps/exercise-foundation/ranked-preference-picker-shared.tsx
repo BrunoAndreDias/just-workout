@@ -104,6 +104,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
                 <div className="main-compound-drawer__selected-actions">
                   <button
                     aria-label={`Move ${option.name} up`}
+                    className="icon-btn"
                     disabled={isFirst}
                     onClick={() => onMovePreference(option.id, "up")}
                     type="button"
@@ -112,6 +113,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
                   </button>
                   <button
                     aria-label={`Move ${option.name} down`}
+                    className="icon-btn"
                     disabled={isLast}
                     onClick={() => onMovePreference(option.id, "down")}
                     type="button"
@@ -120,6 +122,7 @@ export function RankedPreferenceSelectedList<TOption extends RankedPreferencePic
                   </button>
                   <button
                     aria-label={`Remove ${option.name}`}
+                    className="icon-btn"
                     onClick={() => onRemovePreference(option.id)}
                     type="button"
                   >
