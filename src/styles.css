@@ -195,17 +195,6 @@ body {
   font-optical-sizing: auto;
 }
 
-button,
-input {
-  font: inherit;
-}
-
-textarea,
-select {
-  font: inherit;
-  color: inherit;
-}
-
 p {
   text-wrap: pretty;
 }
