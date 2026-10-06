@@ -73,7 +73,6 @@ export function IsolationExercisePreferencesPicker({
             <Button
               aria-label="Close isolation exercise preferences picker"
               onClick={onClose}
-              size="sm"
               type="button"
               variant="ghost"
             >

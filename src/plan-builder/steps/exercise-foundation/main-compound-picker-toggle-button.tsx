@@ -23,7 +23,6 @@ export function MainCompoundPickerToggleButton({
       aria-label={accessibleLabel}
       className={className}
       onClick={onToggle}
-      size="sm"
       type="button"
       variant="outline"
     >

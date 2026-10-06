@@ -143,7 +143,6 @@ export function RankedMainCompoundPreferencesPicker({
             </div>
             <Button
               aria-label={closeLabel}
-              className="main-compound-ranking-drawer__close"
               onClick={onClose}
               size="icon"
               type="button"
