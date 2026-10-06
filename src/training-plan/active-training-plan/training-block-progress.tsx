@@ -826,10 +826,11 @@ function TrainingBlockLoadSuggestionFields({
       <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
       <span>{loadSuggestion.reason}</span>
       <span className="active-training-plan-progress__load-edit">
-        <label htmlFor={`load-suggestion-${loadSuggestion.exerciseId}`}>
+        <label className="field-label" htmlFor={`load-suggestion-${loadSuggestion.exerciseId}`}>
           Suggested starting load for {exerciseName}
         </label>
         <input
+          className="field-input"
           id={`load-suggestion-${loadSuggestion.exerciseId}`}
           inputMode="decimal"
           min={isBodyweightLoadExercise(loadSuggestion) ? -200 : 0}

@@ -342,11 +342,12 @@ function TrainingSurfaceBodyweightCard({
         <p>Store known bodyweight so bodyweight exercises contribute to Completed Load Volume.</p>
       </div>
       <div className="training-session-bodyweight-card__grid">
-        <label className="training-session-bodyweight-card__field">
-          <span>Baseline Bodyweight</span>
+        <label className="field training-session-bodyweight-card__field">
+          <span className="field-label">Baseline Bodyweight</span>
           <div className="training-session-bodyweight-card__input">
             <input
               aria-label="Baseline Bodyweight"
+              className="field-input"
               inputMode="decimal"
               min="0"
               onChange={(event) => onBaselineBodyweightInputChange(event.target.value)}
@@ -355,15 +356,16 @@ function TrainingSurfaceBodyweightCard({
             />
             <span>kg</span>
           </div>
-          <button onClick={onSaveBaselineBodyweight} type="button">
+          <button className="primary" onClick={onSaveBaselineBodyweight} type="button">
             Save baseline bodyweight
           </button>
         </label>
-        <label className="training-session-bodyweight-card__field">
-          <span>Inherited Bodyweight Default</span>
+        <label className="field training-session-bodyweight-card__field">
+          <span className="field-label">Inherited Bodyweight Default</span>
           <div className="training-session-bodyweight-card__input">
             <input
               aria-label="Inherited Bodyweight Default"
+              className="field-input"
               inputMode="decimal"
               min="0"
               onChange={(event) => onCurrentWeekInputChange(event.target.value)}
@@ -376,7 +378,7 @@ function TrainingSurfaceBodyweightCard({
             {weekLabel ? `Current Training Week ${weekLabel}. ` : ""}
             {describeBodyweightSource(inheritedBodyweightSource, "week")}
           </small>
-          <button onClick={onSaveCurrentWeekBodyweight} type="button">
+          <button className="primary" onClick={onSaveCurrentWeekBodyweight} type="button">
             Save Training Week bodyweight
           </button>
         </label>

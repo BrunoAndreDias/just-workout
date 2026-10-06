@@ -649,11 +649,11 @@ function BaselineBodyweightDraftSetup({
         Store known bodyweight so bodyweight exercise load volume has a usable default after
         acceptance.
       </p>
-      <label className="mt-3 block text-sm font-medium text-ink-2">
-        <span>Baseline Bodyweight</span>
+      <label className="field mt-3">
+        <span className="field-label">Baseline Bodyweight</span>
         <input
           aria-label="Baseline Bodyweight"
-          className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+          className="field-input"
           inputMode="decimal"
           min={0}
           onBlur={() => {
@@ -717,13 +717,13 @@ function TrainingPlanDraftTemplateCard({
           >
             {canEditSupersetGroups ? (
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <label className="text-xs font-semibold uppercase text-muted" htmlFor={group.id}>
+                <div className="field min-w-0 flex-1">
+                  <label className="field-label" htmlFor={group.id}>
                     Superset Group title
                   </label>
                   <input
                     aria-label={`Superset Group title ${groupIndex + 1}`}
-                    className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border px-3 py-2 text-sm font-semibold text-ink"
+                    className="field-input"
                     id={group.id}
                     onChange={(event) => {
                       draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
@@ -814,12 +814,12 @@ function TrainingPlanDraftTemplateHeader({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <label className="text-xs font-semibold uppercase text-muted" htmlFor={template.id}>
+        <div className="field min-w-0 flex-1">
+          <label className="field-label" htmlFor={template.id}>
             Workout Template label
           </label>
           <input
-            className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border px-3 py-2 text-sm font-semibold text-ink"
+            className="field-input"
             id={template.id}
             onChange={(event) => {
               draftActions.renameWorkoutTemplate(template.id, event.target.value);
@@ -951,11 +951,11 @@ function TrainingPlanDraftSlotItem({
         </span>
       </div>
       {replacementChoices.length > 0 ? (
-        <label className="mt-3 block text-sm font-medium text-ink-2">
-          <span>Exercise choice</span>
+        <label className="field mt-3">
+          <span className="field-label">Exercise choice</span>
           <select
             aria-label={`Exercise choice for ${slot.exerciseName}`}
-            className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+            className="field-input"
             onChange={(event) => {
               draftActions.replaceDraftSlotExercise(
                 template.id,
@@ -1112,11 +1112,11 @@ function DraftTrainingPrescriptionEditor({
 
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-3">
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
-        <span className="whitespace-nowrap">Sets</span>
+      <label className="field">
+        <span className="field-label">Sets</span>
         <input
           aria-label={`Set count for ${slot.exerciseName}`}
-          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+          className="field-input"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1126,11 +1126,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableSetCount}
         />
       </label>
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
-        <span className="whitespace-nowrap">Rep min</span>
+      <label className="field">
+        <span className="field-label">Rep min</span>
         <input
           aria-label={`Rep target minimum for ${slot.exerciseName}`}
-          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+          className="field-input"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1140,11 +1140,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableRepTargetMin}
         />
       </label>
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
-        <span className="whitespace-nowrap">Rep max</span>
+      <label className="field">
+        <span className="field-label">Rep max</span>
         <input
           aria-label={`Rep target maximum for ${slot.exerciseName}`}
-          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+          className="field-input"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1182,11 +1182,11 @@ function DraftStartingLoadEditor({
       <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
       <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
       <span>{loadSuggestion.reason}</span>
-      <label className="mt-1 block font-medium text-ink-2">
-        <span>Suggested starting load for {slot.exerciseName}</span>
+      <label className="field mt-1">
+        <span className="field-label">Suggested starting load for {slot.exerciseName}</span>
         <input
           aria-label={`Suggested starting load for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
+          className="field-input"
           inputMode="decimal"
           min={isBodyweightLoadExercise(slot) ? -200 : 0}
           onBlur={() => onInputChange(loadInputValue)}

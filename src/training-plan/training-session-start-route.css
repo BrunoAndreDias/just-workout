@@ -51,14 +51,6 @@
   gap: 0.875rem;
 }
 
-.training-session-bodyweight-card__field {
-  display: grid;
-  gap: 0.5rem;
-  color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 750;
-}
-
 .training-session-bodyweight-card__input {
   display: inline-flex;
   align-items: center;
@@ -67,23 +59,10 @@
 
 .training-session-bodyweight-card__input input {
   width: min(100%, 8rem);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-8);
-  padding: 0.625rem 0.75rem;
-  font: inherit;
-  background: var(--surface);
 }
 
 .training-session-bodyweight-card__field button {
   justify-self: start;
-  min-height: 2.25rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  padding: 0 0.9rem;
-  color: var(--on-accent);
-  background: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: 800;
 }
 
 .training-session-start-card {

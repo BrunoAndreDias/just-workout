@@ -233,7 +233,7 @@ function TrainingSessionPageContent({
 }) {
   return (
     <section className="training-session-page" aria-label="Training Session">
-      <h1 className="training-session-sr">
+      <h1 className="sr-only">
         {workoutTemplate.label} {sessionIntent === "extra" ? "extra session" : "session"}
       </h1>
       {completedSession ? <TrainingSessionCompletedNotice sessionIntent={sessionIntent} /> : null}
@@ -728,11 +728,13 @@ function TrainingSessionBodyweightPanel({
         <h2 id="session-bodyweight-title">Session Bodyweight</h2>
         <p>Store Session Bodyweight so bodyweight exercises contribute to Completed Load Volume.</p>
       </div>
-      <label className="training-session-bodyweight__field">
-        <span>Session Bodyweight</span>
+      <label className="field training-session-bodyweight__field">
+        <span className="field-label">Session Bodyweight</span>
         <div className="training-session-bodyweight__input">
           <input
+            aria-invalid={field.error ? true : undefined}
             aria-label="Session Bodyweight"
+            className="field-input"
             inputMode="decimal"
             min="0"
             onChange={(event) => bodyweightState.onInputChange(event.target.value)}

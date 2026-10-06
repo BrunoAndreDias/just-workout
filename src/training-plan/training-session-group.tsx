@@ -270,7 +270,7 @@ function TrainingSessionSetControls({
   return (
     <div className="training-session-set-cell__inner">
       <div className="training-session-set-cell__controls">
-        <label className="training-session-sr" htmlFor={`${row.inputId}-weight`}>
+        <label className="sr-only" htmlFor={`${row.inputId}-weight`}>
           {row.exerciseName} set {row.setIndex} weight
         </label>
         <div className="training-session-weight-input">
@@ -287,7 +287,7 @@ function TrainingSessionSetControls({
           />
           <span>kg</span>
         </div>
-        <label className="training-session-sr" htmlFor={`${row.inputId}-reps`}>
+        <label className="sr-only" htmlFor={`${row.inputId}-reps`}>
           {row.exerciseName} set {row.setIndex} reps
         </label>
         <input

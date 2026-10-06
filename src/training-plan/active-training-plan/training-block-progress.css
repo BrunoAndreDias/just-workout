@@ -205,29 +205,8 @@
   align-items: center;
 }
 
-.active-training-plan-progress__load-edit label {
-  color: var(--ink-2);
-  font-size: 0.8125rem;
-  font-weight: 650;
-  line-height: 1.125rem;
-}
-
 .active-training-plan-progress__load-edit input {
   width: 5.5rem;
-  min-height: 2rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-  border-radius: var(--radius-8);
-  color: var(--ink);
-  background: var(--surface);
-  font: inherit;
-  font-weight: 800;
-  padding: 0.25rem 0.5rem;
-}
-
-.active-training-plan-progress__load-edit input:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .active-training-plan-progress__row {
