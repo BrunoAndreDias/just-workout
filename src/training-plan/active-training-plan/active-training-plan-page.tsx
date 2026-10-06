@@ -211,7 +211,7 @@ function ActiveTrainingPlanTabList({
 }) {
   return (
     <div
-      className="active-training-plan-tabs__list"
+      className="tabs active-training-plan-tabs__list"
       role="tablist"
       aria-label="Training Plan sections"
     >
@@ -219,7 +219,7 @@ function ActiveTrainingPlanTabList({
         <button
           aria-controls={`active-training-plan-tabpanel-${tab.id}`}
           aria-selected={tab.isActive}
-          className="active-training-plan-tabs__trigger"
+          className="tab"
           id={`active-training-plan-tab-${tab.id}`}
           key={tab.id}
           onClick={() => setActiveTabId(tab.id)}

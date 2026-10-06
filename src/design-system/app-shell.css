@@ -60,16 +60,14 @@
   font-size: 1.0625rem;
 }
 
-.app-shell-navigation-link {
-  min-height: var(--app-shell-topbar-height);
-  padding-right: 0.375rem;
-  padding-left: 0.375rem;
+.app-shell-navigation,
+.app-shell-session-navigation {
+  align-self: center;
+  margin-left: 0.5rem;
 }
 
-.app-shell-navigation-pill {
+.app-shell-navigation-link {
   gap: 0.5rem;
-  color: var(--ink);
-  min-height: 2.25rem;
 }
 
 .app-shell-navigation-label-short {
@@ -94,18 +92,8 @@
   color: var(--app-shell-accent);
 }
 
-.app-shell-session-navigation {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-left: 0.875rem;
-}
-
 .app-shell-navigation-link--disabled {
-  display: flex;
-  align-items: center;
   cursor: default;
-  opacity: 0.92;
 }
 
 .app-shell-main {
@@ -177,8 +165,13 @@
 }
 
 @media (max-width: 720px) {
-  .app-shell-navigation-pill span {
+  .app-shell-navigation-link span {
     display: none;
+  }
+
+  .app-shell-navigation-link {
+    min-height: 44px;
+    padding: 0 14px;
   }
 
   .app-shell-brand-name {
@@ -192,11 +185,6 @@
   .app-shell:has(.active-training-plan-page-shell) .app-shell-brand-name {
     display: inline;
     max-width: 9.5rem;
-  }
-
-  .app-shell-session-navigation {
-    gap: 0.375rem;
-    padding-left: 0.375rem;
   }
 
   .app-shell-brand {
@@ -256,8 +244,7 @@
   }
 
   .app-shell-topbar-row:has(.app-shell-topbar-slot:not(:empty)) .app-shell-session-navigation {
-    gap: 0;
-    padding: 0 0.75rem 0 0;
+    margin-right: 0.75rem;
   }
 }
 

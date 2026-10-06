@@ -8,7 +8,6 @@ import {
   isTrainingPlansNavigationPathname,
   trainingPlanPaths,
 } from "../training-plan/training-plan-paths";
-import { cn } from "./cn";
 import "./app-shell.css";
 
 type AppShellProps = {
@@ -61,11 +60,7 @@ const appShellNavigationItems = [
   },
 ] as const satisfies ReadonlyArray<AppShellNavigationItem>;
 
-const appShellNavigationLinkClassName =
-  "app-shell-navigation-link group flex items-center justify-center text-sm font-medium leading-none text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent";
-
-const appShellNavigationPillClassName =
-  "app-shell-navigation-pill inline-flex items-center rounded-full px-3 py-1.5 transition-colors duration-200";
+const appShellNavigationLinkClassName = "view-link app-shell-navigation-link";
 
 export function AppShell({ children, currentPathname, trainingSessionTarget }: AppShellProps) {
   const trainingHistoryPath = trainingSessionTarget
@@ -105,7 +100,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
 
                 <div className="app-shell-topbar-slot" ref={setTopbarSlot} />
 
-                <nav className="app-shell-navigation flex items-stretch" aria-label="Primary">
+                <nav className="views app-shell-navigation" aria-label="Primary">
                   {appShellNavigationItems.map((item) => (
                     <AppShellNavigationLink
                       currentPathname={currentPathname}
@@ -115,7 +110,7 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                   ))}
                 </nav>
 
-                <nav className="app-shell-session-navigation" aria-label="Training Session">
+                <nav className="views app-shell-session-navigation" aria-label="Training Session">
                   {trainingSessionTarget ? (
                     <>
                       <Link
@@ -126,18 +121,12 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                         params={{ planId: trainingSessionTarget.planId }}
                         to={trainingPlanPaths.sessionHistory}
                       >
-                        <AppShellNavigationPill
-                          icon={
-                            <History
-                              aria-hidden="true"
-                              className="app-shell-navigation-icon"
-                              strokeWidth={1.8}
-                            />
-                          }
-                          isActive={currentPathname === trainingHistoryPath}
-                          label="Training history"
-                          shortLabel="History"
+                        <History
+                          aria-hidden="true"
+                          className="app-shell-navigation-icon"
+                          strokeWidth={1.8}
                         />
+                        <AppShellNavigationLabel label="Training history" shortLabel="History" />
                       </Link>
                       <Link
                         aria-label="Start training"
@@ -149,19 +138,13 @@ export function AppShell({ children, currentPathname, trainingSessionTarget }: A
                         }}
                         to={trainingPlanPaths.sessionStartChoice}
                       >
-                        <AppShellNavigationPill
-                          icon={
-                            <Play
-                              aria-hidden="true"
-                              className="app-shell-navigation-icon"
-                              fill="currentColor"
-                              strokeWidth={1.8}
-                            />
-                          }
-                          isActive={isStartTrainingActive}
-                          label="Start training"
-                          shortLabel="Start"
+                        <Play
+                          aria-hidden="true"
+                          className="app-shell-navigation-icon"
+                          fill="currentColor"
+                          strokeWidth={1.8}
                         />
+                        <AppShellNavigationLabel label="Start training" shortLabel="Start" />
                       </Link>
                     </>
                   ) : (
@@ -221,12 +204,8 @@ function AppShellNavigationLink({
       activeOptions={item.href === trainingPlansNavigationHref ? { exact: true } : undefined}
       to={item.href}
     >
-      <AppShellNavigationPill
-        icon={item.icon}
-        isActive={isActive}
-        label={item.label}
-        shortLabel={item.shortLabel}
-      />
+      {item.icon}
+      <AppShellNavigationLabel label={item.label} shortLabel={item.shortLabel} />
     </Link>
   );
 }
@@ -249,30 +228,6 @@ function AppShellNavigationLabel({ label, shortLabel }: { label: string; shortLa
   );
 }
 
-function AppShellNavigationPill({
-  icon,
-  isActive,
-  label,
-  shortLabel,
-}: {
-  icon: ReactNode;
-  isActive: boolean;
-  label: string;
-  shortLabel: string;
-}) {
-  return (
-    <span
-      className={cn(
-        appShellNavigationPillClassName,
-        isActive ? "bg-track text-accent-dark" : "group-hover:bg-track",
-      )}
-    >
-      {icon}
-      <AppShellNavigationLabel label={label} shortLabel={shortLabel} />
-    </span>
-  );
-}
-
 function AppShellNavigationDisabledPill({
   icon,
   label,
@@ -285,12 +240,10 @@ function AppShellNavigationDisabledPill({
   return (
     <span
       aria-disabled="true"
-      className="app-shell-navigation-link app-shell-navigation-link--disabled"
+      className={`${appShellNavigationLinkClassName} app-shell-navigation-link--disabled`}
     >
-      <span className={cn(appShellNavigationPillClassName, "text-ink")}>
-        {icon}
-        <AppShellNavigationLabel label={label} shortLabel={shortLabel} />
-      </span>
+      {icon}
+      <AppShellNavigationLabel label={label} shortLabel={shortLabel} />
     </span>
   );
 }
