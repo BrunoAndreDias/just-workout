@@ -128,14 +128,6 @@
   color: var(--on-accent);
 }
 
-.training-block-exercise-swap__close:disabled,
-.training-block-exercise-swap__secondary:disabled,
-.training-block-exercise-swap__primary:disabled,
-.training-block-exercise-swap__trigger:disabled {
-  cursor: default;
-  opacity: 0.65;
-}
-
 @media (max-width: 720px) {
   .training-block-exercise-swap__surface {
     max-height: calc(100vh - 1rem);

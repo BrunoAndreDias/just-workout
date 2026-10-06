@@ -1,0 +1,120 @@
+/* Plano design system shared components. Tokens only: no colour literals. Generated source of truth lives in plano-design-system. */
+/* base */
+*, *::before, *::after { box-sizing: border-box; }
+button:disabled { cursor: not-allowed; opacity: 0.4; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.unit { font-size: 13px; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* dot and chips */
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; font-size: 12px; color: var(--ink-2); }
+.chip { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+
+/* card */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+
+/* buttons */
+.primary, .secondary { min-height: 44px; padding: 0 18px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.primary { background: var(--accent); color: var(--on-accent); border: 0; }
+.primary:hover:not(:disabled) { background: var(--accent-dark); }
+.secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--input-border); }
+.secondary:hover { border-color: var(--muted); }
+.icon-btn { width: 36px; height: 36px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; background: transparent; color: var(--faint); }
+.icon-btn:hover:not(:disabled) { background: var(--rule); color: var(--ink); }
+.text-btn { height: 44px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--accent); }
+.text-btn:hover { background: var(--accent-tint); }
+.link-btn { background: none; border: 0; padding: 4px 0; min-height: 32px; color: var(--muted); font-size: 14px; }
+.link-btn:hover:not(:disabled) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.link-btn.danger:hover:not(:disabled) { color: var(--danger); }
+.quiet-btn { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font-size: 14px; color: var(--ink-2); }
+.quiet-btn:hover:not(:disabled) { background: var(--track); }
+.quiet-btn.danger { color: var(--danger); }
+.pill-btn { height: 36px; padding: 0 14px; border: 1px solid var(--input-border); border-radius: 999px; background: var(--surface); font-size: 14px; color: var(--ink); white-space: nowrap; }
+.pill-btn:hover { border-color: var(--muted); }
+
+/* views */
+.views { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--track); }
+.view-link { min-height: 36px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.view-link:hover { color: var(--ink); }
+.view-link[aria-current='page'] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-segment); }
+
+/* tabs */
+.tabs { display: flex; gap: 24px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tab { flex: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; padding: 10px 2px 12px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+.tab:hover { color: var(--ink); }
+.tab[aria-current='page'] { border-bottom-color: var(--ink); font-weight: 600; color: var(--ink); }
+
+/* track */
+.track { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.track > div { height: 100%; border-radius: 3px; }
+
+/* stepper */
+.stepper { display: flex; align-items: center; height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--field); overflow: hidden; flex: none; }
+.stepper button { width: 40px; height: 100%; border: 0; background: transparent; font-size: 18px; color: var(--ink-2); }
+.stepper button:hover { background: var(--track); }
+.stepper-input { width: 44px; border: 0; padding: 0; background: transparent; text-align: right; font-size: 15px; font-weight: 500; color: var(--ink); }
+.stepper-input:focus-visible { outline: none; }
+.stepper:focus-within { border-color: var(--accent); }
+.stepper-unit { position: relative; align-self: stretch; display: flex; align-items: center; font-size: 13px; color: var(--muted); padding: 0 2px 0 3px; white-space: nowrap; }
+.stepper-caret { font-size: 10px; }
+/* The native select sits invisibly over the short label, so the stepper is as wide as "ovo M", not its longest option. */
+.stepper-unit select { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.stepper.in-unit .stepper-input { width: 32px; }
+.stepper.invalid { border-color: var(--danger); }
+
+/* notes input */
+.notes-input { width: 100%; min-height: 64px; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 10px; background: var(--field); font: inherit; font-size: 14px; color: var(--ink); resize: vertical; }
+.notes-input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+
+/* field */
+.field { display: grid; gap: 4px; min-width: 0; align-content: start; }
+.field-label { font-size: 13px; font-weight: 500; color: var(--ink-2); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.field-label small { font-weight: 400; }
+.field-input { width: 100%; min-width: 0; height: 44px; border: 1px solid var(--input-border); border-radius: 10px; padding: 0 12px; background: var(--surface); }
+.field-input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+.field-input[aria-invalid='true'] { border-color: var(--danger); color: var(--danger); }
+
+/* tiles */
+.tiles { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.tile { margin: 0; padding: 14px 16px; border: 1px solid var(--border-soft); border-radius: 12px; background: var(--field); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile dd { margin: 0; }
+.tile-label { font-size: 13px; color: var(--muted); }
+.tile-value { font: 500 32px/1.1 var(--font-serif); }
+.tile-sub { font-size: 12px; color: var(--muted); }
+
+/* panel */
+.panel-layer { position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end; }
+.panel { position: relative; width: 480px; max-width: 100%; height: 100%; background: var(--field); display: flex; flex-direction: column; box-shadow: var(--shadow-panel); }
+.panel:focus { outline: none; }
+.panel-top { padding: 22px 24px 16px; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--border-soft); flex: none; }
+.panel-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.panel-eyebrow { font-size: 13px; color: var(--muted); }
+.panel-title { margin-top: 2px; font: 500 28px/1.1 var(--font-serif); }
+.panel-close { width: 44px; height: 44px; margin: -6px -10px 0 0; color: var(--ink-2); }
+.panel-note { font-size: 13px; color: var(--muted); }
+.panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 10px 12px 12px; }
+.panel-form { padding: 16px 24px; }
+.panel-foot { flex: none; border-top: 1px solid var(--border); background: var(--surface); padding: 16px 24px max(22px, env(safe-area-inset-bottom)); }
+
+/* narrow screens */
+@media (max-width: 640px) {
+  .tabs { width: 100%; }
+  .stepper button { width: 36px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tile { padding: 12px; }
+  .tile-value { font-size: 26px; }
+  .panel { width: 100%; height: 100dvh; box-shadow: none; }
+  .panel-top { padding: 16px 16px 12px; gap: 12px; }
+  .panel-title { font-size: 24px; }
+  .panel-body { padding: 8px 8px 12px; }
+  .panel-form { padding: 12px 16px; }
+  .panel-foot { padding: 12px 16px max(16px, env(safe-area-inset-bottom)); }
+}
+
+/* motion */
+@media (prefers-reduced-motion: no-preference) {
+  .tab, .text-btn, .icon-btn { transition: background-color 0.15s ease, border-color 0.15s ease; }
+}

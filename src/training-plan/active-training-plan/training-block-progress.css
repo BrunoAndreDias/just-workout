@@ -324,8 +324,6 @@
 }
 
 .active-training-plan-progress__accept:disabled {
-  cursor: not-allowed;
-  opacity: 0.62;
   transform: none;
 }
 
@@ -367,8 +365,6 @@
 }
 
 .active-training-plan-progress__secondary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.62;
   transform: none;
 }
 

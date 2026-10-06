@@ -162,11 +162,6 @@
   background: var(--accent-dark);
 }
 
-.training-session-complete-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.62;
-}
-
 .training-session-complete-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

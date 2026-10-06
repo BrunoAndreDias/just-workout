@@ -405,11 +405,6 @@
   background: var(--accent-tint);
 }
 
-.plan-builder-one-page__overview-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 @media (max-width: 680px) {
   .plan-builder-one-page__overview-button span {
     position: absolute;

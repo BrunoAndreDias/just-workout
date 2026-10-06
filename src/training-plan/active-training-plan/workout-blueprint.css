@@ -266,11 +266,6 @@
     transform: rotate(-90deg);
   }
 
-  .workout-section__toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
   .workout-section--collapsed-mobile .workout-section__body {
     display: none;
   }

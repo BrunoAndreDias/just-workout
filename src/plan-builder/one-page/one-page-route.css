@@ -269,12 +269,6 @@
   color: var(--on-accent);
 }
 
-.pb-topbar-steps__overview:focus-visible,
-.pb-topbar-steps__step:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 @media (min-width: 1024px) and (max-width: 1199px) {
   .pb-topbar-steps__overview span {
     position: absolute;

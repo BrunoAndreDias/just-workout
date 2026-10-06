@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "./design-system/plano/tokens.css";
 @import "./design-system/app-tokens.css";
+/* Tailwind utilities override Plano classes; unlayered feature CSS overrides both. */
+@import "./design-system/plano/components.css" layer(components);
 
 @theme inline {
   --color-bg: var(--bg);
@@ -177,10 +179,6 @@
     --jw-builder-content-gap: 1rem;
     --jw-builder-section-gap: 0.875rem;
   }
-}
-
-* {
-  box-sizing: border-box;
 }
 
 html {

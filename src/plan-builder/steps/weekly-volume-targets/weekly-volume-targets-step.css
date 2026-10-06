@@ -124,11 +124,6 @@
   color: var(--muted);
 }
 
-.pb-targets__toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 @media (max-width: 980px) {
   .pb-targets {
     grid-template-columns: minmax(0, 1fr);

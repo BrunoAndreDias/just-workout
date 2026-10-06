@@ -8,7 +8,6 @@
   --training-history-ink-soft: var(--ink-2);
   --training-history-muted: var(--muted);
   --training-history-muted-soft: var(--muted);
-  --training-history-disabled: color-mix(in srgb, var(--muted) 70%, transparent);
   --training-history-surface: var(--surface);
   --training-history-border: var(--border);
   --training-history-border-soft: var(--border);

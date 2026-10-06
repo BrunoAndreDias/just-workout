@@ -159,11 +159,6 @@
   background: var(--accent-tint);
 }
 
-.main-compound-drawer__option:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .main-compound-drawer__option.is-selected {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   background: var(--accent-tint);
@@ -302,16 +297,6 @@
   border-color: color-mix(in srgb, var(--accent) 20%, transparent);
   background: var(--surface);
   color: var(--accent-dark);
-}
-
-.main-compound-drawer__selected-actions button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.main-compound-drawer__selected-actions button:disabled {
-  color: var(--faint);
-  cursor: not-allowed;
 }
 
 .main-compound-drawer__options-fieldset .main-compound-drawer__option {

@@ -234,18 +234,6 @@
   transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pb-step-footer__next:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pb-step-footer__back:focus-visible,
-.pb-step-footer__next:focus-visible,
-.pb-step-section__toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 @media (max-width: 680px) {
   .pb-step {
     gap: 1.25rem;

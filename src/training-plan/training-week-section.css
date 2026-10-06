@@ -86,11 +86,6 @@
   z-index: 1;
 }
 
-.training-history-week-selector__button:disabled {
-  color: var(--training-history-disabled);
-  cursor: not-allowed;
-}
-
 .training-history-week-selector__button:first-of-type {
   border-left: 0;
 }
