@@ -224,7 +224,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
               }
               title="Your choices"
             >
-              <ul className="pb-generate__choices">
+              <ul className="card pb-generate__choices">
                 {choiceSummaries.map((choice) => (
                   <li className="pb-generate__choice" key={choice.step}>
                     <span className="pb-generate__choice-title">{choice.title}</span>
@@ -643,7 +643,7 @@ function BaselineBodyweightDraftSetup({
   onSaveDraftSetup: TrainingPlanDraftActions["saveDraftSetup"];
 }) {
   return (
-    <section className="mt-5 rounded-[var(--radius-16)] border border-border bg-surface p-4">
+    <section className="mt-5 card p-4">
       <h4 className="text-base font-black text-ink">Baseline Bodyweight</h4>
       <p className="mt-2 text-sm text-muted">
         Store known bodyweight so bodyweight exercise load volume has a usable default after
@@ -710,11 +710,7 @@ function TrainingPlanDraftTemplateCard({
 
       <div className="mt-4 grid gap-4">
         {template.supersetGroups.map((group, groupIndex) => (
-          <section
-            aria-label={group.title}
-            className="rounded-[var(--radius-16)] border border-border bg-surface p-4"
-            key={group.id}
-          >
+          <section aria-label={group.title} className="card p-4" key={group.id}>
             {canEditSupersetGroups ? (
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="field min-w-0 flex-1">
@@ -1364,10 +1360,7 @@ function DefaultGenerationConfirmation({
 
           <ul className="mt-5 space-y-3 text-sm text-ink">
             {resolution.recommendedDefaults.map((recommendedDefault) => (
-              <li
-                className="rounded-[var(--radius-16)] border border-border bg-surface px-4 py-3"
-                key={getRecommendedDefaultKey(recommendedDefault)}
-              >
+              <li className="card px-4 py-3" key={getRecommendedDefaultKey(recommendedDefault)}>
                 {getRecommendedDefaultLabel(recommendedDefault)}
               </li>
             ))}
@@ -1402,7 +1395,7 @@ function DefaultGenerationConfirmation({
 
 function GenerateSummaryField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[var(--radius-6)] border border-border bg-surface px-4 py-3">
+    <div className="card px-4 py-3">
       <dt className="text-xs font-semibold uppercase text-muted">{label}</dt>
       <dd className="mt-1 font-semibold text-ink">{value}</dd>
     </div>

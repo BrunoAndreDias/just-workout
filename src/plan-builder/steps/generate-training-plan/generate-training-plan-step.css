@@ -1,9 +1,6 @@
 .pb-generate__choices {
   display: grid;
   margin: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-16);
-  background: var(--surface);
   padding: 0;
   list-style: none;
 }

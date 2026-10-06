@@ -121,7 +121,7 @@ function WeeklyVolumeTargetGroup({
   rows: ReadonlyArray<WeeklyVolumeTargetDisplayRow>;
 }) {
   return (
-    <section aria-label={label} className="pb-targets__group">
+    <section aria-label={label} className="card pb-targets__group">
       <h4 className="pb-targets__group-title">{label}</h4>
       <ul className="pb-targets__list">
         {rows.map((row) => (
@@ -148,7 +148,7 @@ function OptionalWeeklyVolumeTargetGroup({
   }
 
   return (
-    <section aria-label="Optional targets" className="pb-targets__group">
+    <section aria-label="Optional targets" className="card pb-targets__group">
       <h4 className="pb-targets__group-title">
         Optional extras
         <span>Add direct work for these if you want it in your plan.</span>

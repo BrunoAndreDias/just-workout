@@ -200,7 +200,7 @@ function TrainingScheduleWeeklyPreview({
   const restDayCount = weeklyLayout.days.filter((day) => day.isRestDay).length;
 
   return (
-    <aside aria-labelledby={headingId} className="pb-week-panel">
+    <aside aria-labelledby={headingId} className="card pb-week-panel">
       <div className="pb-week-panel__header">
         <h3 className="pb-schedule__heading" id={headingId}>
           Your week

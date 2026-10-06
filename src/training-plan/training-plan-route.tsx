@@ -44,7 +44,7 @@ export function TrainingPlansRoute() {
 
       <PageMain>
         {trainingPlans.length === 0 ? (
-          <div className="max-w-2xl rounded-[var(--radius-6)] border border-border bg-surface p-5 shadow-sm">
+          <div className="max-w-2xl card p-5">
             <h2 className="text-lg font-black text-ink">No Training Plans yet</h2>
             <p className="mt-2 text-sm font-semibold text-muted">
               Complete the Plan Builder to generate your first Training Plan.
@@ -187,7 +187,7 @@ function useTrainingPlanIdFromPathname(): string | null {
 function TrainingPlanListItem({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   return (
     <Link
-      className="rounded-[var(--radius-6)] border border-border bg-surface p-5 shadow-sm transition-colors hover:border-accent/45 hover:bg-surface"
+      className="card p-5 transition-colors hover:border-accent/45"
       params={{ planId: trainingPlan.id }}
       to={trainingPlanPaths.plan}
     >

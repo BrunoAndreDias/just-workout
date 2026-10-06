@@ -264,7 +264,7 @@ function TrainingSessionStartCard({
   return (
     <Link
       aria-label={`Start ${workoutTemplate.label} ${isExtraSession ? "extra " : ""}session`}
-      className="training-session-start-card"
+      className="card training-session-start-card"
       params={{ planId, templateId: workoutTemplate.id }}
       search={isExtraSession ? { intent: "extra" } : undefined}
       to={trainingPlanPaths.sessionStart}

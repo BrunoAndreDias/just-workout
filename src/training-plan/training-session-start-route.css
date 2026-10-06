@@ -71,11 +71,8 @@
   align-items: center;
   gap: 0.875rem;
   min-height: 6.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-8);
   padding: 1rem;
   color: var(--ink);
-  background: var(--surface);
   text-decoration: none;
   transition:
     border-color 180ms ease,

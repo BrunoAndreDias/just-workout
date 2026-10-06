@@ -341,13 +341,7 @@
   min-width: 0;
   align-content: start;
   gap: 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-16);
-  background: var(--surface);
   padding: 1.125rem 1.125rem 1.25rem;
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--shadow-ink) 4%, transparent),
-    0 18px 36px -28px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
 }
 
 .pb-week-panel__header {
