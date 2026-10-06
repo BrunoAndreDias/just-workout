@@ -30,7 +30,7 @@ export function TrainingPlansRoute() {
   if (trainingPlansQuery.isLoading) {
     return (
       <section className="px-6 py-8 sm:px-8">
-        <p className="text-sm font-semibold text-stone-600">Loading Training Plans...</p>
+        <p className="text-sm font-semibold text-muted">Loading Training Plans...</p>
       </section>
     );
   }
@@ -44,9 +44,9 @@ export function TrainingPlansRoute() {
 
       <PageMain>
         {trainingPlans.length === 0 ? (
-          <div className="max-w-2xl rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm">
-            <h2 className="text-lg font-black text-stone-950">No Training Plans yet</h2>
-            <p className="mt-2 text-sm font-semibold text-stone-600">
+          <div className="max-w-2xl rounded-md border border-border bg-surface p-5 shadow-sm">
+            <h2 className="text-lg font-black text-ink">No Training Plans yet</h2>
+            <p className="mt-2 text-sm font-semibold text-muted">
               Complete the Plan Builder to generate your first Training Plan.
             </p>
             <Button asChild className="mt-4" variant="builderPrimary">
@@ -187,19 +187,19 @@ function useTrainingPlanIdFromPathname(): string | null {
 function TrainingPlanListItem({ trainingPlan }: { trainingPlan: TrainingPlan }) {
   return (
     <Link
-      className="rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm transition-colors hover:border-[#007780]/45 hover:bg-white"
+      className="rounded-md border border-border bg-surface p-5 shadow-sm transition-colors hover:border-accent/45 hover:bg-surface"
       params={{ planId: trainingPlan.id }}
       to={trainingPlanPaths.plan}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black text-stone-950">{trainingPlan.split}</h2>
+        <h2 className="text-lg font-black text-ink">{trainingPlan.split}</h2>
         {trainingPlan.active ? (
-          <span className="rounded-full bg-[#007780]/10 px-3 py-1 text-xs font-black uppercase text-[#007780]">
+          <span className="rounded-full bg-accent-tint px-3 py-1 text-xs font-black uppercase text-accent">
             Active
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-sm font-semibold text-stone-600">
+      <p className="mt-2 text-sm font-semibold text-muted">
         {trainingPlan.trainingFrequencyDaysPerWeek} days/week ·{" "}
         {trainingPlan.workoutTemplates.length} workout templates
       </p>

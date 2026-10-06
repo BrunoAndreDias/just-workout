@@ -379,8 +379,8 @@ function TrainingPlanDraftReview({
 
       {trainingPlanDraft.validation.warnings.length > 0 ? (
         <StepPanel>
-          <h4 className="text-base font-black text-amber-950">Draft warnings</h4>
-          <ul className="mt-3 space-y-2 text-sm text-amber-900">
+          <h4 className="text-base font-black text-under-fg">Draft warnings</h4>
+          <ul className="mt-3 space-y-2 text-sm text-under-fg">
             {trainingPlanDraft.validation.warnings.map((warning) => (
               <li key={`${warning.kind}-${warning.message}`}>{warning.message}</li>
             ))}
@@ -390,8 +390,8 @@ function TrainingPlanDraftReview({
 
       {hasBlockers ? (
         <StepPanel>
-          <h4 className="text-base font-black text-red-950">Draft blockers</h4>
-          <ul className="mt-3 space-y-2 text-sm text-red-900">
+          <h4 className="text-base font-black text-over-fg">Draft blockers</h4>
+          <ul className="mt-3 space-y-2 text-sm text-over-fg">
             {trainingPlanDraft.validation.blockers.map((blocker) => (
               <li key={blocker}>{blocker}</li>
             ))}
@@ -471,13 +471,13 @@ function TrainingPlanDraftHeader({
 function TrainingPlanDraftIntro({ isStale }: { isStale: boolean }) {
   return (
     <div>
-      <h3 className="text-xl font-black text-stone-950 sm:text-2xl">Training Plan Draft</h3>
-      <p className="mt-3 max-w-3xl text-sm text-stone-600">
+      <h3 className="text-xl font-black text-ink sm:text-2xl">Training Plan Draft</h3>
+      <p className="mt-3 max-w-3xl text-sm text-muted">
         Review and edit the generated Workout Templates, Superset Groups, exercise slots, and
         Training Prescriptions. Accept the draft to make it your Active Training Plan, or discard it
         to change your setup and generate again.
       </p>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">{trainingBlockProgressionCopy}</p>
+      <p className="mt-2 max-w-3xl text-sm text-muted">{trainingBlockProgressionCopy}</p>
       {isStale ? <TrainingPlanDraftStaleNotice /> : null}
     </div>
   );
@@ -485,7 +485,7 @@ function TrainingPlanDraftIntro({ isStale }: { isStale: boolean }) {
 
 function TrainingPlanDraftStaleNotice() {
   return (
-    <p className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+    <p className="mt-3 rounded-2xl border border-under/45 bg-under-bg px-4 py-3 text-sm font-semibold text-under-fg">
       Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices before
       accepting it.
     </p>
@@ -510,7 +510,7 @@ function TrainingPlanDraftActions({
     return (
       <fieldset
         aria-label="Confirm discard Training Plan Draft"
-        className="m-0 grid w-full min-w-0 max-w-md gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+        className="m-0 grid w-full min-w-0 max-w-md gap-3 rounded-2xl border border-over-fg/30 bg-over-bg px-4 py-3 text-sm text-over-fg"
       >
         <p className="font-semibold">
           Discard this draft? Your Plan Builder choices stay, and you can generate a new draft.
@@ -594,7 +594,7 @@ function getAcceptDraftButtonLabel(pendingDraftAction: PendingTrainingPlanDraftA
 function GenerateStepErrorAlert({ message }: { message: string }) {
   return (
     <p
-      className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900"
+      className="mt-4 rounded-2xl border border-over-fg/30 bg-over-bg px-4 py-3 text-sm font-semibold text-over-fg"
       role="alert"
     >
       {message}
@@ -643,17 +643,17 @@ function BaselineBodyweightDraftSetup({
   onSaveDraftSetup: TrainingPlanDraftActions["saveDraftSetup"];
 }) {
   return (
-    <section className="mt-5 rounded-2xl border border-stone-900/10 bg-white/70 p-4">
-      <h4 className="text-base font-black text-stone-950">Baseline Bodyweight</h4>
-      <p className="mt-2 text-sm text-stone-600">
+    <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
+      <h4 className="text-base font-black text-ink">Baseline Bodyweight</h4>
+      <p className="mt-2 text-sm text-muted">
         Store known bodyweight so bodyweight exercise load volume has a usable default after
         acceptance.
       </p>
-      <label className="mt-3 block text-sm font-medium text-stone-700">
+      <label className="mt-3 block text-sm font-medium text-ink-2">
         <span>Baseline Bodyweight</span>
         <input
           aria-label="Baseline Bodyweight"
-          className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+          className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
           inputMode="decimal"
           min={0}
           onBlur={() => {
@@ -671,7 +671,7 @@ function BaselineBodyweightDraftSetup({
         />
       </label>
       {baselineBodyweight ? null : (
-        <p className="mt-2 text-sm text-amber-800">
+        <p className="mt-2 text-sm text-under-fg">
           Missing Baseline Bodyweight: bodyweight exercise volume will stay partial until you set it
           here or later on the Training surface.
         </p>
@@ -712,21 +712,18 @@ function TrainingPlanDraftTemplateCard({
         {template.supersetGroups.map((group, groupIndex) => (
           <section
             aria-label={group.title}
-            className="rounded-2xl border border-stone-900/10 bg-white/70 p-4"
+            className="rounded-2xl border border-border bg-surface p-4"
             key={group.id}
           >
             {canEditSupersetGroups ? (
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <label
-                    className="text-xs font-semibold uppercase text-stone-500"
-                    htmlFor={group.id}
-                  >
+                  <label className="text-xs font-semibold uppercase text-muted" htmlFor={group.id}>
                     Superset Group title
                   </label>
                   <input
                     aria-label={`Superset Group title ${groupIndex + 1}`}
-                    className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+                    className="mt-2 w-full rounded-xl border border-input-border px-3 py-2 text-sm font-semibold text-ink"
                     id={group.id}
                     onChange={(event) => {
                       draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
@@ -749,7 +746,7 @@ function TrainingPlanDraftTemplateCard({
                 </div>
               </div>
             ) : (
-              <h5 className="text-base font-black text-stone-950">{group.title}</h5>
+              <h5 className="text-base font-black text-ink">{group.title}</h5>
             )}
             <ul className="mt-3 space-y-3">
               {group.slots.map((slot, slotIndex) => (
@@ -781,7 +778,7 @@ function TrainingPlanDraftTemplateCard({
               </div>
             ) : null}
             {canEditSupersetGroups && group.slots.length === 0 ? (
-              <p className="mt-3 text-sm text-amber-800">
+              <p className="mt-3 text-sm text-under-fg">
                 Empty group. Move a slot here or delete the group before accepting the draft.
               </p>
             ) : null}
@@ -818,11 +815,11 @@ function TrainingPlanDraftTemplateHeader({
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <label className="text-xs font-semibold uppercase text-stone-500" htmlFor={template.id}>
+          <label className="text-xs font-semibold uppercase text-muted" htmlFor={template.id}>
             Workout Template label
           </label>
           <input
-            className="mt-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-950"
+            className="mt-2 w-full rounded-xl border border-input-border px-3 py-2 text-sm font-semibold text-ink"
             id={template.id}
             onChange={(event) => {
               draftActions.renameWorkoutTemplate(template.id, event.target.value);
@@ -830,7 +827,7 @@ function TrainingPlanDraftTemplateHeader({
             type="text"
             value={template.label}
           />
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-muted">
             {getWorkoutTemplatePurposeDescription(template.purpose)}
           </p>
         </div>
@@ -880,7 +877,7 @@ function TrainingPlanDraftTemplateHeader({
         >
           Replace with custom focus
         </Button>
-        <span className="rounded-full bg-stone-900/5 px-3 py-1 text-xs font-semibold uppercase text-stone-600">
+        <span className="rounded-full bg-rule px-3 py-1 text-xs font-semibold uppercase text-muted">
           {template.purpose === "custom-focus"
             ? "Custom focus"
             : `${template.supersetGroups.length} groups`}
@@ -937,14 +934,14 @@ function TrainingPlanDraftSlotItem({
   );
 
   return (
-    <li className="min-w-0 rounded-xl border border-stone-900/10 bg-stone-50/80 p-3">
+    <li className="min-w-0 rounded-xl border border-border bg-field p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <strong className="min-w-0 text-sm text-stone-950 [overflow-wrap:anywhere]">
+        <strong className="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">
           {slot.exerciseName}
         </strong>
-        <span className="text-xs font-semibold uppercase text-stone-500">{slot.slotLabel}</span>
+        <span className="text-xs font-semibold uppercase text-muted">{slot.slotLabel}</span>
       </div>
-      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
+      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
         <span>{slot.role}</span>
         <span>{formatTrainingPlanDraftMovementPattern(slot.movementPattern)}</span>
         <span>
@@ -954,11 +951,11 @@ function TrainingPlanDraftSlotItem({
         </span>
       </div>
       {replacementChoices.length > 0 ? (
-        <label className="mt-3 block text-sm font-medium text-stone-700">
+        <label className="mt-3 block text-sm font-medium text-ink-2">
           <span>Exercise choice</span>
           <select
             aria-label={`Exercise choice for ${slot.exerciseName}`}
-            className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+            className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
             onChange={(event) => {
               draftActions.replaceDraftSlotExercise(
                 template.id,
@@ -1115,11 +1112,11 @@ function DraftTrainingPrescriptionEditor({
 
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-3">
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
         <span className="whitespace-nowrap">Sets</span>
         <input
           aria-label={`Set count for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1129,11 +1126,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableSetCount}
         />
       </label>
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
         <span className="whitespace-nowrap">Rep min</span>
         <input
           aria-label={`Rep target minimum for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1143,11 +1140,11 @@ function DraftTrainingPrescriptionEditor({
           value={editableRepTargetMin}
         />
       </label>
-      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-stone-700">
+      <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 text-sm font-medium text-ink-2">
         <span className="whitespace-nowrap">Rep max</span>
         <input
           aria-label={`Rep target maximum for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1181,15 +1178,15 @@ function DraftStartingLoadEditor({
   }
 
   return (
-    <div className="mt-3 grid gap-1 text-sm text-stone-600">
+    <div className="mt-3 grid gap-1 text-sm text-muted">
       <span>Previous load: {formatLoad(loadSuggestion.previousLoad)}</span>
       <span>Suggested start: {formatLoad(loadSuggestion.suggestedLoad)}</span>
       <span>{loadSuggestion.reason}</span>
-      <label className="mt-1 block font-medium text-stone-700">
+      <label className="mt-1 block font-medium text-ink-2">
         <span>Suggested starting load for {slot.exerciseName}</span>
         <input
           aria-label={`Suggested starting load for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-xl border border-stone-900/15 bg-white px-3 py-2"
+          className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
           inputMode="decimal"
           min={isBodyweightLoadExercise(slot) ? -200 : 0}
           onBlur={() => onInputChange(loadInputValue)}
@@ -1289,8 +1286,8 @@ function DraftGenerationInputs({
   return (
     <div className="grid gap-4">
       <StepPanel>
-        <h4 className="text-lg font-black text-stone-950">Generation inputs</h4>
-        <p className="mt-2 text-sm text-stone-600">
+        <h4 className="text-lg font-black text-ink">Generation inputs</h4>
+        <p className="mt-2 text-sm text-muted">
           Edit the upstream Plan Builder choices here. These changes update the Plan Builder and can
           make the current draft stale until you reset it.
         </p>
@@ -1346,29 +1343,29 @@ function DefaultGenerationConfirmation({
   resolution: PlanBlueprintDefaultResolution;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4">
       <div
         aria-labelledby="default-generation-confirmation-title"
         aria-modal="true"
-        className="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-3xl border border-stone-900/10 bg-[#fcfaf6] p-6 shadow-[0_24px_80px_rgba(28,25,23,0.26)]"
+        className="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-3xl border border-border bg-surface p-6 shadow-[0_24px_80px_color-mix(in_srgb,var(--shadow-ink)_26%,transparent)]"
         role="dialog"
       >
         <StepPanel>
           <h3
-            className="text-xl font-black text-stone-950 sm:text-2xl"
+            className="text-xl font-black text-ink sm:text-2xl"
             id="default-generation-confirmation-title"
           >
             Use Recommended Defaults?
           </h3>
-          <p className="mt-3 text-sm text-stone-600">
+          <p className="mt-3 text-sm text-muted">
             Just Workout will apply these Recommended Defaults before generation continues.
           </p>
-          <p className="mt-2 text-sm text-stone-600">{defaultGenerationPreferenceMappingCopy}</p>
+          <p className="mt-2 text-sm text-muted">{defaultGenerationPreferenceMappingCopy}</p>
 
-          <ul className="mt-5 space-y-3 text-sm text-stone-900">
+          <ul className="mt-5 space-y-3 text-sm text-ink">
             {resolution.recommendedDefaults.map((recommendedDefault) => (
               <li
-                className="rounded-2xl border border-stone-900/10 bg-white/85 px-4 py-3"
+                className="rounded-2xl border border-border bg-surface px-4 py-3"
                 key={getRecommendedDefaultKey(recommendedDefault)}
               >
                 {getRecommendedDefaultLabel(recommendedDefault)}
@@ -1405,9 +1402,9 @@ function DefaultGenerationConfirmation({
 
 function GenerateSummaryField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-stone-900/10 bg-white/70 px-4 py-3">
-      <dt className="text-xs font-semibold uppercase text-stone-500">{label}</dt>
-      <dd className="mt-1 font-semibold text-stone-950">{value}</dd>
+    <div className="rounded-md border border-border bg-surface px-4 py-3">
+      <dt className="text-xs font-semibold uppercase text-muted">{label}</dt>
+      <dd className="mt-1 font-semibold text-ink">{value}</dd>
     </div>
   );
 }

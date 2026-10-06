@@ -1,9 +1,9 @@
 .pb-generate__choices {
   display: grid;
   margin: 0;
-  border: 1px solid rgba(28, 25, 23, 0.1);
+  border: 1px solid var(--border);
   border-radius: 0.875rem;
-  background: #ffffff;
+  background: var(--surface);
   padding: 0;
   list-style: none;
 }
@@ -13,7 +13,7 @@
   grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  border-top: 1px solid rgba(28, 25, 23, 0.07);
+  border-top: 1px solid var(--rule);
   padding: 0.75rem 0.75rem 0.75rem 1.125rem;
 }
 
@@ -22,14 +22,14 @@
 }
 
 .pb-generate__choice-title {
-  color: #4f656e;
+  color: var(--muted);
   font-size: var(--jw-type-label);
   font-weight: 650;
 }
 
 .pb-generate__choice-value {
   min-width: 0;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-type-body);
   font-weight: 750;
 }
@@ -37,8 +37,8 @@
 .pb-generate__choice-value[data-default] {
   justify-self: start;
   border-radius: 999px;
-  background: #e2f4ee;
-  color: #07603f;
+  background: var(--accent-tint);
+  color: var(--accent-dark);
   padding: 0.25rem 0.55rem;
   font-size: var(--jw-type-meta);
   font-weight: 800;
@@ -52,7 +52,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #075d63;
+  color: var(--accent-dark);
   padding: 0 0.5rem 0 0.75rem;
   font-size: var(--jw-type-label);
   font-weight: 750;
@@ -60,11 +60,11 @@
 }
 
 .pb-generate__choice-edit:hover {
-  background: rgba(0, 119, 128, 0.07);
+  background: var(--accent-tint);
 }
 
 .pb-generate__choice-edit:focus-visible {
-  outline: 2px solid #007780;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -81,7 +81,7 @@
   position: relative;
   max-width: 68ch;
   padding-left: 2.25rem;
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-type-body);
   font-weight: 500;
   line-height: 1.5;
@@ -98,25 +98,25 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(0, 119, 128, 0.1);
-  color: #075d63;
+  background: var(--accent-tint);
+  color: var(--accent-dark);
   font-size: var(--jw-type-meta);
   font-weight: 800;
   content: counter(pb-next-step);
 }
 
 .pb-generate__next-steps strong {
-  color: #120f0d;
+  color: var(--ink);
   font-weight: 750;
 }
 
 .pb-generate__blocked {
   display: grid;
   gap: 0.5rem;
-  border: 1px solid #f3c3bb;
+  border: 1px solid color-mix(in srgb, var(--over-fg) 30%, transparent);
   border-radius: 0.875rem;
-  background: #fdf1ef;
-  color: #7c2417;
+  background: var(--over-bg);
+  color: var(--over-fg);
   padding: 1rem 1.125rem;
   font-size: var(--jw-type-body);
   line-height: 1.45;

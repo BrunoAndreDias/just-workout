@@ -19,14 +19,13 @@ const buttonVariants = cva(
       },
       variant: {
         builderPrimary:
-          "bg-[#007780] text-white shadow-[0_8px_14px_rgba(0,119,128,0.12)] hover:bg-[#00666e] focus-visible:outline-[#007780]",
-        ghost: "text-stone-800 hover:bg-stone-900/8 focus-visible:outline-stone-900",
+          "bg-accent text-on-accent shadow-[0_8px_14px_color-mix(in_srgb,var(--accent)_12%,transparent)] hover:bg-accent-dark focus-visible:outline-accent",
+        ghost: "text-ink-2 hover:bg-track focus-visible:outline-accent",
         outline:
-          "border border-stone-900/15 bg-white/50 text-stone-900 hover:bg-white focus-visible:outline-stone-900",
-        primary:
-          "bg-stone-950 text-stone-50 shadow-sm hover:bg-stone-800 focus-visible:outline-stone-950",
+          "border border-input-border bg-surface text-ink hover:bg-surface focus-visible:outline-accent",
+        primary: "bg-ink text-field shadow-sm hover:bg-ink-2 focus-visible:outline-accent",
         secondary:
-          "bg-[#d6462f] text-white shadow-sm hover:bg-[#b93725] focus-visible:outline-[#d6462f]",
+          "bg-accent text-on-accent shadow-sm hover:bg-accent-dark focus-visible:outline-accent",
       },
     },
   },

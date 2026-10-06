@@ -41,12 +41,12 @@ export function getFoundationIconClassName(
   switch (movementPattern) {
     case "horizontal_push":
     case "vertical_push":
-      return "bg-[#ffe9e7] text-[#b93725]";
+      return "bg-data-red-bg text-data-red-ink";
     case "horizontal_pull":
     case "vertical_pull":
-      return "bg-[#e8f5f4] text-[#00666e]";
+      return "bg-accent-tint text-accent-dark";
     case "quad_dominant":
     case "hip_hamstring_dominant":
-      return "bg-[#ecefff] text-[#355bd6]";
+      return "bg-data-blue-bg text-data-blue-ink";
   }
 }

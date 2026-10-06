@@ -23,9 +23,9 @@
   min-width: 0;
   flex-direction: column;
   gap: 0.75rem;
-  border: 1px solid rgba(28, 25, 23, 0.12);
+  border: 1px solid var(--border);
   border-radius: 0.875rem;
-  background: #ffffff;
+  background: var(--surface);
   padding: 1rem 1.125rem 1.125rem;
   cursor: pointer;
   transition:
@@ -35,17 +35,17 @@
 }
 
 .pb-choice-card:hover {
-  border-color: rgba(0, 119, 128, 0.4);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .pb-choice-card[data-selected] {
-  border-color: #007780;
-  background: #f3faf9;
-  box-shadow: 0 0 0 1px #007780;
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .pb-choice-card:has(input:focus-visible) {
-  outline: 2px solid #007780;
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -64,23 +64,23 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid rgba(49, 80, 93, 0.4);
+  border: 1.5px solid var(--faint);
   border-radius: 999px;
-  background: #ffffff;
-  color: #ffffff;
+  background: var(--surface);
+  color: var(--on-accent);
   transition:
     background-color 160ms ease,
     border-color 160ms ease;
 }
 
 .pb-choice-card[data-selected] .pb-choice-card__radio {
-  border-color: #007780;
-  background: #007780;
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .pb-choice-card__title {
   min-width: 0;
-  color: #120f0d;
+  color: var(--ink);
   font-family: var(--jw-font-heading);
   font-size: var(--jw-type-card-title);
   font-weight: var(--jw-heading-weight);
@@ -93,8 +93,8 @@
   min-height: 1.375rem;
   align-items: center;
   border-radius: 999px;
-  background: #e2f4ee;
-  color: #07603f;
+  background: var(--accent-tint);
+  color: var(--accent-dark);
   padding: 0 0.5rem;
   font-size: var(--jw-type-meta);
   font-weight: 800;
@@ -102,7 +102,7 @@
 }
 
 .pb-choice-card__description {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-type-body);
   font-weight: 500;
   line-height: 1.45;
@@ -111,7 +111,7 @@
 .pb-choice-card__facts {
   display: grid;
   margin: auto 0 0;
-  border-top: 1px solid rgba(28, 25, 23, 0.08);
+  border-top: 1px solid var(--rule);
 }
 
 .pb-choice-card__fact {
@@ -119,7 +119,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-  border-bottom: 1px solid rgba(28, 25, 23, 0.06);
+  border-bottom: 1px solid var(--rule);
   padding: 0.5rem 0;
 }
 
@@ -129,14 +129,14 @@
 }
 
 .pb-choice-card__fact dt {
-  color: #4f656e;
+  color: var(--muted);
   font-size: var(--jw-type-label);
   font-weight: 600;
 }
 
 .pb-choice-card__fact dd {
   margin: 0;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-type-body);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -154,7 +154,7 @@
 .pb-choice-card__highlights li {
   position: relative;
   padding-left: 0.95rem;
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-type-label);
   font-weight: 550;
   line-height: 1.4;
@@ -167,7 +167,7 @@
   width: 0.3rem;
   height: 0.3rem;
   border-radius: 999px;
-  background: #007780;
+  background: var(--accent);
   content: "";
 }
 

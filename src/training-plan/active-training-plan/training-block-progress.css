@@ -4,7 +4,7 @@
 
 .active-training-plan-progress h2 {
   margin: 0;
-  color: #11181b;
+  color: var(--ink);
   font-size: 0.9375rem;
   font-weight: 800;
   line-height: 1.125rem;
@@ -12,7 +12,7 @@
 
 .active-training-plan-progress p {
   margin: 0.25rem 0 0;
-  color: #58656a;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.125rem;
@@ -20,7 +20,7 @@
 
 .active-training-plan-progress__helper {
   max-width: 35rem;
-  color: #31505d;
+  color: var(--ink-2);
 }
 
 .active-training-plan-progress__week {
@@ -28,10 +28,9 @@
   gap: 0.25rem;
   max-width: 35rem;
   margin-top: 0.875rem;
-  border: 1px solid rgba(0, 119, 128, 0.14);
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
   border-radius: 0.9rem;
-  background:
-    linear-gradient(180deg, rgba(0, 119, 128, 0.08), transparent 72%), rgba(255, 253, 249, 0.9);
+  background: linear-gradient(180deg, var(--accent-tint), transparent 72%), var(--surface);
   padding: 0.875rem 1rem;
 }
 
@@ -44,7 +43,7 @@
 }
 
 .active-training-plan-progress__week-title {
-  color: #0f2e34;
+  color: var(--ink);
   font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -52,14 +51,14 @@
 }
 
 .active-training-plan-progress__week-value {
-  color: #11181b;
+  color: var(--ink);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .active-training-plan-progress__week-detail {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.25rem;
@@ -67,7 +66,7 @@
 
 .active-training-plan-progress__week-support,
 .active-training-plan-progress__week-caveat {
-  color: #58656a;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -81,7 +80,7 @@
   width: fit-content;
   margin-top: 0.75rem;
   border-radius: 0.75rem;
-  background: rgba(0, 119, 128, 0.08);
+  background: var(--accent-tint);
   padding: 0.625rem 0.75rem;
 }
 
@@ -92,14 +91,14 @@
 
 .active-training-plan-progress__preview h3 {
   flex-basis: 100%;
-  color: #0f2e34;
+  color: var(--ink);
   font-size: 0.8125rem;
   font-weight: 850;
   line-height: 1.125rem;
 }
 
 .active-training-plan-progress__preview p {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.125rem;
@@ -112,7 +111,7 @@
 
 .active-training-plan-progress__details h3 {
   margin: 0;
-  color: #11181b;
+  color: var(--ink);
   font-size: 0.875rem;
   font-weight: 850;
   line-height: 1.125rem;
@@ -120,16 +119,16 @@
 
 .active-training-plan-progress__details-copy {
   max-width: 34rem;
-  color: #58656a;
+  color: var(--muted);
 }
 
 .active-training-plan-progress__review-section {
   display: grid;
   gap: 0.5rem;
   margin-top: 0.875rem;
-  border: 1px solid rgba(0, 119, 128, 0.12);
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--surface);
   padding: 0.875rem 1rem;
 }
 
@@ -141,7 +140,7 @@
 }
 
 .active-training-plan-progress__section-title {
-  color: #0f2e34;
+  color: var(--ink);
   font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -149,21 +148,21 @@
 }
 
 .active-training-plan-progress__section-value {
-  color: #11181b;
+  color: var(--ink);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .active-training-plan-progress__section-detail {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.2rem;
 }
 
 .active-training-plan-progress__section-caveat {
-  color: #8a4b2b;
+  color: var(--under-fg);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.125rem;
@@ -183,12 +182,12 @@
   gap: 0.25rem 0.75rem;
   align-items: baseline;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface);
   padding: 0.625rem 0.75rem;
 }
 
 .active-training-plan-progress__detail-list span {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -196,7 +195,7 @@
 
 .active-training-plan-progress__detail-list span:first-child {
   flex-basis: 100%;
-  color: #11181b;
+  color: var(--ink);
   font-weight: 850;
 }
 
@@ -207,7 +206,7 @@
 }
 
 .active-training-plan-progress__load-edit label {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -216,18 +215,18 @@
 .active-training-plan-progress__load-edit input {
   width: 5.5rem;
   min-height: 2rem;
-  border: 1px solid rgba(0, 119, 128, 0.2);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
   border-radius: 0.5rem;
-  color: #0f2e34;
-  background: rgba(255, 253, 249, 0.86);
+  color: var(--ink);
+  background: var(--surface);
   font: inherit;
   font-weight: 800;
   padding: 0.25rem 0.5rem;
 }
 
 .active-training-plan-progress__load-edit input:focus-visible {
-  border-color: rgba(0, 119, 128, 0.55);
-  outline: 2px solid rgba(0, 119, 128, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -237,7 +236,7 @@
   gap: 0.625rem;
   align-items: center;
   margin-top: 0.5rem;
-  color: #075d63;
+  color: var(--accent-dark);
   font-size: 0.8125rem;
   font-weight: 850;
   line-height: 1;
@@ -247,14 +246,14 @@
   height: 0.4375rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(28, 25, 23, 0.08);
+  background: var(--track);
 }
 
 .active-training-plan-progress__track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #007780;
+  background: var(--accent);
 }
 
 .active-training-plan-progress__action {
@@ -267,8 +266,8 @@
   border: 0;
   border-radius: 0.5rem;
   padding: 0 1rem;
-  color: #ffffff;
-  background: #006f77;
+  color: var(--on-accent);
+  background: var(--accent);
   font-size: 0.8125rem;
   font-weight: 800;
   line-height: 1;
@@ -278,7 +277,7 @@
 }
 
 .active-training-plan-progress__action:hover {
-  background: #005f66;
+  background: var(--accent-dark);
 }
 
 .active-training-plan-progress__action:active {
@@ -286,7 +285,7 @@
 }
 
 .active-training-plan-progress__action:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -305,8 +304,8 @@
   border: 0;
   border-radius: 0.5rem;
   padding: 0 1rem;
-  color: #ffffff;
-  background: #006f77;
+  color: var(--on-accent);
+  background: var(--accent);
   font-size: 0.8125rem;
   font-weight: 800;
   line-height: 1;
@@ -317,7 +316,7 @@
 }
 
 .active-training-plan-progress__accept:hover {
-  background: #005f66;
+  background: var(--accent-dark);
 }
 
 .active-training-plan-progress__accept:active {
@@ -331,7 +330,7 @@
 }
 
 .active-training-plan-progress__accept:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -342,11 +341,11 @@
   justify-content: center;
   width: fit-content;
   min-height: 2.5rem;
-  border: 1px solid rgba(0, 119, 128, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-radius: 0.5rem;
   padding: 0 0.95rem;
-  color: #0f2e34;
-  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  background: var(--surface);
   font-size: 0.8125rem;
   font-weight: 800;
   line-height: 1;
@@ -358,8 +357,8 @@
 
 .active-training-plan-progress__secondary-button:hover,
 .active-training-plan-progress__secondary-link:hover {
-  border-color: rgba(0, 119, 128, 0.4);
-  background: #ffffff;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--surface);
 }
 
 .active-training-plan-progress__secondary-button:active,
@@ -375,7 +374,7 @@
 
 .active-training-plan-progress__secondary-button:focus-visible,
 .active-training-plan-progress__secondary-link:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.22);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -384,10 +383,9 @@
   gap: 0.5rem;
   max-width: 32rem;
   margin-top: 0.875rem;
-  border: 1px solid rgba(0, 119, 128, 0.16);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
   border-radius: 0.9rem;
-  background:
-    linear-gradient(180deg, rgba(0, 119, 128, 0.08), transparent 72%), rgba(255, 253, 249, 0.92);
+  background: linear-gradient(180deg, var(--accent-tint), transparent 72%), var(--surface);
   padding: 0.875rem 1rem;
 }
 
@@ -397,7 +395,7 @@
 }
 
 .active-training-plan-progress__undo h3 {
-  color: #0f2e34;
+  color: var(--ink);
   font-size: 0.875rem;
   font-weight: 850;
   line-height: 1.125rem;
@@ -417,12 +415,12 @@
   gap: 0.75rem;
   align-items: center;
   border-radius: 0.65rem;
-  background: rgba(255, 250, 242, 0.82);
+  background: var(--field);
   padding: 0.5rem 0.75rem;
 }
 
 .active-training-plan-progress__rir-list span {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.125rem;
@@ -459,22 +457,22 @@
   display: grid;
   gap: 0.125rem;
   justify-items: center;
-  border: 1px solid rgba(49, 80, 93, 0.14);
+  border: 1px solid var(--border);
   border-radius: 0.6rem;
-  background: rgba(255, 250, 242, 0.82);
+  background: var(--field);
   padding: 0.4rem 0.25rem;
   text-align: center;
 }
 
 .active-training-plan-progress__ramp-week span {
-  color: #5b6f78;
+  color: var(--muted);
   font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
 
 .active-training-plan-progress__ramp-week strong {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: 0.75rem;
   font-weight: 800;
   line-height: 1rem;
@@ -486,13 +484,13 @@
 }
 
 .active-training-plan-progress__ramp-week--current {
-  border-color: #007780;
-  background: #007780;
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .active-training-plan-progress__ramp-week--current span,
 .active-training-plan-progress__ramp-week--current strong {
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 @media (max-width: 380px) {

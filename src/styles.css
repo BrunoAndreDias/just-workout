@@ -231,14 +231,14 @@ h4 {
 
 .jw-page-title {
   margin: 0;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-page-header-title-size);
   line-height: var(--jw-page-header-title-line-height);
 }
 
 .jw-page-lead {
   margin: 0;
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-page-header-lead-size);
   line-height: var(--jw-page-header-lead-line-height);
 }

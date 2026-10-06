@@ -197,7 +197,7 @@
   border-radius: 0.5rem;
   padding: 0.55rem 0.7rem;
   font: inherit;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--surface);
 }
 
 .training-history-session-bodyweight-form button {
@@ -206,7 +206,7 @@
   border: 0;
   border-radius: 999px;
   padding: 0 0.9rem;
-  color: #ffffff;
+  color: var(--on-accent);
   background: var(--training-history-accent);
   font-size: 0.8125rem;
   font-weight: 800;
@@ -370,8 +370,8 @@
 }
 
 .training-history-targets__outcome--missed {
-  color: #7a4d0f;
-  background: rgba(181, 121, 29, 0.14);
+  color: var(--under-fg);
+  background: var(--under-bg);
 }
 
 @media (max-width: 560px) {

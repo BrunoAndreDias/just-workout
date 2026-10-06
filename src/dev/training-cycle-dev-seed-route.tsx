@@ -35,8 +35,8 @@ export function TrainingCycleDevSeedRoute() {
       />
 
       <PageMain>
-        <div className="grid max-w-3xl gap-4 rounded-md border border-stone-900/10 bg-white/85 p-5 shadow-sm">
-          <p className="text-sm font-semibold text-stone-700">
+        <div className="grid max-w-3xl gap-4 rounded-md border border-border bg-surface p-5 shadow-sm">
+          <p className="text-sm font-semibold text-ink-2">
             This upserts three demo plans, makes the week-6 plan active, and adds completed sessions
             for load suggestions.
           </p>
@@ -61,7 +61,7 @@ export function TrainingCycleDevSeedRoute() {
           </Button>
 
           {seedState.kind === "error" ? (
-            <p className="text-sm font-bold text-red-700">{seedState.error}</p>
+            <p className="text-sm font-bold text-danger">{seedState.error}</p>
           ) : null}
 
           {seedState.kind === "seeded" ? <SeededPlanLinks result={seedState.result} /> : null}
@@ -73,8 +73,8 @@ export function TrainingCycleDevSeedRoute() {
 
 function SeededPlanLinks({ result }: { result: TrainingCycleDevSeedResult }) {
   return (
-    <div className="grid gap-3 text-sm font-semibold text-stone-700">
-      <p className="font-black text-stone-950">Seeded plans are ready:</p>
+    <div className="grid gap-3 text-sm font-semibold text-ink-2">
+      <p className="font-black text-ink">Seeded plans are ready:</p>
       <Link
         className="underline"
         params={{ planId: result.readyWeekSixPlanId }}

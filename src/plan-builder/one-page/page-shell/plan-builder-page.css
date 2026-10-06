@@ -10,30 +10,30 @@
 
 /* Shared Plan Builder color polish: one restrained palette across every step. */
 .plan-builder-page {
-  --jw-step-ink: #120f0d;
-  --jw-step-copy: #244256;
-  --jw-step-muted: #536873;
-  --jw-step-border: rgba(28, 25, 23, 0.12);
-  --jw-step-surface: #fffdfa;
-  --jw-step-surface-soft: rgba(255, 253, 250, 0.72);
-  --jw-step-selected-bg: #f2fbfa;
-  --jw-step-selected-border: #007780;
-  --jw-step-selected-ink: #075d63;
-  --jw-step-selected-strong: #00636a;
-  --jw-step-rest: #6b655f;
-  --jw-step-warning-bg: #fff8f1;
-  --jw-step-warning-border: rgba(186, 86, 31, 0.22);
-  --jw-step-warning-ink: #8a4a18;
+  --jw-step-ink: var(--ink);
+  --jw-step-copy: var(--ink-2);
+  --jw-step-muted: var(--muted);
+  --jw-step-border: var(--border);
+  --jw-step-surface: var(--surface);
+  --jw-step-surface-soft: var(--surface);
+  --jw-step-selected-bg: var(--accent-tint);
+  --jw-step-selected-border: var(--accent);
+  --jw-step-selected-ink: var(--accent-dark);
+  --jw-step-selected-strong: var(--accent);
+  --jw-step-rest: var(--muted);
+  --jw-step-warning-bg: var(--under-bg);
+  --jw-step-warning-border: color-mix(in srgb, var(--under) 22%, transparent);
+  --jw-step-warning-ink: var(--under-fg);
   --jw-option-card-gap: 0.7rem;
   --jw-option-card-min-height: 8.15rem;
-  --jw-option-card-border: rgba(28, 25, 23, 0.12);
-  --jw-option-card-hover-border: rgba(0, 119, 128, 0.34);
-  --jw-option-card-bg: rgba(255, 253, 250, 0.5);
-  --jw-option-card-hover-bg: rgba(255, 253, 250, 0.78);
-  --jw-option-card-selected-bg: rgba(242, 251, 250, 0.82);
+  --jw-option-card-border: var(--border);
+  --jw-option-card-hover-border: color-mix(in srgb, var(--accent) 34%, transparent);
+  --jw-option-card-bg: var(--surface);
+  --jw-option-card-hover-bg: var(--surface);
+  --jw-option-card-selected-bg: var(--accent-tint);
   --jw-option-card-radius: 0.5rem;
   --jw-option-card-padding: 0.86rem 0.9rem 0.78rem;
-  --jw-option-card-focus: rgba(0, 99, 106, 0.86);
+  --jw-option-card-focus: var(--accent);
   --jw-option-card-title-size: 1rem;
   --jw-option-card-title-line-height: 1.2rem;
   --jw-option-card-title-weight: 750;
@@ -41,7 +41,7 @@
   --jw-option-card-copy-line-height: 1.45rem;
   --jw-option-card-copy-weight: 500;
   --jw-option-card-copy-margin-top: 0.42rem;
-  --jw-option-card-detail-border: rgba(0, 119, 128, 0.16);
+  --jw-option-card-detail-border: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* Builder density: text sizes follow the fluid type scale in styles.css. */

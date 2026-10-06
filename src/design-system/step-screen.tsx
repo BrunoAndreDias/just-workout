@@ -18,7 +18,7 @@ export function StepPanel({ as = "section", className, ...props }: StepPanelProp
   return (
     <Component
       className={cn(
-        "step-panel border-y border-stone-900/10 bg-transparent py-[var(--jw-card-padding)]",
+        "step-panel border-y border-border bg-transparent py-[var(--jw-card-padding)]",
         className,
       )}
       {...props}
@@ -51,20 +51,20 @@ export function StepNotice({
   return (
     <div
       className={cn(
-        "step-notice flex gap-3 border-y border-[#f0cfad] bg-transparent px-0 py-[var(--jw-card-padding-compact)] text-[#8a4a18]",
+        "step-notice flex gap-3 border-y border-under/45 bg-transparent px-0 py-[var(--jw-card-padding-compact)] text-under-fg",
         hasVisibleTitle ? "items-start" : "items-center",
         className,
       )}
       {...props}
     >
       {icon ? (
-        <span className="step-notice__icon flex h-[var(--jw-icon-circle-sm)] w-[var(--jw-icon-circle-sm)] shrink-0 items-center justify-center text-[#db7a1d]">
+        <span className="step-notice__icon flex h-[var(--jw-icon-circle-sm)] w-[var(--jw-icon-circle-sm)] shrink-0 items-center justify-center text-under">
           {icon}
         </span>
       ) : null}
       <div className="min-w-0">
         {hasVisibleTitle ? (
-          <h4 className="step-notice__title text-[var(--jw-meta-size)] font-bold uppercase leading-[var(--jw-meta-line-height)] tracking-[0.04em] text-[#9a612c]">
+          <h4 className="step-notice__title text-[var(--jw-meta-size)] font-bold uppercase leading-[var(--jw-meta-line-height)] tracking-[0.04em] text-under-fg">
             {title}
           </h4>
         ) : (

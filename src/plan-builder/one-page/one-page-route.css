@@ -59,7 +59,7 @@
 }
 
 .plan-builder-one-page__loading {
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-type-body);
   font-weight: 650;
   line-height: 1.5;
@@ -212,7 +212,7 @@
   border-radius: 999px;
   background: transparent;
   padding: 0 0.7rem;
-  color: #3d545d;
+  color: var(--ink-2);
   font-size: var(--jw-type-label);
   font-weight: 650;
   white-space: nowrap;
@@ -224,20 +224,20 @@
 
 .pb-topbar-steps__overview {
   margin-right: 0.25rem;
-  color: #075d63;
+  color: var(--accent-dark);
   font-weight: 750;
   padding-left: 0.55rem;
 }
 
 .pb-topbar-steps__overview:hover,
 .pb-topbar-steps__step:hover {
-  background: rgba(28, 25, 23, 0.05);
-  color: #120f0d;
+  background: var(--rule);
+  color: var(--ink);
 }
 
 .pb-topbar-steps__step[aria-current="step"] {
-  background: rgba(0, 119, 128, 0.1);
-  color: #064f55;
+  background: var(--accent-tint);
+  color: var(--accent-dark);
   font-weight: 800;
   cursor: default;
 }
@@ -249,7 +249,7 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid rgba(49, 80, 93, 0.35);
+  border: 1.5px solid var(--faint);
   border-radius: 999px;
   font-size: 0.6875rem;
   font-weight: 800;
@@ -258,20 +258,20 @@
 }
 
 .pb-topbar-steps__step[data-complete] .pb-topbar-steps__marker {
-  border-color: #08744c;
-  background: #08744c;
-  color: #ffffff;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .pb-topbar-steps__step[aria-current="step"] .pb-topbar-steps__marker {
-  border-color: #007780;
-  background: #007780;
-  color: #ffffff;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .pb-topbar-steps__overview:focus-visible,
 .pb-topbar-steps__step:focus-visible {
-  outline: 2px solid #007780;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

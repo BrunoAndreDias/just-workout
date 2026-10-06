@@ -1,6 +1,6 @@
 .pb-loading {
   margin: 0;
-  color: #4f656e;
+  color: var(--muted);
   font-size: var(--jw-type-body);
   font-weight: 600;
 }
@@ -16,9 +16,9 @@
   min-width: 0;
   align-content: start;
   gap: 0.5rem;
-  border: 1px solid rgba(28, 25, 23, 0.1);
+  border: 1px solid var(--border);
   border-radius: 0.875rem;
-  background: #ffffff;
+  background: var(--surface);
   padding: 0.875rem 1rem 0.5rem;
 }
 
@@ -26,13 +26,13 @@
   display: grid;
   gap: 0.15rem;
   margin: 0;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-type-label);
   font-weight: 800;
 }
 
 .pb-targets__group-title span {
-  color: #4f656e;
+  color: var(--muted);
   font-size: var(--jw-type-meta);
   font-weight: 550;
   line-height: 1.35;
@@ -53,7 +53,7 @@
     "muscle sets";
   column-gap: 0.75rem;
   align-items: center;
-  border-top: 1px solid rgba(28, 25, 23, 0.07);
+  border-top: 1px solid var(--rule);
   padding: 0.5rem 0;
 }
 
@@ -63,14 +63,14 @@
 
 .pb-targets__muscle {
   grid-area: muscle;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-type-body);
   font-weight: 700;
 }
 
 .pb-targets__reps {
   grid-area: reps;
-  color: #120f0d;
+  color: var(--ink);
   font-size: var(--jw-type-label);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -79,7 +79,7 @@
 
 .pb-targets__sets {
   grid-area: sets;
-  color: #4f656e;
+  color: var(--muted);
   font-size: var(--jw-type-meta);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -94,7 +94,7 @@
 }
 
 .pb-targets__row--optional:not(.pb-targets__row--included) .pb-targets__reps {
-  color: #6a7d85;
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -104,10 +104,10 @@
   min-height: 2rem;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid rgba(0, 119, 128, 0.35);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 999px;
-  background: #ffffff;
-  color: #075d63;
+  background: var(--surface);
+  color: var(--accent-dark);
   padding: 0 0.7rem 0 0.55rem;
   font-size: var(--jw-type-meta);
   font-weight: 750;
@@ -116,16 +116,16 @@
 }
 
 .pb-targets__toggle:hover {
-  background: rgba(0, 119, 128, 0.06);
+  background: var(--accent-tint);
 }
 
 .pb-targets__toggle[data-included] {
-  border-color: rgba(28, 25, 23, 0.14);
-  color: #4f656e;
+  border-color: var(--input-border);
+  color: var(--muted);
 }
 
 .pb-targets__toggle:focus-visible {
-  outline: 2px solid #007780;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

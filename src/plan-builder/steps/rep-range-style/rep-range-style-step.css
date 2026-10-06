@@ -10,7 +10,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
-  color: #31505d;
+  color: var(--ink-2);
   font-size: var(--jw-type-body);
   font-weight: 550;
   line-height: 1.45;
@@ -19,5 +19,5 @@
 .pb-effects svg {
   flex: 0 0 auto;
   margin-top: 0.1rem;
-  color: #08744c;
+  color: var(--accent);
 }

@@ -29,7 +29,7 @@
   bottom: -2.5rem;
   left: 50%;
   width: 1px;
-  background: rgba(0, 119, 128, 0.28);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   content: "";
   transform: translateX(-50%);
 }
@@ -54,14 +54,14 @@
 }
 
 .workout-blueprint__marker--main {
-  color: #ffffff;
-  background: #007780;
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 .workout-blueprint__marker--optional {
-  border: 1px solid rgba(0, 119, 128, 0.24);
-  color: #007780;
-  background: #fffdf9;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--accent);
+  background: var(--surface);
 }
 
 .workout-section {
@@ -86,7 +86,7 @@
   gap: 0.3125rem;
   align-items: baseline;
   margin: 0;
-  color: #11181b;
+  color: var(--ink);
   font-family: var(--jw-font-heading);
   font-size: 1rem;
   font-weight: var(--jw-heading-weight);
@@ -95,7 +95,7 @@
 }
 
 .workout-section__title-suffix {
-  color: #506068;
+  color: var(--muted);
   font-family: var(--jw-font-body);
   font-size: 0.75rem;
   font-weight: 500;
@@ -119,13 +119,13 @@
   gap: 1.5rem;
   align-items: center;
   min-width: 0;
-  border-top: 1px solid rgba(28, 25, 23, 0.08);
+  border-top: 1px solid var(--rule);
   background: transparent;
   padding: 1rem 0;
 }
 
 .exercise-plan-row + .exercise-plan-row {
-  border-top-color: rgba(28, 25, 23, 0.08);
+  border-top-color: var(--rule);
 }
 
 .exercise-plan-row__identity {
@@ -139,7 +139,7 @@
 .exercise-plan-row__name {
   margin: 0;
   overflow-wrap: anywhere;
-  color: #11181b;
+  color: var(--ink);
   font-family: var(--jw-font-body);
   font-size: 1rem;
   font-weight: 800;
@@ -150,14 +150,14 @@
 .exercise-plan-row__movement,
 .exercise-plan-row__muscles {
   margin: 0;
-  color: #43535b;
+  color: var(--ink-2);
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.375rem;
 }
 
 .exercise-plan-row__muscles {
-  color: #3f474b;
+  color: var(--ink-2);
 }
 
 .exercise-plan-row__prescription {
@@ -166,7 +166,7 @@
   justify-content: flex-end;
   gap: 1.75rem;
   min-width: 0;
-  color: #293236;
+  color: var(--ink-2);
   font-size: 0.9375rem;
   font-weight: 650;
   line-height: 1;
@@ -179,14 +179,14 @@
   min-width: 6rem;
   min-height: 2rem;
   border-radius: 999px;
-  background: rgba(28, 25, 23, 0.055);
+  background: var(--rule);
   padding: 0 0.875rem;
   white-space: nowrap;
 }
 
 .exercise-plan-row__prescription .exercise-plan-row__role-badge {
-  color: #3f474b;
-  background: rgba(28, 25, 23, 0.055);
+  color: var(--ink-2);
+  background: var(--rule);
   font-weight: 600;
 }
 
@@ -252,8 +252,8 @@
     height: 2.75rem;
     border: 0;
     border-radius: 999px;
-    color: #075d63;
-    background: rgba(0, 119, 128, 0.08);
+    color: var(--accent-dark);
+    background: var(--accent-tint);
   }
 
   .workout-section__toggle-icon {
@@ -267,7 +267,7 @@
   }
 
   .workout-section__toggle:focus-visible {
-    outline: 2px solid rgba(0, 119, 128, 0.58);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 

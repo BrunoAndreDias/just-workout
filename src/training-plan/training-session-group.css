@@ -2,7 +2,7 @@
 
 .training-session-group {
   min-width: 0;
-  border-bottom: 1px solid rgba(20, 33, 38, 0.15);
+  border-bottom: 1px solid var(--border);
   padding: 1.125rem 0 1rem;
 }
 
@@ -19,7 +19,7 @@
 
 .training-session-group__header h2 {
   margin: 0;
-  color: #0d1417;
+  color: var(--ink);
   font-family: var(--jw-font-heading);
   font-size: 1.0625rem;
   font-weight: var(--jw-heading-weight);
@@ -33,7 +33,7 @@
   gap: 0.375rem;
   align-items: center;
   margin: 0.25rem 0 0;
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -42,12 +42,12 @@
 .training-session-group__header p span + span::before,
 .training-session-group__sets-completed::before {
   margin-right: 0.375rem;
-  color: #96a0a5;
+  color: var(--faint);
   content: "·";
 }
 
 .training-session-group__sets-completed {
-  color: #007780;
+  color: var(--accent);
   font-weight: 850;
 }
 
@@ -58,8 +58,8 @@
   min-height: 1.375rem;
   border-radius: 999px;
   padding: 0 0.5rem;
-  color: #075d63;
-  background: rgba(0, 119, 128, 0.08);
+  color: var(--accent-dark);
+  background: var(--accent-tint);
   font-size: 0.75rem;
   font-weight: 850;
   line-height: 1rem;
@@ -74,7 +74,7 @@
 .training-session-group__chevron {
   width: 1.125rem;
   height: 1.125rem;
-  color: #1f2d32;
+  color: var(--ink-2);
   stroke-width: 2;
 }
 
@@ -87,16 +87,16 @@
   border: 0;
   border-radius: 0.375rem;
   padding: 0;
-  color: #1f2d32;
+  color: var(--ink-2);
   background: transparent;
 }
 
 .training-session-group__toggle:hover {
-  background: rgba(20, 33, 38, 0.06);
+  background: var(--track);
 }
 
 .training-session-group__toggle:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.42);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -106,7 +106,7 @@
   gap: 0.375rem 0.625rem;
   align-items: center;
   margin: 0.875rem 0 0.625rem;
-  color: #405057;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -118,14 +118,14 @@
   min-height: 1.25rem;
   border-radius: 0.25rem;
   padding: 0 0.4375rem;
-  color: #ffffff;
-  background: #007780;
+  color: var(--on-accent);
+  background: var(--accent);
   font-size: 0.75rem;
   font-weight: 850;
 }
 
 .training-session-now__exercise {
-  color: #0d1417;
+  color: var(--ink);
   font-size: 0.875rem;
   font-weight: 850;
 }
@@ -135,7 +135,7 @@
 }
 
 .training-session-now small {
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -143,7 +143,7 @@
 .training-session-prescription {
   display: inline-block;
   margin-left: 0.375rem;
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -158,15 +158,15 @@
   min-width: 48rem;
   border-collapse: collapse;
   table-layout: auto;
-  color: #152126;
+  color: var(--ink);
   font-size: 0.8125rem;
   line-height: 1.125rem;
 }
 
 .training-session-table th {
-  border-bottom: 1px solid rgba(20, 33, 38, 0.16);
+  border-bottom: 1px solid var(--border);
   padding: 0.5rem 0.5rem 0.5625rem;
-  color: #4d5a60;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 850;
   text-align: left;
@@ -183,7 +183,7 @@
 
 .training-session-exercise-row th,
 .training-session-set-cell {
-  border-bottom: 1px solid rgba(20, 33, 38, 0.08);
+  border-bottom: 1px solid var(--rule);
   padding: 0.625rem 0.5rem;
   vertical-align: middle;
   transition:
@@ -194,7 +194,7 @@
 
 .training-session-exercise-row th {
   width: 18rem;
-  color: #0d1417;
+  color: var(--ink);
   font-weight: 725;
   text-align: left;
 }
@@ -207,7 +207,7 @@
 
 .training-session-exercise-row__name {
   overflow: hidden;
-  color: #0d1417;
+  color: var(--ink);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -215,14 +215,14 @@
 
 .training-session-exercise-row__meta {
   margin-top: 0.1875rem;
-  color: #5d6970;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 650;
 }
 
 .training-session-exercise-row__meta .training-session-prescription {
   margin-left: 0.375rem;
-  color: #6f7a80;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -232,13 +232,13 @@
 }
 
 .training-session-set-cell--future {
-  color: #68757b;
+  color: var(--muted);
 }
 
 .training-session-set-cell--done {
-  border-bottom-color: rgba(0, 119, 128, 0.16);
-  color: #152126;
-  background: rgba(0, 119, 128, 0.045);
+  border-bottom-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
+  background: var(--accent-tint);
 }
 
 .training-session-set-cell__inner {
@@ -258,7 +258,7 @@
 
 .training-session-set-cell__previous {
   overflow: hidden;
-  color: #68757b;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 650;
   text-align: left;
@@ -267,12 +267,12 @@
 }
 
 .training-session-set-cell__previous strong {
-  color: #46555c;
+  color: var(--ink-2);
   font-weight: 800;
 }
 
 .training-session-set-cell--empty {
-  color: #8a969b;
+  color: var(--faint);
   font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
@@ -288,10 +288,10 @@
 .training-session-reps-input {
   width: 100%;
   min-height: 2.25rem;
-  border: 1px solid rgba(20, 33, 38, 0.12);
+  border: 1px solid var(--border);
   border-radius: 0.25rem;
-  color: #152126;
-  background: #ffffff;
+  color: var(--ink);
+  background: var(--surface);
   font-size: 0.8125rem;
   font-weight: 650;
   text-align: center;
@@ -305,7 +305,7 @@
   position: absolute;
   top: 50%;
   right: 0.375rem;
-  color: #6f7a80;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 725;
   pointer-events: none;
@@ -314,13 +314,13 @@
 
 .training-session-reps-input {
   max-width: none;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .training-session-weight-input input:focus-visible,
 .training-session-reps-input:focus-visible {
-  border-color: rgba(0, 119, 128, 0.62);
-  outline: 2px solid rgba(0, 119, 128, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -351,10 +351,10 @@
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
-  border: 1px solid rgba(20, 33, 38, 0.18);
+  border: 1px solid var(--input-border);
   border-radius: 0.375rem;
-  color: #3f4c52;
-  background: #ffffff;
+  color: var(--ink-2);
+  background: var(--surface);
   transition:
     border-color 160ms ease,
     background-color 160ms ease,
@@ -373,8 +373,8 @@
 }
 
 .training-session-done:hover .training-session-done__control {
-  border-color: rgba(0, 119, 128, 0.38);
-  background: rgba(0, 119, 128, 0.045);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  background: var(--accent-tint);
 }
 
 .training-session-done:active .training-session-done__control {
@@ -382,14 +382,14 @@
 }
 
 .training-session-done input:focus-visible + .training-session-done__control {
-  border-color: rgba(0, 119, 128, 0.62);
-  outline: 2px solid rgba(0, 119, 128, 0.24);
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .training-session-done input:checked + .training-session-done__control {
-  border-color: #007780;
-  background: #007780;
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .training-session-done
@@ -398,8 +398,8 @@
   .training-session-done__mark::before {
   width: 0.4375rem;
   height: 0.75rem;
-  border-right: 2px solid #ffffff;
-  border-bottom: 2px solid #ffffff;
+  border-right: 2px solid var(--surface);
+  border-bottom: 2px solid var(--surface);
   content: "";
   transform: translateY(-0.0625rem) rotate(45deg);
 }
@@ -416,7 +416,7 @@
 
 .training-session-effort__label {
   padding-right: 0.125rem;
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.6875rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -445,10 +445,10 @@
   align-items: center;
   justify-content: center;
   min-height: 1.875rem;
-  border: 1px solid rgba(20, 33, 38, 0.18);
+  border: 1px solid var(--input-border);
   border-radius: 0.375rem;
-  color: #26353b;
-  background: #ffffff;
+  color: var(--ink-2);
+  background: var(--surface);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 750;
@@ -459,26 +459,26 @@
 }
 
 .training-session-effort__chip--target span {
-  border: 2px dashed #007780;
-  color: #075d63;
+  border: 2px dashed var(--accent);
+  color: var(--accent-dark);
 }
 
 /* Hover only on real pointers so a tapped chip does not stay tinted on touch screens. */
 @media (hover: hover) {
   .training-session-effort__chip:hover span {
-    border-color: #007780;
-    background: rgba(0, 119, 128, 0.06);
+    border-color: var(--accent);
+    background: var(--accent-tint);
   }
 }
 
 .training-session-effort__chip input:checked + span {
-  border: 2px solid #007780;
-  color: #ffffff;
-  background: #007780;
+  border: 2px solid var(--accent);
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 .training-session-effort__chip input:focus-visible + span {
-  outline: 2px solid #007780;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -516,7 +516,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
     gap: 0.5rem;
-    border-bottom: 1px solid rgba(20, 33, 38, 0.08);
+    border-bottom: 1px solid var(--rule);
     padding: 0.75rem 0;
   }
 
@@ -530,24 +530,24 @@
   .training-session-set-cell {
     display: block;
     min-width: 0;
-    border: 1px solid rgba(20, 33, 38, 0.1);
+    border: 1px solid var(--border);
     border-radius: 0.375rem;
     padding: 0.5rem;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   .training-session-set-cell::before {
     display: block;
     margin-bottom: 0.375rem;
-    color: #5d6970;
+    color: var(--muted);
     content: attr(data-set-label);
     font-size: 0.75rem;
     font-weight: 850;
   }
 
   .training-session-set-cell--done {
-    border-color: rgba(0, 119, 128, 0.18);
-    background: rgba(0, 119, 128, 0.045);
+    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+    background: var(--accent-tint);
   }
 
   .training-session-set-cell__controls {

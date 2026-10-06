@@ -4,29 +4,29 @@
 }
 
 .training-history-page {
-  --training-history-ink: #11181b;
-  --training-history-ink-soft: #293236;
-  --training-history-muted: #58656a;
-  --training-history-muted-soft: #4f5b60;
-  --training-history-disabled: rgba(88, 101, 106, 0.7);
-  --training-history-surface: #fffdfa;
-  --training-history-border: rgba(28, 25, 23, 0.1);
-  --training-history-border-soft: rgba(28, 25, 23, 0.08);
-  --training-history-border-medium: rgba(28, 25, 23, 0.12);
-  --training-history-border-strong: rgba(28, 25, 23, 0.14);
-  --training-history-border-heavy: rgba(28, 25, 23, 0.16);
-  --training-history-track: rgba(28, 25, 23, 0.08);
-  --training-history-accent: #007780;
-  --training-history-accent-ink: #075d63;
-  --training-history-accent-ink-strong: #004f55;
-  --training-history-accent-tint: rgba(0, 119, 128, 0.08);
-  --training-history-accent-tint-soft: rgba(0, 119, 128, 0.04);
-  --training-history-accent-border-strong: rgba(0, 119, 128, 0.45);
-  --training-history-focus-ring: rgba(0, 119, 128, 0.58);
-  --training-history-positive: #0a6c73;
-  --training-history-regression: #b5791d;
-  --training-history-regression-ink: #9a6417;
-  --training-history-neutral: #8f9aa0;
+  --training-history-ink: var(--ink);
+  --training-history-ink-soft: var(--ink-2);
+  --training-history-muted: var(--muted);
+  --training-history-muted-soft: var(--muted);
+  --training-history-disabled: color-mix(in srgb, var(--muted) 70%, transparent);
+  --training-history-surface: var(--surface);
+  --training-history-border: var(--border);
+  --training-history-border-soft: var(--border);
+  --training-history-border-medium: var(--border);
+  --training-history-border-strong: var(--input-border);
+  --training-history-border-heavy: var(--input-border);
+  --training-history-track: var(--track);
+  --training-history-accent: var(--accent);
+  --training-history-accent-ink: var(--accent-dark);
+  --training-history-accent-ink-strong: var(--accent-dark);
+  --training-history-accent-tint: color-mix(in srgb, var(--accent) 8%, transparent);
+  --training-history-accent-tint-soft: color-mix(in srgb, var(--accent) 4%, transparent);
+  --training-history-accent-border-strong: color-mix(in srgb, var(--accent) 45%, transparent);
+  --training-history-focus-ring: var(--accent);
+  --training-history-positive: var(--accent);
+  --training-history-regression: var(--under);
+  --training-history-regression-ink: var(--under-fg);
+  --training-history-neutral: var(--faint);
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x) 3rem;
 }
 

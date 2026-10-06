@@ -1,17 +1,17 @@
 .app-shell {
-  --app-shell-gutter: #f3eee5;
-  --app-shell-gutter-edge: #e6ddcf;
+  --app-shell-gutter: var(--bg);
+  --app-shell-gutter-edge: var(--border);
   --app-shell-frame-max-width: 1200px;
   --app-shell-frame-padding-x: clamp(0rem, 1.75vw, 1rem);
   --app-shell-frame-padding-y: clamp(0rem, 1.7vw, 1rem);
-  --app-shell-surface: #fffdf9;
-  --app-shell-surface-strong: #ffffff;
-  --app-shell-border: rgba(28, 25, 23, 0.12);
-  --app-shell-accent: #007780;
+  --app-shell-surface: var(--surface);
+  --app-shell-surface-strong: var(--surface);
+  --app-shell-border: var(--border);
+  --app-shell-accent: var(--accent);
   /* One height drives the bar, sticky offsets and full-height calculations. */
   --app-shell-topbar-height: 3.5rem;
   background:
-    radial-gradient(circle at top left, rgba(0, 119, 128, 0.055), transparent 30rem),
+    radial-gradient(circle at top left, var(--accent-tint), transparent 30rem),
     linear-gradient(
       90deg,
       var(--app-shell-gutter-edge),
@@ -33,14 +33,12 @@
   min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)));
   overflow: clip;
   border-radius: 0.875rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 253, 249, 0.98)),
-    var(--app-shell-surface);
+  background: linear-gradient(180deg, var(--surface), var(--surface)), var(--app-shell-surface);
 }
 
 .app-shell-topbar {
   min-height: var(--app-shell-topbar-height);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface);
 }
 
 .app-shell-brand {
@@ -70,7 +68,7 @@
 
 .app-shell-navigation-pill {
   gap: 0.5rem;
-  color: #1d1a16;
+  color: var(--ink);
   min-height: 2.25rem;
 }
 

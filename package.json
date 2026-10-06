@@ -9,7 +9,7 @@
     "build": "pnpm typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "check": "biome check .",
+    "check": "biome check . && node scripts/plano-colors.mjs --check",
     "check:write": "biome check --write .",
     "colors": "node scripts/plano-colors.mjs",
     "colors:check": "node scripts/plano-colors.mjs --check",

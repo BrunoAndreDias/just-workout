@@ -5,7 +5,7 @@
 
 .training-plan-compare-card {
   min-width: 0;
-  border-top: 1px solid rgba(28, 25, 23, 0.11);
+  border-top: 1px solid var(--border);
   background: transparent;
   padding: 1.25rem 0 0;
 }
@@ -24,7 +24,7 @@
 
 .training-plan-compare-card__title {
   margin: 0;
-  color: #11181b;
+  color: var(--ink);
   font-family: var(--jw-font-heading);
   font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
@@ -38,7 +38,7 @@
 .training-plan-compare-card__helper {
   max-width: 46rem;
   margin: 0.375rem 0 0;
-  color: #3f474b;
+  color: var(--ink-2);
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.5rem;
@@ -51,8 +51,8 @@
   min-height: 1.5rem;
   border-radius: 999px;
   padding: 0 0.5rem;
-  color: #075d63;
-  background: rgba(0, 119, 128, 0.08);
+  color: var(--accent-dark);
+  background: var(--accent-tint);
   font-size: 0.75rem;
   font-weight: 800;
   line-height: 1;
@@ -70,27 +70,27 @@
   width: 100%;
   min-width: 34rem;
   border-collapse: collapse;
-  color: #293236;
+  color: var(--ink-2);
   font-size: 0.8125rem;
   line-height: 1.125rem;
 }
 
 .compare-table th,
 .compare-table td {
-  border-bottom: 1px solid rgba(28, 25, 23, 0.09);
+  border-bottom: 1px solid var(--rule);
   padding: 0.7rem 0.5rem;
   text-align: left;
   vertical-align: middle;
 }
 
 .compare-table thead th {
-  color: #11181b;
+  color: var(--ink);
   font-weight: 800;
   white-space: nowrap;
 }
 
 .compare-table tbody th {
-  color: #3f474b;
+  color: var(--ink-2);
   font-weight: 650;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .compare-table td:not(:first-child) {
-  color: #293236;
+  color: var(--ink-2);
   font-weight: 650;
 }
 
@@ -125,21 +125,21 @@
 }
 
 .compare-coverage--yes {
-  color: #075d63;
-  background: rgba(0, 119, 128, 0.08);
+  color: var(--accent-dark);
+  background: var(--accent-tint);
 }
 
 .compare-coverage--yes::before {
-  background: #007780;
+  background: var(--accent);
 }
 
 .compare-coverage--no {
-  color: #697176;
-  background: rgba(28, 25, 23, 0.07);
+  color: var(--muted);
+  background: var(--track);
 }
 
 .compare-coverage--no::before {
-  border: 1px solid rgba(28, 25, 23, 0.24);
+  border: 1px solid var(--input-border);
   background: transparent;
 }
 
@@ -164,7 +164,7 @@
 }
 
 .compare-snapshot-column + .compare-snapshot-column {
-  border-left: 1px solid rgba(28, 25, 23, 0.12);
+  border-left: 1px solid var(--border);
 }
 
 .compare-snapshot-column:last-child {
@@ -173,7 +173,7 @@
 
 .compare-snapshot-column h3 {
   margin: 0;
-  color: #11181b;
+  color: var(--ink);
   font-size: 1.125rem;
   font-weight: 850;
   line-height: 1.375rem;
@@ -202,7 +202,7 @@
 .compare-snapshot-fact dt,
 .compare-snapshot-group p {
   margin: 0;
-  color: #596267;
+  color: var(--muted);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1rem;
@@ -210,7 +210,7 @@
 
 .compare-snapshot-fact dd {
   margin: 0;
-  color: #293236;
+  color: var(--ink-2);
   font-size: 0.9375rem;
   font-weight: 650;
   line-height: 1.375rem;
@@ -226,7 +226,7 @@
 }
 
 .compare-snapshot-list li {
-  color: #293236;
+  color: var(--ink-2);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
@@ -245,8 +245,8 @@
   min-height: 1.375rem;
   border-radius: 999px;
   padding: 0 0.4375rem;
-  color: #075d63;
-  background: rgba(0, 119, 128, 0.08);
+  color: var(--accent-dark);
+  background: var(--accent-tint);
   font-size: 0.75rem;
   font-weight: 750;
   line-height: 1;
@@ -254,9 +254,9 @@
 
 .compare-balance-callout {
   margin: 1.25rem 0 0;
-  border-top: 1px solid rgba(28, 25, 23, 0.11);
+  border-top: 1px solid var(--border);
   padding-top: 0.875rem;
-  color: #3f474b;
+  color: var(--ink-2);
   font-size: 0.875rem;
   font-weight: 550;
   line-height: 1.5rem;

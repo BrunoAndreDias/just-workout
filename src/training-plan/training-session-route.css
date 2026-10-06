@@ -2,8 +2,8 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x) 2rem;
-  color: #142126;
-  background: #ffffff;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .training-session-complete {
@@ -12,11 +12,11 @@
   gap: 0.75rem;
   max-width: 48rem;
   margin-top: 0;
-  border: 1px solid rgba(0, 119, 128, 0.22);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 0.5rem;
   padding: 1rem;
-  color: #075d63;
-  background: rgba(0, 119, 128, 0.07);
+  color: var(--accent-dark);
+  background: var(--accent-tint);
 }
 
 .training-session-complete svg {
@@ -32,7 +32,7 @@
 }
 
 .training-session-complete h2 {
-  color: #063f44;
+  color: var(--ink);
   font-size: 1rem;
   font-weight: 850;
 }
@@ -54,10 +54,10 @@
   gap: 0.875rem;
   max-width: 42rem;
   margin-top: 1rem;
-  border: 1px solid rgba(0, 119, 128, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-radius: 0.75rem;
   padding: 1rem;
-  background: rgba(0, 119, 128, 0.05);
+  background: var(--accent-tint);
 }
 
 .training-session-bodyweight h2,
@@ -66,14 +66,14 @@
 }
 
 .training-session-bodyweight h2 {
-  color: #063f44;
+  color: var(--ink);
   font-size: 1rem;
   font-weight: 850;
 }
 
 .training-session-bodyweight p,
 .training-session-bodyweight small {
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 650;
   line-height: 1.4;
@@ -82,7 +82,7 @@
 .training-session-bodyweight__field {
   display: grid;
   gap: 0.5rem;
-  color: #142126;
+  color: var(--ink);
   font-size: 0.875rem;
   font-weight: 750;
 }
@@ -95,15 +95,15 @@
 
 .training-session-bodyweight__input input {
   width: min(100%, 8rem);
-  border: 1px solid rgba(28, 25, 23, 0.16);
+  border: 1px solid var(--input-border);
   border-radius: 0.5rem;
   padding: 0.625rem 0.75rem;
   font: inherit;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--surface);
 }
 
 .training-session-bodyweight__error {
-  color: #9f1239;
+  color: var(--danger);
   font-size: 0.8125rem;
   font-weight: 800;
 }
@@ -117,7 +117,7 @@
 }
 
 .training-session-footer > span {
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 750;
 }
@@ -127,7 +127,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 700;
 }
@@ -139,7 +139,7 @@
 }
 
 .training-session-volume-inline__value {
-  color: #075d63;
+  color: var(--accent-dark);
   font-weight: 850;
 }
 
@@ -152,14 +152,14 @@
   border: 0;
   border-radius: 0.5rem;
   padding: 0 0.875rem;
-  color: #ffffff;
-  background: #006f77;
+  color: var(--on-accent);
+  background: var(--accent);
   font-size: 0.8125rem;
   font-weight: 800;
 }
 
 .training-session-complete-button:hover:not(:disabled) {
-  background: #005f66;
+  background: var(--accent-dark);
 }
 
 .training-session-complete-button:disabled {
@@ -168,7 +168,7 @@
 }
 
 .training-session-complete-button:focus-visible {
-  outline: 2px solid rgba(0, 119, 128, 0.58);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -202,9 +202,9 @@
 .training-session-targets {
   max-width: 42rem;
   margin-top: 1rem;
-  border: 1px solid rgba(0, 119, 128, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-radius: 0.75rem;
-  background: rgba(0, 119, 128, 0.05);
+  background: var(--accent-tint);
 }
 
 .training-session-targets summary {
@@ -220,7 +220,7 @@
 }
 
 .training-session-targets summary span {
-  color: #007780;
+  color: var(--accent);
   font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -228,13 +228,13 @@
 }
 
 .training-session-targets summary strong {
-  color: #063f44;
+  color: var(--ink);
   font-size: 0.9375rem;
   font-weight: 850;
 }
 
 .training-session-targets summary small {
-  color: #4f5c62;
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 650;
   text-decoration: underline;
@@ -245,7 +245,7 @@
   display: grid;
   gap: 0.625rem;
   margin: 0;
-  border-top: 1px solid rgba(0, 119, 128, 0.14);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
   padding: 0.875rem 1rem 0;
   list-style: none;
 }
@@ -258,13 +258,13 @@
 }
 
 .training-session-targets li strong {
-  color: #142126;
+  color: var(--ink);
   font-weight: 800;
 }
 
 .training-session-targets li span,
 .training-session-targets__hint {
-  color: #4f5c62;
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -276,5 +276,5 @@
 }
 
 .training-session-set-cell__aim {
-  color: #007780;
+  color: var(--accent);
 }
