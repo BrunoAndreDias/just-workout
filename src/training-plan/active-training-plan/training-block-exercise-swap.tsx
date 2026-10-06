@@ -60,7 +60,7 @@ export function TrainingBlockExerciseSwap({
   return (
     <>
       <button
-        className="training-block-exercise-swap__trigger"
+        className="pill-btn training-block-exercise-swap__trigger"
         disabled={isPending}
         onClick={() => setIsOpen(true)}
         type="button"
@@ -125,7 +125,7 @@ export function TrainingBlockExerciseSwap({
 
             <div className="training-block-exercise-swap__actions">
               <button
-                className="training-block-exercise-swap__secondary"
+                className="secondary training-block-exercise-swap__secondary"
                 disabled={isApplying}
                 onClick={() => setIsOpen(false)}
                 type="button"
@@ -133,7 +133,7 @@ export function TrainingBlockExerciseSwap({
                 Cancel
               </button>
               <button
-                className="training-block-exercise-swap__primary"
+                className="primary training-block-exercise-swap__primary"
                 disabled={isApplying || !selectedChoice}
                 onClick={() => {
                   void handleApply();

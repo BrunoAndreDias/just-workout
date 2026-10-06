@@ -17,52 +17,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  min-height: 3.125rem;
-  border-radius: var(--radius-8);
-  padding: 0 1.125rem;
-  font-size: 0.875rem;
-  font-weight: 750;
-  line-height: 1;
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
 }
 
 .active-training-plan-hero__cta {
   flex: 1 1 15rem;
-  border: 0;
-  color: var(--on-accent);
-  background: var(--accent);
-}
-
-.active-training-plan-hero__cta:hover {
-  background: var(--accent-dark);
 }
 
 .active-training-plan-hero__settings {
   flex: 1 1 12rem;
-  border: 1px solid var(--input-border);
-  color: var(--ink);
-  background: var(--surface);
-}
-
-.active-training-plan-hero__settings:hover {
-  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
-  color: var(--accent-dark);
-  background: var(--surface);
-}
-
-.active-training-plan-hero__cta:active,
-.active-training-plan-hero__settings:active {
-  transform: translateY(1px);
-}
-
-.active-training-plan-hero__cta:focus-visible,
-.active-training-plan-hero__settings:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 
 .active-training-plan-hero__cta-icon,
@@ -201,24 +163,6 @@
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  min-height: 2.75rem;
-  border: 0;
-  border-radius: var(--radius-8);
-  padding: 0 1rem;
-  color: var(--on-accent);
-  background: var(--accent);
-  font-size: 0.875rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.workout-session-start__button:hover {
-  background: var(--accent-dark);
-}
-
-.workout-session-start__button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 
 .workout-session-start__button svg {
@@ -352,19 +296,6 @@
     justify-content: center;
     gap: 0.625rem;
     width: 100%;
-    min-height: 3.25rem;
-    border: 0;
-    border-radius: var(--radius-10);
-    color: var(--on-accent);
-    background: var(--accent);
-    font-size: 0.9375rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .active-training-plan-mobile-cta__button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
   }
 
   .active-training-plan-mobile-cta__icon {

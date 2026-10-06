@@ -41,10 +41,7 @@
   color: var(--muted);
 }
 
-.training-block-exercise-swap__close,
-.training-block-exercise-swap__secondary,
-.training-block-exercise-swap__primary,
-.training-block-exercise-swap__trigger {
+.training-block-exercise-swap__close {
   border-radius: var(--radius-pill);
   font: inherit;
   font-size: 0.82rem;
@@ -52,16 +49,13 @@
   cursor: pointer;
 }
 
-.training-block-exercise-swap__close,
-.training-block-exercise-swap__secondary,
-.training-block-exercise-swap__trigger {
+.training-block-exercise-swap__close {
   border: 1px solid var(--input-border);
   background: var(--surface);
   color: var(--ink-2);
 }
 
-.training-block-exercise-swap__close,
-.training-block-exercise-swap__trigger {
+.training-block-exercise-swap__close {
   padding: 0.45rem 0.8rem;
 }
 
@@ -115,17 +109,6 @@
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1rem;
-}
-
-.training-block-exercise-swap__secondary,
-.training-block-exercise-swap__primary {
-  padding: 0.6rem 1rem;
-}
-
-.training-block-exercise-swap__primary {
-  border: 1px solid transparent;
-  background: var(--accent);
-  color: var(--on-accent);
 }
 
 @media (max-width: 720px) {

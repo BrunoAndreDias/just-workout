@@ -217,7 +217,7 @@ function TrainingBlockProgressActions({
     <>
       <TrainingBlockPreviewSummary transition={transition} />
       <button
-        className="active-training-plan-progress__action"
+        className="primary active-training-plan-progress__action"
         onClick={onExpandPreview}
         type="button"
       >
@@ -452,7 +452,7 @@ function TrainingBlockProgressReviewSection({
         ) : null}
       </div>
       <button
-        className="active-training-plan-progress__secondary-link"
+        className="secondary active-training-plan-progress__secondary-link"
         onClick={onOpenTrainingHistory}
         type="button"
       >
@@ -593,14 +593,14 @@ function TrainingBlockReviewActions({
   return (
     <div className="active-training-plan-progress__button-row">
       <button
-        className="active-training-plan-progress__secondary-button"
+        className="secondary active-training-plan-progress__secondary-button"
         onClick={onToggleReviewMode}
         type="button"
       >
         {reviewModeToggleLabel}
       </button>
       <button
-        className="active-training-plan-progress__accept"
+        className="primary active-training-plan-progress__accept"
         disabled={isAccepting}
         onClick={() => {
           void onAccept();
@@ -790,7 +790,7 @@ function UndoAcceptedTrainingBlockCallout({
       <h3>Next Training Block accepted</h3>
       <p>Undo stays available until you start the first Training Session in this block.</p>
       <button
-        className="active-training-plan-progress__secondary-button"
+        className="secondary active-training-plan-progress__secondary-button"
         disabled={isUndoing}
         onClick={async () => {
           setIsUndoing(true);

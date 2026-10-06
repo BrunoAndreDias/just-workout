@@ -294,7 +294,7 @@ export function GenerateTrainingPlanStep(props: GenerateTrainingPlanStepProps) {
                 : "Ready to generate"}
             </p>
             <button
-              className="pb-step-footer__next"
+              className="primary pb-step-footer__next"
               disabled={isGenerating || blockingIssues.length > 0}
               onClick={() => {
                 void runAction(

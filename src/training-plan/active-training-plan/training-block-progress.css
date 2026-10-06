@@ -257,36 +257,7 @@
 }
 
 .active-training-plan-progress__action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  min-height: 2.5rem;
   margin-top: 0.75rem;
-  border: 0;
-  border-radius: var(--radius-8);
-  padding: 0 1rem;
-  color: var(--on-accent);
-  background: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: 800;
-  line-height: 1;
-  transition:
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.active-training-plan-progress__action:hover {
-  background: var(--accent-dark);
-}
-
-.active-training-plan-progress__action:active {
-  transform: translateY(1px);
-}
-
-.active-training-plan-progress__action:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 
 .active-training-plan-progress__button-row {
@@ -294,84 +265,6 @@
   flex-wrap: wrap;
   gap: 0.625rem;
   margin-top: 0.875rem;
-}
-
-.active-training-plan-progress__accept {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.5rem;
-  border: 0;
-  border-radius: var(--radius-8);
-  padding: 0 1rem;
-  color: var(--on-accent);
-  background: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: 800;
-  line-height: 1;
-  transition:
-    background-color 180ms ease,
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.active-training-plan-progress__accept:hover {
-  background: var(--accent-dark);
-}
-
-.active-training-plan-progress__accept:active {
-  transform: translateY(1px);
-}
-
-.active-training-plan-progress__accept:disabled {
-  transform: none;
-}
-
-.active-training-plan-progress__accept:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.active-training-plan-progress__secondary-button,
-.active-training-plan-progress__secondary-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  min-height: 2.5rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  border-radius: var(--radius-8);
-  padding: 0 0.95rem;
-  color: var(--ink);
-  background: var(--surface);
-  font-size: 0.8125rem;
-  font-weight: 800;
-  line-height: 1;
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.active-training-plan-progress__secondary-button:hover,
-.active-training-plan-progress__secondary-link:hover {
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  background: var(--surface);
-}
-
-.active-training-plan-progress__secondary-button:active,
-.active-training-plan-progress__secondary-link:active {
-  transform: translateY(1px);
-}
-
-.active-training-plan-progress__secondary-button:disabled {
-  transform: none;
-}
-
-.active-training-plan-progress__secondary-button:focus-visible,
-.active-training-plan-progress__secondary-link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 
 .active-training-plan-progress__undo {

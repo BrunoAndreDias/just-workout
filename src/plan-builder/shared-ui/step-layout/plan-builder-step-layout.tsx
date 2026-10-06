@@ -143,7 +143,7 @@ export function PlanBuilderStepFooter({
   return (
     <footer className="pb-step-footer">
       <div className="pb-step-footer__inner">
-        <button className="pb-step-footer__back" onClick={back.onClick} type="button">
+        <button className="text-btn pb-step-footer__back" onClick={back.onClick} type="button">
           <ArrowLeft aria-hidden="true" size={16} strokeWidth={2.4} />
           {back.label}
         </button>
@@ -154,7 +154,7 @@ export function PlanBuilderStepFooter({
           </p>
         ) : null}
         <button
-          className="pb-step-footer__next"
+          className="primary pb-step-footer__next"
           disabled={isContinueDisabled}
           onClick={next.onClick}
           type="button"

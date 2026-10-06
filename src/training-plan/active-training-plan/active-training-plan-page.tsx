@@ -94,7 +94,7 @@ function ActiveTrainingPlanActions({
     <div className="active-training-plan-actions-panel">
       <div className="active-training-plan-hero__actions">
         <button
-          className="active-training-plan-hero__cta"
+          className="primary active-training-plan-hero__cta"
           onClick={() => {
             void navigate(readModel.actions.startNextWorkout.routeTarget);
           }}
@@ -108,7 +108,7 @@ function ActiveTrainingPlanActions({
           <span>{readModel.actions.startNextWorkout.label}</span>
         </button>
         <button
-          className="active-training-plan-hero__settings"
+          className="secondary active-training-plan-hero__settings"
           onClick={() => {
             void navigate(readModel.actions.trainingHistory.routeTarget);
           }}
@@ -146,7 +146,7 @@ function MobileStartWorkoutCta({
   return (
     <div className="active-training-plan-mobile-cta" aria-hidden="false">
       <button
-        className="active-training-plan-mobile-cta__button"
+        className="primary active-training-plan-mobile-cta__button"
         onClick={() => {
           void navigate(action.routeTarget);
         }}
@@ -266,7 +266,7 @@ function ActiveTrainingPlanTabPanel({
           <>
             <div className="workout-session-start">
               <button
-                className="workout-session-start__button"
+                className="primary workout-session-start__button"
                 onClick={() => {
                   void navigate(panel.startAction.routeTarget);
                 }}

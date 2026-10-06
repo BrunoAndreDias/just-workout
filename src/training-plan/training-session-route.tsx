@@ -313,7 +313,7 @@ function TrainingSessionFooter({
         <span>Partial volume until Session Bodyweight is set.</span>
       ) : null}
       <button
-        className="training-session-complete-button"
+        className="primary training-session-complete-button"
         disabled={isCompleteSessionPending || isSessionStored}
         onClick={() => {
           void onCompleteSession();
