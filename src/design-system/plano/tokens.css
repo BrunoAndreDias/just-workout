@@ -34,6 +34,7 @@
   --accent-dark: #234a30;
   --accent-tint: #eef3ec;
   --on-accent: #ffffff;
+  --scrim: rgba(28, 27, 24, 0.38);
   --danger: #a3401f;
   --over-bg: #f7e4dd;
   --over-fg: #8a3418;
@@ -89,6 +90,7 @@
   --accent-dark: #93c4a0;
   --accent-tint: #22301f;
   --on-accent: #12190f;
+  --scrim: rgba(28, 27, 24, 0.38);
   --danger: #e0805e;
   --over-bg: #3d241b;
   --over-fg: #f0a283;

@@ -14,8 +14,6 @@
   --data-violet-ink: #4f376f;
   --data-red-bg: #fbe7e3;
   --data-red-ink: #a3402f;
-  /* Backdrop behind drawers and dialogs. Stays dark in both themes, unlike translucent ink. */
-  --scrim: rgba(28, 27, 24, 0.4);
   /* Shadow colour. Plano's shadow tokens are whole values; this lets existing shadows keep
      their geometry and stay dark in dark mode. */
   --shadow-ink: #1c1b18;
@@ -33,6 +31,5 @@
   --data-violet-ink: #cdb9e6;
   --data-red-bg: #3a211d;
   --data-red-ink: #f0a294;
-  --scrim: rgba(0, 0, 0, 0.6);
   --shadow-ink: #000000;
 }
