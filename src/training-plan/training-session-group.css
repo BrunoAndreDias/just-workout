@@ -22,8 +22,8 @@
   color: #0d1417;
   font-family: var(--jw-font-heading);
   font-size: 1.0625rem;
-  font-weight: 850;
-  letter-spacing: -0.01em;
+  font-weight: var(--jw-heading-weight);
+  letter-spacing: var(--jw-heading-tracking);
   line-height: 1.25;
 }
 

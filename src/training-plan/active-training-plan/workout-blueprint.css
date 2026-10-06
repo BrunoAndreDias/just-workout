@@ -89,7 +89,7 @@
   color: #11181b;
   font-family: var(--jw-font-heading);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.375rem;
 }

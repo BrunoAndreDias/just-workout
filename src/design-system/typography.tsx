@@ -31,15 +31,7 @@ export function PageMain({ className, ...props }: PageMainProps) {
 }
 
 function PageTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return (
-    <h1
-      className={cn(
-        "jw-page-title jw-heading-font font-bold tracking-[var(--jw-heading-tracking)]",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <h1 className={cn("jw-page-title jw-heading-font", className)} {...props} />;
 }
 
 function PageLead({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {

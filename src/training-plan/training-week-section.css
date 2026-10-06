@@ -22,7 +22,7 @@
   color: var(--training-history-ink);
   font-family: var(--jw-font-heading);
   font-size: 1.125rem;
-  font-weight: 850;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.3;
 }
@@ -159,7 +159,7 @@
   color: var(--training-history-ink);
   font-family: var(--jw-font-heading);
   font-size: 1.4rem;
-  font-weight: 900;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.1;
 }

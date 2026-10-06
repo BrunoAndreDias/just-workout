@@ -42,7 +42,7 @@
   color: #120f0d;
   font-family: var(--jw-font-heading);
   font-size: var(--jw-type-display);
-  font-weight: 800;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.15;
   text-wrap: balance;
@@ -232,7 +232,7 @@
   color: #120f0d;
   font-family: var(--jw-font-heading);
   font-size: var(--jw-type-card-title);
-  font-weight: 800;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.25;
 }

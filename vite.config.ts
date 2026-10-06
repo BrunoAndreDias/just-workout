@@ -28,8 +28,8 @@ export default defineConfig({
         name: "Just Workout",
         short_name: "Workout",
         description: "Personal workout planning, logging, and progression.",
-        theme_color: "#f4f0e8",
-        background_color: "#f4f0e8",
+        theme_color: "#f7f5ef",
+        background_color: "#f7f5ef",
         display: "standalone",
         start_url: "/",
         // PNGs first: some Android launchers and iOS ignore SVG manifest icons.

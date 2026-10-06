@@ -54,7 +54,7 @@
   color: #120f0d;
   font-family: var(--jw-font-heading);
   font-size: var(--jw-type-section-title);
-  font-weight: 750;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.3;
 }

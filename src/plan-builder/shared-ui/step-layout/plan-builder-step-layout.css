@@ -30,7 +30,7 @@
   font-family: var(--jw-font-heading);
   /* Compact on purpose: laptop height belongs to the choices, not the question. */
   font-size: clamp(1.375rem, 1rem + 0.75vw, 1.75rem);
-  font-weight: 800;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.2;
   text-wrap: balance;
@@ -86,7 +86,7 @@
   color: #120f0d;
   font-family: var(--jw-font-heading);
   font-size: var(--jw-type-card-title);
-  font-weight: 800;
+  font-weight: var(--jw-heading-weight);
   letter-spacing: var(--jw-heading-tracking);
   line-height: 1.35;
 }

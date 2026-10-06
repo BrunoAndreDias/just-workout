@@ -1,17 +1,19 @@
 @import "tailwindcss";
+@import "./design-system/plano/tokens.css";
 
 :root {
-  color: #1d1a16;
-  background: #f4f0e8;
+  color: var(--ink);
+  background: var(--bg);
   font-family: var(--jw-font-body);
+  font-variant-numeric: tabular-nums;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --jw-font-heading: "Sora", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
-  --jw-font-body:
-    "Inter", "Manrope", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --jw-heading-tracking: -0.03em;
+  --jw-font-heading: var(--font-serif);
+  --jw-font-body: var(--font-sans);
+  --jw-heading-weight: 500;
+  --jw-heading-tracking: -0.015em;
   --jw-body-size: 0.875rem;
   --jw-body-line-height: 1.5rem;
   --jw-meta-size: 0.75rem;
@@ -143,17 +145,16 @@
 }
 
 html {
-  background: #f4f0e8;
+  background: var(--bg);
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #faf8f4;
+  background: var(--bg);
   font-size: var(--jw-body-size);
   line-height: var(--jw-body-line-height);
-  font-feature-settings: "ss01", "cv11", "calt";
   font-optical-sizing: auto;
 }
 
@@ -181,6 +182,8 @@ h4 {
 
 .jw-heading-font {
   font-family: var(--jw-font-heading);
+  font-weight: var(--jw-heading-weight);
+  letter-spacing: var(--jw-heading-tracking);
 }
 
 .jw-body-font {
