@@ -286,6 +286,7 @@ function AppShellNavigationDisabledPill({
     <span
       aria-disabled="true"
       className="app-shell-navigation-link app-shell-navigation-link--disabled"
+      title="Generate a Training Plan first"
     >
       <span className={cn(appShellNavigationPillClassName, "text-stone-950")}>
         {icon}

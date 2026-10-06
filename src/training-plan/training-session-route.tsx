@@ -233,11 +233,13 @@ function TrainingSessionPageContent({
 }) {
   return (
     <section className="training-session-page" aria-label="Training Session">
-      <h1 className="training-session-sr">
-        {workoutTemplate.label} {sessionIntent === "extra" ? "extra session" : "session"}
-      </h1>
+      <header className="training-session-header">
+        <h1>
+          {workoutTemplate.label} {sessionIntent === "extra" ? "extra session" : "session"}
+        </h1>
+        <p>{trainingPlan.split}</p>
+      </header>
       {completedSession ? <TrainingSessionCompletedNotice sessionIntent={sessionIntent} /> : null}
-      <TrainingSessionBodyweightPanel bodyweightState={bodyweightState} />
       <TrainingSessionPrefillNotes loadPrefills={loadPrefills} />
       <TrainingSessionTargets
         sessionTargets={sessionTargets}
@@ -251,6 +253,7 @@ function TrainingSessionPageContent({
         ))}
       </div>
 
+      <TrainingSessionBodyweightPanel bodyweightState={bodyweightState} />
       <TrainingSessionFooter
         executionReadModel={executionReadModel}
         isCompleteSessionPending={isCompleteSessionPending}
@@ -726,10 +729,9 @@ function TrainingSessionBodyweightPanel({
     <section className="training-session-bodyweight" aria-labelledby="session-bodyweight-title">
       <div>
         <h2 id="session-bodyweight-title">Session Bodyweight</h2>
-        <p>Store Session Bodyweight so bodyweight exercises contribute to Completed Load Volume.</p>
+        <p>Needed before completing, so bodyweight exercises count toward volume.</p>
       </div>
       <label className="training-session-bodyweight__field">
-        <span>Session Bodyweight</span>
         <div className="training-session-bodyweight__input">
           <input
             aria-label="Session Bodyweight"

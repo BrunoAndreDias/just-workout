@@ -8,6 +8,13 @@
   padding: var(--jw-page-padding-y) var(--jw-page-padding-x);
 }
 
+.training-session-start-section-title {
+  margin: 0 0 0.75rem;
+  color: #11181b;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .training-session-start-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
@@ -19,11 +26,11 @@
   display: grid;
   gap: 1rem;
   max-width: 58rem;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(0, 119, 128, 0.18);
+  margin-top: 2rem;
+  border: 1px solid rgba(28, 25, 23, 0.1);
   border-radius: 0.75rem;
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(0, 119, 128, 0.08), rgba(255, 255, 255, 0.96)), #ffffff;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .training-session-bodyweight-card h2,
@@ -32,7 +39,7 @@
 }
 
 .training-session-bodyweight-card h2 {
-  color: #063f44;
+  color: #11181b;
   font-size: 1rem;
   font-weight: 850;
 }
@@ -53,6 +60,7 @@
 
 .training-session-bodyweight-card__field {
   display: grid;
+  align-content: start;
   gap: 0.5rem;
   color: #142126;
   font-size: 0.875rem;
@@ -77,11 +85,11 @@
 .training-session-bodyweight-card__field button {
   justify-self: start;
   min-height: 2.25rem;
-  border: 0;
+  border: 1px solid rgba(0, 119, 128, 0.35);
   border-radius: 999px;
   padding: 0 0.9rem;
-  color: #ffffff;
-  background: #006f77;
+  color: #075d63;
+  background: #ffffff;
   font-size: 0.8125rem;
   font-weight: 800;
 }

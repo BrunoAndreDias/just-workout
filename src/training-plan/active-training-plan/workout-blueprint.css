@@ -115,8 +115,8 @@
 
 .exercise-plan-row {
   display: grid;
-  grid-template-columns: minmax(22rem, 1.35fr) minmax(9rem, 0.45fr) auto;
-  gap: 1.5rem;
+  grid-template-columns: minmax(18rem, 1.35fr) minmax(9rem, 0.45fr) auto auto;
+  gap: 1.25rem;
   align-items: center;
   min-width: 0;
   border-top: 1px solid rgba(28, 25, 23, 0.08);
@@ -164,7 +164,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 1.75rem;
+  gap: 0.5rem;
   min-width: 0;
   color: #293236;
   font-size: 0.9375rem;
@@ -197,17 +197,21 @@
 
 @media (max-width: 920px) {
   .exercise-plan-row {
-    grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .exercise-plan-row__muscles {
+    grid-row: 2;
   }
 
   .exercise-plan-row__prescription {
-    grid-column: 1 / -1;
+    grid-row: 3;
     justify-content: flex-start;
   }
 
   .exercise-plan-row__actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+    grid-row: 1;
+    grid-column: 2;
   }
 }
 
@@ -276,8 +280,7 @@
   }
 
   .exercise-plan-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
+    gap: 0.375rem 0.75rem;
     padding: 0.75rem 0;
   }
 

@@ -1,3 +1,4 @@
+import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { TrainingBlockExerciseRole, TrainingBlockExerciseSwapChoice } from "../training-block";
 import { formatExerciseRole, formatMovementPattern } from "../training-plan-presentation";
@@ -60,12 +61,14 @@ export function TrainingBlockExerciseSwap({
   return (
     <>
       <button
+        aria-label={actionLabel}
         className="training-block-exercise-swap__trigger"
         disabled={isPending}
         onClick={() => setIsOpen(true)}
         type="button"
       >
-        {actionLabel}
+        <ArrowLeftRight aria-hidden="true" className="training-block-exercise-swap__trigger-icon" />
+        Swap
       </button>
       {isOpen ? (
         <div

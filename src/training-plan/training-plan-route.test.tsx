@@ -485,19 +485,13 @@ describe("TrainingPlanRoute", () => {
 
     const overviewPanel = screen.getByRole("tabpanel", { name: "Overview" });
     const noticesSection = within(overviewPanel)
-      .getByRole("heading", { name: "Volume target notices" })
+      .getByRole("heading", { name: "Below your Weekly Rep Target" })
       .closest("section");
 
     expect(noticesSection).not.toBeNull();
+    expect(within(noticesSection as HTMLElement).getByText("Chest")).toBeVisible();
     expect(
-      within(noticesSection as HTMLElement).getByText(
-        "Chest is 12 reps below your Weekly Rep Target.",
-      ),
-    ).toBeVisible();
-    expect(
-      within(noticesSection as HTMLElement).getByText(
-        "Generated top-end prescribed reps reach 48 of your 60 weekly chest reps.",
-      ),
+      within(noticesSection as HTMLElement).getByText("48 of 60 weekly reps · 12 short"),
     ).toBeVisible();
     expect(within(noticesSection as HTMLElement).queryByText(/calves/i)).not.toBeInTheDocument();
 
@@ -507,11 +501,9 @@ describe("TrainingPlanRoute", () => {
 
     expect(await screen.findByRole("heading", { name: "Full Body A session" })).toBeVisible();
     expect(
-      screen.queryByRole("heading", { name: "Volume target notices" }),
+      screen.queryByRole("heading", { name: "Below your Weekly Rep Target" }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Chest is 12 reps below your Weekly Rep Target."),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("48 of 60 weekly reps · 12 short")).not.toBeInTheDocument();
   });
 
   it("shows a calm Training Block summary on the active Training Plan", async () => {
@@ -525,12 +517,10 @@ describe("TrainingPlanRoute", () => {
       screen.getByRole("heading", { name: "Training Block 1" }),
     );
 
-    expect(within(blockSummary).getByText("Training Block 1 · Week 2 of 6")).toBeVisible();
-    expect(within(blockSummary).getByText("Current focus: building consistency")).toBeVisible();
-    expect(within(blockSummary).getByText("4 weeks until exercise rotation")).toBeVisible();
+    expect(within(blockSummary).getByText("Week 2 of 6 · Building consistency")).toBeVisible();
     expect(
       within(blockSummary).getByText(
-        "After week 6, Just Workout can review the next Training Block, rotate exercises, and prefill starting loads from your previous block.",
+        "4 weeks until the next Training Block rotates exercises and prefills starting loads.",
       ),
     ).toBeVisible();
     expect(
@@ -604,10 +594,10 @@ describe("TrainingPlanRoute", () => {
       await screen.findByRole("heading", { name: "Training Block 1" }),
     );
 
-    expect(within(blockSummary).getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
+    expect(within(blockSummary).getByText("Week 6 of 6 · Final hard week")).toBeVisible();
     expect(
       within(blockSummary).getByText(
-        "Complete each Training Week in this block to unlock the next Training Block review",
+        "Complete each Training Week in this block to unlock the next Training Block review.",
       ),
     ).toBeVisible();
     expect(
@@ -648,8 +638,10 @@ describe("TrainingPlanRoute", () => {
       screen.getByRole("heading", { name: "Training Block 1" }),
     );
 
-    expect(within(blockSummary).getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
-    expect(within(blockSummary).getByText("Ready for next Training Block review")).toBeVisible();
+    expect(within(blockSummary).getByText("Week 6 of 6 · Final hard week")).toBeVisible();
+    expect(
+      within(blockSummary).getByText("Ready to review the next Training Block."),
+    ).toBeVisible();
     expect(
       within(blockSummary).getByRole("button", { name: "Review next Training Block" }),
     ).toBeVisible();
@@ -858,7 +850,7 @@ describe("TrainingPlanRoute", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Training Block 2" })).toBeVisible();
-    expect(screen.getByText("Training Block 2 · Week 1 of 6")).toBeVisible();
+    expect(screen.getByText("Week 1 of 6 · Easy week")).toBeVisible();
     expect(screen.getByRole("button", { name: "Undo accepted Training Block" })).toBeVisible();
   });
 
@@ -958,7 +950,7 @@ describe("TrainingPlanRoute", () => {
     await user.click(screen.getByRole("button", { name: "Undo accepted Training Block" }));
 
     expect(await screen.findByRole("heading", { name: "Training Block 1" })).toBeVisible();
-    expect(screen.getByText("Training Block 1 · Week 6 of 6")).toBeVisible();
+    expect(screen.getByText("Week 6 of 6 · Final hard week")).toBeVisible();
     expect(screen.getByRole("button", { name: "Review next Training Block" })).toBeVisible();
   });
 
@@ -1461,30 +1453,30 @@ describe("TrainingPlanRoute", () => {
     expect(await screen.findByRole("heading", { name: "Start training" })).toBeVisible();
 
     const baselineBodyweightInput = screen.getByRole("spinbutton", {
-      name: "Baseline Bodyweight",
+      name: "Baseline bodyweight",
     });
     const inheritedBodyweightDefaultInput = screen.getByRole("spinbutton", {
-      name: "Inherited Bodyweight Default",
+      name: "This Training Week",
     });
 
     changeNumberInput(baselineBodyweightInput, "81");
-    await user.click(screen.getByRole("button", { name: "Save baseline bodyweight" }));
+    await user.click(screen.getByRole("button", { name: "Save baseline" }));
 
     await waitFor(() => {
       expect(
         screen.getByRole("spinbutton", {
-          name: "Inherited Bodyweight Default",
+          name: "This Training Week",
         }),
       ).toHaveValue(81);
     });
 
     changeNumberInput(inheritedBodyweightDefaultInput, "82");
-    await user.click(screen.getByRole("button", { name: "Save Training Week bodyweight" }));
+    await user.click(screen.getByRole("button", { name: "Save for this week" }));
 
     await waitFor(() => {
       expect(
         screen.getByRole("spinbutton", {
-          name: "Inherited Bodyweight Default",
+          name: "This Training Week",
         }),
       ).toHaveValue(82);
     });

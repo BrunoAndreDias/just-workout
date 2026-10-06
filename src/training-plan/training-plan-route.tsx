@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "../design-system/button";
+import { cn } from "../design-system/cn";
 import { PageHeader, PageMain } from "../design-system/typography";
 import {
   ActiveTrainingPlanLoading,
@@ -25,7 +27,15 @@ import type { TrainingSession } from "./training-session";
 
 export function TrainingPlansRoute() {
   const trainingPlansQuery = useQuery(trainingPlansQueryOptions());
-  const trainingPlans = trainingPlansQuery.data ?? [];
+  const trainingPlans = useMemo(
+    () =>
+      [...(trainingPlansQuery.data ?? [])].sort(
+        (left, right) =>
+          Number(right.active) - Number(left.active) ||
+          right.generatedAt.localeCompare(left.generatedAt),
+      ),
+    [trainingPlansQuery.data],
+  );
 
   if (trainingPlansQuery.isLoading) {
     return (
@@ -37,10 +47,17 @@ export function TrainingPlansRoute() {
 
   return (
     <section className="training-plan-page px-[var(--jw-page-padding-x)] py-[var(--jw-page-padding-y)]">
-      <PageHeader
-        description="Open the active Training Plan or generate a new one from the Plan Builder."
-        title="Generated training plans"
-      />
+      <div className="flex max-w-4xl flex-wrap items-end justify-between gap-4">
+        <PageHeader
+          description="Open your Active Training Plan to train, or build a new one."
+          title="Training Plans"
+        />
+        {trainingPlans.length > 0 ? (
+          <Button asChild variant="outline">
+            <Link to="/plan-builder">Build a new plan</Link>
+          </Button>
+        ) : null}
+      </div>
 
       <PageMain>
         {trainingPlans.length === 0 ? (
@@ -184,25 +201,44 @@ function useTrainingPlanIdFromPathname(): string | null {
   return parseTrainingPlanPathname(pathname)?.planId ?? null;
 }
 
+const planCreatedDateFormat = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 function TrainingPlanListItem({ trainingPlan }: { trainingPlan: TrainingPlan }) {
+  const details = [
+    `${trainingPlan.trainingFrequencyDaysPerWeek} days/week`,
+    `${trainingPlan.workoutTemplates.length} workouts`,
+    trainingPlan.trainingBlock ? `Training Block ${trainingPlan.trainingBlock.cycleNumber}` : null,
+    `Created ${planCreatedDateFormat.format(new Date(trainingPlan.generatedAt))}`,
+  ].filter(Boolean);
+
   return (
     <Link
-      className="rounded-md border border-stone-900/10 bg-white/80 p-5 shadow-sm transition-colors hover:border-[#007780]/45 hover:bg-white"
+      className={cn(
+        "group flex items-center justify-between gap-4 rounded-md border bg-white/80 p-5 shadow-sm transition-colors hover:border-[#007780]/45 hover:bg-white",
+        trainingPlan.active ? "border-[#007780]/40" : "border-stone-900/10",
+      )}
       params={{ planId: trainingPlan.id }}
       to={trainingPlanPaths.plan}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black text-stone-950">{trainingPlan.split}</h2>
-        {trainingPlan.active ? (
-          <span className="rounded-full bg-[#007780]/10 px-3 py-1 text-xs font-black uppercase text-[#007780]">
-            Active
-          </span>
-        ) : null}
+      <div className="grid min-w-0 gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-black text-stone-950">{trainingPlan.split}</h2>
+          {trainingPlan.active ? (
+            <span className="rounded-full bg-[#007780]/10 px-2.5 py-0.5 text-xs font-black text-[#007780]">
+              Active
+            </span>
+          ) : null}
+        </div>
+        <p className="text-sm font-semibold text-stone-600">{details.join(" · ")}</p>
       </div>
-      <p className="mt-2 text-sm font-semibold text-stone-600">
-        {trainingPlan.trainingFrequencyDaysPerWeek} days/week ·{" "}
-        {trainingPlan.workoutTemplates.length} workout templates
-      </p>
+      <ChevronRight
+        aria-hidden="true"
+        className="size-5 shrink-0 text-stone-400 transition-colors group-hover:text-[#007780]"
+      />
     </Link>
   );
 }

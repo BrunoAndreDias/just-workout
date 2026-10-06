@@ -97,12 +97,13 @@ export function TrainingBlockProgress({
 
   return (
     <section className="active-training-plan-progress" aria-labelledby={summaryId}>
-      <h2 id={summaryId}>Training Block {cycleNumber}</h2>
-      <p>
-        Training Block {cycleNumber} · Week {blockWeek} of {trainingBlockWeeks}
-      </p>
-      <p>Current focus: {getTrainingBlockFocus(blockWeek, trainingBlockWeeks)}</p>
-      <p>{getRotationStatusLabel({ isNextBlockReady, weeksUntilRotation })}</p>
+      <div className="active-training-plan-progress__header">
+        <h2 id={summaryId}>Training Block {cycleNumber}</h2>
+        <p className="active-training-plan-progress__week-of">
+          Week {blockWeek} of {trainingBlockWeeks} ·{" "}
+          {getTrainingBlockFocus(blockWeek, trainingBlockWeeks)}
+        </p>
+      </div>
       <TrainingBlockEffortRamp blockWeek={blockWeek} trainingBlockWeeks={trainingBlockWeeks} />
       <div className="active-training-plan-progress__row">
         <div
@@ -121,8 +122,7 @@ export function TrainingBlockProgress({
         </span>
       </div>
       <p className="active-training-plan-progress__helper">
-        After week 6, Just Workout can review the next Training Block, rotate exercises, and prefill
-        starting loads from your previous block.
+        {getRotationStatusLabel({ isNextBlockReady, weeksUntilRotation })}
       </p>
       <TrainingWeekProgressSummary trainingWeekProgress={trainingWeekProgress} />
       <TrainingBlockProgressActions
@@ -911,18 +911,18 @@ export function getBlockProgressPercent({
 
 function getTrainingBlockFocus(blockWeek: number, trainingBlockWeeks: number): string {
   if (blockWeek <= 1) {
-    return "easy week, 4-5 reps in reserve";
+    return "Easy week";
   }
 
   if (blockWeek <= 2) {
-    return "building consistency";
+    return "Building consistency";
   }
 
   if (blockWeek < trainingBlockWeeks) {
-    return "building intensity";
+    return "Building intensity";
   }
 
-  return "final hard week";
+  return "Final hard week";
 }
 
 function getRotationStatusLabel({
@@ -933,12 +933,12 @@ function getRotationStatusLabel({
   weeksUntilRotation: number;
 }): string {
   if (weeksUntilRotation > 0) {
-    return `${weeksUntilRotation} ${weeksUntilRotation === 1 ? "week" : "weeks"} until exercise rotation`;
+    return `${weeksUntilRotation} ${weeksUntilRotation === 1 ? "week" : "weeks"} until the next Training Block rotates exercises and prefills starting loads.`;
   }
 
   if (isNextBlockReady) {
-    return "Ready for next Training Block review";
+    return "Ready to review the next Training Block.";
   }
 
-  return "Complete each Training Week in this block to unlock the next Training Block review";
+  return "Complete each Training Week in this block to unlock the next Training Block review.";
 }

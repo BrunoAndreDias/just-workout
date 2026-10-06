@@ -56,10 +56,32 @@ export function TrainingSessionStartRoute() {
   return (
     <section className="training-session-start-page" aria-label="Start Training">
       <PageHeader
-        description={`${trainingPlan.split} · ${trainingPlan.workoutTemplates.length} workout templates`}
+        description={trainingPlan.split}
         title={sessionIntent === "extra" ? "Start Extra Training Session" : "Start training"}
       />
       <PageMain>
+        {trainingPlan.workoutTemplates.length > 0 ? (
+          <section aria-labelledby="training-session-start-choose-title">
+            <h2
+              className="training-session-start-section-title"
+              id="training-session-start-choose-title"
+            >
+              Choose a workout
+            </h2>
+            <div className="training-session-start-grid">
+              {trainingPlan.workoutTemplates.map((workoutTemplate) => (
+                <TrainingSessionStartCard
+                  isExtraSession={sessionIntent === "extra"}
+                  key={workoutTemplate.id}
+                  planId={trainingPlan.id}
+                  workoutTemplate={workoutTemplate}
+                />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <p className="active-training-plan-loading">No workout templates configured.</p>
+        )}
         {requiresSessionBodyweight(trainingPlan.workoutTemplates) ? (
           <TrainingSurfaceBodyweightCard
             baselineBodyweightInput={baselineBodyweightInput}
@@ -88,20 +110,6 @@ export function TrainingSessionStartRoute() {
             }
           />
         ) : null}
-        {trainingPlan.workoutTemplates.length > 0 ? (
-          <div className="training-session-start-grid">
-            {trainingPlan.workoutTemplates.map((workoutTemplate) => (
-              <TrainingSessionStartCard
-                isExtraSession={sessionIntent === "extra"}
-                key={workoutTemplate.id}
-                planId={trainingPlan.id}
-                workoutTemplate={workoutTemplate}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="active-training-plan-loading">No workout templates configured.</p>
-        )}
       </PageMain>
     </section>
   );
@@ -338,15 +346,15 @@ function TrainingSurfaceBodyweightCard({
       aria-labelledby="training-bodyweight-title"
     >
       <div>
-        <h2 id="training-bodyweight-title">Training Week bodyweight</h2>
-        <p>Store known bodyweight so bodyweight exercises contribute to Completed Load Volume.</p>
+        <h2 id="training-bodyweight-title">Bodyweight</h2>
+        <p>Used so bodyweight exercises like Pull-Ups count toward Completed Load Volume.</p>
       </div>
       <div className="training-session-bodyweight-card__grid">
         <label className="training-session-bodyweight-card__field">
-          <span>Baseline Bodyweight</span>
+          <span>Baseline bodyweight</span>
           <div className="training-session-bodyweight-card__input">
             <input
-              aria-label="Baseline Bodyweight"
+              aria-label="Baseline bodyweight"
               inputMode="decimal"
               min="0"
               onChange={(event) => onBaselineBodyweightInputChange(event.target.value)}
@@ -356,14 +364,14 @@ function TrainingSurfaceBodyweightCard({
             <span>kg</span>
           </div>
           <button onClick={onSaveBaselineBodyweight} type="button">
-            Save baseline bodyweight
+            Save baseline
           </button>
         </label>
         <label className="training-session-bodyweight-card__field">
-          <span>Inherited Bodyweight Default</span>
+          <span>This Training Week</span>
           <div className="training-session-bodyweight-card__input">
             <input
-              aria-label="Inherited Bodyweight Default"
+              aria-label="This Training Week"
               inputMode="decimal"
               min="0"
               onChange={(event) => onCurrentWeekInputChange(event.target.value)}
@@ -377,7 +385,7 @@ function TrainingSurfaceBodyweightCard({
             {describeBodyweightSource(inheritedBodyweightSource, "week")}
           </small>
           <button onClick={onSaveCurrentWeekBodyweight} type="button">
-            Save Training Week bodyweight
+            Save for this week
           </button>
         </label>
       </div>

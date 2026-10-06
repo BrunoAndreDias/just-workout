@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import type {
   ActiveTrainingPlanMovementCoverageCellReadModel,
   ActiveTrainingPlanMovementCoverageRowReadModel,
-  ActiveTrainingPlanMovementCoverageTableReadModel,
 } from "./active-training-plan-read-model";
 
 type MovementCoverageRowsProps<Row extends ActiveTrainingPlanMovementCoverageRowReadModel> = {
@@ -27,49 +26,4 @@ export function MovementCoverageRows<Row extends ActiveTrainingPlanMovementCover
       {renderTrailingCell ? <td>{renderTrailingCell(row)}</td> : null}
     </tr>
   ));
-}
-
-function MovementCoverageDot({ covered }: { covered: boolean }) {
-  if (!covered) {
-    return (
-      <span className="movement-coverage-table__empty">
-        <span className="sr-only">Not covered</span>
-      </span>
-    );
-  }
-
-  return (
-    <span className="movement-coverage-table__dot">
-      <span className="sr-only">Covered</span>
-    </span>
-  );
-}
-
-export function MovementCoverageTable({
-  readModel,
-}: {
-  readModel: ActiveTrainingPlanMovementCoverageTableReadModel;
-}) {
-  return (
-    <div className="movement-coverage-table-wrap">
-      <table className="movement-coverage-table">
-        <thead>
-          <tr>
-            <th scope="col">Pattern</th>
-            {readModel.columns.map((column) => (
-              <th key={column.id} scope="col">
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <MovementCoverageRows
-            readModel={readModel}
-            renderCell={(cell) => <MovementCoverageDot covered={cell.covered} />}
-          />
-        </tbody>
-      </table>
-    </div>
-  );
 }

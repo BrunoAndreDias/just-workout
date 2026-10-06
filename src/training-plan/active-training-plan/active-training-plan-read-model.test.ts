@@ -76,14 +76,11 @@ describe("getActiveTrainingPlanPageReadModel", () => {
     const readModel = getActiveTrainingPlanPageReadModel({ trainingPlan });
 
     expect(readModel.header).toEqual({
-      description: "3 days/week with 2 workout templates configured.",
+      description: "3 days/week · 2 workouts",
       title: "Alternating Full Body A/B",
     });
     expect(readModel.overview.summary).toEqual({
       blockLength: "6 weeks",
-      currentPlan: "Alternating Full Body A/B",
-      frequency: "3 days/week",
-      nextWorkout: "Full Body A",
       repRangeStyle: "Balanced Hypertrophy",
       rotationPools: "1 configured",
       volumeTargets: "7 enabled",

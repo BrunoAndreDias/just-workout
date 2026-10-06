@@ -106,7 +106,6 @@ export type ActiveTrainingPlanPageTabPanelReadModel =
     };
 
 export type ActiveTrainingPlanPageOverviewReadModel = {
-  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel;
   summary: PlanSummaryReadModel;
   volumeTargetNotices: ActiveTrainingPlanVolumeTargetNoticeReadModel[];
   workoutSplitSummary: WorkoutSplitSummaryReadModel;
@@ -184,7 +183,7 @@ export function getActiveTrainingPlanPageReadModel({
     }),
     compare: getCompareTabReadModel(trainingPlan, movementCoverage),
     header: getHeaderReadModel(trainingPlan),
-    overview: getOverviewReadModel(trainingPlan, movementCoverage),
+    overview: getOverviewReadModel(trainingPlan),
     progress: getProgressReadModel({
       blockWeek,
       now,
@@ -246,17 +245,13 @@ function getCompareTabReadModel(
 
 function getHeaderReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageHeaderReadModel {
   return {
-    description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week with ${trainingPlan.workoutTemplates.length} workout templates configured.`,
+    description: `${trainingPlan.trainingFrequencyDaysPerWeek} days/week · ${trainingPlan.workoutTemplates.length} workouts`,
     title: trainingPlan.split,
   };
 }
 
-function getOverviewReadModel(
-  trainingPlan: TrainingPlan,
-  movementCoverage: ActiveTrainingPlanMovementCoverageTableReadModel,
-): ActiveTrainingPlanPageOverviewReadModel {
+function getOverviewReadModel(trainingPlan: TrainingPlan): ActiveTrainingPlanPageOverviewReadModel {
   return {
-    movementCoverage,
     summary: getPlanSummaryReadModel(trainingPlan),
     volumeTargetNotices: getVolumeTargetNoticesReadModel(trainingPlan),
     workoutSplitSummary: getWorkoutSplitSummaryReadModel(trainingPlan.workoutTemplates),

@@ -65,7 +65,9 @@ export function ActiveTrainingPlanPage({
           trainingPlan={trainingPlan}
           trainingSessions={trainingSessions}
         />
-        <MobileStartWorkoutCta action={readModel.actions.startNextWorkout} />
+        {readModel.activeTab.panel.kind === "workout" ? null : (
+          <MobileStartWorkoutCta action={readModel.actions.startNextWorkout} />
+        )}
       </PageMain>
     </section>
   );
@@ -189,7 +191,6 @@ function ActiveTrainingPlanTabs({
     >
       <div className="active-training-plan-tabs__bar">
         <ActiveTrainingPlanTabList setActiveTabId={setActiveTabId} tabs={readModel.tabs} />
-        {activePanel.kind === "workout" ? <WorkoutSummaryPills /> : null}
       </div>
 
       <ActiveTrainingPlanTabPanel
@@ -290,15 +291,6 @@ function ActiveTrainingPlanTabPanel({
           <CompareTab readModel={readModel.compare} />
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function WorkoutSummaryPills() {
-  return (
-    <div className="active-training-plan-tabs__summary">
-      <span>3 sets</span>
-      <span>8–12 reps</span>
     </div>
   );
 }

@@ -6,6 +6,29 @@
   background: #ffffff;
 }
 
+.training-session-header {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.training-session-header h1 {
+  margin: 0;
+  color: #11181b;
+  font-family: var(--jw-font-heading, inherit);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: var(--jw-heading-tracking, 0);
+  line-height: 1.15;
+}
+
+.training-session-header p {
+  margin: 0;
+  color: #4f5c62;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .training-session-complete {
   display: flex;
   align-items: flex-start;
@@ -53,7 +76,7 @@
   display: grid;
   gap: 0.875rem;
   max-width: 42rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   border: 1px solid rgba(0, 119, 128, 0.18);
   border-radius: 0.75rem;
   padding: 1rem;
@@ -178,16 +201,6 @@
   stroke-width: 2;
 }
 
-.training-session-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 @media (max-width: 760px) {
   .training-session-page {
     padding: 1rem 1rem 1.5rem;
@@ -201,7 +214,7 @@
 
 .training-session-targets {
   max-width: 42rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   border: 1px solid rgba(0, 119, 128, 0.18);
   border-radius: 0.75rem;
   background: rgba(0, 119, 128, 0.05);
@@ -277,4 +290,14 @@
 
 .training-session-set-cell__aim {
   color: #007780;
+}
+
+.training-session-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

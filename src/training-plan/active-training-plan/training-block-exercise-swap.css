@@ -45,6 +45,9 @@
 .training-block-exercise-swap__secondary,
 .training-block-exercise-swap__primary,
 .training-block-exercise-swap__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   border-radius: 999px;
   font: inherit;
   font-size: 0.82rem;
@@ -131,6 +134,16 @@
 .training-block-exercise-swap__close:disabled,
 .training-block-exercise-swap__secondary:disabled,
 .training-block-exercise-swap__primary:disabled,
+.training-block-exercise-swap__trigger-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.training-block-exercise-swap__trigger:hover:not(:disabled) {
+  border-color: rgba(0, 119, 128, 0.45);
+  color: #075d63;
+}
+
 .training-block-exercise-swap__trigger:disabled {
   cursor: default;
   opacity: 0.65;

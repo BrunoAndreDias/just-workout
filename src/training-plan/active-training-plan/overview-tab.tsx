@@ -1,15 +1,6 @@
-import {
-  CalendarDays,
-  Clock3,
-  ListChecks,
-  Repeat2,
-  RotateCw,
-  SlidersHorizontal,
-  TriangleAlert,
-} from "lucide-react";
+import { Clock3, ListChecks, RotateCw, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActiveTrainingPlanPageOverviewReadModel } from "./active-training-plan-read-model";
-import { MovementCoverageTable } from "./movement-coverage-table";
 import type { PlanSummaryReadModel } from "./plan-summary-read-model";
 import type { WorkoutTemplateMuscleEmphasisReadModel } from "./workout-template-summary";
 import "./overview-tab.css";
@@ -23,16 +14,6 @@ export function OverviewTab({ readModel }: { readModel: ActiveTrainingPlanPageOv
       ) : null}
 
       <div className="training-plan-overview__main-grid">
-        <section
-          className="training-plan-overview-card"
-          aria-labelledby="training-plan-movement-coverage"
-        >
-          <h2 className="training-plan-overview-card__title" id="training-plan-movement-coverage">
-            Movement pattern coverage
-          </h2>
-          <MovementCoverageTable readModel={readModel.movementCoverage} />
-        </section>
-
         <section
           className="training-plan-overview-card training-plan-overview-card--muscle-emphasis"
           aria-labelledby="training-plan-muscle-emphasis"
@@ -84,10 +65,10 @@ function VolumeTargetNotices({
             className="training-plan-overview-card__title"
             id="training-plan-volume-target-notices"
           >
-            Volume target notices
+            Below your Weekly Rep Target
           </h2>
           <p className="volume-target-notices__support">
-            These notices are informational only and do not block this Training Plan.
+            These muscles get fewer weekly reps than you targeted. You can still train this plan.
           </p>
         </div>
       </div>
@@ -95,13 +76,11 @@ function VolumeTargetNotices({
       <ul className="volume-target-notice-list">
         {notices.map((notice) => (
           <li className="volume-target-notice" key={notice.muscleGroup}>
-            <p className="volume-target-notice__title">
-              {notice.muscleGroup} is {notice.shortfallReps} reps below your Weekly Rep Target.
-            </p>
-            <p className="volume-target-notice__body">
-              Generated top-end prescribed reps reach {notice.prescribedTopEndReps} of your{" "}
-              {notice.targetReps} weekly {notice.muscleGroup.toLowerCase()} reps.
-            </p>
+            <span className="volume-target-notice__title">{notice.muscleGroup}</span>
+            <span className="volume-target-notice__body">
+              {notice.prescribedTopEndReps} of {notice.targetReps} weekly reps ·{" "}
+              {notice.shortfallReps} short
+            </span>
           </li>
         ))}
       </ul>
@@ -173,11 +152,6 @@ function PlanSummaryCard({ summary }: { summary: PlanSummaryReadModel }) {
 
       <dl className="active-training-plan-summary__rows">
         <PlanSummaryRow
-          icon={<CalendarDays aria-hidden="true" />}
-          label="Current plan"
-          value={summary.currentPlan}
-        />
-        <PlanSummaryRow
           icon={<Clock3 aria-hidden="true" />}
           label="Block length"
           value={summary.blockLength}
@@ -191,16 +165,6 @@ function PlanSummaryCard({ summary }: { summary: PlanSummaryReadModel }) {
           icon={<RotateCw aria-hidden="true" />}
           label="Rotation pools"
           value={summary.rotationPools}
-        />
-        <PlanSummaryRow
-          icon={<CalendarDays aria-hidden="true" />}
-          label="Frequency"
-          value={summary.frequency}
-        />
-        <PlanSummaryRow
-          icon={<Repeat2 aria-hidden="true" />}
-          label="Next workout"
-          value={summary.nextWorkout}
         />
         <PlanSummaryRow
           icon={<SlidersHorizontal aria-hidden="true" />}

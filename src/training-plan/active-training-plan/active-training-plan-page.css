@@ -153,31 +153,6 @@
   opacity: 1;
 }
 
-.active-training-plan-tabs__summary {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 0.875rem;
-  align-items: center;
-  padding-bottom: 1.125rem;
-}
-
-.active-training-plan-tabs__summary span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 4.75rem;
-  min-height: 2rem;
-  border: 1px solid rgba(0, 119, 128, 0.17);
-  border-radius: 999px;
-  padding: 0 0.875rem;
-  color: #007780;
-  background: rgba(0, 119, 128, 0.06);
-  font-size: 0.8125rem;
-  font-weight: 850;
-  line-height: 1;
-  white-space: nowrap;
-}
-
 .active-training-plan-content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -313,19 +288,6 @@
     .active-training-plan-tabs__trigger:not([aria-selected="true"]):hover {
     color: #075d63;
     background: rgba(0, 119, 128, 0.06);
-  }
-
-  .active-training-plan-tabs__summary {
-    justify-content: flex-start;
-    gap: 0.625rem;
-    padding-bottom: 0;
-  }
-
-  .active-training-plan-tabs__summary span {
-    min-width: auto;
-    min-height: 1.875rem;
-    padding: 0 0.75rem;
-    font-size: 0.75rem;
   }
 
   .active-training-plan-content-grid {
