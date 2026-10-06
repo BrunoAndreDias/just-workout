@@ -111,22 +111,22 @@ function TrainingWeekSelector({
 function TrainingWeekSummaryStrip({ summary }: { summary: TrainingHistoryWeekSummary }) {
   return (
     <>
-      <dl className="training-history-summary-strip">
-        <div>
-          <dt>Completion</dt>
-          <dd>{formatCompletion(summary)}</dd>
+      <dl className="tiles">
+        <div className="tile">
+          <dt className="tile-label">Completion</dt>
+          <dd className="tile-value">{formatCompletion(summary)}</dd>
         </div>
-        <div>
-          <dt>Total volume</dt>
-          <dd>{formatWeight(summary.totalVolume)} kg</dd>
+        <div className="tile">
+          <dt className="tile-label">Total volume</dt>
+          <dd className="tile-value">{formatWeight(summary.totalVolume)} kg</dd>
         </div>
-        <div>
-          <dt>Progress</dt>
-          <dd>{formatProgress(summary.progressPercentage)}</dd>
+        <div className="tile">
+          <dt className="tile-label">Progress</dt>
+          <dd className="tile-value">{formatProgress(summary.progressPercentage)}</dd>
         </div>
-        <div>
-          <dt>Loaded sets</dt>
-          <dd>{formatLoadedSetCount(summary.loadedSetCount)}</dd>
+        <div className="tile">
+          <dt className="tile-label">Loaded sets</dt>
+          <dd className="tile-value">{formatLoadedSetCount(summary.loadedSetCount)}</dd>
         </div>
       </dl>
       {summary.hasPartialVolume ? (

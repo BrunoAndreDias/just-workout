@@ -102,42 +102,6 @@
   overflow-wrap: anywhere;
 }
 
-.training-history-summary-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  border-top: 1px solid var(--training-history-border-strong);
-  border-bottom: 1px solid var(--training-history-border-strong);
-}
-
-.training-history-summary-strip > div {
-  display: grid;
-  gap: 0.45rem;
-  padding: 1rem 1.125rem 1rem 0;
-}
-
-.training-history-summary-strip > div + div {
-  padding-left: 1.125rem;
-  border-left: 1px solid var(--training-history-border);
-}
-
-.training-history-summary-strip dt {
-  color: var(--training-history-muted);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.training-history-summary-strip dd {
-  margin: 0;
-  color: var(--training-history-ink);
-  font-size: 1.0625rem;
-  font-weight: 850;
-  line-height: 1.25;
-}
-
 .training-history-verdict {
   display: grid;
   gap: 0.75rem;
@@ -351,18 +315,6 @@
     grid-column: auto;
   }
 
-  .training-history-summary-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .training-history-summary-strip > div:nth-child(3) {
-    border-left: 0;
-  }
-
-  .training-history-summary-strip > div:nth-child(n + 3) {
-    border-top: 1px solid var(--training-history-border);
-  }
-
   .training-history-comparison__body {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -389,19 +341,6 @@
 }
 
 @media (max-width: 560px) {
-  .training-history-summary-strip {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .training-history-summary-strip > div + div {
-    border-top: 1px solid var(--training-history-border-soft);
-    border-left: 0;
-  }
-
-  .training-history-summary-strip > div:nth-child(3) {
-    border-left: 0;
-  }
-
   .training-history-comparison-card__metrics,
   .training-history-session-detail-card__metrics {
     grid-template-columns: minmax(0, 1fr);
