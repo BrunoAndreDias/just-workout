@@ -9,7 +9,7 @@
 .plan-builder-page--exercises .main-compound-drawer__option-icon {
   width: 1.875rem;
   height: 1.875rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-6);
 }
 
 /* Final shared polish: keep Exercises in the same palette as the rest of Plan Builder. */
@@ -44,7 +44,7 @@
   .main-compound-drawer__options-fieldset
   .main-compound-drawer__option {
   border-color: var(--jw-step-border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background-color: var(--jw-step-surface-soft);
   box-shadow: none;
 }
@@ -99,7 +99,7 @@
     .main-compound-drawer__options-fieldset
     .main-compound-drawer__option {
     min-height: 3.5rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-8);
     padding: 0.75rem 0.625rem;
   }
 
@@ -226,7 +226,7 @@
   min-width: 0;
   appearance: none;
   border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
-  border-radius: 0.28rem;
+  border-radius: var(--radius-3);
   background: var(--surface);
   color: var(--ink);
   padding: 0 1.85rem 0 0.55rem;
@@ -244,7 +244,7 @@
 
 .exercise-dropdown--attached .exercise-dropdown__button {
   border-right: 0;
-  border-radius: 0.28rem 0 0 0.28rem;
+  border-radius: var(--radius-3) 0 0 var(--radius-3);
 }
 
 .exercise-dropdown__selected-value {
@@ -283,7 +283,7 @@
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  border-radius: 0.42rem;
+  border-radius: var(--radius-6);
   background: var(--surface);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--shadow-ink) 16%, transparent);
   padding: 0.25rem;
@@ -294,7 +294,7 @@
   width: 100%;
   min-height: 2.25rem;
   border: 0;
-  border-radius: 0.28rem;
+  border-radius: var(--radius-3);
   background: transparent;
   color: var(--ink);
   cursor: pointer;
@@ -329,7 +329,7 @@
   align-items: center;
   justify-content: center;
   border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-  border-radius: 0 0.28rem 0.28rem 0;
+  border-radius: 0 var(--radius-3) var(--radius-3) 0;
   background: var(--field);
   color: var(--accent-dark);
   padding: 0;
@@ -388,7 +388,7 @@
   .isolation-group,
   .isolation-group:first-child {
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-8);
   }
 
   .exercise-selection-isolation-grid {
@@ -444,7 +444,7 @@
 .plan-builder-page--exercises .isolation-group__icon {
   width: 2.45rem;
   height: 2.45rem;
-  border-radius: 0.28rem;
+  border-radius: var(--radius-3);
 }
 
 .plan-builder-page--exercises .movement-pattern-bucket h4 {
@@ -569,7 +569,7 @@
   min-height: 1.4rem;
   align-items: center;
   margin-top: 1.05rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--track);
   color: var(--jw-step-copy);
   padding: 0.18rem 0.5rem;
@@ -601,7 +601,7 @@
   align-items: center;
   gap: 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.45rem;
+  border-radius: var(--radius-8);
   background: var(--surface);
   padding: 0.9rem 1rem;
   transition:
@@ -627,7 +627,7 @@
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-6);
   background: transparent;
   color: var(--muted);
   padding: 0;
@@ -661,7 +661,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  border-radius: 0.42rem;
+  border-radius: var(--radius-6);
   background: var(--accent-tint);
   color: var(--jw-step-selected-ink);
   font-size: var(--jw-type-body);
@@ -707,7 +707,7 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 0.7rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-8);
     padding: 0.75rem;
   }
 

@@ -485,7 +485,7 @@ function TrainingPlanDraftIntro({ isStale }: { isStale: boolean }) {
 
 function TrainingPlanDraftStaleNotice() {
   return (
-    <p className="mt-3 rounded-2xl border border-under/45 bg-under-bg px-4 py-3 text-sm font-semibold text-under-fg">
+    <p className="mt-3 rounded-[var(--radius-16)] border border-under/45 bg-under-bg px-4 py-3 text-sm font-semibold text-under-fg">
       Stale Builder Output. Reset Draft to regenerate from your current Plan Builder choices before
       accepting it.
     </p>
@@ -510,7 +510,7 @@ function TrainingPlanDraftActions({
     return (
       <fieldset
         aria-label="Confirm discard Training Plan Draft"
-        className="m-0 grid w-full min-w-0 max-w-md gap-3 rounded-2xl border border-over-fg/30 bg-over-bg px-4 py-3 text-sm text-over-fg"
+        className="m-0 grid w-full min-w-0 max-w-md gap-3 rounded-[var(--radius-16)] border border-over-fg/30 bg-over-bg px-4 py-3 text-sm text-over-fg"
       >
         <p className="font-semibold">
           Discard this draft? Your Plan Builder choices stay, and you can generate a new draft.
@@ -594,7 +594,7 @@ function getAcceptDraftButtonLabel(pendingDraftAction: PendingTrainingPlanDraftA
 function GenerateStepErrorAlert({ message }: { message: string }) {
   return (
     <p
-      className="mt-4 rounded-2xl border border-over-fg/30 bg-over-bg px-4 py-3 text-sm font-semibold text-over-fg"
+      className="mt-4 rounded-[var(--radius-16)] border border-over-fg/30 bg-over-bg px-4 py-3 text-sm font-semibold text-over-fg"
       role="alert"
     >
       {message}
@@ -643,7 +643,7 @@ function BaselineBodyweightDraftSetup({
   onSaveDraftSetup: TrainingPlanDraftActions["saveDraftSetup"];
 }) {
   return (
-    <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
+    <section className="mt-5 rounded-[var(--radius-16)] border border-border bg-surface p-4">
       <h4 className="text-base font-black text-ink">Baseline Bodyweight</h4>
       <p className="mt-2 text-sm text-muted">
         Store known bodyweight so bodyweight exercise load volume has a usable default after
@@ -653,7 +653,7 @@ function BaselineBodyweightDraftSetup({
         <span>Baseline Bodyweight</span>
         <input
           aria-label="Baseline Bodyweight"
-          className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+          className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
           inputMode="decimal"
           min={0}
           onBlur={() => {
@@ -712,7 +712,7 @@ function TrainingPlanDraftTemplateCard({
         {template.supersetGroups.map((group, groupIndex) => (
           <section
             aria-label={group.title}
-            className="rounded-2xl border border-border bg-surface p-4"
+            className="rounded-[var(--radius-16)] border border-border bg-surface p-4"
             key={group.id}
           >
             {canEditSupersetGroups ? (
@@ -723,7 +723,7 @@ function TrainingPlanDraftTemplateCard({
                   </label>
                   <input
                     aria-label={`Superset Group title ${groupIndex + 1}`}
-                    className="mt-2 w-full rounded-xl border border-input-border px-3 py-2 text-sm font-semibold text-ink"
+                    className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border px-3 py-2 text-sm font-semibold text-ink"
                     id={group.id}
                     onChange={(event) => {
                       draftActions.renameSupersetGroup(template.id, group.id, event.target.value);
@@ -819,7 +819,7 @@ function TrainingPlanDraftTemplateHeader({
             Workout Template label
           </label>
           <input
-            className="mt-2 w-full rounded-xl border border-input-border px-3 py-2 text-sm font-semibold text-ink"
+            className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border px-3 py-2 text-sm font-semibold text-ink"
             id={template.id}
             onChange={(event) => {
               draftActions.renameWorkoutTemplate(template.id, event.target.value);
@@ -934,7 +934,7 @@ function TrainingPlanDraftSlotItem({
   );
 
   return (
-    <li className="min-w-0 rounded-xl border border-border bg-field p-3">
+    <li className="min-w-0 rounded-[var(--radius-12)] border border-border bg-field p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <strong className="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">
           {slot.exerciseName}
@@ -955,7 +955,7 @@ function TrainingPlanDraftSlotItem({
           <span>Exercise choice</span>
           <select
             aria-label={`Exercise choice for ${slot.exerciseName}`}
-            className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+            className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
             onChange={(event) => {
               draftActions.replaceDraftSlotExercise(
                 template.id,
@@ -1116,7 +1116,7 @@ function DraftTrainingPrescriptionEditor({
         <span className="whitespace-nowrap">Sets</span>
         <input
           aria-label={`Set count for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1130,7 +1130,7 @@ function DraftTrainingPrescriptionEditor({
         <span className="whitespace-nowrap">Rep min</span>
         <input
           aria-label={`Rep target minimum for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1144,7 +1144,7 @@ function DraftTrainingPrescriptionEditor({
         <span className="whitespace-nowrap">Rep max</span>
         <input
           aria-label={`Rep target maximum for ${slot.exerciseName}`}
-          className="w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+          className="w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
           min={1}
           onBlur={persistTrainingPrescription}
           onChange={(event) => {
@@ -1186,7 +1186,7 @@ function DraftStartingLoadEditor({
         <span>Suggested starting load for {slot.exerciseName}</span>
         <input
           aria-label={`Suggested starting load for ${slot.exerciseName}`}
-          className="mt-2 w-full rounded-xl border border-input-border bg-surface px-3 py-2"
+          className="mt-2 w-full rounded-[var(--radius-12)] border border-input-border bg-surface px-3 py-2"
           inputMode="decimal"
           min={isBodyweightLoadExercise(slot) ? -200 : 0}
           onBlur={() => onInputChange(loadInputValue)}
@@ -1365,7 +1365,7 @@ function DefaultGenerationConfirmation({
           <ul className="mt-5 space-y-3 text-sm text-ink">
             {resolution.recommendedDefaults.map((recommendedDefault) => (
               <li
-                className="rounded-2xl border border-border bg-surface px-4 py-3"
+                className="rounded-[var(--radius-16)] border border-border bg-surface px-4 py-3"
                 key={getRecommendedDefaultKey(recommendedDefault)}
               >
                 {getRecommendedDefaultLabel(recommendedDefault)}
@@ -1402,7 +1402,7 @@ function DefaultGenerationConfirmation({
 
 function GenerateSummaryField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-border bg-surface px-4 py-3">
+    <div className="rounded-[var(--radius-6)] border border-border bg-surface px-4 py-3">
       <dt className="text-xs font-semibold uppercase text-muted">{label}</dt>
       <dd className="mt-1 font-semibold text-ink">{value}</dd>
     </div>

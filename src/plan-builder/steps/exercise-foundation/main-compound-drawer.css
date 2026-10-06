@@ -4,7 +4,7 @@
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   flex: 0 0 auto;
 }
 
@@ -82,7 +82,7 @@
   align-items: center;
   gap: 0.7rem;
   border: 1px solid var(--input-border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--surface);
   padding: 0 0.85rem;
   color: var(--ink-2);
@@ -137,7 +137,7 @@
   align-items: center;
   gap: 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background: var(--surface);
   padding: 0.85rem 0.9rem;
   cursor: pointer;
@@ -200,7 +200,7 @@
   width: 1.35rem;
   height: 1.35rem;
   border: 1px solid var(--faint);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--on-accent);
 }
 
@@ -226,7 +226,7 @@
 .main-compound-drawer__selected-empty {
   margin: 0.45rem 0 0;
   border: 1px dashed var(--input-border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--surface);
   padding: 0.75rem 0.8rem;
   color: var(--muted);
@@ -252,7 +252,7 @@
   align-items: center;
   gap: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--accent-tint);
   padding: 0.65rem 0.7rem;
 }
@@ -292,7 +292,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 0.425rem;
+  border-radius: var(--radius-6);
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
@@ -323,7 +323,7 @@
   align-items: start;
   gap: 0.5rem 0.75rem;
   border-color: var(--border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background: var(--surface);
   padding: 0.8rem 0.75rem;
 }
@@ -366,7 +366,7 @@
 .main-compound-drawer__empty {
   margin: 0;
   border: 1px dashed var(--input-border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background: var(--surface);
   padding: 1rem;
   color: var(--ink-2);

@@ -63,7 +63,7 @@
 .tb-transition-prototype__section {
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--surface);
   box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow-ink) 6%, transparent);
 }
@@ -79,7 +79,7 @@
 
 .tb-transition-prototype__outcome {
   margin: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--track);
   padding: 0.625rem 0.75rem;
   color: var(--ink-2);
@@ -110,7 +110,7 @@
   min-width: 0;
   min-height: 4rem;
   border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--accent-tint);
   padding: 0.625rem;
 }
@@ -149,7 +149,7 @@
   justify-content: center;
   gap: 0.5rem;
   min-height: 2.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 0.875rem;
   font-size: 0.8125rem;
   font-weight: 850;
@@ -249,7 +249,7 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   color: var(--accent-dark);
   background: var(--accent-tint);
 }
@@ -297,7 +297,7 @@
 .tb-transition-prototype__step {
   min-height: 4rem;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--surface);
   padding: 0.625rem;
 }
@@ -357,7 +357,7 @@
   gap: 0.625rem;
   align-items: center;
   min-height: 3.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   background: var(--bg);
   padding: 0.625rem 0.75rem;
 }
@@ -399,7 +399,7 @@
   align-items: center;
   justify-content: center;
   min-height: 1.875rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--over-bg);
   padding: 0 0.625rem;
   color: var(--over-fg);
@@ -419,7 +419,7 @@
   gap: 0.5rem;
   min-height: 2.75rem;
   border: 1px solid color-mix(in srgb, var(--on-accent) 18%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--ink);
   box-shadow: 0 16px 40px color-mix(in srgb, var(--shadow-ink) 22%, transparent);
   color: var(--on-accent);
@@ -434,7 +434,7 @@
   width: 2.25rem;
   height: 2.25rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--on-accent);
   background: color-mix(in srgb, var(--on-accent) 10%, transparent);
 }

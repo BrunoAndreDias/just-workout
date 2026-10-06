@@ -14,7 +14,7 @@
   max-height: min(40rem, calc(100vh - 2rem));
   overflow: auto;
   border: 1px solid var(--input-border);
-  border-radius: 1rem;
+  border-radius: var(--radius-16);
   background: var(--surface);
   box-shadow: 0 24px 60px color-mix(in srgb, var(--shadow-ink) 18%, transparent);
   padding: 1rem;
@@ -45,7 +45,7 @@
 .training-block-exercise-swap__secondary,
 .training-block-exercise-swap__primary,
 .training-block-exercise-swap__trigger {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -73,7 +73,7 @@
 }
 
 .training-block-exercise-swap__meta span {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--track);
   color: var(--ink-2);
   padding: 0.3rem 0.6rem;
@@ -96,7 +96,7 @@
 .training-block-exercise-swap__select {
   width: 100%;
   border: 1px solid var(--input-border);
-  border-radius: 0.85rem;
+  border-radius: var(--radius-12);
   background: var(--field);
   color: var(--ink);
   font: inherit;

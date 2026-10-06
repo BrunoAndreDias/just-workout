@@ -2,7 +2,7 @@
   display: grid;
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-16);
   background: var(--surface);
   padding: 0;
   list-style: none;
@@ -36,7 +36,7 @@
 
 .pb-generate__choice-value[data-default] {
   justify-self: start;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent-tint);
   color: var(--accent-dark);
   padding: 0.25rem 0.55rem;
@@ -50,7 +50,7 @@
   align-items: center;
   gap: 0.15rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--accent-dark);
   padding: 0 0.5rem 0 0.75rem;
@@ -97,7 +97,7 @@
   height: 1.5rem;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent-tint);
   color: var(--accent-dark);
   font-size: var(--jw-type-meta);
@@ -114,7 +114,7 @@
   display: grid;
   gap: 0.5rem;
   border: 1px solid color-mix(in srgb, var(--over-fg) 30%, transparent);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-16);
   background: var(--over-bg);
   color: var(--over-fg);
   padding: 1rem 1.125rem;

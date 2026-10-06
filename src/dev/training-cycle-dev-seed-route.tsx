@@ -35,7 +35,7 @@ export function TrainingCycleDevSeedRoute() {
       />
 
       <PageMain>
-        <div className="grid max-w-3xl gap-4 rounded-md border border-border bg-surface p-5 shadow-sm">
+        <div className="grid max-w-3xl gap-4 rounded-[var(--radius-6)] border border-border bg-surface p-5 shadow-sm">
           <p className="text-sm font-semibold text-ink-2">
             This upserts three demo plans, makes the week-6 plan active, and adds completed sessions
             for load suggestions.

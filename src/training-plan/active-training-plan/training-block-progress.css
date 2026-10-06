@@ -29,7 +29,7 @@
   max-width: 35rem;
   margin-top: 0.875rem;
   border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: 0.9rem;
+  border-radius: var(--radius-16);
   background: linear-gradient(180deg, var(--accent-tint), transparent 72%), var(--surface);
   padding: 0.875rem 1rem;
 }
@@ -79,7 +79,7 @@
   align-items: baseline;
   width: fit-content;
   margin-top: 0.75rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-12);
   background: var(--accent-tint);
   padding: 0.625rem 0.75rem;
 }
@@ -127,7 +127,7 @@
   gap: 0.5rem;
   margin-top: 0.875rem;
   border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
-  border-radius: 0.9rem;
+  border-radius: var(--radius-16);
   background: var(--surface);
   padding: 0.875rem 1rem;
 }
@@ -181,7 +181,7 @@
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   align-items: baseline;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-12);
   background: var(--surface);
   padding: 0.625rem 0.75rem;
 }
@@ -216,7 +216,7 @@
   width: 5.5rem;
   min-height: 2rem;
   border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   color: var(--ink);
   background: var(--surface);
   font: inherit;
@@ -245,7 +245,7 @@
 .active-training-plan-progress__track {
   height: 0.4375rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--track);
 }
 
@@ -264,7 +264,7 @@
   min-height: 2.5rem;
   margin-top: 0.75rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 1rem;
   color: var(--on-accent);
   background: var(--accent);
@@ -302,7 +302,7 @@
   justify-content: center;
   min-height: 2.5rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 1rem;
   color: var(--on-accent);
   background: var(--accent);
@@ -342,7 +342,7 @@
   width: fit-content;
   min-height: 2.5rem;
   border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 0.95rem;
   color: var(--ink);
   background: var(--surface);
@@ -384,7 +384,7 @@
   max-width: 32rem;
   margin-top: 0.875rem;
   border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
-  border-radius: 0.9rem;
+  border-radius: var(--radius-16);
   background: linear-gradient(180deg, var(--accent-tint), transparent 72%), var(--surface);
   padding: 0.875rem 1rem;
 }
@@ -414,7 +414,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   align-items: center;
-  border-radius: 0.65rem;
+  border-radius: var(--radius-10);
   background: var(--field);
   padding: 0.5rem 0.75rem;
 }
@@ -458,7 +458,7 @@
   gap: 0.125rem;
   justify-items: center;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: var(--radius-10);
   background: var(--field);
   padding: 0.4rem 0.25rem;
   text-align: center;

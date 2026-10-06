@@ -32,7 +32,7 @@
 .app-shell-surface {
   min-height: calc(100dvh - (2 * var(--app-shell-frame-padding-y)));
   overflow: clip;
-  border-radius: 0.875rem;
+  border-radius: var(--radius-16);
   background: linear-gradient(180deg, var(--surface), var(--surface)), var(--app-shell-surface);
 }
 
@@ -48,7 +48,7 @@
 .app-shell-brand-mark {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
 }
 
 .app-shell-brand-icon {

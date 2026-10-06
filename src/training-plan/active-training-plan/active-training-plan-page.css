@@ -18,7 +18,7 @@
   justify-content: center;
   gap: 0.625rem;
   min-height: 3.125rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 1.125rem;
   font-size: 0.875rem;
   font-weight: 750;
@@ -126,7 +126,7 @@
   bottom: -1px;
   left: 0;
   height: 0.1875rem;
-  border-radius: 999px 999px 0 0;
+  border-radius: var(--radius-pill) var(--radius-pill) 0 0;
   background: var(--accent);
   content: "";
   opacity: 0;
@@ -168,7 +168,7 @@
   min-width: 4.75rem;
   min-height: 2rem;
   border: 1px solid color-mix(in srgb, var(--accent) 17%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0 0.875rem;
   color: var(--accent);
   background: var(--accent-tint);
@@ -203,7 +203,7 @@
   gap: 0.625rem;
   min-height: 2.75rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0 1rem;
   color: var(--on-accent);
   background: var(--accent);
@@ -290,7 +290,7 @@
   .active-training-plan-tabs__trigger {
     min-height: 2.5rem;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 0 0.875rem;
     color: var(--ink);
     background: var(--surface);
@@ -354,7 +354,7 @@
     width: 100%;
     min-height: 3.25rem;
     border: 0;
-    border-radius: 0.625rem;
+    border-radius: var(--radius-10);
     color: var(--on-accent);
     background: var(--accent);
     font-size: 0.9375rem;

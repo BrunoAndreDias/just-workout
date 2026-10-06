@@ -111,7 +111,7 @@
   align-items: center;
   gap: 0.3rem;
   border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--accent-dark);
   padding: 0 0.625rem 0 0.875rem;
@@ -171,7 +171,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--jw-type-body);
   font-weight: 750;
   line-height: 1;

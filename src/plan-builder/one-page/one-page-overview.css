@@ -86,7 +86,7 @@
 
 .plan-builder-one-page__progress-segment {
   height: 0.3rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--track);
   transition: background-color 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -108,7 +108,7 @@
   margin: 0;
   scroll-margin-top: 5.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-16);
   background: var(--surface);
   padding: 0;
   list-style: none;
@@ -127,7 +127,7 @@
 
 .plan-builder-one-page__section-card:first-child {
   border-top: 0;
-  border-radius: 0.875rem 0.875rem 0 0;
+  border-radius: var(--radius-16) var(--radius-16) 0 0;
 }
 
 .plan-builder-one-page__section-card:hover {
@@ -146,7 +146,7 @@
 .plan-builder-one-page__section-card--generate {
   margin: 0 -1px -1px;
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  border-radius: 0 0 0.875rem 0.875rem;
+  border-radius: 0 0 var(--radius-16) var(--radius-16);
   background: var(--accent-tint);
 }
 
@@ -189,7 +189,7 @@
   align-items: center;
   justify-content: center;
   border: 1.5px solid var(--faint);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--ink-2);
   font-size: var(--jw-type-label);
   font-weight: 800;
@@ -273,7 +273,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.15rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--accent-dark);
   padding: 0 0.5rem 0 0.75rem;
   font-size: var(--jw-type-label);
@@ -391,7 +391,7 @@
   align-items: center;
   gap: 0.35rem;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background: var(--surface);
   color: var(--accent-dark);
   padding: 0 0.875rem;
@@ -435,7 +435,7 @@
   gap: 0.125rem;
   overflow: clip;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-10);
   background: var(--surface);
   padding: 0.25rem;
   box-shadow: none;
@@ -445,7 +445,7 @@
 .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-card--generate {
   margin: 0;
   border: 0;
-  border-radius: 0.45rem;
+  border-radius: var(--radius-8);
   background: transparent;
   animation: plan-builder-option-condense 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: top center;
@@ -476,7 +476,7 @@
 }
 
 .plan-builder-one-page__section-grid--compact .plan-builder-one-page__section-button:focus-visible {
-  border-radius: 0.45rem;
+  border-radius: var(--radius-8);
   outline-offset: -0.125rem;
 }
 

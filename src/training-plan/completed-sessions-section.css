@@ -194,7 +194,7 @@
 .training-history-session-bodyweight-form__input input {
   width: min(100%, 8rem);
   border: 1px solid var(--training-history-border-medium);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-8);
   padding: 0.55rem 0.7rem;
   font: inherit;
   background: var(--surface);
@@ -204,7 +204,7 @@
   justify-self: start;
   min-height: 2.2rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0 0.9rem;
   color: var(--on-accent);
   background: var(--training-history-accent);
@@ -359,7 +359,7 @@
   grid-column: 4;
   justify-self: end;
   padding: 0.125rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 850;
 }

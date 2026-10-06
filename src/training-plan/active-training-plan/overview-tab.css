@@ -22,7 +22,7 @@
 
 .training-plan-overview-card--notice {
   border-top: 0;
-  border-radius: 1rem;
+  border-radius: var(--radius-16);
   background: linear-gradient(135deg, var(--under-bg), var(--under-bg));
   padding: 1.25rem 1.375rem;
 }
@@ -58,7 +58,7 @@
 }
 
 .volume-target-notice {
-  border-radius: 0.875rem;
+  border-radius: var(--radius-16);
   background: var(--surface);
   padding: 0.875rem 1rem;
 }
@@ -172,7 +172,7 @@
   display: inline-flex;
   width: 0.6875rem;
   height: 0.6875rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .movement-coverage-table__dot {
@@ -259,7 +259,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 1.375rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0 0.4375rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -296,7 +296,7 @@
 .muscle-emphasis-legend__dot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .muscle-emphasis-legend__dot--primary {

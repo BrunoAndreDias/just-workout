@@ -44,7 +44,7 @@
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .workout-blueprint__marker svg {
@@ -178,7 +178,7 @@
   justify-content: center;
   min-width: 6rem;
   min-height: 2rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--rule);
   padding: 0 0.875rem;
   white-space: nowrap;
@@ -251,7 +251,7 @@
     width: 2.75rem;
     height: 2.75rem;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     color: var(--accent-dark);
     background: var(--accent-tint);
   }
