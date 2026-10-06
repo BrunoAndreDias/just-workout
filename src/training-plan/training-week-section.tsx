@@ -311,11 +311,11 @@ function MovementPatternVolumeBar({
   tone: TrainingHistoryTone;
 }) {
   return (
-    <span aria-hidden="true" className="training-history-comparison-table__bar-track">
-      <span
-        className={`training-history-comparison-table__bar-fill training-history-comparison-table__bar-fill--${tone}`}
+    <div aria-hidden="true" className="track training-history-comparison-table__bar-track">
+      <div
+        className={`training-history-comparison-table__bar-fill--${tone}`}
         style={{ width: `${clampPercentage(relativeVolumePercentage)}%` }}
       />
-    </span>
+    </div>
   );
 }

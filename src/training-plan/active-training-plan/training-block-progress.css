@@ -242,17 +242,7 @@
   line-height: 1;
 }
 
-.active-training-plan-progress__track {
-  height: 0.4375rem;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--track);
-}
-
-.active-training-plan-progress__track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
+.active-training-plan-progress__track > div {
   background: var(--accent);
 }
 

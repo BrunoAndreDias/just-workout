@@ -106,7 +106,7 @@ export function TrainingBlockProgress({
       <TrainingBlockEffortRamp blockWeek={blockWeek} trainingBlockWeeks={trainingBlockWeeks} />
       <div className="active-training-plan-progress__row">
         <div
-          className="active-training-plan-progress__track"
+          className="track active-training-plan-progress__track"
           aria-label="Block progress"
           aria-valuemax={100}
           aria-valuemin={0}
@@ -114,7 +114,7 @@ export function TrainingBlockProgress({
           aria-valuetext={`${blockCompletedSessions} of ${blockPlannedSessions} sessions (${blockProgressPercent}%)`}
           role="progressbar"
         >
-          <span style={{ width: `${blockProgressPercent}%` }} />
+          <div style={{ width: `${blockProgressPercent}%` }} />
         </div>
         <span>
           {blockCompletedSessions} / {blockPlannedSessions} sessions · {blockProgressPercent}%
